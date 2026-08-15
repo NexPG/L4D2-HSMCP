@@ -1,0 +1,56 @@
+{
+  "name": "hammer-mcp",
+  "version": "0.1.0",
+  "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
+  "license": "MIT",
+  "author": "Project Society Studio",
+  "homepage": "https://github.com/ProjectSocietyStudio/hammer-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProjectSocietyStudio/hammer-mcp.git"
+  },
+  "bugs": "https://github.com/ProjectSocietyStudio/hammer-mcp/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "source-engine",
+    "hammer",
+    "hammer++",
+    "vmf",
+    "bsp",
+    "garrys-mod",
+    "level-design"
+  ],
+  "type": "module",
+  "bin": {
+    "hammer-mcp": "./dist/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@projectsociety/mcp-core": "^0.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
