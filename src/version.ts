@@ -1,8 +1,19 @@
 import type { Dirent } from "node:fs";
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-export const VERSION = "0.0.0";
+/**
+ * The version this build reports, read from `package.json`.
+ *
+ * One source, because a version written twice is a version that disagrees with itself:
+ * `health` would print one number and the package another. `package.json` sits beside
+ * both `dist/` and `src/`, so `../package.json` resolves from either.
+ */
+const PACKAGE = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version?: string };
+
+export const VERSION = PACKAGE.version ?? "0.0.0-unknown";
 
 /**
  * The newest modification time anywhere below `dir`, in epoch milliseconds.

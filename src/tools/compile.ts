@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { clip } from "@projectsociety/mcp-core";
 import { z } from "zod";
-import { parseCompileLog } from "../compile/log.js";
+import { parseCompileLog, stageClean } from "../compile/log.js";
 import { locateLeak, readPointfile } from "../compile/leak.js";
 import {
   ToolchainError,
@@ -198,7 +198,7 @@ export const runCompile = defineTool({
           stage,
           toolchain: chain,
           exitCode: run.code,
-          clean: report.clean,
+          clean: stageClean(report, run.code, run.timedOut),
           ms: run.durationMs,
         },
       });
@@ -209,7 +209,7 @@ export const runCompile = defineTool({
         durationMs: run.durationMs,
         timedOut: run.timedOut,
         findings: report.findings,
-        clean: report.clean,
+        clean: stageClean(report, run.code, run.timedOut),
         stdoutTail: clip(run.stdout.split(/\r?\n/).slice(-40).join("\n"), 4000),
       });
 

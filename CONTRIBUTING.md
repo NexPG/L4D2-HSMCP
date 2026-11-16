@@ -77,6 +77,17 @@ rules above do the work a reviewer would otherwise do.
 - **Redistributing Valve content, the Hammer++/Tools++ binaries or the game's own FGDs.** They are
   installed, not vendored. No `.fgd`, `.bsp` or `.exe` that is not ours enters this repository.
 
+## Versioning
+
+`package.json` holds the version; `src/version.ts` reads it rather than repeating it, and
+`health` reports what the running build actually loaded. `CHANGELOG.md` keeps the human
+history, and a version bump lands in the same commit as the change it describes.
+
+The scheme is SemVer: `MAJOR` for a break in the tool contracts, `MINOR` for a new
+capability, `PATCH` for a fix that changes no contract. While the target game's limits are
+still being measured and the campaign pipeline does not exist yet, releases stay on
+`0.0.x-alpha`; the first `0.1.0` is for a campaign that can be built and played end to end.
+
 ## Licence
 
 The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT notice it

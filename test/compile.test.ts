@@ -5,7 +5,7 @@ import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { readGeometry } from "../src/bsp/geometry.js";
 import { locateLeak, readPointfile } from "../src/compile/leak.js";
-import { parseCompileLog } from "../src/compile/log.js";
+import { parseCompileLog, stageClean } from "../src/compile/log.js";
 import {
   chooseToolchain,
   compilerExe,
@@ -78,6 +78,34 @@ describe("compile log rules", () => {
     const r = parseCompileLog("Loading map\nProcessing areas...\nDone (2)\n4 threads");
     expect(r.findings).toHaveLength(0);
     expect(r.clean).toBe(true);
+  });
+
+  it("names MAX_MAP_VERTS instead of leaving the prose unexplained", () => {
+    // Reproduced on L4D2 stock vbsp, 16.11.2026: 8186 free-standing boxes in a sealed
+    // room. Upstream issue #99 was this line reported as clean:true with no findings.
+    const r = parseCompileLog(
+      "Too many unique verts, max = 65536 (map has too much brush geometry)",
+    );
+    expect(r.clean).toBe(false);
+    expect(r.byRule["max-map-verts"]).toBe(1);
+    const f = r.findings.find((x) => x.rule === "max-map-verts")!;
+    expect(f.severity).toBe("error");
+    expect(f.message).toMatch(/MAX_MAP_VERTS/);
+    expect(f.message).toMatch(/65536/);
+  });
+
+  it("parses Tools++ culling as info, not as a pass", () => {
+    const r = parseCompileLog("Exceeded vertex limit, applying culling...");
+    expect(r.findings[0]!.rule).toBe("vertex-culling");
+    expect(r.findings[0]!.severity).toBe("info");
+  });
+
+  it("calls a stage unclean when it exited non-zero, whatever the rules found", () => {
+    const quiet = parseCompileLog("Loading map\nDone (2)");
+    expect(quiet.clean).toBe(true);
+    expect(stageClean(quiet, 1)).toBe(false);
+    expect(stageClean(quiet, 0)).toBe(true);
+    expect(stageClean(quiet, 0, true)).toBe(false);
   });
 
   it("explains what the compiler's own message hides", () => {

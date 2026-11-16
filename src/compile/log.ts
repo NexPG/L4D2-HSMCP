@@ -59,6 +59,28 @@ const RULES: Rule[] = [
       `and read_vmf_lint checks the same limits before a compile is started`,
   },
   {
+    rule: "max-map-verts",
+    severity: "error",
+    match: /Too many unique verts, (?:max = (\d+)|([\d]+)\/([\d]+))/i,
+    explain: (m) => {
+      const limit = m[1] ?? m[3];
+      return (
+        `MAX_MAP_VERTS is full (${limit}). read_map_geometry reports VERTEXES against ` +
+        `its ceiling, and read_vmf_lint checks it before a compile. Free-standing boxes ` +
+        `reach this and MAX_MAP_BRUSHES at the same moment: 8192 brushes x 8 corners is ` +
+        `exactly 65536`
+      );
+    },
+  },
+  {
+    rule: "vertex-culling",
+    severity: "info",
+    match: /Exceeded vertex limit, applying culling/i,
+    explain: () =>
+      "Tools++ noticed the vertex limit and is reducing the map before deciding. It is " +
+      "not a pass: the next line says whether that was enough",
+  },
+  {
     rule: "too-many-t-junctions",
     severity: "warning",
     match: /too many t-junctions|t-junction/i,
@@ -100,6 +122,22 @@ export interface CompileLogReport {
   /** True when nothing at error severity was found. */
   clean: boolean;
   leaked: boolean;
+}
+
+/**
+ * Whether a compile stage counts as clean.
+ *
+ * A stage that exited non-zero is not clean, whatever the rules matched. This is the
+ * correction to upstream issue #99: `Too many unique verts` reported `clean: true` with
+ * no findings, and the caller had to cross-reference `exitCode` to discover the stage had
+ * failed. Silence from the parser is not evidence that nothing went wrong.
+ */
+export function stageClean(
+  report: CompileLogReport,
+  exitCode: number | null,
+  timedOut = false,
+): boolean {
+  return report.clean && exitCode === 0 && !timedOut;
 }
 
 /** Turns a compiler's output into structured findings. */
