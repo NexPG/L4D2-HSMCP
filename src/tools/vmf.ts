@@ -15,7 +15,7 @@ import type { Vec3 } from "../vmf/solid.js";
 
 /** How far below a prop to look for its floor. Half a map is further than any prop stands. */
 const FLOOR_REACH = 8192;
-import { GAME, GAME_BLOCK, resolveInput, resolveVmfInput } from "./paths.js";
+import { GAME, GAME_BLOCK, resolveVmfInput } from "./paths.js";
 
 const FINDING = z.object({
   severity: z.string(),
@@ -309,8 +309,10 @@ export const readVmfLint = defineTool({
     "brush id, which vbsp does not print), props standing below the floor they were placed " +
     "on because their model's origin is at its centre, and counts that approach the " +
     "compiler limits. " +
-    "Knows the repo's Lua-defined entities, so a scripted class is not reported as " +
-    "unknown. Needs the Python sidecar and the Left 4 Dead 2 install; see health.",
+    "Knows the entities the installed FGD declares, so a class the game has is not reported " +
+    "as unknown. L4D2 campaign rules are included: a non-L4D2 changelevel, a missing " +
+    "landmark or checkpoint door, and a Standard finale are reported. " +
+    "Needs the Python sidecar and the Left 4 Dead 2 install; see health.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),

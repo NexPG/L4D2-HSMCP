@@ -88,6 +88,14 @@ def model_bounds(vmf: Any, game_dir: str | None) -> list[dict[str, Any]]:
     return out
 
 
+def _flag_bits(value: str) -> int:
+    """`spawnflags` as an int; a malformed value is 0, not an exception in a lint."""
+    try:
+        return int(str(value).strip() or "0")
+    except (TypeError, ValueError):
+        return 0
+
+
 def _finding(
     severity: str, rule: str, message: str, **extra: Any
 ) -> dict[str, Any]:
@@ -203,6 +211,130 @@ def lint_vmf(vmf: Any, fgd: Any) -> list[dict[str, Any]]:
                         )
                     )
                     break
+
+    # L4D2 campaign structure. These are the failures that compile cleanly and then make a
+    # chapter unplayable: a transition that is not the L4D2 transition, a missing landmark
+    # pair, a safe room without its door, a finale type Valve never ships.
+    by_class: dict[str, list[Any]] = {}
+    for ent in entities:
+        by_class.setdefault(ent["classname", ""], []).append(ent)
+
+    landmarks = {ent["targetname", ""] for ent in by_class.get("info_landmark", [])}
+    has_checkpoint_door = bool(by_class.get("prop_door_rotating_checkpoint"))
+    checkpoint_regions = [
+        ent
+        for ent in by_class.get("func_nav_attribute_region", [])
+        if _flag_bits(ent["spawnflags", "0"]) & 2048
+    ]
+
+    for ent in by_class.get("trigger_changelevel", []):
+        findings.append(
+            _finding(
+                "warning",
+                "l4d2-trigger-changelevel",
+                "trigger_changelevel is not how Left 4 Dead 2 changes chapters; no stock "
+                "chapter uses it. Use an info_changelevel brush with a landmark pair",
+                entity_id=int(ent.id),
+                classname="trigger_changelevel",
+            )
+        )
+
+    for ent in by_class.get("info_changelevel", []):
+        ent_id = int(ent.id)
+        landmark = ent["landmark", ""].strip()
+        destination = ent["map", ""].strip()
+        if not destination:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-changelevel-no-map",
+                    "info_changelevel has no map name; the chapter cannot advance",
+                    entity_id=ent_id,
+                    classname="info_changelevel",
+                )
+            )
+        if not landmark:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-changelevel-no-landmark",
+                    "info_changelevel has no landmark; the engine cannot place survivors "
+                    "in the next map and the transition does not fire",
+                    entity_id=ent_id,
+                    classname="info_changelevel",
+                )
+            )
+        elif landmark not in landmarks:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-changelevel-landmark-missing",
+                    f'info_changelevel points at landmark "{landmark}", but no '
+                    f'info_landmark in this map carries that targetname',
+                    entity_id=ent_id,
+                    classname="info_changelevel",
+                    landmark=landmark,
+                )
+            )
+        if not ent.solids:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-changelevel-no-brush",
+                    "info_changelevel has no brush; it is a brush entity and without a "
+                    "volume there is nothing to walk into",
+                    entity_id=ent_id,
+                    classname="info_changelevel",
+                )
+            )
+        if not has_checkpoint_door:
+            findings.append(
+                _finding(
+                    "warning",
+                    "l4d2-changelevel-no-checkpoint-door",
+                    "info_changelevel without a prop_door_rotating_checkpoint in the map; "
+                    "the changelevel does not spawn and the safe room never activates",
+                    entity_id=ent_id,
+                    classname="info_changelevel",
+                )
+            )
+        if not checkpoint_regions:
+            findings.append(
+                _finding(
+                    "warning",
+                    "l4d2-changelevel-no-checkpoint-nav",
+                    "no func_nav_attribute_region carries the CHECKPOINT bit (2048); the "
+                    "safe room is not a goal area and bots have nowhere to go",
+                    entity_id=ent_id,
+                    classname="info_changelevel",
+                )
+            )
+
+    for ent in by_class.get("trigger_finale", []):
+        if ent["type", "0"].strip() == "0":
+            findings.append(
+                _finding(
+                    "warning",
+                    "l4d2-finale-type-standard",
+                    "trigger_finale type 0 (Standard) is used by no stock Left 4 Dead 2 "
+                    "campaign; type 2 with FinaleEscapeFinished is the verified path",
+                    entity_id=int(ent.id),
+                    classname="trigger_finale",
+                )
+            )
+
+    is_campaign_map = bool(
+        by_class.get("info_changelevel") or by_class.get("trigger_finale")
+    )
+    if is_campaign_map and not by_class.get("info_director"):
+        findings.append(
+            _finding(
+                "warning",
+                "l4d2-no-director",
+                "a campaign map needs info_director; without it there is no Director "
+                "behaviour and no flow-driven spawning",
+            )
+        )
 
     # Brush-side rules. Displacements are the reason to look at entity solids at all:
     # vbsp refuses a displacement that is not part of the world, and the id it prints

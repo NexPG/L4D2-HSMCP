@@ -47,6 +47,10 @@ With a start area and a goal area the Director computes flow. In the dump, areas
 path carry `0x20000000` in **Base Attribute Flags**. If no area carries it, there is no flow:
 the Director found no goal, and bots have nowhere to go.
 
+`read_nav_dump` does this reading for you: it returns the decoded attributes per area, the
+counts of CHECKPOINT/PLAYER_START/FINALE areas, how many areas are on the escape route, and a
+verdict — `playable`, `no-goal`, `no-flow` or `empty`.
+
 The console is the other oracle: `nav_analyze` prints complaints such as
 `GetGoalArea: Cannot find end area`, `Checkpoint failed to locate nearby info_change_level` or
 `NAV ERRORS - Map is unplayable`. Capture them with `-condebug`.

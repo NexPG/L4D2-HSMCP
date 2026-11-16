@@ -1,5 +1,9 @@
 # Compiling, and what the compilers do not say
 
+> **Historical (Garry's Mod era).** The measurements below were taken on the project this
+> fork grew from. They are provenance, not L4D2 facts: current L4D2 rules live in
+> `docs/campaigns.md` and `skill/l4d2-hsmcp/`.
+
 Three settings are load-bearing, all measured rather than guessed: the working directory must be
 `bin/` or `tier0.dll` fails to resolve; `WINEDEBUG=-all` is mandatory or stderr is a wall of
 `fixme:` lines; and **the path must be in absolute Windows form** (`Z:\...`).

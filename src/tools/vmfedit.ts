@@ -7,7 +7,7 @@ import { defineTool } from "../mcp/registry.js";
 import { applyVmfOps } from "../vmf/edit.js";
 import type { VmfOp } from "../vmf/edit.js";
 import { DEFAULT_GRID, DEFAULT_SKYNAME, emptyVmf } from "../vmf/skeleton.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, GAME, resolveInput, resolveVmfInput } from "./paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, GAME, resolveVmfInput } from "./paths.js";
 
 const MATCH = z
   .object({

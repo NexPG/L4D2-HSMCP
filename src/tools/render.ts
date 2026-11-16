@@ -16,7 +16,7 @@ import { pointInSolid } from "../space/trace.js";
 import { voxelise } from "../space/voxel.js";
 import { readEntities } from "../vmf/edit.js";
 import type { Vec3 } from "../vmf/solid.js";
-import { resolveInput, resolveVmfInput } from "./paths.js";
+import { resolveVmfInput } from "./paths.js";
 import { seedsFor } from "./scene.js";
 
 /**

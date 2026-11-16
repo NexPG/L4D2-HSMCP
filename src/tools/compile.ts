@@ -18,7 +18,7 @@ import { assertWritable } from "../fs/guard.js";
 import { defineTool } from "../mcp/registry.js";
 import { callSidecar } from "../sidecar/client.js";
 import { gameBlock, gameFor } from "../games/resolve.js";
-import { CONFIRM, GAME, GAME_BLOCK, resolveInput, resolveVmfInput } from "./paths.js";
+import { GAME, GAME_BLOCK, resolveInput, resolveVmfInput } from "./paths.js";
 
 const FINDING = z.object({
   severity: z.string(),

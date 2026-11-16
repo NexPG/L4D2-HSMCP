@@ -46,12 +46,6 @@ export const MASK_PLAYER = 2;
 /** Blocks a line of sight. Drops clip brushes, which you see straight through. */
 export const MASK_SIGHT = 4;
 
-export const MASK_NAMES: Record<number, string> = {
-  [MASK_SOLID]: "solid",
-  [MASK_PLAYER]: "player",
-  [MASK_SIGHT]: "sight",
-};
-
 /** The player hull Source uses, as half-extents. `HalfWidth` is 16, standing height 72. */
 export const HULL_STANDING: Vec3 = [16, 16, 36];
 export const HULL_CROUCHING: Vec3 = [16, 16, 18];

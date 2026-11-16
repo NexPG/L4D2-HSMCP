@@ -109,7 +109,7 @@ export const runVtfConvert = defineTool({
     // and VTFCmd's own default is to write beside the source, which works.
     const argv = [
       "-file",
-      `Z:${image.replace(/\//g, "\\")}`,
+      image.replace(/\//g, "\\"),
       ...(args.format ? ["-format", args.format] : []),
       ...(args.alphaFormat ? ["-alphaformat", args.alphaFormat] : []),
       ...(args.version ? ["-version", args.version] : []),

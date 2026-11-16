@@ -1,6 +1,6 @@
 # Tool catalogue
 
-75 tools. This page groups them by the job you are doing; each tool's own description is the
+77 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -29,6 +29,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_map_extents` | real map size from the world model |
 | `read_map_geometry` | what each lump holds and how close it is to the compiler ceiling |
 | `read_map_report` | verdict per budget criterion, not just numbers |
+| `read_nav_dump` | engine's `<map>_nav.txt`: areas, attributes, flow verdict |
 | `read_map_dependencies` | every asset the map references and where it will come from |
 | `read_prop_survey` | props by model and class, including unnamed `prop_dynamic` |
 | `read_pakfile` | files embedded in the map (lump 40 is a ZIP) |
@@ -109,3 +110,4 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_pakfile_extract` | extract a map's embedded pakfile |
 | `run_tga2skybox` | six TGAs into LDR and HDR cubemaps |
 | `run_cubemap2hdr` | LDR cubemap to HDR `.vtf` |
+| `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |

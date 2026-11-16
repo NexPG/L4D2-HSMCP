@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { defineTool } from "../mcp/registry.js";
 import { checkVmfSolids } from "../vmf/solid.js";
-import { resolveInput, resolveVmfInput } from "./paths.js";
+import { resolveVmfInput } from "./paths.js";
 
 const Vec3 = z.tuple([z.number(), z.number(), z.number()]);
 

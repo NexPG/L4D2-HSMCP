@@ -1,6 +1,6 @@
 {
   "name": "hammer-mcp",
-  "version": "0.0.17-alpha",
+  "version": "0.0.18-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
   "license": "GPL-3.0-only",
   "author": "NexPG",
@@ -18,7 +18,7 @@
     "hammer++",
     "vmf",
     "bsp",
-    "garrys-mod",
+    "left-4-dead-2",
     "level-design"
   ],
   "type": "module",

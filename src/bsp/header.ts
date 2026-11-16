@@ -21,8 +21,6 @@ export type LumpLayout = "standard" | "l4d2";
 export const LUMP_ENTITIES = 0;
 /** Brush models. Model 0 is the world, and its bounding box is the map's real extent. */
 export const LUMP_MODELS = 14;
-/** The embedded pakfile: a plain ZIP, and on `rp_nycity_day` 1004 MB of the 1.13 GB. */
-export const LUMP_PAKFILE = 40;
 
 /**
  * Lump names, from `LUMP_*` in `src/public/bspfile.h` of source-sdk-2013, read 11/08/2026.

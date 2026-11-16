@@ -1,4 +1,4 @@
-import type { KvBlock, KvNode } from "./parse.js";
+import type { KvNode } from "./parse.js";
 
 /**
  * Formats KeyValues the way Hammer writes them: tab indentation, the brace on its own

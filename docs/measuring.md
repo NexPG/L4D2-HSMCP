@@ -1,5 +1,8 @@
 # Measuring a map
 
+> **Historical (Garry's Mod era).** The map used below is the GMod production map from the
+> upstream project. The method still applies; the numbers are not L4D2 numbers.
+
 The rule that governs every reader here: **a `.bsp` is never loaded whole.** The map used
 throughout this page is 1.13 GB. A `readFileSync` on it inside an MCP server kills the open stdio
 transport, which the caller sees as a hang rather than an error. Everything reads by offsets.

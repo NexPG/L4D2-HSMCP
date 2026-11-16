@@ -6,7 +6,7 @@ import { alignFaces, setFaceMaterial, setSmoothingGroups } from "../vmf/face.js"
 import type { AlignMode } from "../vmf/face.js";
 import type { FaceSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveInput, resolveVmfInput } from "./paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "./paths.js";
 
 const SELECTOR = {
   solidIds: z.array(z.number()).optional().describe("Only faces of these solids."),

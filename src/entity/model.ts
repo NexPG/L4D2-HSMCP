@@ -5,7 +5,7 @@ export type Vec3 = [number, number, number];
 
 /**
  * One entity, in the single shape used everywhere in this server -- whether it came from
- * a `.vmf`, a BSP entity lump or a `.lmp` patch. The three formats differ in packaging,
+ * a `.vmf` or a BSP entity lump. The two formats differ in packaging,
  * not in content, so the audit and query tools work against one model.
  */
 export interface MapEntity {

@@ -10,7 +10,7 @@ export default defineConfig({
     // worker process each time, so the notice printed sixteen times and a module-level
     // guard could not see across processes.
     globalSetup: ["./test/support/global-setup.ts"],
-    // No global testTimeout on purpose: the tests that need minutes (wine compiles) already
+    // No global testTimeout on purpose: the tests that need minutes (compiles) already
     // declare their own, and raising the default would let a genuine hang look like slowness.
   },
 });

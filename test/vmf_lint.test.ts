@@ -85,6 +85,41 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["unknown-keyvalue"]).toBe(1);
   }, 60_000);
 
+  it.skipIf(!ready)("names the L4D2 transition faults instead of passing them", async () => {
+    // The exact map that compiled clean and could not advance: an info_changelevel with
+    // no landmark, no brush, no checkpoint door and no CHECKPOINT nav area.
+    const path = broken("l4d2-changelevel", (s) =>
+      s.replace(
+        /\s*$/,
+        '\nentity\n{\n\t"id" "9001"\n\t"classname" "info_changelevel"\n\t"map" "next_map"\n}\n',
+      ),
+    );
+    const r = await lint(path);
+    expect(r.byRule["l4d2-changelevel-no-landmark"]).toBe(1);
+    expect(r.byRule["l4d2-changelevel-no-brush"]).toBe(1);
+    expect(r.byRule["l4d2-changelevel-no-checkpoint-door"]).toBe(1);
+    expect(r.byRule["l4d2-changelevel-no-checkpoint-nav"]).toBe(1);
+  }, 60_000);
+
+  it.skipIf(!ready)("flags trigger_changelevel as not the L4D2 transition", async () => {
+    const path = broken("l4d2-trigger-changelevel", (s) =>
+      s.replace('"classname" "info_player_start"', '"classname" "trigger_changelevel"'),
+    );
+    const r = await lint(path);
+    expect(r.byRule["l4d2-trigger-changelevel"]).toBe(1);
+  }, 60_000);
+
+  it.skipIf(!ready)("flags a Standard finale as unused by Valve", async () => {
+    const path = broken("l4d2-finale-template", (s) =>
+      s.replace(
+        '"classname" "info_player_start"',
+        '"classname" "trigger_finale"\n\t"type" "0"',
+      ),
+    );
+    const r = await lint(path);
+    expect(r.byRule["l4d2-finale-type-standard"]).toBe(1);
+  }, 60_000);
+
   it.skipIf(!ready)("catches a texture scale vbsp will refuse", async () => {
     // 0.01 is below the 0.1 floor. vbsp reports this as "Bad surface extents" and names
     // a face by an index that cannot be found in Hammer, which is why catching it here

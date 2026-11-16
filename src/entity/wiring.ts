@@ -4,7 +4,7 @@
  * `entity/model.ts` already says the three formats "differ in packaging, not in content".
  * Wiring was the place that had not been told: `checkWiring` took VMF source text, so
  * `validate_io` could judge a map you have the source for and nothing could judge the map
- * you do not -- which is the production case, the one `write_lump_patch` exists for, and
+ * you do not -- which is the production case, the one entity wiring checks exist for, and
  * the one where a dead output cannot be fixed by opening Hammer.
  *
  * The eastcoast audit paid for that gap in the only currency that counts: four defects in

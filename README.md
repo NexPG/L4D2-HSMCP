@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.17--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.18--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -61,7 +61,7 @@ The design rules come from the project this fork grew out of, and they still hol
 
 | Component | Why it is needed |
 |---|---|
-| **Windows 10/11 x64** | the game's compilers, `vpk.exe` and the toolkit are Windows binaries; Linux is not supported yet |
+| **Windows 10/11 x64** | the game's compilers, `vpk.exe` and the toolkit are Windows binaries; Linux is not supported |
 | **Left 4 Dead 2** (Steam app `550`) | the client install carries `vbsp.exe`/`vvis.exe`/`vrad.exe`, `vpk.exe`, `left4dead2.fgd` and the game content the tools read. A dedicated server alone is not enough |
 | **Left 4 Dead 2 Authoring Tools** (Steam app `563`) | Valve's SDK for L4D2: Hammer, HLMV, Faceposer, the Workshop manager, the VScript plugins and the example content. Install from **Steam → Library → filter Tools**. About 0.9 GB |
 | **Node.js 20+** | the MCP server itself (tested on Node 24) |
@@ -140,10 +140,10 @@ practical rules are in [`docs/campaigns.md`](docs/campaigns.md).
 
 ## Tools
 
-75 tools, grouped by what they answer:
+77 tools, grouped by what they answer:
 
 - **Inspect** — `health`, `read_source_games`, `read_bsp_info`, `read_bsp_entities`,
-  `read_map_geometry`, `read_map_report`, `read_vmf`, `read_vmf_lint`.
+  `read_nav_dump`, `read_map_geometry`, `read_map_report`, `read_vmf`, `read_vmf_lint`.
 - **Measure** — extents, sightlines, lightmap budgets, visleaf stats, props, pakfile.
 - **Ask offline** — `read_vmf_leak`, `read_vmf_rooms`, `measure_vmf_clearance`,
   `read_vmf_visibility`, `read_vmf_trace`, `render_vmf_view`, `render_vmf_plan`.

@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { readFileSync } from "node:fs";
 import { readEntityLump } from "../bsp/entities.js";
 import { HDR_LUMPS, readHeader } from "../bsp/header.js";
+import { parseNavDump } from "../bsp/navdump.js";
 import { histogram, matchesFilter } from "../entity/model.js";
 import type { EntityFilter, Vec3 } from "../entity/model.js";
 import { defineTool } from "../mcp/registry.js";
@@ -182,4 +184,59 @@ export const readBspEntities = defineTool({
   },
 });
 
-export const bspTools = [readBspInfo, readBspEntities];
+const readNavDump = defineTool({
+  name: "read_nav_dump",
+  description:
+    "Reads the `<map>_nav.txt` dump the engine writes beside a generated nav mesh: every " +
+    "area's centre, its connections, and its attribute flags decoded — CHECKPOINT, " +
+    "PLAYER_START, FINALE and the computed escape route. Answers whether the mesh is a " +
+    "map the Director can run (a goal area plus a flow path) without loading the game. " +
+    "The dump is text; the .nav binary layout is not parsed here.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the <map>_nav.txt dump."),
+    limit: z.number().int().min(1).max(2000).default(200).describe("Areas to return."),
+    offset: z.number().int().min(0).default(0).describe("Areas to skip."),
+  },
+  outputSchema: {
+    path: z.string(),
+    areaCount: z.number(),
+    returned: z.number(),
+    areas: z.array(
+      z.object({
+        center: VEC3,
+        north: z.number(),
+        east: z.number(),
+        south: z.number(),
+        west: z.number(),
+        baseFlags: z.number(),
+        terrorFlags: z.number(),
+        attributes: z.array(z.string()),
+        connections: z.number(),
+      }),
+    ),
+    summary: z.object({
+      checkpoint: z.number(),
+      playerStart: z.number(),
+      finale: z.number(),
+      escapeRoute: z.number(),
+      areasWithConnections: z.number(),
+    }),
+    verdict: z.enum(["playable", "no-goal", "no-flow", "empty"]),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    const report = parseNavDump(path, readFileSync(path, "utf8"));
+    const page = report.areas.slice(args.offset, args.offset + args.limit);
+    return {
+      path: report.path,
+      areaCount: report.areaCount,
+      returned: page.length,
+      areas: page,
+      summary: report.summary,
+      verdict: report.verdict,
+    };
+  },
+});
+
+export const bspTools = [readBspInfo, readBspEntities, readNavDump];

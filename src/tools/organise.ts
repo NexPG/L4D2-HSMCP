@@ -6,7 +6,7 @@ import { groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/or
 import type { SolidSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import type { Vec3 } from "../vmf/solid.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveInput, resolveVmfInput } from "./paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "./paths.js";
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
 

@@ -5,6 +5,31 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.18-alpha — 2026-11-17
+
+- **The chapter transition is verified end to end without a human.** The engine needs two
+  things, not one: every survivor inside the `info_changelevel` volume **and** the checkpoint
+  door closed (`CheckpointDoorClosed`). `verify.ps1` builds with `HSMCP_SELFTEST=1`, the map's
+  timer warps the team into the safe room and closes the door, and the game loads
+  `hsmcp_test_m2` — recorded as `transition: PASS`.
+- `read_nav_dump` (77th tool) parses the engine's `<map>_nav.txt`, decodes CHECKPOINT,
+  PLAYER_START, FINALE and the escape route, and returns a `playable` / `no-goal` / `no-flow`
+  / `empty` verdict.
+- `read_vmf_lint` gains the L4D2 campaign rules: `trigger_changelevel`,
+  `l4d2-changelevel-no-landmark`, `-landmark-missing`, `-no-brush`, `-no-checkpoint-door`,
+  `-no-checkpoint-nav`, `l4d2-finale-type-standard`, `l4d2-no-director`. Three new tests.
+- `run_vtf_convert` is registered again: it was defined and documented but never added to the
+  tool list, and its argument still carried the Wine-era `Z:` prefix, which is wrong on
+  Windows. It now passes the native path.
+- Cleanup from the dead-code audit: unused imports in fourteen tool modules, dead constants
+  (`LUMP_PAKFILE`, `MASK_NAMES`, the unused `.lmp` test path), the `garrys-mod` keyword, and
+  stale GMod/Lua/Linux wording in descriptions and docs. The GMod-era measurement pages now
+  carry a historical banner.
+- The skill gains `references/mapping/editor-and-fgd.md` (Hammer++, Tools++ flags,
+  L4D2-FGD-Edits and the rule that only the stock FGD is a shipping authority) and
+  `references/testing/console.md` (nav/entity commands, `-condebug`, and why `setpos` in a
+  config silently does nothing).
+
 ## 0.0.17-alpha — 2026-11-17
 
 - The agent skill is added at `skill/l4d2-hsmcp/`, structured for progressive disclosure:

@@ -39,8 +39,9 @@ reference implementation until `run_nav_generate` exists as a tool.
 
 - `read_nav` returns `fresh`: `savedBspSize` equals the `.bsp` size. Any geometry change makes
   it stale.
-- The dump `<map>_nav.txt` lists the attributes and a flow path. See
-  `references/nav/attributes-and-flow.md`.
+- `read_nav_dump` parses the `<map>_nav.txt` dump and returns a verdict: `playable`,
+  `no-goal`, `no-flow` or `empty`. See `references/nav/attributes-and-flow.md` for what the
+  flags mean.
 - The console log has no `GetGoalArea`, `Flow Warning`, `Checkpoint failed` or `NAV ERRORS`
   lines.
 

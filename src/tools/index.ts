@@ -72,4 +72,5 @@ export const allTools: AnyToolDef[] = [
   ...renameTools,
   ...cubemapTools,
   ...pakfileTools,
+  ...vtfTools,
 ];

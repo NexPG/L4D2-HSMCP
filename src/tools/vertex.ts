@@ -5,7 +5,7 @@ import { defineTool } from "../mcp/registry.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import { moveVertices } from "../vmf/vertex.js";
 import type { VertexMove } from "../vmf/vertex.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveInput, resolveVmfInput } from "./paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "./paths.js";
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
 

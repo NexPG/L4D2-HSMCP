@@ -37,7 +37,9 @@ before promising anything.
 | `references/nav/generation.md` | generating a nav mesh |
 | `references/nav/attributes-and-flow.md` | marking CHECKPOINT/FINALE, or bots ignore the map |
 | `references/scripting/vscript.md` | shipping a `.nut` in the add-on |
+| `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
+| `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
 

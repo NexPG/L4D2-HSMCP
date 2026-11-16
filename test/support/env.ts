@@ -51,8 +51,6 @@ const GAME_CONTENT = {
   prodMap: join(REPO, "srcds/garrysmod/addons/rp_nycity_day/maps/rp_nycity_day.bsp"),
   /** The only large Hammer-written VMF around, shipped inside the TTT gamemode. */
   tttSource: join(REPO, "srcds/garrysmod/gamemodes/terrortown/mapexamples/ttt_traps.vmf"),
-  /** A stock Valve entity-lump patch, the reference the codec was calibrated on. */
-  stockLmp: join(REPO, "srcds/garrysmod/maps/c1a1_l_0.lmp"),
   mapsDir: join(REPO, "srcds/garrysmod/maps"),
 } as const;
 
@@ -76,7 +74,6 @@ export const has = {
     existsSync(join(config.plusPlusBinDir, "toolsplusplus.fgd")),
   prodMap: existsSync(GAME_CONTENT.prodMap),
   tttSource: existsSync(GAME_CONTENT.tttSource),
-  stockLmp: existsSync(GAME_CONTENT.stockLmp),
   navPair:
     existsSync(join(GAME_CONTENT.mapsDir, "gm_construct.nav")) &&
     existsSync(join(GAME_CONTENT.mapsDir, "gm_construct.bsp")),
@@ -114,7 +111,6 @@ const LABELS: Record<keyof typeof has, string> = {
   plusFgd: "the Tools++ .fgd (optional)",
   prodMap: "a large production .bsp",
   tttSource: "a large Hammer-written .vmf",
-  stockLmp: "a stock Valve .lmp",
   navPair: "a .nav / .bsp pair",
   gameContent: `the game's own content (${config.gameDir ?? "not found"})`,
   bspRename: `ficool2's bsp_rename.exe in ${config.externalToolsDir} (optional)`,

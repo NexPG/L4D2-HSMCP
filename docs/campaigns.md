@@ -111,6 +111,15 @@ Bots do not follow the player as their first rule: they path to the goal area (C
 FINALE). If the player falls behind, they run ahead and wait there. A map with no goal area is
 why bots appear to run around on their own.
 
+`read_vmf_lint` reports the structural faults that otherwise compile clean:
+`l4d2-trigger-changelevel`, `l4d2-changelevel-no-landmark`,
+`l4d2-changelevel-landmark-missing`, `l4d2-changelevel-no-brush`,
+`l4d2-changelevel-no-checkpoint-door`, `l4d2-changelevel-no-checkpoint-nav` and
+`l4d2-finale-type-standard`. A clean lint is not proof that the transition fires — only a play
+test is — but it catches every failure this project has hit so far.
+`read_nav_dump` returns the mesh verdict (`playable`, `no-goal`, `no-flow`, `empty`) from the
+engine's own dump.
+
 ## The finale
 
 Every stock finale uses `trigger_finale` with `type 2` (Custom): a radio, generator or sound

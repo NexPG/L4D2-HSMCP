@@ -1,5 +1,8 @@
 # Measuring a map that has not been compiled
 
+> **Historical (Garry's Mod era).** This page describes the upstream project's spatial work;
+> the tools it mentions still exist, but the measurements are not L4D2 measurements.
+
 Every spatial question this server could answer used to go through `src/bsp/trace.ts`. That
 is a good tracer — it is the engine's own recursion over vbsp's own tree — and it can only
 speak about the map **as it was when vbsp last ran**. An agent that has just moved a wall

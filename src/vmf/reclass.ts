@@ -21,7 +21,7 @@
  * The write is a splice like every other in this directory: each solid's byte range is cut
  * and re-inserted at the target, and nothing else in the file moves.
  */
-import { children, get, parse } from "../kv/parse.js";
+import { get, parse } from "../kv/parse.js";
 import type { KvBlock, KvNode } from "../kv/parse.js";
 import { maxId } from "./edit.js";
 import { findSolids, lineRange } from "./select.js";

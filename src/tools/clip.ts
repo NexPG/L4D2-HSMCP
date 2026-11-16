@@ -6,7 +6,7 @@ import { clipSolids } from "../vmf/clip.js";
 import type { SolidSelector } from "../vmf/select.js";
 import { checkVmfSolids, planeFromPoints } from "../vmf/solid.js";
 import type { Plane, Vec3 } from "../vmf/solid.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveInput, resolveVmfInput } from "./paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "./paths.js";
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
 

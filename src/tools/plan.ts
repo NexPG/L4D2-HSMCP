@@ -11,7 +11,7 @@ import { buildScene } from "../space/scene.js";
 import type { Scene } from "../space/scene.js";
 import { readEntities } from "../vmf/edit.js";
 import type { Vec3 } from "../vmf/solid.js";
-import { resolveInput, resolveVmfInput } from "./paths.js";
+import { resolveVmfInput } from "./paths.js";
 
 const cache = new Map<string, { source: string; scene: Scene }>();
 
