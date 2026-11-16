@@ -24,10 +24,5 @@ scratchpad/
 # Development diary: working notes for this fork, kept locally and never published.
 .develop-diary/
 
-# Campaign build output: rebuilt from src/ by the tools; the source stays in git.
-campaigns/**/src/*.bsp
-campaigns/**/src/*.log
-campaigns/**/src/*.prt
-campaigns/**/src/*.lin
-campaigns/**/addon/maps/*.bsp
-campaigns/**/*.vpk
+# Campaign build output: campaigns are local test runs, never pushed.
+campaigns/

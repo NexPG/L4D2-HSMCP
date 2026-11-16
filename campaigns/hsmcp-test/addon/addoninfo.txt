@@ -1,8 +1,0 @@
-"addoninfo"
-{
-	"addonTitle"	"HSMCP Test"
-	"addonAuthor"	"NexPG"
-	"addonVersion"	"1"
-	"addonTag"	"campaign"
-	"addonDesc"	"Two-chapter test campaign"
-}

@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.5-alpha — 2026-11-16
+
+- Test campaigns are local only (`campaigns/` is ignored) and live in numbered directories:
+  a README stating the date, project version, what was attempted and what came out, plus
+  the source maps, staging tree, build script and packed VPK.
+- The build script deploys the archive to the game's `left4dead2/addons/`, so a campaign
+  can be opened in the game directly.
+- `001-hsmcp-test` re-laid out under that convention.
+
 ## 0.0.4-alpha — 2026-11-16
 
 - First campaign built through the tools: two sealed chapters with a transition and a

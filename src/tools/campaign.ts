@@ -161,6 +161,13 @@ export const writeCampaignTool = defineTool({
       )
       .min(1),
     overwrite: z.boolean().default(false),
+    backup: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Keep a .bak beside an overwritten mission. Off by default: a staging directory " +
+          "is packed as-is, and a backup there would ship inside the addon.",
+      ),
     dryRun: z.boolean().default(false),
     confirm: z.boolean().default(false),
   },
@@ -192,7 +199,7 @@ export const writeCampaignTool = defineTool({
     const text = serializeMission(mission);
     const result = writeGuarded(out, text, ctx.config, {
       dryRun: args.dryRun,
-      backup: args.overwrite && existsSync(out),
+      backup: args.backup && args.overwrite && existsSync(out),
     });
     const body = summary(mission);
     return {
