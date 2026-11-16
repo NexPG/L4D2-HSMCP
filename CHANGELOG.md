@@ -5,6 +5,33 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.15-alpha — 2026-11-17
+
+- An add-on VPK can carry VScript: `scripts/vscripts/hsmcp_finale.nut` is packed into the
+  campaign, attached through a `logic_script` entity and verified in the running game — the
+  `[HSMCP] hsmcp_finale loaded` banner appears in `console.log` with `-condebug`.
+- The finale is now completable with entities: `trigger_finale` type 2 starts on **+use**,
+  `FinaleStart` enables an escape `trigger_multiple` after ten seconds, and its `OnStartTouch`
+  fires `FinaleEscapeFinished` and the outtro stats — the same inputs the Authoring Tools'
+  rescue template uses. Stock campaigns never use type 0, so the earlier standard-finale
+  attempt was replaced rather than tuned.
+- `docs/campaigns.md` gains "The finale" and "VScript in an add-on", with the exact inputs and
+  the console-log check.
+- Campaign 001: exit corridor and changelevel (0.0.14) plus this finale; both maps rebuilt,
+  nav regenerated (1346 bytes, fresh) and the 7-entry archive redeployed.
+
+## 0.0.14-alpha — 2026-11-17
+
+- Chapter transitions use L4D2's own mechanism: an `info_changelevel` brush with `map` and
+  `landmark`, plus a matching `info_landmark` in both maps. Every stock chapter works this
+  way; `trigger_changelevel` exists in `base.fgd` but is not part of the campaign flow, which
+  is why the test campaign loaded and never advanced.
+- Campaign 001 gets a visible exit: an east-wall doorway, a lit corridor and the changelevel
+  brush at its end, replacing the invisible trigger brush. Both maps were rebuilt, nav was
+  regenerated (1346 bytes, fresh against the new `.bsp`) and the archive redeployed.
+- `docs/campaigns.md` gains "Chapter transitions" and "The finale": all stock finales use
+  `trigger_finale` type 2 (Custom) with a VScript, so a script-free finale is still open.
+
 ## 0.0.13-alpha — 2026-11-17
 
 - The upstream credit names the original developers' studio, **Project Society Studio**, and

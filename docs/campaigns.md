@@ -76,6 +76,53 @@ addon/
 archive back and compares its entry list with the staging tree: a file the pack dropped is
 reported, not inferred.
 
+## Chapter transitions
+
+A campaign advances through `info_changelevel`, not through the generic `trigger_changelevel`.
+That is read from the game's own maps, not from a wiki:
+
+- `c1m1_hotel` ends with `info_changelevel` **as a brush**, carrying `map c1m2_streets` and
+  `landmark c1m1_c1m2_landmark`.
+- `c1m2_streets` carries `info_landmark` with the same `targetname` where survivors arrive.
+- The brush fires when survivors walk into it. It has no inputs and needs no `logic_auto`.
+- `trigger_changelevel` exists in `base.fgd`, but none of the stock L4D2 chapters uses it. A
+  map built on it loads fine and never advances — the chapter change simply does not happen.
+
+So a transition is a pair: a brush entity with a destination and a landmark name, plus an
+`info_landmark` with that name in **both** maps. The one in the map being left sits at the
+exit; the one in the map being entered sits where the survivors should appear.
+
+## The finale
+
+Every stock finale uses `trigger_finale` with `type 2` (Custom): a radio, generator or sound
+board starts the sequence. `type 0` (Standard) and `type 1` (Gauntlet) exist in the FGD, but no
+base campaign uses either, so a finale that completes by itself is not something to assume.
+
+The engine does expose the end of a finale as an input, and the Authoring Tools' own rescue
+template (`sdk_content/scripting/scripts/vscripts/entitygroups/rescue_helicopter_group.nut`)
+uses exactly these:
+
+- `FinaleEscapeFinished` — "Give the survivors a victory."
+- `FinaleEscapeForceSurvivorPositions` — hold them on the vehicle.
+- `env_outtro_stats` `RollStatsCrawl` — the stats crawl.
+
+So a minimal completable finale is entity work, not a script: a `trigger_finale` (type 2) whose
+`FinaleStart` enables a `trigger_multiple` after the wave delay, and that trigger's
+`OnStartTouch` fires `FinaleEscapeFinished` on the finale and `RollStatsCrawl` on the outtro.
+`info_survivor_rescue` marks where the rescue stands; it is not required for the victory.
+
+## VScript in an add-on
+
+An add-on VPK can carry VScript, and the engine loads it:
+
+- put the file at `scripts/vscripts/<name>.nut` inside the add-on;
+- attach it with a `logic_script` entity whose `vscripts` keyvalue is `<name>` (no extension);
+- verify the load without playing: launch the map with `-condebug` and read
+  `left4dead2/console.log` for the script's `printl` banner.
+
+The game ships its scripts compiled as `.nuc`; the readable sources in the Authoring Tools
+(`sdk_content/scripting/scripts/vscripts/`) are the reference for the API.
+
 ## Navigation
 
 There is no offline nav generator. The game generates the mesh:
