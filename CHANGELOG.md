@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.3-alpha — 2026-11-16
+
+- `run_vpk_pack`: packs a staging directory into an addon VPK with the game's own
+  `vpk.exe`, writes the addon manifest when given one, and reads the archive back through
+  the sidecar to prove every staging file made it in. Overwrites only on request.
+- The pack output is an ordinary L4D2 addon tree: `addoninfo.txt`, `missions/`, `maps/`,
+  `materials/vgui/maps/`.
+
 ## 0.0.2-alpha — 2026-11-16
 
 - Campaign files: `read_campaign`, `write_campaign` and `check_campaign`. The schema was

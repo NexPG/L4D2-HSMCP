@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 16/11/2026: **74 tools**.
+Last checked against the tool list on 16/11/2026: **75 tools**.
 
 ## The file itself
 
@@ -199,6 +199,7 @@ map and looking, or by not happening at all.
 | `read_campaign` | nothing: the game reads mission files, the editor never shows them |
 | `write_campaign` | nothing: a mission file is written by hand |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
+| `run_vpk_pack` | nothing: Hammer has no addon packaging |
 
 The row that matters most is `read_vmf_solids`. Hammer draws an invalid solid in red and
 tells you nothing else; this says which face, which corner, and why — and it is the oracle
