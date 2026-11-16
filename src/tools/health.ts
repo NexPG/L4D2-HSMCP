@@ -35,11 +35,11 @@ const EXTRA_FGDS = ["base.fgd"];
  * its absence is normal rather than a fault.
  */
 const PLUSPLUS = [
-  "vbspplusplus.exe",
-  "vvisplusplus.exe",
-  "vradplusplus.exe",
-  "bspzipplusplus.exe",
-];
+  ["vbsp++.exe", "vbspplusplus.exe"],
+  ["vvis++.exe", "vvisplusplus.exe"],
+  ["vrad++.exe", "vradplusplus.exe"],
+  ["bspzip++.exe", "bspzipplusplus.exe"],
+] as const;
 
 export const health = defineTool({
   name: "health",
@@ -74,7 +74,10 @@ export const health = defineTool({
     const plusDir = toolchainDir(config, "plusplus", active?.game);
     const plusDirExists = plusDir !== null && existsSync(plusDir);
     const plusBinaries = Object.fromEntries(
-      PLUSPLUS.map((b) => [b, plusDir !== null && existsSync(join(plusDir, b))]),
+      PLUSPLUS.map((names) => [
+        names[0],
+        plusDir !== null && names.some((n) => existsSync(join(plusDir, n))),
+      ]),
     );
 
     return {

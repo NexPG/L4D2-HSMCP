@@ -8,6 +8,9 @@ dist/
 # Local configuration, derived from config.example.json.
 config.json
 
+# The MCP entry `install` writes: machine-specific absolute paths, not shared source.
+.mcp.json
+
 # Python bytecode from the sidecar.
 __pycache__/
 *.pyc
