@@ -15,6 +15,72 @@ import { histogram } from "../src/entity/model.js";
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 
+describe("the Left 4 Dead 2 lump directory", () => {
+  /** Builds a header in either field order, with one entity lump at HEADER_BYTES. */
+  function synthetic(
+    layout: "standard" | "l4d2",
+    version = 21,
+  ): string {
+    const text = Buffer.from('{\n"classname" "worldspawn"\n}\n', "utf8");
+    const raw = Buffer.alloc(HEADER_BYTES + text.length);
+    raw.write("VBSP", 0, "ascii");
+    raw.writeInt32LE(version, 4);
+    const at = 8;
+    if (layout === "l4d2") {
+      // version, fileofs, filelen -- the order L4D2 actually writes.
+      raw.writeInt32LE(0, at);
+      raw.writeInt32LE(HEADER_BYTES, at + 4);
+      raw.writeInt32LE(text.length, at + 8);
+    } else {
+      raw.writeInt32LE(HEADER_BYTES, at);
+      raw.writeInt32LE(text.length, at + 4);
+      raw.writeInt32LE(0, at + 8);
+    }
+    raw.writeInt32LE(7, MAP_REVISION_OFFSET);
+    text.copy(raw, HEADER_BYTES);
+    const path = join(tmpdir(), `l4d2-layout-${layout}-${version}.bsp`);
+    writeFileSync(path, raw);
+    return path;
+  }
+
+  it("detects the swapped field order by what the bytes say", () => {
+    // Read the normal way, an L4D2 header yields offset 0 and a version in the hundreds
+    // of thousands. That parses without error and reports plausible, wrong counts, which
+    // is exactly the failure this detection exists to prevent.
+    const h = readHeader(synthetic("l4d2"));
+    expect(h.layout).toBe("l4d2");
+    expect(h.version).toBe(21);
+    expect(h.lumps[0]!.offset).toBe(HEADER_BYTES);
+    expect(h.lumps[0]!.version).toBe(0);
+    expect(h.lumps[0]!.length).toBeGreaterThan(0);
+    expect(h.mapRevision).toBe(7);
+  });
+
+  it("leaves Portal 2 and CS:GO on the standard order", () => {
+    // Both are also version 21, so the version number alone would misclassify them.
+    const h = readHeader(synthetic("standard"));
+    expect(h.layout).toBe("standard");
+    expect(h.lumps[0]!.offset).toBe(HEADER_BYTES);
+    expect(h.mapRevision).toBe(7);
+  });
+
+  it("refuses a directory that fits neither order", () => {
+    const raw = Buffer.alloc(HEADER_BYTES);
+    raw.write("VBSP", 0, "ascii");
+    raw.writeInt32LE(21, 4);
+    // Every descriptor has an impossible offset and a huge version slot.
+    for (let i = 0; i < 64; i++) {
+      const at = 8 + i * 16;
+      raw.writeInt32LE(-1, at);
+      raw.writeInt32LE(0x7fff_ffff, at + 4);
+      if (i === 0) raw.writeInt32LE(0x7fff_ffff, at + 8);
+    }
+    const path = join(tmpdir(), "l4d2-layout-broken.bsp");
+    writeFileSync(path, raw);
+    expect(() => readHeader(path)).toThrow(BspFormatError);
+  });
+});
+
 describe("BSP header", () => {
   it("reads ident, version and mapRevision from the probe map", () => {
     const h = readHeader(PROBE);

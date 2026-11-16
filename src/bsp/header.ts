@@ -2,12 +2,20 @@ import { closeSync, openSync, readSync, statSync } from "node:fs";
 
 /**
  * `VBSP` header: ident[4] + version + lump_t[64] + mapRevision.
- * lump_t is { int fileofs; int filelen; int version; char fourCC[4] } = 16 bytes.
+ *
+ * `lump_t` is normally `{ int fileofs; int filelen; int version; char fourCC[4] }`, 16
+ * bytes. **Left 4 Dead 2 stores the same fields in a different order**: version first,
+ * then fileofs, then filelen. Read the normal way, every L4D2 map yields offsets of 0 and
+ * record counts that look plausible and are wrong. Detected below, never assumed from the
+ * version number alone: Portal 2 and CS:GO are also version 21 and use the normal order.
  */
 export const HEADER_BYTES = 4 + 4 + 64 * 16 + 4; // 1036
 export const LUMP_COUNT = 64;
-/** Byte offset of mapRevision. A `.lmp` patch whose revision differs is ignored in silence. */
+/** Byte offset of mapRevision, in both layouts. */
 export const MAP_REVISION_OFFSET = 4 + 4 + 64 * 16; // 1032
+
+/** How this file orders the fields of `lump_t`. */
+export type LumpLayout = "standard" | "l4d2";
 
 /** Lump index for the entity list -- plain KeyValues text, NUL-terminated. */
 export const LUMP_ENTITIES = 0;
@@ -119,7 +127,8 @@ export interface BspHeader {
   path: string;
   ident: string;
   version: number;
-  /** Copy this into any `.lmp` patch built against this BSP. */
+  /** Which field order the lump directory used. L4D2 is the odd one. */
+  layout: LumpLayout;
   mapRevision: number;
   fileSize: number;
   lumps: BspLump[];
@@ -173,12 +182,57 @@ export function readHeader(path: string): BspHeader {
     throw new BspFormatError(`${path}: unsupported BSP version ${version} (expected 19-21)`);
   }
 
+  /**
+   * The 64 descriptors, read in whichever order this file uses.
+   *
+   * A descriptor is sane when its version is a small number (lump versions are 0, 1, 2)
+   * and its extent lies inside the file. L4D2's swapped order fails the first check when
+   * read as standard -- the version slot holds an offset of hundreds of thousands -- and
+   * the standard order fails it when read as L4D2 in the same way.
+   */
+  const descriptor = (i: number): { a: number; b: number; c: number; four: number } => {
+    const at = 8 + i * 16;
+    return {
+      a: view.getInt32(at, true),
+      b: view.getInt32(at + 4, true),
+      c: view.getInt32(at + 8, true),
+      four: view.getInt32(at + 12, true),
+    };
+  };
+  const parseAs = (
+    layout: LumpLayout,
+    i: number,
+  ): { offset: number; length: number; version: number; four: number } => {
+    const { a, b, c, four } = descriptor(i);
+    return layout === "l4d2"
+      ? { version: a, offset: b, length: c, four }
+      : { offset: a, length: b, version: c, four };
+  };
+  const sane = (layout: LumpLayout): boolean => {
+    for (let i = 0; i < LUMP_COUNT; i++) {
+      const { offset, length, version } = parseAs(layout, i);
+      if (offset < 0 || length < 0 || version < 0 || version > 1024) return false;
+      if (length === 0) continue;
+      if (offset < HEADER_BYTES - 4 || offset + length > size) return false;
+    }
+    return true;
+  };
+
+  const standardSane = sane("standard");
+  const l4d2Sane = sane("l4d2");
+  if (!standardSane && !l4d2Sane) {
+    throw new BspFormatError(
+      `${path}: the lump directory fits neither field order; the file may be truncated`,
+    );
+  }
+  // Left 4 Dead 2 is the only Source game known to put `version` first. Portal 2 and
+  // CS:GO are also version 21 and use the standard order, so this is decided by what the
+  // bytes say, not by the version number.
+  const layout: LumpLayout = l4d2Sane && !standardSane ? "l4d2" : "standard";
+
   const lumps: BspLump[] = [];
   for (let i = 0; i < LUMP_COUNT; i++) {
-    const at = 8 + i * 16;
-    const offset = view.getInt32(at, true);
-    const length = view.getInt32(at + 4, true);
-    const fourCC = view.getInt32(at + 12, true);
+    const { offset, length, four, version } = parseAs(layout, i);
 
     // Four bytes per non-empty lump. A compressed lump starts with the ASCII magic
     // "LZMA", and its fourCC carries the uncompressed size instead of a codec tag.
@@ -193,10 +247,10 @@ export function readHeader(path: string): BspHeader {
       name: LUMP_NAMES[i],
       offset,
       length,
-      version: view.getInt32(at + 8, true),
-      fourCC,
+      version,
+      fourCC: four,
       compressed,
-      declaredUncompressedBytes: compressed ? fourCC : null,
+      declaredUncompressedBytes: compressed ? four : null,
     });
   }
 
@@ -204,6 +258,7 @@ export function readHeader(path: string): BspHeader {
     path,
     ident,
     version,
+    layout,
     mapRevision: view.getInt32(MAP_REVISION_OFFSET, true),
     fileSize: size,
     lumps,

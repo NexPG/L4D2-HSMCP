@@ -25,10 +25,9 @@ export interface NavHeader {
    * Area count, read by walking the header past the place names.
    *
    * Best effort, unlike the fields above: those were checked byte-for-byte against
-   * gm_construct and gm_flatgrass, this one only looks plausible. gm_construct reports
-   * 2271 areas in a 7.2 MB file, which is 3189 bytes each, where gm_flatgrass reports
-   * 853 in 325 bytes each. The gap may be real -- hiding spots and encounter paths grow
-   * faster than area count -- but nothing here proves it, so treat it as indicative.
+   * gm_construct and gm_flatgrass, this one only looks plausible. Null when the value
+   * cannot fit the file -- which is what Left 4 Dead 2's newer nav layout produces today,
+   * and a wrong count is worse than none.
    */
   areaCount: number | null;
 }
@@ -83,7 +82,12 @@ export function readNavHeader(path: string): NavHeader {
       at += 2 + length;
     }
     if (version >= 11) at += 1; // hasUnnamedAreas
-    areaCount = view.getUint32(at, true);
+    const candidate = view.getUint32(at, true);
+    // A count that cannot fit the file is not a count. L4D2's nav uses a newer layout
+    // than the one this walk was calibrated on, and reports a value in the billions;
+    // null is the honest answer until that layout is measured.
+    areaCount = candidate > 0 && candidate * 16 <= buf.length ? candidate : null;
+    if (areaCount === null) placeCount = null;
   } catch {
     placeCount = null;
     areaCount = null;

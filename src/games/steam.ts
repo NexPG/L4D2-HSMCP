@@ -101,8 +101,20 @@ function realpathOrSelf(p: string): string {
  */
 export function steamRoots(env: NodeJS.ProcessEnv = process.env): string[] {
   const home = env.HOME ?? homedir();
+  // Windows installs Steam under Program Files, and the libraries live outside it. The
+  // env vars are what makes this testable: a fabricated env without them discovers
+  // nothing, even when the machine running the tests has Steam.
+  const winRoots =
+    process.platform === "win32"
+      ? [
+          env["ProgramFiles(x86)"] ? join(env["ProgramFiles(x86)"] as string, "Steam") : undefined,
+          env["ProgramFiles"] ? join(env["ProgramFiles"] as string, "Steam") : undefined,
+          env["LOCALAPPDATA"] ? join(env["LOCALAPPDATA"] as string, "Steam") : undefined,
+        ]
+      : [];
   const candidates = [
     env.STEAM_ROOT,
+    ...winRoots,
     join(home, ".steam", "steam"),
     join(home, ".steam", "root"),
     join(home, ".local", "share", "Steam"),

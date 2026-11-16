@@ -70,11 +70,16 @@ describe("the built-in table says only what it can back", () => {
 });
 
 describe("provenance separates what was read from what was assumed", () => {
-  it.skipIf(!has.toolchain)("takes the FGD and the instance path from gameinfo.txt", () => {
+  it.skipIf(!has.toolchain)("takes the FGD from gameinfo.txt", () => {
     const { game } = gameFor(loadConfig(process.cwd()));
     expect(game.fgd.length).toBeGreaterThan(0);
     expect(game.provenance["fgd"]).toEqual({ source: "gameinfo.txt:GameData", verified: true });
-    expect(game.provenance["instancePath"]?.verified).toBe(true);
+    // L4D2 does not declare `InstancePath`; absent is the answer, not an unverified guess.
+    if (game.instancePath) {
+      expect(game.provenance["instancePath"]?.verified).toBe(true);
+    } else {
+      expect(game.provenance["instancePath"]).toBeUndefined();
+    }
   });
 
   it("never marks a built-in guess as verified", () => {
