@@ -1,10 +1,10 @@
 /**
- * Finding the Source games installed on this machine, by reading what Steam and the games
- * themselves already declare.
+ * Finding the Left 4 Dead 2 install on this machine, by reading what Steam and the game
+ * itself already declare.
  *
- * The point of this module is what it refuses to invent. A table of games written by hand
- * would carry a FGD name, a mod directory and a bin directory per game, and every one of
- * those would be an assertion nobody verified. All four are on disk:
+ * The point of this module is what it refuses to invent. A table written by hand would
+ * carry a FGD name, a mod directory and a bin directory, and every one of those would be
+ * an assertion nobody verified. All of them are on disk:
  *
  * - `steamapps/libraryfolders.vdf`  -> where the libraries are
  * - `steamapps/appmanifest_<id>.acf` -> appid, display name, install directory, beta branch
@@ -12,12 +12,10 @@
  *   (`GameData`), and its instance search path
  *
  * All three are Valve KeyValues, the grammar `src/kv/` already lexes for VMFs and entity
- * lumps: bare words, quoted strings and `//` comments. Nothing new needed to read them --
- * verified against the real files on 11/08/2026.
+ * lumps: bare words, quoted strings and `//` comments.
  *
- * What this cannot say is as important: it never claims a binary will run (only gate A
- * proved that, for one game), never guesses an engine branch, and never falls back to
- * another game's `bin/` when one has none.
+ * What this cannot say is as important: it never claims a binary will run, never guesses
+ * an engine branch, and never falls back to another game's `bin/` when one has none.
  */
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
@@ -32,15 +30,6 @@ export const TOOLCHAIN_BINARIES = [
   "vrad.exe",
   "bspzip.exe",
   "vbspinfo.exe",
-  "hammer.exe",
-] as const;
-
-/** ficool2's rebuild. Installed separately, and absent is the normal case. */
-export const PLUSPLUS_BINARIES = [
-  "vbspplusplus.exe",
-  "vvisplusplus.exe",
-  "vradplusplus.exe",
-  "bspzipplusplus.exe",
 ] as const;
 
 export interface SteamApp {
@@ -51,13 +40,13 @@ export interface SteamApp {
   installDir: string;
   /** Absolute path, or null when the manifest exists but the files do not. */
   gameRoot: string | null;
-  /** `UserConfig.BetaKey`, e.g. `x86-64` for GMod's 64-bit branch. Null when on stable. */
+  /** `UserConfig.BetaKey`, e.g. a branch key. Null when on stable. */
   betaKey: string | null;
   library: string;
 }
 
 export interface ModDir {
-  /** Directory name: `garrysmod`, `cstrike`, `tf`. */
+  /** Directory name, e.g. `left4dead2`. */
   dir: string;
   /** `game` in gameinfo.txt -- what the game calls itself. */
   displayName: string | null;
@@ -80,7 +69,6 @@ export interface SourceInstall {
   app: SteamApp;
   mods: ModDir[];
   stock: Toolchain;
-  plusplus: Toolchain;
 }
 
 /** Reads a KeyValues file and returns its single root block, or null. */
@@ -271,9 +259,6 @@ export function discoverSourceInstalls(env: NodeJS.ProcessEnv = process.env): So
           app,
           mods,
           stock: toolchainAt(existsSync(bin) ? bin : null, TOOLCHAIN_BINARIES),
-          // Where the ++ compilers must go for GMod, measured at gate C: they are x86-64
-          // where the stock ones are i386. Reported wherever it exists, asserted nowhere.
-          plusplus: toolchainAt(join(bin, "win64"), PLUSPLUS_BINARIES),
         });
       }
     }

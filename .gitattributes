@@ -1,0 +1,6 @@
+# Default: let git normalise text to LF in the repository.
+* text=auto
+
+# Fixtures are compared byte for byte — line endings are part of what the tests assert,
+# and a Windows checkout must not rewrite them.
+test/fixtures/** -text

@@ -13,8 +13,8 @@
  * a parser that reads values as numbers (srctools) would reformat floats on top. Editors
  * other than Hammer and hand-edited maps have all of these, and losing them is silent.
  *
- * The same discipline already governs the entity-lump write path (`../entity/edit.ts`),
- * but a VMF is harder in one specific way. A lump entity is a flat block of pairs, so
+ * The same discipline governs the entity lump's reader (`../entity/model.ts`), but a VMF
+ * is harder in one specific way. A lump entity is a flat block of pairs, so
  * rewriting it whole is harmless. A VMF entity contains `solid`, `connections` and
  * `editor` sub-blocks holding the actual geometry: rewriting the block whole would either
  * drop them or reformat them. So keyvalue edits splice **individual pairs**, and new pairs

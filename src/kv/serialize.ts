@@ -5,7 +5,7 @@ import type { KvBlock, KvNode } from "./parse.js";
  * line, and `"key" "value"` separated by a single space.
  *
  * This is the formatter for content we CREATE. It is not the write path for content we
- * edit -- see `../entity/edit.ts` and `../vmf/edit.ts`, which splice ranges of the
+ * edit -- see `../vmf/edit.ts`, which splices ranges of the
  * original text so that everything untouched stays byte-identical.
  *
  * What reserialising actually costs, measured on 11/08/2026 rather than assumed: this

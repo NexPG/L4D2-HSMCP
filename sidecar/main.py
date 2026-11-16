@@ -175,7 +175,7 @@ def _fgd_names(req: dict[str, Any]) -> tuple[str, ...]:
     the side that knows which files exist -- and the reply names what was loaded, so the
     schema can never widen without it being visible.
     """
-    names = req.get("fgd") or ("garrysmod.fgd",)
+    names = req.get("fgd") or ("left4dead2.fgd",)
     return (names,) if isinstance(names, str) else tuple(names)
 
 
@@ -339,8 +339,7 @@ def _vmf_lint(req: dict[str, Any]) -> dict[str, Any]:
     names = _fgd_names(req)
     fgd, tolerated = load_fgds(req["binDir"], names)
     vmf, instances = _load_vmf(req["path"], req)
-    lua_classes = frozenset(req.get("luaClasses") or ())
-    findings = lint_vmf(vmf, fgd, lua_classes)
+    findings = lint_vmf(vmf, fgd)
     # Not a finding: the raw halves of one. Whether a prop sinks into the floor is a
     # question about the floor, and the tracer that answers it is in TypeScript.
     props = model_bounds(vmf, req.get("gameDir"))
@@ -359,7 +358,6 @@ def _vmf_lint(req: dict[str, Any]) -> dict[str, Any]:
         "instances": instances,
         "toleratedHelpers": tolerated,
         "fgdsLoaded": list(names),
-        "luaClassesKnown": len(lua_classes),
         "total": len(findings),
         "bySeverity": by_severity,
         "byRule": dict(sorted(by_rule.items(), key=lambda kv: -kv[1])),

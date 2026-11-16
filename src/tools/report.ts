@@ -35,7 +35,8 @@ export const readMapReportTool = defineTool({
       .optional()
       .describe(
         "Budget profile id. 'source-stock' (default) asks only whether the map will " +
-          "compile and load. 'gmod-darkrp' adds what a live DarkRP city needs.",
+          "compile and load, using stock Source 2013 ceilings. No L4D2-specific budget " +
+          "has been calibrated yet.",
       ),
     verdicts: z
       .array(z.enum(["pass", "warn", "fail", "skipped"]))
@@ -61,7 +62,7 @@ export const readMapReportTool = defineTool({
     const profile = findProfile(id);
     if (!profile) {
       // Never fall back to the default: a source-stock answer returned to someone who
-      // asked for gmod-darkrp looks exactly like a correct one.
+      // asked for a different profile looks exactly like a correct one.
       throw new Error(
         `unknown budget profile ${JSON.stringify(id)}; known: ` +
           BUILTIN_PROFILES.map((p) => p.id).join(", "),

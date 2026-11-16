@@ -144,12 +144,4 @@ describe.skipIf(!has.sidecar)("loose files versus VPK content", () => {
     expect(existsSync(vmt!.diskPath!)).toBe(true);
   }, 300_000);
 
-  it("calls the same material VPK content when it comes from the real game", async () => {
-    const r = await call(config.gmodGameDir);
-    expect(r.bySource["game-vpk"] ?? 0).toBeGreaterThan(0);
-    // Not zero: Garry's Mod ships detail.vbsp loose in its own root. That is the measured
-    // reason a loose file is a candidate for packing rather than proof of a custom asset,
-    // and it is pinned here so the claim in the docs has something holding it up.
-    expect(r.loose.map((f) => f.path)).toEqual(["detail.vbsp"]);
-  }, 300_000);
 });

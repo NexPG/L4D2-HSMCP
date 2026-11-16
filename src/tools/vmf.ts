@@ -6,7 +6,6 @@ import { LUMP_NAMES } from "../bsp/header.js";
 import type { Config } from "../config.js";
 import type { ResolvedGame } from "../games/profile.js";
 import { fgdNamesFor, gameBlock, gameFor } from "../games/resolve.js";
-import { luaEntityClasses } from "../lua/entities.js";
 import { defineTool } from "../mcp/registry.js";
 import { callSidecar } from "../sidecar/client.js";
 import { buildScene, MASK_SOLID } from "../space/scene.js";
@@ -35,7 +34,7 @@ const FINDING = z.object({
 });
 
 /**
- * The FGDs to check a map against, as paths relative to `gmodBin`.
+ * The FGDs to check a map against, as paths relative to `binDir`.
  *
  * The game's own is always there. The Hammer++ compilers add five classes of their own --
  * `func_detail_illusionary`, `func_detail_blocker`, `func_nobevel`, `light_directional`,
@@ -74,7 +73,7 @@ export function fgdContext(
   return {
     game,
     from,
-    binDir: game.binDir ?? config.gmodBin,
+    binDir: game.binDir ?? config.binDir ?? "",
     fgd: fgdNamesFor(withOptional, existsSync),
   };
 }
@@ -95,8 +94,8 @@ export const readFgdClass = defineTool({
     "and default, every input, every output. This is the schema Hammer enforces, so it " +
     "answers 'does this class accept that key' without guessing from the wiki. Called " +
     "with no classname it lists the classes, optionally filtered by prefix. Reads " +
-    "garrysmod.fgd from the GMod install, not a generic multi-game database. Needs the " +
-    "Python sidecar and the GMod bin directory; see health.",
+    "left4dead2.fgd from the game's own bin directory, not a generic multi-game " +
+    "database. Needs the Python sidecar and the Left 4 Dead 2 install; see health.",
   realm: "map",
   inputSchema: {
     classname: z.string().optional().describe("Exact class, e.g. logic_relay."),
@@ -207,7 +206,7 @@ export const readVmf = defineTool({
         path: resolveVmfInput(args.path, ctx.config),
         ...(args.classname ? { classname: args.classname } : {}),
         collapseInstances: args.collapseInstances,
-        gameDir: game.gameDir ?? ctx.config.gmodGameDir,
+        gameDir: game.gameDir ?? ctx.config.gameDir,
         // The game states where its instances live; before profiles this was guessed.
         ...(game.instancePath ? { instancePath: game.instancePath } : {}),
         limit: args.limit,
@@ -225,7 +224,6 @@ interface LintReply {
   toleratedHelpers: Record<string, number>;
   fgdsLoaded: string[];
   instances: { requested: boolean; collapsed: number; files?: string[]; depthLimit?: number };
-  luaClassesKnown: number;
   total: number;
   bySeverity: Record<string, number>;
   byRule: Record<string, number>;
@@ -306,7 +304,7 @@ export const readVmfLint = defineTool({
     "on because their model's origin is at its centre, and counts that approach the " +
     "compiler limits. " +
     "Knows the repo's Lua-defined entities, so a scripted class is not reported as " +
-    "unknown. Needs the Python sidecar and the GMod bin directory; see health.",
+    "unknown. Needs the Python sidecar and the Left 4 Dead 2 install; see health.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
@@ -345,7 +343,6 @@ export const readVmfLint = defineTool({
         usedFraction: z.number(),
       }),
     ),
-    luaClassesKnown: z.number(),
     toleratedHelpers: z.record(z.number()),
     fgdsLoaded: z.array(z.string()),
     game: GAME_BLOCK,
@@ -366,9 +363,8 @@ export const readVmfLint = defineTool({
         binDir,
         fgd,
         collapseInstances: args.collapseInstances,
-        gameDir: game.gameDir ?? ctx.config.gmodGameDir,
+        gameDir: game.gameDir ?? ctx.config.gameDir,
         ...(game.instancePath ? { instancePath: game.instancePath } : {}),
-        luaClasses: luaEntityClasses(ctx.config),
         limit: 2000,
       },
       ctx.config,
@@ -427,7 +423,6 @@ export const readVmfLint = defineTool({
       counts: reply.counts,
       instances: reply.instances,
       nearLimit,
-      luaClassesKnown: reply.luaClassesKnown,
       toleratedHelpers: reply.toleratedHelpers,
       fgdsLoaded: reply.fgdsLoaded,
       game: gameBlock(game, from),

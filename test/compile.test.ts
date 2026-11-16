@@ -319,16 +319,16 @@ describe("compiling for real, under wine", () => {
   }, 300_000);
 });
 
-describe("choosing the Hammer++ toolchain", () => {
-  const plusDir = toolchainDir(config, "plusplus");
+describe("choosing the Tools++ toolchain", () => {
   const hasPlus = has.plusplus;
 
   it("resolves the binaries of each chain to its own directory", () => {
     // The correction gate C forced: the ++ compilers are not siblings of the stock ones.
     expect(compilerExe("vbsp", "stock")).toBe("vbsp.exe");
     expect(compilerExe("vbsp", "plusplus")).toBe("vbspplusplus.exe");
-    expect(toolchainDir(config, "stock")).toBe(config.gmodBin);
-    expect(plusDir).toBe(join(config.gmodBin, "win64"));
+    expect(toolchainDir(config, "stock")).toBe(config.binDir);
+    // Tools++ is standalone: null unless configured, never a guessed bin/win64.
+    expect(toolchainDir(config, "plusplus")).toBe(config.plusPlusBinDir);
   });
 
   it.skipIf(!hasPlus)("really runs the ++ binary, not the stock one", async () => {
@@ -397,7 +397,7 @@ describe("choosing the Hammer++ toolchain", () => {
     // A default that cannot run without Hammer++ would take CI and every fresh clone
     // with it. Falling back is right; falling back in silence is not -- without the
     // note and `toolchainRequested`, nobody could tell which compilers made a .bsp.
-    const absent = { ...config, gmodBinPlusPlus: join(scratch, "no-such-toolchain") };
+    const absent = { ...config, plusPlusBinDir: join(scratch, "no-such-toolchain") };
     const chosen = chooseToolchain(absent, "plusplus", ["vbsp", "vvis"]);
     expect(chosen.chain).toBe("stock");
     expect(chosen.requested).toBe("plusplus");
@@ -446,11 +446,11 @@ describe("choosing the Hammer++ toolchain", () => {
     );
   });
 
-  it("names the missing chain rather than blaming the GMod install", async () => {
+  it("names the missing chain rather than blaming the game install", async () => {
     // The negative control, and the reason the message is not the generic one: without
-    // the chain named, "vbspplusplus.exe not found" reads as a broken GMod install --
-    // and the stock compilers sitting right there are perfectly fine.
-    const absent = { ...config, gmodBinPlusPlus: join(scratch, "no-such-toolchain") };
+    // the chain named, "vbspplusplus.exe not found" reads as a broken Left 4 Dead 2
+    // install -- and the stock compilers sitting right there are perfectly fine.
+    const absent = { ...config, plusPlusBinDir: join(scratch, "no-such-toolchain") };
     await expect(
       runCompiler(absent, compilerExe("vbsp", "plusplus"), [], 5_000, "plusplus"),
     ).rejects.toThrow(/"plusplus" toolchain is not installed/);

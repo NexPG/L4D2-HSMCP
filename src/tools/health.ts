@@ -23,18 +23,17 @@ const BUILD_DIR = join(HERE, "..");
 const SRC_DIR = join(BUILD_DIR, "..", "src");
 
 /** The Source tools this server drives, all of them Windows binaries. */
-const BINARIES = ["hammer.exe", "vbsp.exe", "vvis.exe", "vrad.exe", "vbspinfo.exe"];
+const BINARIES = ["vbsp.exe", "vvis.exe", "vrad.exe", "bspzip.exe", "vbspinfo.exe"];
 /**
- * Extra .fgd files worth reporting on. The *required* ones are no longer listed here:
- * they come from the active game's own `gameinfo.txt`, so this stays correct for a game
- * nobody here owns.
+ * Extra .fgd files worth reporting on. The *required* ones are not listed here: they come
+ * from the game's own `gameinfo.txt`, so this stays correct if Valve changes the file.
  */
-const EXTRA_FGDS = ["base.fgd", "halflife2.fgd"];
+const EXTRA_FGDS = ["base.fgd"];
 
 /**
- * The Hammer++ rebuild of the same compilers. Optional, and reported separately rather
- * than merged into the list above: they live in another directory, are x86-64 where the
- * stock ones are i386, and their absence is normal rather than a fault.
+ * The Tools++ rebuild of the same compilers. Optional, and reported separately rather
+ * than merged into the list above: it is a standalone download in its own directory, so
+ * its absence is normal rather than a fault.
  */
 const PLUSPLUS = [
   "vbspplusplus.exe",
@@ -46,18 +45,19 @@ const PLUSPLUS = [
 export const health = defineTool({
   name: "health",
   description:
-    "State of the toolchain this server depends on: repo root, the GMod bin directory " +
-    "(which ships with the client, not with srcds), which compilers and .fgd files are " +
-    "present, whether the Wine or Proton backend can be executed, and whether the Python " +
-    "sidecar (srctools) is installed. Also how many tools this server is serving and " +
-    "whether its build is older than the source -- a stale build silently offers fewer " +
-    "tools. Start here when a tool reports something missing, or is missing itself.",
+    "State of the Left 4 Dead 2 toolchain this server depends on: repo root, the game's " +
+    "bin directory (which ships with the client, not with srcds), which compilers and " +
+    ".fgd files are present, whether the Wine or native backend can be executed, and " +
+    "whether the Python sidecar (srctools) is installed. Also how many tools this server " +
+    "is serving and whether its build is older than the source -- a stale build silently " +
+    "offers fewer tools. Start here when a tool reports something missing, or is missing " +
+    "itself.",
   realm: "local",
   inputSchema: {},
   handler: async (_args, ctx) => {
     const { config } = ctx;
-    const binDir = config.gmodBin;
-    const binDirExists = existsSync(binDir);
+    const binDir = config.binDir;
+    const binDirExists = binDir !== null && existsSync(binDir);
 
     const wine =
       config.backend === "native"
@@ -78,9 +78,9 @@ export const health = defineTool({
     const fgdList = [...(active?.game.fgd ?? []), ...EXTRA_FGDS];
 
     const plusDir = toolchainDir(config, "plusplus", active?.game);
-    const plusDirExists = existsSync(plusDir);
+    const plusDirExists = plusDir !== null && existsSync(plusDir);
     const plusBinaries = Object.fromEntries(
-      PLUSPLUS.map((b) => [b, plusDirExists && existsSync(join(plusDir, b))]),
+      PLUSPLUS.map((b) => [b, plusDir !== null && existsSync(join(plusDir, b))]),
     );
 
     return {
@@ -122,16 +122,16 @@ export const health = defineTool({
             })),
           },
       toolchain: {
-        gmodBin: binDir,
+        binDir: binDir,
         present: binDirExists,
         binaries: Object.fromEntries(
-          BINARIES.map((b) => [b, binDirExists && existsSync(join(binDir, b))]),
+          BINARIES.map((b) => [b, binDir !== null && existsSync(join(binDir, b))]),
         ),
         fgd: Object.fromEntries(
-          fgdList.map((f) => [f, binDirExists && existsSync(join(binDir, f))]),
+          fgdList.map((f) => [f, binDir !== null && existsSync(join(binDir, f))]),
         ),
-        gameDir: config.gmodGameDir,
-        gameDirPresent: existsSync(config.gmodGameDir),
+        gameDir: config.gameDir,
+        gameDirPresent: config.gameDir !== null && existsSync(config.gameDir),
       },
       plusplus: {
         dir: plusDir,
@@ -145,7 +145,7 @@ export const health = defineTool({
           "compilers when it is absent -- saying so in toolchainNote rather than " +
           "substituting in silence. So absent is workable, not broken: it costs a much " +
           "slower vvis and the culling flags. From tools_plusplus.zip (ficool2/misc_tools); " +
-          "they require the x86-64 beta branch of GMod.",
+          "since October 2026 they are standalone and go wherever plusPlusBinDir points.",
       },
       // Standalone tools that belong to no game install, so nothing can discover them.
       // Absent is the normal state and the tools that need them say where to get them;
@@ -171,8 +171,8 @@ export const health = defineTool({
       sidecar,
       guardedToolsAllowlisted: config.toolAllowlist,
       note:
-        "This server never talks to a running srcds and never touches " +
-        "srcds/garrysmod/data/gmod_mcp/. Use gmod-mcp for anything live.",
+        "This server never talks to a running game or a dedicated server. " +
+        "Anything that needs the live engine belongs to a separate bridge.",
     };
   },
 });

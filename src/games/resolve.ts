@@ -1,91 +1,40 @@
 /**
- * Choosing a game profile for one tool call.
+ * Choosing the game profile for one tool call.
  *
- * Two rules hold the whole file together:
+ * Two rules hold the file together:
  *
- * - **An unknown id throws, naming what does exist.** Falling back to the configured game
- *   would answer a question nobody asked, and the caller would read a lint of Garry's Mod
- *   as a lint of Team Fortress 2.
+ * - **The profile is Left 4 Dead 2, and an unknown id throws.** Falling back to the one
+ *   profile would answer a question nobody asked; a caller who names another game is told
+ *   that this fork does not support it, rather than silently getting an L4D2 answer.
  * - **Discovery is lazy and memoised.** `loadConfig` stays a file read; scanning Steam
- *   libraries happens the first time a tool actually needs a game.
+ *   libraries happens the first time a tool actually needs the game.
  */
 import { join } from "node:path";
 import type { Config } from "../config.js";
-import type { GameProfileOverride, ResolvedGame } from "./profile.js";
+import type { ResolvedGame } from "./profile.js";
 import { resolveProfiles } from "./profile.js";
+
+/** The only game this fork resolves. */
+export const GAME_ID = "l4d2";
 
 export class UnknownGameError extends Error {
   constructor(id: string, known: string[]) {
-    super(`unknown game "${id}". Known: ${known.join(", ")}. Run read_source_games to see what is installed.`);
-    this.name = "UnknownGameError";
-  }
-}
-
-export class GameConfigConflict extends Error {
-  constructor(legacy: string, modern: string) {
     super(
-      `config sets both ${legacy} and ${modern} to different values. They mean the same ` +
-        `thing; keep one. ${legacy} is the deprecated spelling.`,
+      `unknown game "${id}": this fork targets Left 4 Dead 2 only (known: ${known.join(", ")}). ` +
+        `Run read_source_games to see what is installed.`,
     );
-    this.name = "GameConfigConflict";
+    this.name = "UnknownGameError";
   }
 }
 
 const CACHE = new WeakMap<Config, Record<string, ResolvedGame>>();
 
-/**
- * Turns the legacy top-level fields into an override on the `gmod` profile.
- *
- * These three shipped before profiles existed and are still what every existing config
- * file uses. They keep working. What they must not do is disagree in silence with a
- * `gameProfiles.gmod` block saying something else -- a server that quietly picks one of
- * two conflicting answers is worse than one that refuses.
- */
-function legacyOverride(config: Config): GameProfileOverride {
-  const modern = (config.gameProfiles ?? {})["gmod"] ?? {};
-  const out: GameProfileOverride = {};
-
-  // Reads config.explicit, never config.gmodBin: the latter is computed FROM the profile
-  // this function helps build, so touching it here would recurse.
-  const e = config.explicit ?? {};
-  const pairs: Array<[string, string, string | undefined, string | undefined]> = [
-    ["gmodBin", "gameProfiles.gmod.binDir", e.gmodBin, modern.binDir],
-    ["gmodGameDir", "gameProfiles.gmod.gameDir", e.gmodGameDir, modern.gameDir],
-    [
-      "gmodBinPlusPlus",
-      "gameProfiles.gmod.plusPlusBinDir",
-      e.gmodBinPlusPlus,
-      modern.plusPlusBinDir,
-    ],
-  ];
-  for (const [legacyName, modernName, legacyValue, modernValue] of pairs) {
-    if (legacyValue === undefined) continue;
-    if (modernValue !== undefined && modernValue !== legacyValue) {
-      throw new GameConfigConflict(legacyName, modernName);
-    }
-  }
-
-  if (e.gmodBin !== undefined) out.binDir = e.gmodBin;
-  if (e.gmodGameDir !== undefined) out.gameDir = e.gmodGameDir;
-  if (e.gmodBinPlusPlus !== undefined) out.plusPlusBinDir = e.gmodBinPlusPlus;
-  // Same reasoning as in config.ts: a hand-set stock directory implies its own bin/win64,
-  // never the one discovery found somewhere else.
-  else if (e.gmodBin !== undefined) out.plusPlusBinDir = join(e.gmodBin, "win64");
-  return out;
-}
-
-/** Every profile this machine knows about, resolved once per Config object. */
+/** The profiles this machine knows about, resolved once per Config object. */
 export function allGames(config: Config): Record<string, ResolvedGame> {
   const cached = CACHE.get(config);
   if (cached) return cached;
 
-  const overrides: Record<string, GameProfileOverride> = { ...(config.gameProfiles ?? {}) };
-  const legacy = legacyOverride(config);
-  if (Object.keys(legacy).length > 0) {
-    overrides["gmod"] = { ...(overrides["gmod"] ?? {}), ...legacy };
-  }
-
-  const games = resolveProfiles(overrides);
+  const games = resolveProfiles(config.gameProfiles ?? {});
   CACHE.set(config, games);
   return games;
 }
@@ -93,8 +42,8 @@ export function allGames(config: Config): Record<string, ResolvedGame> {
 /**
  * The profile a tool call should work against.
  *
- * `id` is what the caller asked for; absent, the configured default is used. `from` lets
- * a tool report which of the two happened, so "this is a TF2 answer" never has to be
+ * `id` is what the caller asked for; absent, the one supported game is used. `from` lets
+ * a tool report which of the two happened, so "this is an L4D2 answer" never has to be
  * inferred from the paths.
  */
 export function gameFor(
@@ -102,7 +51,7 @@ export function gameFor(
   id?: string,
 ): { game: ResolvedGame; from: "argument" | "config" } {
   const games = allGames(config);
-  const wanted = id ?? config.game ?? "gmod";
+  const wanted = id ?? GAME_ID;
   const game = games[wanted];
   if (!game) throw new UnknownGameError(wanted, Object.keys(games).sort());
   return { game, from: id ? "argument" : "config" };

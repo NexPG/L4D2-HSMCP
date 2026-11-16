@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Turning measurements into a verdict.
  *
  * Every other reader in this server answers "how much"; none of them answers "is that
@@ -41,12 +41,18 @@ const LUMP_CUBEMAPS = 42;
  * identical 264% on the same map. Exactly the duplication the header of this file warns
  * about, committed in this file, within a day.
  *
- * ⚠️ `bspfile.h` redefines every one of its `MAX_MAP_*` constants to `2` under a
+ * âš ï¸ `bspfile.h` redefines every one of its `MAX_MAP_*` constants to `2` under a
  * conditional branch further down the file. Any automated re-read of that header must take
  * the first occurrence; the second is a build variant, not the value in force.
  */
 export const LIMITS = {
-  /** `MAX_EDICTS` = 1 << MAX_EDICT_BITS = 1 << 11. Stock Source; Garry's Mod raises it. */
+  /**
+   * `MAX_EDICTS` = 1 << MAX_EDICT_BITS = 1 << 11. Stock Source 2013; Garry's Mod raises it.
+   *
+   * âš ï¸ Left 4 Dead 2's own value has NOT been measured. This number is what the reader
+   * currently judges against, and `read_map_report` must not present it as an L4D2 fact
+   * until a real install says so.
+   */
   edicts: 2048,
   /**
    * `MAX_COORD_INTEGER`. The world runs from -16384 to +16384 on each axis.
@@ -140,51 +146,7 @@ export const SOURCE_STOCK: BudgetProfile = {
   requireCubemaps: false,
 };
 
-/**
- * What a DarkRP city map is aiming for here.
- *
- * Two of these thresholds are measured and one is not, and the difference is stated in
- * each `source` rather than smoothed over.
- */
-export const GMOD_DARKRP: BudgetProfile = {
-  id: "gmod-darkrp",
-  description:
-    "A Garry's Mod DarkRP city map: hundreds of entities arrive at runtime that the " +
-    "compiled file knows nothing about, so the file itself must leave room.",
-  lumpFill: { warnAt: 0.7, failAt: 1, source: "tighter than stock: this map is still growing" },
-  edicts: {
-    warnAt: 0.4,
-    failAt: 0.7,
-    source:
-      "policy, not measurement: players, weapons, printers and doors all spawn at runtime, " +
-      "so the map alone must not take the bulk of the budget",
-  },
-  edictLimit: {
-    value: 8192,
-    source:
-      "UNVERIFIED. Garry's Mod raises MAX_EDICTS, but the engine is closed and the value " +
-      "is not checkable in any open tree. Treated as a target here, never as a fact -- to " +
-      "settle it, measure it on a running instance with gmod-mcp.",
-  },
-  luxelDensity: null,
-  visleafDensity: {
-    warnAt: 250,
-    failAt: 150,
-    source:
-      "measured 11/08/2026 on four city maps: 278 leaves/ha on rp_nycity, 371-456 on an " +
-      "urban control by another author. Below ~250 a dense city is under-split.",
-  },
-  noClusterFraction: {
-    warnAt: 0.5,
-    failAt: 0.8,
-    source: "policy: past half, the split is describing solid space rather than playable space",
-  },
-  requireVis: true,
-  requireHdr: false,
-  requireCubemaps: true,
-};
-
-export const BUILTIN_PROFILES: readonly BudgetProfile[] = [SOURCE_STOCK, GMOD_DARKRP];
+export const BUILTIN_PROFILES: readonly BudgetProfile[] = [SOURCE_STOCK];
 
 export function findProfile(id: string): BudgetProfile | undefined {
   return BUILTIN_PROFILES.find((p) => p.id === id);
@@ -345,7 +307,7 @@ export function reportMap(path: string, profile: BudgetProfile): MapReport {
         direction: "under",
         message:
           `${visleaf.leafCount} leaves over ${hectares.toFixed(1)} ha. ` +
-          `⚠️ The footprint is the world model's XY bounding box, which includes the 3D ` +
+          `âš ï¸ The footprint is the world model's XY bounding box, which includes the 3D ` +
           `skybox and every empty corner -- so this density is a floor, never a street-level ` +
           `figure. It compares honestly between maps and dishonestly against intuition.`,
       });
@@ -440,7 +402,7 @@ export function reportMap(path: string, profile: BudgetProfile): MapReport {
           ? `${cubemaps} samples.`
           : `None. Every specular surface falls back to the default cubemap, which is why a ` +
             `map can look flat and mirror-black without any error appearing anywhere. ` +
-            `Building them needs the engine: buildcubemaps, through gmod-mcp.`,
+            `Building them needs the engine: buildcubemaps, in the game itself.`,
     });
   }
 

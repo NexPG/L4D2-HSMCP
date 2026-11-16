@@ -1,15 +1,18 @@
 {
-  "_comment": "Copy to <repoRoot>/.hammer-mcp/config.json, then delete every field you do not need -- all of them are optional, and the server fills in defaults documented in the README. Paths must be ABSOLUTE: nothing here expands ~ or $HOME. Replace /home/you with your own home directory.",
+  "_comment": "Copy to <repoRoot>/.hammer-mcp/config.json, then delete every field you do not need -- all of them are optional, and the server fills in defaults documented in the README. Paths must be ABSOLUTE: nothing here expands ~ or $HOME. The profile is Left 4 Dead 2; there is no game selector.",
 
-  "gmodBin": "/home/you/.steam/steam/steamapps/common/GarrysMod/bin",
-  "gmodGameDir": "/home/you/.steam/steam/steamapps/common/GarrysMod/garrysmod",
-  "gmodBinPlusPlus": "/home/you/.steam/steam/steamapps/common/GarrysMod/bin/win64",
+  "gameProfiles": {
+    "l4d2": {
+      "binDir": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Left 4 Dead 2\\bin",
+      "gameDir": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Left 4 Dead 2\\left4dead2",
+      "plusPlusBinDir": "D:\\tools\\tools_plusplus"
+    }
+  },
 
-  "externalToolsDir": "/home/you/tools/source",
+  "externalToolsDir": "D:\\tools\\source",
 
-  "backend": "wine",
-  "winePrefix": "/home/you/.wine",
+  "backend": "native",
+  "winePrefix": "C:\\Users\\you\\.wine",
 
-  "toolAllowlist": [],
-  "plugins": []
+  "toolAllowlist": []
 }

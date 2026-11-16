@@ -63,7 +63,7 @@ def _make_helpers_lenient() -> collections.Counter[str]:
 
 
 def load_fgds(
-    bin_dir: str, names: list[str] | tuple[str, ...] = ("garrysmod.fgd",)
+    bin_dir: str, names: list[str] | tuple[str, ...] = ("left4dead2.fgd",)
 ) -> tuple[Any, dict[str, int]]:
     """Parses the FGDs into one schema, once per process, and caches the result.
 

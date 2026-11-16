@@ -100,8 +100,8 @@ export const GAME = z
   .string()
   .optional()
   .describe(
-    "Game profile id (gmod, css, tf2, ...). Defaults to the configured one. " +
-      "read_source_games lists what is installed here.",
+    "Game profile id. This fork supports only 'l4d2', which is also the default; " +
+      "any other id is refused rather than answered about the wrong game.",
   );
 
 /**

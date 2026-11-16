@@ -15,33 +15,29 @@ import { createMcpServer } from "./mcp/server.js";
  * So it says what the server is FOR and when to reach for it -- not how each tool works,
  * which the tool definitions already carry.
  */
-const INSTRUCTIONS = `Offline Source-engine map tooling for the Project Society repo.
+const INSTRUCTIONS = `Offline map tooling for Left 4 Dead 2.
 
 Reach for it to: measure a map (extents, entity counts and histogram, lump sizes) --
 including a 1 GB shipped .bsp, which it reads by offset in milliseconds rather than
-loading whole; inspect or edit a .vmf; change the entities of a compiled map you have no
-source for, via an entity-lump patch that needs no recompile; and drive the Windows
-compilers under Wine.
+loading whole; inspect or edit a .vmf; and drive the Windows compilers under Wine or
+natively, with the game's own FGD as the entity schema.
 
-Prefer it over reading map files by hand: a .bsp is binary, and a naive full read of the
-production map would stall this transport.
+Prefer it over reading map files by hand: a .bsp is binary, and a naive full read of a
+large map would stall this transport.
 
 Realms: \`map\` is pure file work, \`local\` shells out to a host binary. Tools that write
-or execute are guarded and take confirm:true. It never talks to a running game server and
-holds no lock -- for cubemaps, nav mesh generation, in-game verification or anything else
-needing the live engine, use gmod-mcp.`;
+or execute are guarded and take confirm:true. It never talks to a running game or a
+dedicated server and holds no lock.`;
 import { allTools } from "./tools/index.js";
 import { preapprove } from "./mcp/preapprove.js";
 import { VERSION } from "./version.js";
 
 /**
- * Entry point of the hammer-mcp MCP server (stdio transport, local-first).
+ * Entry point of the l4d2-hsmcp MCP server (stdio transport, local-first).
  *
- * Offline file tooling for Source maps: VMF, BSP, entity-lump patches and the Windows
- * compilers under Wine. It holds no lock and opens no transport into GMod's data
- * sandbox -- a second reader of `srcds/garrysmod/data/gmod_mcp/` deletes the results the
- * gmod-mcp daemon is waiting on. Anything that needs a running engine belongs there, not
- * here.
+ * Offline file tooling for Left 4 Dead 2 maps: VMF, BSP and the Windows compilers under
+ * Wine or natively. It holds no lock and opens no transport into a running game; anything
+ * that needs the live engine belongs to a separate bridge.
  *
  * Launched by Claude Code, so nothing may go to stdout: that is the protocol channel.
  */

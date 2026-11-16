@@ -6,8 +6,8 @@ import { z } from "zod";
  * `map` -- offline file work on a VMF, a BSP or a lump patch. Pure Node, no engine.
  * `local` -- shells out to a host binary (the Source compilers, under Wine).
  *
- * Deliberately NOT gmod-mcp's `sv`/`cl`: this server has no GLua realm and never
- * speaks to a running srcds. Anything needing the live engine belongs in gmod-mcp.
+ * Deliberately not a live-engine realm: this server never speaks to a running game,
+ * and anything needing the live engine belongs to a separate bridge.
  */
 export const Realm = z.enum(["map", "local"]);
 export type Realm = z.infer<typeof Realm>;

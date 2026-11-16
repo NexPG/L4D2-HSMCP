@@ -37,14 +37,15 @@ export interface CompilerRun extends RunResult {
 /**
  * Which set of compilers to drive.
  *
- * `stock` is what ships with the GMod client. `plusplus` is ficool2's rebuild of the same
- * SDK 2013 tools -- same inputs, same outputs, faster and with extra flags -- and it is the
- * default this repository compiles with.
+ * `stock` is what ships with the Left 4 Dead 2 client. `plusplus` is ficool2's rebuild of
+ * the same tools -- same inputs, same outputs, faster and with extra flags -- and it is
+ * the default this repository compiles with. Since October 2026 those binaries are
+ * standalone: they live wherever they were unpacked, not inside the game's `bin/`.
  *
- * They still coexist rather than replace each other, and that matters more now than it did
- * when stock was the default: comparing a `plusplus` result against the `stock` one on the
- * same source is the only oracle available for judging whether the faster chain changed
- * anything it should not have. Which is why every result says which chain actually ran.
+ * The two still coexist rather than replace each other, and that matters more now than it
+ * did when stock was the default: comparing a `plusplus` result against the `stock` one on
+ * the same source is the only oracle available for judging whether the faster chain
+ * changed anything it should not have. Which is why every result says which chain ran.
  */
 export type Toolchain = "stock" | "plusplus";
 
@@ -52,18 +53,23 @@ export type Toolchain = "stock" | "plusplus";
 export type CompileStage = "vbsp" | "vvis" | "vrad" | "bspzip";
 
 /**
- * Where a toolchain's binaries live. Measured at gate C, 11/08/2026, and not guessable:
- * the ++ builds are x86-64 and sit in `bin/win64/`, while the stock ones are i386 and sit
- * in `bin/`. `bin/win64/` also holds its own 64-bit stock compilers, and requires the
- * x86-64 beta branch of GMod.
+ * Where a toolchain's binaries live.
  *
- * `gmodBin` therefore cannot mean both "the compilers" and "the .fgd files" any more: the
- * .fgd files stay in `bin/`.
+ * `stock` comes from discovery: the game's own `bin/`, which is also where the `.fgd`
+ * files are. `plusplus` comes from `gameProfiles.l4d2.plusPlusBinDir` (or the config-wide
+ * `plusPlusBinDir`) because Tools++ is a standalone download with no discoverable home.
+ *
+ * Null means "this machine has no such directory", not "use some default": the `bin/win64`
+ * fallback that used to live here was measured for Garry's Mod and is not a fact about
+ * Left 4 Dead 2.
  */
-export function toolchainDir(config: Config, chain: Toolchain, game?: ResolvedGame): string {
-  const bin = game?.binDir ?? config.gmodBin;
-  if (chain === "stock") return bin;
-  return game?.plusPlusBinDir ?? config.gmodBinPlusPlus ?? join(bin, "win64");
+export function toolchainDir(
+  config: Config,
+  chain: Toolchain,
+  game?: ResolvedGame,
+): string | null {
+  if (chain === "stock") return game?.binDir ?? config.binDir;
+  return game?.plusPlusBinDir ?? config.plusPlusBinDir;
 }
 
 /** `vbsp.exe` or `vbspplusplus.exe`. One place knows the naming convention. */
@@ -103,9 +109,12 @@ export function chooseToolchain(
   game?: ResolvedGame,
 ): ChosenToolchain {
   const dir = toolchainDir(config, requested, game);
-  const missing = stages
-    .map((s) => compilerExe(s, requested))
-    .filter((exe) => !existsSync(join(dir, exe)));
+  const missing =
+    dir === null
+      ? stages.map((s) => compilerExe(s, requested))
+      : stages
+          .map((s) => compilerExe(s, requested))
+          .filter((exe) => !existsSync(join(dir, exe)));
 
   if (missing.length === 0) return { chain: requested, requested, missing: [], note: null };
   if (requested === "stock") {
@@ -118,11 +127,16 @@ export function chooseToolchain(
     requested,
     missing,
     note:
-      `The Hammer++ chain is the default and is not installed here (${missing.join(", ")} ` +
-      `missing from ${dir}), so this ran on the stock compilers. That is a slower vvis and ` +
-      `no culling flags, not a different map. The four binaries come from ` +
-      `tools_plusplus.zip (ficool2/misc_tools) and need the x86-64 beta branch of the game; ` +
-      `health reports which of them are present.`,
+      dir === null
+        ? `The Tools++ chain is the default and no directory is configured for it ` +
+          `(${missing.join(", ")} not found), so this ran on the stock compilers. Set ` +
+          `gameProfiles.l4d2.plusPlusBinDir, or unpack Tools++ into externalToolsDir. ` +
+          `The stock chain is unaffected; that is a slower vvis and no culling flags, not ` +
+          `a different map.`
+        : `The Tools++ chain is the default and is not installed here (${missing.join(", ")} ` +
+          `missing from ${dir}), so this ran on the stock compilers. That is a slower vvis ` +
+          `and no culling flags, not a different map. The four binaries come from ` +
+          `tools_plusplus.zip (ficool2/misc_tools); health reports which are present.`,
   };
 }
 
@@ -143,20 +157,31 @@ export async function runCompiler(
   game?: ResolvedGame,
 ): Promise<CompilerRun> {
   const dir = toolchainDir(config, chain, game);
+  if (dir === null) {
+    throw new ToolchainError(
+      chain === "stock"
+        ? `no Left 4 Dead 2 bin directory was found. The compilers ship with the game ` +
+          `client, never with a dedicated server; point gameProfiles.l4d2.binDir at it, ` +
+          `or run health to see what discovery found.`
+        : `no directory is configured for the Tools++ compilers. Set ` +
+          `gameProfiles.l4d2.plusPlusBinDir, or unpack Tools++ into externalToolsDir; the ` +
+          `stock chain is unaffected and run_compile falls back to it. See health.`,
+    );
+  }
   const binary = join(dir, exe);
   if (!existsSync(binary)) {
     throw new ToolchainError(
       chain === "stock"
-        ? `${binary} not found. These ship with the GMod client, not with srcds; ` +
-          `check gmodBin with the health tool`
-        : // Naming the chain matters: without it this reads like a broken GMod install,
-          // when in fact the stock compilers are fine and only Hammer++ is absent.
+        ? `${binary} not found. Stock compilers ship with the Left 4 Dead 2 client, not ` +
+          `with srcds; check gameProfiles.l4d2.binDir with the health tool`
+        : // Naming the chain matters: without it this reads like a broken game install,
+          // when in fact the stock compilers are fine and only Tools++ is absent.
           //
           // Reaching this at all means a caller drove runCompiler directly: run_compile
           // and run_pack ask chooseToolchain first, which falls back to stock and says so.
           `${binary} not found: the "plusplus" toolchain is not installed. The four ` +
-          `Hammer++ compilers come from tools_plusplus.zip and go in ${dir}; the stock ` +
-          `chain is unaffected, and run_compile falls back to it. See health`,
+          `compilers come from tools_plusplus.zip and go in ${dir}; the stock chain is ` +
+          `unaffected, and run_compile falls back to it. See health`,
     );
   }
   const started = Date.now();

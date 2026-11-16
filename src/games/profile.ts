@@ -1,21 +1,19 @@
 /**
- * Game profiles: which Source game a tool is working against.
+ * The game profile: which Source game a tool is working against.
  *
- * A profile is assembled from three layers, in this order, and every value it carries
- * records which layer produced it:
+ * This fork targets **Left 4 Dead 2 only**, so the table below has exactly one entry. It
+ * still carries the same three layers and the same provenance discipline, because the
+ * values that matter are read off disk rather than asserted:
  *
- * 1. **Built-ins** -- only what cannot be read from disk: the Steam appid, the install
- *    directory, the mod directory, and known quirks. Deliberately thin.
+ * 1. **Built-in** -- only what cannot be read from disk: the Steam appid, the install
+ *    directory, the mod directory. Deliberately thin.
  * 2. **Discovery** (`./steam.ts`) -- the absolute paths, the display name, the FGD list,
  *    which binaries exist. Read from Steam's files and the game's own `gameinfo.txt`.
- * 3. **Configuration** -- `gameProfiles.<id>` in `.hammer-mcp/config.json`, plus the
- *    legacy `gmodBin` / `gmodGameDir` / `gmodBinPlusPlus` fields, which keep working and
- *    apply to the `gmod` profile.
+ * 3. **Configuration** -- `gameProfiles.l4d2` in `.hammer-mcp/config.json`.
  *
- * The `provenance` field is not decoration. Only one game has ever been measured here, so
- * a caller must be able to tell "this FGD name came out of gameinfo.txt" from "this mod
- * directory is a built-in guess nobody has run". A profile that flattened both into a
- * plain string would make the second indistinguishable from the first.
+ * The `provenance` field is not decoration. Nothing about this game's toolchain has been
+ * measured here yet, so a caller must be able to tell "this FGD name came out of
+ * gameinfo.txt" from "this mod directory is a built-in guess nobody has run".
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -24,12 +22,11 @@ import { discoverSourceInstalls } from "./steam.js";
 import type { SourceInstall } from "./steam.js";
 
 /**
- * Engine branch. Decides, among other things, which lump-limit table applies.
- *
- * `unknown` is a real value, not a placeholder for laziness: a game we found but cannot
- * classify is readable, and saying so beats asserting a branch to make the type tidy.
+ * Engine branch. L4D2 is Source 2009; it is the only branch this fork resolves. Kept as a
+ * named type so a future per-branch limit table has something to key on, and so the
+ * output says which branch the numbers were judged against.
  */
-export type EngineBranch = "sdk2013" | "orangebox" | "l4d2" | "portal2" | "csgo" | "unknown";
+export type EngineBranch = "l4d2";
 
 export interface Provenance {
   /** Where the value came from: a file and key, or the layer that supplied it. */
@@ -48,10 +45,6 @@ export interface BuiltinProfile {
   /** The `-game` directory's last component. */
   modDir: string;
   branch: EngineBranch;
-  /** Subdirectory of the game root holding the Hammer++ compilers, when known. */
-  plusPlusSubdir?: string;
-  /** Lua/script entity directories, relative to the repo root. Only GMod has these. */
-  scriptedEntityDirs?: string[];
   /** Why anything here is or is not trustworthy. */
   note?: string;
 }
@@ -67,7 +60,7 @@ export interface ResolvedGame {
   gameDir: string | null;
   /** Where the stock compilers and the .fgd files live. */
   binDir: string | null;
-  /** Where the Hammer++ compilers live, when that is known for this game. */
+  /** Where the Tools++ compilers live, when that is known. */
   plusPlusBinDir: string | null;
   /** FGD file names, relative to `binDir`, as the game itself declares them. */
   fgd: string[];
@@ -75,7 +68,6 @@ export interface ResolvedGame {
   optionalFgd: string[];
   /** `InstancePath` from gameinfo.txt, where func_instance files resolve from. */
   instancePath: string | null;
-  scriptedEntityDirs: string[];
   /** Non-null when this profile cannot drive a compile, and why. */
   unusableForCompile: string | null;
   provenance: Record<string, Provenance>;
@@ -90,7 +82,7 @@ export const GameProfileOverride = z
     plusPlusBinDir: z.string(),
     fgd: z.array(z.string()),
     optionalFgd: z.array(z.string()),
-    branch: z.enum(["sdk2013", "orangebox", "l4d2", "portal2", "csgo", "unknown"]),
+    branch: z.enum(["l4d2"]),
     modDir: z.string(),
     steamAppId: z.number().int(),
   })
@@ -100,58 +92,12 @@ export type GameProfileOverride = z.infer<typeof GameProfileOverride>;
 /**
  * The built-in table, kept as small as honesty allows.
  *
- * Only `gmod` has been run here. The others carry appid, install directory and mod
- * directory and **nothing else** -- no FGD name, no lump-limit table, no Hammer++
- * directory. Those three are the kind of fact that is wrong loudly: point `-game` at a
- * directory that does not exist and the compiler says so in one line. An invented FGD
- * name or lump ceiling is wrong silently, which is why none is written here.
+ * Left 4 Dead 2 has not been run by this fork yet. The entry therefore carries only what
+ * is true without a measurement: the appid, the install directory and the mod directory.
+ * No FGD name, no Hammer++ directory, no lump ceiling -- those three are the kind of fact
+ * that is wrong loudly when read from disk and wrong silently when guessed.
  */
 export const BUILTIN_PROFILES: readonly BuiltinProfile[] = [
-  {
-    id: "gmod",
-    displayName: "Garry's Mod",
-    steamAppId: 4000,
-    installDir: "GarrysMod",
-    modDir: "garrysmod",
-    branch: "sdk2013",
-    // Gate C, 11/08/2026: the ++ compilers are x86-64 and go here, where the stock ones
-    // are i386 and stay in bin/. Measured, not guessed -- and true for this game only.
-    plusPlusSubdir: "bin/win64",
-    scriptedEntityDirs: [
-      "addons/*/lua/entities",
-      "gamemodes/*/entities/entities",
-      "srcds/garrysmod/addons/*/lua/entities",
-      "srcds/garrysmod/gamemodes/*/entities/entities",
-    ],
-    note: "The only profile measured on this machine: gates A and C both passed here.",
-  },
-  {
-    id: "css",
-    displayName: "Counter-Strike: Source",
-    steamAppId: 240,
-    installDir: "Counter-Strike Source",
-    modDir: "cstrike",
-    branch: "sdk2013",
-    note: "Never run here. Paths are declared, nothing about its toolchain is verified.",
-  },
-  {
-    id: "hl2",
-    displayName: "Half-Life 2",
-    steamAppId: 220,
-    installDir: "Half-Life 2",
-    modDir: "hl2",
-    branch: "sdk2013",
-    note: "Never run here.",
-  },
-  {
-    id: "tf2",
-    displayName: "Team Fortress 2",
-    steamAppId: 440,
-    installDir: "Team Fortress 2",
-    modDir: "tf",
-    branch: "orangebox",
-    note: "Never run here.",
-  },
   {
     id: "l4d2",
     displayName: "Left 4 Dead 2",
@@ -159,16 +105,7 @@ export const BUILTIN_PROFILES: readonly BuiltinProfile[] = [
     installDir: "Left 4 Dead 2",
     modDir: "left4dead2",
     branch: "l4d2",
-    note: "Never run here. Its lump ceilings differ from sdk2013 and none has been read.",
-  },
-  {
-    id: "portal2",
-    displayName: "Portal 2",
-    steamAppId: 620,
-    installDir: "Portal 2",
-    modDir: "portal2",
-    branch: "portal2",
-    note: "Never run here. Its lump ceilings differ from sdk2013 and none has been read.",
+    note: "The only target of this fork. Nothing about its toolchain is measured yet.",
   },
 ] as const;
 
@@ -185,7 +122,6 @@ function fromBuiltin(b: BuiltinProfile): ResolvedGame {
     fgd: [],
     optionalFgd: [],
     instancePath: null,
-    scriptedEntityDirs: b.scriptedEntityDirs ?? [],
     unusableForCompile: `${b.displayName} was not found on this machine`,
     provenance: {
       steamAppId: { source: "builtin table", verified: false },
@@ -226,17 +162,6 @@ function applyDiscovery(base: ResolvedGame, b: BuiltinProfile, install: SourceIn
     base.provenance["binDir"] = { source: "steamapps/common/<game>/bin", verified: true };
   }
 
-  // Only where a built-in says where they go. Everywhere else the answer is "unknown",
-  // not "probably bin/win64" -- that placement was measured for one game.
-  if (b.plusPlusSubdir) {
-    const dir = join(gameRoot, b.plusPlusSubdir);
-    base.plusPlusBinDir = existsSync(dir) ? dir : null;
-    base.provenance["plusPlusBinDir"] = {
-      source: `builtin table (${b.plusPlusSubdir}), existence checked`,
-      verified: base.plusPlusBinDir !== null,
-    };
-  }
-
   base.unusableForCompile = compileBlocker(base);
 }
 
@@ -274,62 +199,23 @@ function applyOverride(g: ResolvedGame, o: GameProfileOverride, source: string):
 }
 
 /**
- * Resolves every known profile against this machine.
+ * Resolves the only profile this fork knows against this machine.
  *
- * Games discovered that match no built-in are returned too, keyed by their mod directory
- * and marked `branch: "unknown"`: readable, and refused for compiles until someone says
- * what branch they are.
+ * Other Source games that happen to be installed are ignored: there is no profile for
+ * them, and inventing one from a discovered mod directory would let a tool answer about a
+ * game this server never claimed to support.
  */
 export function resolveProfiles(
   overrides: Record<string, GameProfileOverride> = {},
   installs: SourceInstall[] = discoverSourceInstalls(),
 ): Record<string, ResolvedGame> {
-  const byAppId = new Map<number, SourceInstall>();
-  for (const i of installs) byAppId.set(i.app.appId, i);
-
   const out: Record<string, ResolvedGame> = {};
-  const claimed = new Set<number>();
 
   for (const b of BUILTIN_PROFILES) {
     const g = fromBuiltin(b);
-    const install = byAppId.get(b.steamAppId);
-    if (install) {
-      claimed.add(b.steamAppId);
-      applyDiscovery(g, b, install);
-    }
+    const install = installs.find((i) => i.app.appId === b.steamAppId);
+    if (install) applyDiscovery(g, b, install);
     out[b.id] = g;
-  }
-
-  for (const install of installs) {
-    if (claimed.has(install.app.appId)) continue;
-    for (const mod of install.mods) {
-      const id = mod.dir;
-      if (out[id]) continue;
-      const gameRoot = install.app.gameRoot as string;
-      out[id] = {
-        id,
-        displayName: mod.displayName ?? install.app.name,
-        branch: "unknown",
-        steamAppId: mod.steamAppId ?? install.app.appId,
-        gameRoot,
-        gameDir: join(gameRoot, mod.dir),
-        binDir: install.stock.dir,
-        plusPlusBinDir: null,
-        fgd: mod.fgd,
-        optionalFgd: [],
-        instancePath: mod.instancePath,
-        scriptedEntityDirs: [],
-        unusableForCompile:
-          `engine branch of ${id} is unknown, so no lump limits apply to it; set ` +
-          `gameProfiles.${id}.branch explicitly to compile against it`,
-        provenance: {
-          displayName: { source: "gameinfo.txt:game", verified: mod.displayName !== null },
-          gameDir: { source: "discovered on disk", verified: true },
-          fgd: { source: "gameinfo.txt:GameData", verified: mod.fgd.length > 0 },
-          branch: { source: "not classified", verified: false },
-        },
-      };
-    }
   }
 
   for (const [id, o] of Object.entries(overrides)) {

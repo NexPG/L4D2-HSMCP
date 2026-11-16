@@ -2,7 +2,7 @@ import { AuditLog as CoreAuditLog } from "@projectsociety/mcp-core";
 
 /**
  * Audit entry kinds. Widens the shared base with this server's own vocabulary: it drives
- * a toolchain and writes map files, where gmod-mcp drives a live engine.
+ * a toolchain and writes map files, where a live-engine bridge does neither.
  */
 export type AuditKind =
   | "server_start"
@@ -18,7 +18,7 @@ export type AuditKind =
  * Append-only JSONL audit log, written to `<stateDir>/logs/audit.jsonl`.
  *
  * Writes are synchronous on purpose: volumes are low, and this server mutates map
- * sources and writes into `server-config/` -- if it dies mid-action we want the record
+ * sources and writes compiled output -- if it dies mid-action we want the record
  * of what it had already touched.
  */
 export class AuditLog extends CoreAuditLog<AuditKind> {}

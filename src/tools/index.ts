@@ -7,13 +7,11 @@ import { contentTools } from "./content.js";
 import { cubemapTools } from "./cubemap.js";
 import { depsTools } from "./deps.js";
 import { displacementTools } from "./displacement.js";
-import { gmaTools } from "./gma.js";
 import { faceTools } from "./face.js";
 import { gameTools } from "./games.js";
 import { healthTools } from "./health.js";
 import { hollowTools } from "./hollow.js";
 import { lightmapTools } from "./lightmap.js";
-import { lmpTools } from "./lmp.js";
 import { materialsTools } from "./materials.js";
 import { measureTools } from "./measure.js";
 import { measureTools2 } from "./measurespace.js";
@@ -64,12 +62,10 @@ export const allTools: AnyToolDef[] = [
   ...organiseTools,
   ...optimiseTools,
   ...depsTools,
-  ...gmaTools,
   ...wiringTools,
   ...vmfEditTools,
   ...compileTools,
   ...renameTools,
   ...cubemapTools,
   ...pakfileTools,
-  ...lmpTools,
 ];

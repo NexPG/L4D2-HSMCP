@@ -20,7 +20,7 @@
  * - **A dry run touches nothing**, and says so rather than reporting `written: true`.
  *
  * What this does *not* give you: it is not a defence against a path that escapes a
- * directory. `run_gma_extract` needs that and gets it from a separate check inside the
+ * directory. `run_pakfile_extract` needs that and gets it from a separate check inside the
  * archive reader, where the entry names come from. Two mechanisms, and unifying the writes
  * here does not fold one into the other.
  */

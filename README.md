@@ -3,11 +3,10 @@
 [![CI](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-An MCP server for Source-engine map work. It reads `.vmf` and `.bsp` files, lints a map against
-the game's own FGD, edits a `.vmf` without reformatting it, patches a compiled map's entities
-without recompiling, drives the compilers under Wine or natively on Windows — **Hammer++ by default**, stock on demand or
-as a fallback — and measures a map
-against the limits of the format.
+An MCP server for Left 4 Dead 2 map work. It reads `.vmf` and `.bsp` files, lints a map against
+the game's own FGD, edits a `.vmf` without reformatting it, drives the compilers under Wine or
+natively on Windows — **Tools++ by default**, stock on demand or as a fallback — and measures a
+map against the limits of the format.
 
 **It never talks to a running engine.** It reads and writes files and runs compilers, and nothing
 else. That is what lets it hold no lock and sit beside a live server without disturbing it.
@@ -58,8 +57,6 @@ flowchart LR
 | **Optimise** | `func_detail`, hint brushes including diagonal ones, per-face lightmap scale — the decisions a compiled map no longer contains |
 | **Compile** | vbsp/vvis/vrad under Wine (natively on Windows), findings per stage, and a leak turned into a named entity |
 | **Ship** | resolve every asset a map references and find what will be missing, pack them into a `.bsp` — by hand or derived from the map — check a nav mesh still matches |
-| **Open** | a Workshop `.gma`: read its index, pull one map out of a gigabyte without unpacking the rest |
-| **Patch without recompiling** | rewrite a compiled map's entity list through a `.lmp` |
 
 ## Knowing when you are done
 
@@ -182,24 +179,11 @@ checkerboard for everyone else.
 returning it so what was packed is visible rather than inferred. It never packs VPK content.
 
 ⚠️ Loose is a **candidate**, not a certainty, and that is measured rather than assumed:
-Garry's Mod ships `detail.vbsp` loose in its own root. No rule separates a mapper's work from
-a game's loose files — they live under the same install. The asymmetry is what makes erring
-toward inclusion right: packing a stock file wastes kilobytes, missing a custom one ships a
-broken map. `exclude` drops the ones you recognise.
-
-## Opening a Workshop archive
-
-A `.gma` is how the Workshop ships everything, maps included, so until now a Workshop map had
-to be unpacked by hand before anything here could look at it — which meant the corpus a mapper
-learns from was out of reach.
-
-The format concatenates every file after an index with no padding, so one pass over the index
-gives random access to the whole archive. `run_gma_extract` pulls `maps/rp_pinescity_v2b.bsp`
-out of a 245 MB addon without reading the materials beside it.
-
-Read across every archive on this machine, 11/08/2026: **56 archives, no failures** — the
-largest 1143 MB, the busiest 6521 entries, seven of them carrying a map. Header and index
-only.
+a game may keep a stock file loose in its own root — Garry's Mod keeps `detail.vbsp` there.
+No rule separates a mapper's work from a game's loose files — they live under the same
+install. The asymmetry is what makes erring toward inclusion right: packing a stock file
+wastes kilobytes, missing a custom one ships a broken map. `exclude` drops the ones you
+recognise.
 
 ## Where the lighting budget goes
 
@@ -364,9 +348,9 @@ measurement in [`docs/`](docs/), or it says it is not.
 | Brush creation (`write_vmf_solid`) | **proven** — a room built entirely by it compiles sealed, and leaks when one wall is removed |
 | Compiling, both toolchains | **proven** — a leak caused, then located, on stock and Hammer++ |
 | Python sidecar (srctools) | **proven** |
-| Game discovery | **proven for Garry's Mod only** — the readers are generic Source, but one game has been run here |
+| Game discovery | **not yet measured on Left 4 Dead 2** — the readers are generic Source and were exercised on Garry's Mod |
 | Moving and deleting brushes | **proven** — a room turned 45 degrees compiles sealed, and leaks when one of its walls is deleted |
-| Reading the game's content | **proven** — searches and model bounds checked against Garry's Mod's own install |
+| Reading the game's content | **proven on Garry's Mod**; the L4D2 VPK mount has not been run here |
 | Vertex editing | **proven** — a slab tilted into a wedge stays a valid brush; every move that would break a face is refused |
 | Writing displacements | **proven** — srctools reads back the grid, the relief and the blend this wrote |
 | Entity wiring | **proven** — a wire to a name nothing has, and an input a class does not have, are both found against the real FGD |
@@ -382,14 +366,13 @@ measurement in [`docs/`](docs/), or it says it is not.
 | Measuring a place | **proven** — a corridor built 256 wide measures 256, a doorway built 96 measures 96, and one built 100 measures 100 where the voxel estimate would still say 96 |
 | Per-map rules | **proven** — a corridor built 256 passes a 192 bar and fails a 320 one with both numbers; a rule that cannot fail is refused at load; and a write goes through on a map that violates every rule it has |
 | The write guard | **proven** — each of the five VMF writers is called for real on a map inside `srcds/` and must refuse |
-| Entity-lump patching | codec **proven**; **its effect in game is not** — see [gate B](docs/gates.md#gate-b) |
 | `read_vprof` | **not written**: no real sample to calibrate it against |
 
 ## Install
 
 ```bash
-git clone https://github.com/ProjectSocietyStudio/hammer-mcp
-cd hammer-mcp && pnpm install && pnpm build
+git clone https://github.com/NexPG/l4d2-HSMCP
+cd l4d2-HSMCP && pnpm install && pnpm build
 ./sidecar/setup.sh          # Python venv + srctools, for the VMF/FGD/pakfile tools
 node dist/index.js install  # declares the server in <repoRoot>/.mcp.json
 ```
@@ -416,12 +399,14 @@ none of them.
 
 ## Which game
 
-`read_source_games` finds what is installed by reading Steam's own files and each game's
-`gameinfo.txt` — appid, install directory, mod directory, and **the FGD the game declares**. So
-Counter-Strike: Source lints against `cstrike.fgd` without anyone typing that name.
+**Left 4 Dead 2, and nothing else.** `read_source_games` finds the install by reading Steam's
+own files and `left4dead2/gameinfo.txt` — appid 550, install directory, mod directory, and
+**the FGD the game declares**, so the lint uses `left4dead2.fgd` without anyone typing that
+name. Other Source installs on the machine are ignored rather than guessed at.
 
-Only Garry's Mod has actually been run here. Every profile records where each of its values came
-from and whether a file was read; `health` reports it. See
+Nothing about the L4D2 toolchain has been measured here yet. Every profile records where
+each of its values came from and whether a file was read; `health` reports it, and says
+"unmeasured" where that is the answer. See
 [docs/formats.md#game-profiles](docs/formats.md#game-profiles).
 
 ## Tools
@@ -509,13 +494,8 @@ holds, and a tool not on the list keeps both gates, which stays the default.
 | `read_compile_log` | `map` | | Turns compiler output into findings, each with what the message actually means |
 | `read_leak` | `map` | | Turns `**** leaked ****` into a position and a named entity |
 | `read_map_dependencies` | `map` | | Every asset a map references, and whether each will be there: packed, from the game, or missing |
-| `read_gma` | `map` | | Header and index of a Workshop archive: what is in it, and where |
-| `run_gma_extract` | `map` | ● | Pulls matching files out of a `.gma` by offset, without unpacking the rest |
 | `run_pack` | `local` | ● | Packs files into a `.bsp` via bspzip. `auto` derives the list from the map itself |
 | `read_nav` | `map` | | Says whether a nav mesh still matches its map |
-| `read_lump_patch` | `map` | | Decodes a `.lmp` and its entities |
-| `write_lump_patch` | `map` | ● | Builds an entity patch from add/update/remove operations |
-| `read_lump_patch_status` | `map` | | Compares built patches to what is deployed, and to map revisions |
 
 The `map` realm is offline file work; `local` runs a binary on the host.
 
@@ -545,8 +525,8 @@ The dated record of what was tried, measured, and got wrong:
   the three ways of sampling sightlines that all returned confident, wrong numbers
 - [docs/compiling.md](docs/compiling.md) — Wine, Hammer++, what `cull` actually saves, and the
   compiler messages that name the wrong thing
-- [docs/formats.md](docs/formats.md) — the `.lmp` format as measured, the sidecar, the FGD, game
-  profiles
+- [docs/formats.md](docs/formats.md) — the sidecar, the FGD, game profiles, and the KeyValues
+  grammar they share
 - [docs/architecture.md](docs/architecture.md) — why the write path is a splice, the write
   discipline, and shared plumbing
 
@@ -557,22 +537,18 @@ The dated record of what was tried, measured, and got wrong:
 
 | Field | Default |
 |---|---|
-| `game` | `gmod` — the profile used when a call does not name one |
-| `gameProfiles` | `{}` — per-profile overrides: `binDir`, `gameDir`, `plusPlusBinDir`, `fgd`, `branch` |
+| `gameProfiles.l4d2` | `{}` — overrides for the one profile: `binDir`, `gameDir`, `plusPlusBinDir`, `fgd`, `branch` |
 | `backend` | `native` on Windows, which runs the `.exe` files directly; `wine` everywhere else |
 | `winePrefix` | `~/.wine` |
 | `sidecarPython` | `<stateDir>/sidecar-venv/bin/python`, or `Scripts\python.exe` in that venv on Windows |
 | `externalToolsDir` | `<stateDir>/tools` — standalone tools this server drives, such as ficool2's `bsp_rename.exe`. They belong to no game install, so nothing can discover them; `health` lists which are present |
 | `toolAllowlist` | `[]` |
 
-**Normally there is nothing to configure**: paths come from discovery. `gameProfiles` is for what
-discovery cannot see — a game installed outside Steam, compilers shipped in a separate app, an
-engine branch we do not classify.
+**Normally there is nothing to configure**: paths come from discovery. `gameProfiles.l4d2` is for
+what discovery cannot see — a game installed outside Steam, compilers shipped in a separate app,
+or Tools++ unpacked somewhere of its own.
 
-`gmodBin`, `gmodGameDir` and `gmodBinPlusPlus` are the older spelling of
-`gameProfiles.gmod.{binDir,gameDir,plusPlusBinDir}`. They still work. Setting both to different
-values is **refused at load** rather than silently resolved: the losing half would leave no trace
-in any output.
+There is no `game` selector and no legacy `gmod*` keys: this fork resolves Left 4 Dead 2 only.
 
 ## Development
 
@@ -602,8 +578,6 @@ generated by `test/fixtures/gen_probe.py` and compiled from it.
 
 - [`@projectsociety/mcp-core`](https://www.npmjs.com/package/@projectsociety/mcp-core) — the shared MCP
   plumbing: tool registry, guarded calls, audit log, config loading
-- [`gmod-mcp`](https://github.com/ProjectSocietyStudio/gmod-mcp) — the other side: a server that
-  does drive a running Garry's Mod engine
 - [Case study on sycode.fr](https://sycode.fr/blog/hammer-mcp) — why every number the server returns
   is checked against an oracle (written by the author, [Sycatle](https://sycode.fr), in French)
 

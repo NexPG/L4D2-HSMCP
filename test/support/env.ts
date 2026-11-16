@@ -22,7 +22,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Config } from "../../src/config.js";
 import { loadConfig } from "../../src/config.js";
-import { allGames } from "../../src/games/resolve.js";
 import { pythonPath } from "../../src/sidecar/client.js";
 
 export const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
@@ -61,15 +60,18 @@ const GAME_CONTENT = {
 export const paths = GAME_CONTENT;
 
 export const has = {
-  /** The stock compilers. They ship with the GMod client, never with srcds. */
-  toolchain: existsSync(join(config.gmodBin, "vbsp.exe")),
+  /** The stock compilers, which ship with the game client. */
+  toolchain: config.binDir !== null && existsSync(join(config.binDir, "vbsp.exe")),
   /** ficool2's rebuild, installed separately. Absent is the normal case. */
-  plusplus: existsSync(join(config.gmodBinPlusPlus ?? join(config.gmodBin, "win64"), "vbspplusplus.exe")),
+  plusplus:
+    config.plusPlusBinDir !== null && existsSync(join(config.plusPlusBinDir, "vbspplusplus.exe")),
   /** The srctools venv built by sidecar/setup.sh. */
   sidecar: existsSync(pythonPath(config)),
   /** The .fgd files, which live beside the compilers. */
-  fgd: existsSync(join(config.gmodBin, "garrysmod.fgd")),
-  plusFgd: existsSync(join(config.gmodBin, "win64", "toolsplusplus.fgd")),
+  fgd: config.binDir !== null && existsSync(join(config.binDir, "left4dead2.fgd")),
+  plusFgd:
+    config.plusPlusBinDir !== null &&
+    existsSync(join(config.plusPlusBinDir, "toolsplusplus.fgd")),
   prodMap: existsSync(GAME_CONTENT.prodMap),
   tttSource: existsSync(GAME_CONTENT.tttSource),
   stockLmp: existsSync(GAME_CONTENT.stockLmp),
@@ -77,18 +79,9 @@ export const has = {
     existsSync(join(GAME_CONTENT.mapsDir, "gm_construct.nav")) &&
     existsSync(join(GAME_CONTENT.mapsDir, "gm_construct.bsp")),
   /**
-   * Lua entity trees to scan. Only a GMod content tree has these, and the assertion they
-   * back is about counts, so an absent tree has to skip rather than assert zero.
+   * The game's own content, as srctools mounts it: `gameinfo.txt` is the honest predicate.
    */
-  luaEntities: existsSync(join(REPO, "srcds/garrysmod/addons")) || existsSync(join(REPO, "addons")),
-  /**
-   * The game's own materials and models, mounted through its VPKs.
-   *
-   * `gameinfo.txt` is what srctools reads to build the filesystem chain, so its presence
-   * is the honest predicate: a directory that exists but has no gameinfo mounts nothing,
-   * and the tests would report the content missing rather than the mount failing.
-   */
-  gameContent: existsSync(join(config.gmodGameDir, "gameinfo.txt")),
+  gameContent: config.gameDir !== null && existsSync(join(config.gameDir, "gameinfo.txt")),
   /**
    * ficool2's bsp_rename, a standalone download that belongs to no game install.
    *
@@ -110,29 +103,17 @@ export const has = {
   vtfcmd: existsSync(join(config.externalToolsDir ?? join(config.stateDir, "tools"), "VTFCmd.exe")),
 } as const;
 
-/**
- * Whether Counter-Strike: Source resolves to a toolchain it can compile with here.
- *
- * Not in `has`: the tests that read it need CS:S to be *absent*, so false is the normal
- * case and must not be announced as something missing. When it is true, a test that
- * expects a compile against css to be refused would instead run a real one -- and the
- * one that does compiles test/fixtures/hmcp_probe.vmf in place, overwriting the probe
- * .bsp that the BSP readers' tests assert against.
- */
-export const cssCompilable = allGames(config)["css"]?.unusableForCompile === null;
-
 const LABELS: Record<keyof typeof has, string> = {
-  toolchain: `the stock Source compilers (${config.gmodBin})`,
-  plusplus: "the Hammer++ compilers (optional)",
+  toolchain: `the Left 4 Dead 2 compilers (${config.binDir ?? "no bin directory found"})`,
+  plusplus: "the Tools++ compilers (optional)",
   sidecar: "the Python sidecar venv (run sidecar/setup.sh)",
   fgd: "the game's .fgd files",
-  plusFgd: "the Hammer++ .fgd (optional)",
+  plusFgd: "the Tools++ .fgd (optional)",
   prodMap: "a large production .bsp",
   tttSource: "a large Hammer-written .vmf",
   stockLmp: "a stock Valve .lmp",
   navPair: "a .nav / .bsp pair",
-  luaEntities: "a GMod Lua entity tree",
-  gameContent: `the game's own content (${config.gmodGameDir})`,
+  gameContent: `the game's own content (${config.gameDir ?? "not found"})`,
   bspRename: `ficool2's bsp_rename.exe in ${config.externalToolsDir} (optional)`,
   tga2skybox: `ficool2's tga2skybox.exe in ${config.externalToolsDir} (optional)`,
   cubemap2hdr: `ficool2's cubemap2hdr.exe in ${config.externalToolsDir} (optional)`,

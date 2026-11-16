@@ -141,7 +141,13 @@ export const runCompile = defineTool({
     if (profile.unusableForCompile) {
       throw new ToolchainError(`cannot compile against ${profile.id}: ${profile.unusableForCompile}`);
     }
-    const game = toWindowsPath(profile.gameDir ?? ctx.config.gmodGameDir);
+    const gameDir = profile.gameDir ?? ctx.config.gameDir;
+    if (!gameDir) {
+      throw new ToolchainError(
+        `cannot compile against ${profile.id}: no -game directory was resolved`,
+      );
+    }
+    const game = toWindowsPath(gameDir);
     const target = toWindowsPath(vmf);
     const timeoutMs = args.timeoutMinutes * 60_000;
 
@@ -525,6 +531,12 @@ export const runPack = defineTool({
     const { game: packProfile, from: packFrom } = gameFor(ctx.config, args.game);
     const bsp = assertWritable(resolveInput(args.bsp, ctx.config), ctx.config);
     if (!existsSync(bsp)) throw new Error(`${bsp} does not exist`);
+    const packGameDir = packProfile.gameDir ?? ctx.config.gameDir;
+    if (!packGameDir) {
+      throw new ToolchainError(
+        `cannot pack against ${packProfile.id}: no -game directory was resolved`,
+      );
+    }
 
     const derived: Array<{ internal: string; source: string }> = [];
     let autoNote: string | undefined;
@@ -537,7 +549,7 @@ export const runPack = defineTool({
         "map_dependencies",
         {
           path: bsp,
-          gameDir: packProfile.gameDir ?? ctx.config.gmodGameDir,
+          gameDir: packGameDir,
           limit: 5000,
         },
         ctx.config,
@@ -616,7 +628,7 @@ export const runPack = defineTool({
       compilerExe("bspzip", packChain.chain),
       [
         "-game",
-        toWindowsPath(packProfile.gameDir ?? ctx.config.gmodGameDir),
+        toWindowsPath(packGameDir),
         "-addlist",
         toWindowsPath(bsp),
         toWindowsPath(listPath),

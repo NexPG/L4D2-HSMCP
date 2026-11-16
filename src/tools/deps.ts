@@ -68,11 +68,18 @@ export const readMapDependenciesTool = defineTool({
   },
   handler: async (args, ctx) => {
     const { game, from } = gameFor(ctx.config, args.game);
+    const gameDir = game.gameDir ?? ctx.config.gameDir;
+    if (!gameDir) {
+      throw new Error(
+        `cannot resolve dependencies without the game: ${game.unusableForCompile ?? "no -game directory"}. ` +
+          `Point gameProfiles.l4d2.gameDir at left4dead2, or run health.`,
+      );
+    }
     const reply = await callSidecar<Record<string, unknown>>(
       "map_dependencies",
       {
         path: resolveInput(args.path, ctx.config),
-        gameDir: game.gameDir ?? ctx.config.gmodGameDir,
+        gameDir,
         limit: args.limit ?? 300,
       },
       ctx.config,

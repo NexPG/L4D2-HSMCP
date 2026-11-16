@@ -12,10 +12,9 @@ import type { Realm } from "../schemas.js";
 /**
  * Context injected into every tool handler.
  *
- * Deliberately smaller than gmod-mcp's: there is no bridge and no lock, because this
- * server never talks to a running engine. It must not touch
- * `srcds/garrysmod/data/gmod_mcp/` -- a second reader of that directory deletes the
- * results the gmod-mcp daemon is waiting on.
+ * Deliberately small: there is no bridge and no lock, because this server never talks to
+ * a running game. It must not touch a live server's data directory either -- a second
+ * reader there would delete the results a bridge is waiting on.
  */
 export interface ToolContext extends BaseToolContext {
   config: Config;

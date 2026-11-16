@@ -35,7 +35,7 @@ export const readBspInfo = defineTool({
   description:
     "Header of a compiled .bsp: ident, version, mapRevision and all 64 lumps with their " +
     "offset and size. Reads only the first 1036 bytes, so it is instant even on a 1 GB map. " +
-    "Use the mapRevision it reports when building a .lmp entity patch for this map.",
+    "mapRevision is the build stamp a compiled map carries.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
@@ -49,9 +49,7 @@ export const readBspInfo = defineTool({
     path: z.string(),
     ident: z.string(),
     version: z.number(),
-    mapRevision: z
-      .number()
-      .describe("Copy this into a .lmp patch for this map, or the engine ignores it."),
+    mapRevision: z.number().describe("The compiled map's build stamp."),
     fileSize: z.number(),
     lumpCount: z.number(),
     hdrLighting: z

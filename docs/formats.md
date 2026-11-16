@@ -1,5 +1,11 @@
 # Formats, schemas and game profiles
 
+> **Historical note (16/11/2026).** The `.lmp` section below describes the entity-lump patch
+> format as measured on Garry's Mod. This fork targets Left 4 Dead 2 only and the lump-patch
+> tools were removed; the measurement is kept because the format itself is Source-wide and
+> may be re-proven for L4D2 later. Everything after that section (sidecar, FGD, profiles,
+> KeyValues) still applies.
+
 ## The `.lmp` format, as measured
 
 A 20-byte header, five little-endian `int32`, then the payload:

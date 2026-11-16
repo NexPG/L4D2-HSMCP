@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 14/08/2026: **76 tools**.
+Last checked against the tool list on 16/11/2026: **71 tools**.
 
 ## The file itself
 
@@ -159,7 +159,7 @@ with these tools and nothing else.
 
 ## Beyond Hammer
 
-Thirty-eight of the tools here answer questions Hammer never asked. They are not parity and
+Dozens of the tools here answer questions Hammer never asked. They are not parity and
 they are not gaps: they are the half of a mapper's work that used to happen by loading the
 map and looking, or by not happening at all.
 
@@ -176,7 +176,6 @@ map and looking, or by not happening at all.
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
 | `run_cubemap2hdr` | nothing offline. The engine builds cubemaps in whichever mode it is running |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |
-Thirty-eight of the tools here answer questions Hammer never asked. They are not parity and
 | `read_sightlines` | the eye, standing in the map |
 | `read_vmf_rooms` | nothing: Hammer has no idea what a room is |
 | `read_vmf_surfaces` | nothing: no readout says which faces are buried between brushes |
@@ -197,11 +196,6 @@ Thirty-eight of the tools here answer questions Hammer never asked. They are not
 | `read_vmf_lint` | nothing |
 | `write_vmf_fitting` | prefabs, which are a saved lump of geometry at whatever size somebody once drew it. Nothing in Hammer knows how tall a counter is |
 | `write_hint_brush` | a brush you texture yourself and hope |
-| `read_gma` | nothing: a Workshop archive is opaque |
-| `run_gma_extract` | nothing |
-| `read_lump_patch` | nothing |
-| `write_lump_patch` | nothing: editing a compiled map without recompiling |
-| `read_lump_patch_status` | nothing |
 
 The row that matters most is `read_vmf_solids`. Hammer draws an invalid solid in red and
 tells you nothing else; this says which face, which corner, and why — and it is the oracle

@@ -1,7 +1,12 @@
 # Feasibility gates
 
+> **Historical note (16/11/2026).** Gates A and C were passed on Garry's Mod and Gate B on
+> its engine reading a `.lmp` patch. This fork targets Left 4 Dead 2 only and none of those
+> results has been re-measured on it: they are kept as method, not as claims about L4D2.
+> Gates D–G for the current target are listed in the development diary.
+
 Before writing a tool that depends on something, this repository first proves the something works.
-Each gate below is dated, and one of them is still open and says so.
+Each gate below is dated.
 
 ## Gate A
 

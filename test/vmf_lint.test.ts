@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { luaEntityClasses } from "../src/lua/entities.js";
 import type { ToolContext } from "../src/mcp/registry.js";
 import { readFgdClass, readVmf, readVmfLint } from "../src/tools/vmf.js";
 import { FIXTURES, config, ctx as sharedCtx, has, paths } from "./support/env.js";
@@ -12,8 +11,6 @@ const PROBE_VMF = join(FIXTURES, "hmcp_probe.vmf");
 const ctx = sharedCtx as unknown as ToolContext;
 
 const ready = has.sidecar && has.fgd;
-const TTT = paths.tttSource;
-const hasTtt = has.tttSource;
 
 const scratch = mkdtempSync(join(tmpdir(), "hammer-lint-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -33,17 +30,6 @@ async function lint(path: string): Promise<{
   return (await readVmfLint.handler({ path, limit: 500, collapseInstances: false }, ctx)) as never;
 }
 
-describe("the repo's Lua entity classes", () => {
-  it.skipIf(!has.luaEntities)("finds the scripted entities the FGD cannot know about", () => {
-    // Without these the lint calls every TTT entity an unknown class. The two named
-    // here are the ones it actually got wrong before this existed.
-    const classes = luaEntityClasses(config);
-    expect(classes.length).toBeGreaterThan(50);
-    expect(classes).toContain("ttt_damageowner");
-    expect(classes).toContain("ttt_traitor_button");
-  });
-});
-
 describe("read_fgd_class", () => {
   it.skipIf(!ready)("reads the game's own FGD, not a generic one", async () => {
     const out = (await readFgdClass.handler({ classname: "prop_dynamic", limit: 200 }, ctx)) as {
@@ -58,13 +44,6 @@ describe("read_fgd_class", () => {
     // accepts keys this game does not have.
     expect(out.keyvalues.length).toBeLessThan(80);
     expect(() => z.object(readFgdClass.outputSchema!).parse(out)).not.toThrow();
-  }, 60_000);
-
-  it.skipIf(!ready)("knows a class that exists only in GMod", async () => {
-    const out = (await readFgdClass.handler({ classname: "sent_ball", limit: 200 }, ctx)) as {
-      classname: string;
-    };
-    expect(out.classname).toBe("sent_ball");
   }, 60_000);
 
   it.skipIf(!ready)("suggests near matches instead of failing blankly", async () => {
@@ -181,27 +160,6 @@ describe("the Hammer++ compilers' own FGD", () => {
     const r = await lint(path);
     expect(r.byRule["unknown-classname"]).toBe(1);
   }, 60_000);
-});
-
-describe("read_vmf_lint on a real Hammer-written map", () => {
-  it.skipIf(!ready || !hasTtt)("does not accuse the Lua entities it now knows", async () => {
-    // Before the repo's Lua classes were fed in, this map produced 11 unknown-classname
-    // errors, all of them wrong: ttt_damageowner and ttt_traitor_button are defined in
-    // gamemodes/terrortown/entities/entities/.
-    const r = await lint(TTT);
-    expect(r.byRule["unknown-classname"]).toBeUndefined();
-    expect(r.total).toBeLessThan(20);
-  }, 120_000);
-
-  it.skipIf(!ready || !hasTtt)("counts what the compiler will have to fit", async () => {
-    const out = (await readVmf.handler({ path: TTT, limit: 5, collapseInstances: false }, ctx)) as {
-      counts: { entities: number; worldBrushes: number; entityBrushes: number };
-    };
-    expect(out.counts.entities).toBe(66);
-    expect(out.counts.worldBrushes).toBe(24);
-    expect(out.counts.entityBrushes).toBe(51);
-    expect(() => z.object(readVmf.outputSchema!).parse(out)).not.toThrow();
-  }, 120_000);
 });
 
 /**

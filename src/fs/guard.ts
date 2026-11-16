@@ -5,14 +5,14 @@ import type { Config } from "../config.js";
 /**
  * Trees this server must never write into, relative to the repo root.
  *
- * `srcds/` is a SteamCMD-managed tree: a `validate` or a branch change replaces files
- * under it, so anything of ours living there is lost without warning. Everything that
- * belongs to us goes to `server-config/` and is deployed by `tools/sync-server-config.sh`.
- * `reference/` is a read-only corpus.
+ * `srcds/` is a SteamCMD-managed game tree: a `validate` or a branch change replaces
+ * files under it, so anything of ours living there is lost without warning. Everything
+ * that belongs to us goes to a working directory instead, and is deployed into place
+ * deliberately. `reference/` is a read-only corpus.
  *
- * The repo's `deny-readonly-trees.sh` hook enforces this for the Edit/Write *tools* --
- * it cannot see `node:fs` calls made inside an MCP server. So this is discipline, not
- * enforcement, and `assertWritable` is the choke point that makes it auditable.
+ * An editor hook can enforce this for the Edit/Write *tools* -- it cannot see `node:fs`
+ * calls made inside an MCP server. So this is discipline, not enforcement, and
+ * `assertWritable` is the choke point that makes it auditable.
  *
  * That last sentence used to end "every write in this codebase goes through it", which was
  * not true and had no test able to say so: the contract test inspected each tool's default
@@ -29,8 +29,8 @@ export class WriteRefused extends Error {
     readonly tree: string,
   ) {
     super(
-      `refusing to write ${path}: it resolves under ${tree}/, which hammer-mcp never writes to. ` +
-        `Write to server-config/ instead and deploy with ./tools/sync-server-config.sh.`,
+      `refusing to write ${path}: it resolves under ${tree}/, which this server never ` +
+        `writes to. Write to a working directory instead, and deploy deliberately.`,
     );
     this.name = "WriteRefused";
   }
@@ -39,8 +39,8 @@ export class WriteRefused extends Error {
 /**
  * Resolves a path through symlinks as far as it exists.
  *
- * A plain `resolve()` is not enough: `srcds/garrysmod/addons/*` are symlinks created by
- * `new-addon.sh`, so a lexically innocent path can still land inside the SteamCMD tree.
+ * A plain `resolve()` is not enough: addon directories are often symlinks into another
+ * tree, so a lexically innocent path can still land inside the SteamCMD tree.
  * The target file usually does not exist yet, so we resolve the nearest existing
  * ancestor and re-append the rest.
  */

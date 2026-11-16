@@ -94,16 +94,11 @@ def _finding(
     return {"severity": severity, "rule": rule, "message": message, **extra}
 
 
-def lint_vmf(
-    vmf: Any, fgd: Any, lua_classes: frozenset[str] = frozenset()
-) -> list[dict[str, Any]]:
-    """`lua_classes` are scripted entities the repo defines in Lua.
+def lint_vmf(vmf: Any, fgd: Any) -> list[dict[str, Any]]:
+    """Left 4 Dead 2's FGD is the whole truth about entity classes.
 
-    In GMod the FGD is not the whole truth: a gamemode or addon registers its own
-    entities at runtime, and Hammer never hears about them. Without this set the lint
-    calls `ttt_damageowner` an unknown class and is wrong -- the file
-    `gamemodes/terrortown/entities/entities/ttt_damageowner.lua` defines it. Nothing can
-    be said about their keyvalues either, since no schema for them exists anywhere.
+    Unlike Garry's Mod, there is no Lua layer registering entities at runtime, so an
+    unknown classname is a real finding rather than a false positive to be tolerated.
     """
     findings: list[dict[str, Any]] = []
 
@@ -132,16 +127,12 @@ def lint_vmf(
         cls = fgd.entities.get(classname)
 
         if cls is None:
-            if classname in lua_classes:
-                # Registered in Lua: legitimate, and nothing here can check its keys.
-                continue
             findings.append(
                 _finding(
                     "warning",
                     "unknown-classname",
-                    f'"{classname}" is in no FGD class and no Lua entity of this repo '
-                    f"defines it. Either a typo, or a scripted entity that lives "
-                    f"somewhere this lint cannot see",
+                    f'"{classname}" is in no FGD class. Either a typo, or an entity this '
+                    f"server's FGD set does not know; check which FGDs were loaded",
                     entity_id=ent_id,
                     classname=classname,
                 )
@@ -185,7 +176,7 @@ def lint_vmf(
                         "warning",
                         "output-target-missing",
                         f'"{out.output}" of entity {ent_id} targets "{target}", which '
-                        f"no entity in this map is named. In GMod a Lua-created entity "
+                        f"no entity in this map is named. An entity created at runtime "
                         f"can carry that name at runtime, so this is a lead, not a verdict",
                         entity_id=ent_id,
                         output=out.output,

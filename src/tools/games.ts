@@ -1,29 +1,35 @@
 import { z } from "zod";
 import { discoverSourceInstalls, libraryPaths, steamRoots } from "../games/steam.js";
+import { GAME_ID } from "../games/resolve.js";
+import { BUILTIN_PROFILES } from "../games/profile.js";
 import { defineTool } from "../mcp/registry.js";
+
+/** The one Steam app this fork cares about. */
+const L4D2_APPID = BUILTIN_PROFILES[0]!.steamAppId;
 
 export const readSourceGames = defineTool({
   name: "read_source_games",
   description:
-    "Source games installed on this machine, discovered from Steam's own files rather than " +
-    "from a hard-coded table: libraryfolders.vdf for the libraries, appmanifest_*.acf for " +
-    "the app, and each mod's gameinfo.txt for its name, its SteamAppId, its .fgd files and " +
-    "its instance path. Reports which compilers are present per game, stock and Hammer++. " +
-    "Start here to point hammer-mcp at a game other than the configured one.",
+    "Left 4 Dead 2 as installed here, discovered from Steam's own files rather than from " +
+    "a hard-coded path: libraryfolders.vdf for the libraries, appmanifest_550.acf for the " +
+    "app, and left4dead2/gameinfo.txt for its name, its SteamAppId, its .fgd files and its " +
+    "instance path. Reports which stock compilers are present. This fork supports no " +
+    "other game, so other Source installs are not listed.",
   realm: "local",
   inputSchema: {},
   outputSchema: {
     steamRoots: z.array(z.string()).describe("Deduplicated by realpath: ~/.steam/steam is usually a symlink."),
     libraries: z.array(z.string()),
+    game: z.string().describe(`The one profile this fork resolves: ${GAME_ID}.`),
     games: z.array(
       z.object({
         appId: z.number(),
         name: z.string(),
         gameRoot: z.string(),
-        betaBranch: z.string().nullable().describe("Steam beta key, e.g. x86-64 for GMod's 64-bit branch."),
+        betaBranch: z.string().nullable().describe("Steam's beta key for this install, if any."),
         mods: z.array(
           z.object({
-            dir: z.string().describe("The -game argument's last component: garrysmod, cstrike, tf."),
+            dir: z.string().describe("The -game argument's last component: left4dead2."),
             gameDir: z.string().describe("Absolute path to pass as -game."),
             displayName: z.string().nullable(),
             steamAppId: z.number().nullable(),
@@ -36,11 +42,6 @@ export const readSourceGames = defineTool({
           binaries: z.record(z.boolean()),
           complete: z.boolean(),
         }),
-        plusplus: z.object({
-          dir: z.string().nullable(),
-          binaries: z.record(z.boolean()),
-          complete: z.boolean(),
-        }),
       }),
     ),
     note: z.string(),
@@ -48,11 +49,12 @@ export const readSourceGames = defineTool({
   handler: (_args, _ctx) => {
     const roots = steamRoots();
     const libraries = [...new Set(roots.flatMap(libraryPaths))];
-    const installs = discoverSourceInstalls();
+    const installs = discoverSourceInstalls().filter((i) => i.app.appId === L4D2_APPID);
 
     return {
       steamRoots: roots,
       libraries,
+      game: GAME_ID,
       games: installs.map((i) => ({
         appId: i.app.appId,
         name: i.app.name,
@@ -67,12 +69,13 @@ export const readSourceGames = defineTool({
           instancePath: m.instancePath,
         })),
         toolchain: i.stock,
-        plusplus: i.plusplus,
       })),
       note:
-        "Presence is read from disk; nothing here claims a binary will run under wine, and " +
-        "no engine branch is inferred. A game whose toolchain dir is null simply has no bin/ " +
-        "-- several modern Source games ship their tools in a separate app.",
+        installs.length === 0
+          ? "Left 4 Dead 2 was not found in any Steam library. The compilers and FGDs " +
+            "ship with the game client, not with a dedicated server."
+          : "Presence is read from disk; nothing here claims a binary will run under wine. " +
+            "Tools++ is a separate standalone install and is reported by health, not here.",
     };
   },
 });

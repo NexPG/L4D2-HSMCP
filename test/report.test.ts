@@ -5,7 +5,6 @@ import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { ToolContext } from "../src/mcp/registry.js";
 import {
-  GMOD_DARKRP,
   LIMITS,
   overallVerdict,
   reportMap,
@@ -37,7 +36,7 @@ const find = (r: ReturnType<typeof reportMap>, id: string) => r.criteria.find((c
 
 describe("budget profiles", () => {
   it("state the provenance of every threshold they carry", () => {
-    for (const profile of [SOURCE_STOCK, GMOD_DARKRP]) {
+    for (const profile of [SOURCE_STOCK]) {
       for (const [key, t] of Object.entries(profile)) {
         if (t && typeof t === "object" && "warnAt" in t) {
           expect(t.source, `${profile.id}.${key}`).toBeTruthy();
@@ -46,8 +45,7 @@ describe("budget profiles", () => {
     }
   });
 
-  it("keeps the raised edict ceiling marked unverified, because it is", () => {
-    expect(GMOD_DARKRP.edictLimit?.source).toMatch(/UNVERIFIED/);
+  it("leaves the edict ceiling unoverridden: L4D2's own value is unmeasured", () => {
     expect(SOURCE_STOCK.edictLimit).toBeNull();
   });
 
@@ -116,26 +114,18 @@ describe("reportMap", () => {
 
   it("demands cubemaps only where the profile asks for them", () => {
     expect(find(reportMap(PROBE, SOURCE_STOCK), "cubemaps")).toBeUndefined();
-    const c = find(reportMap(PROBE, GMOD_DARKRP), "cubemaps");
-    expect(c).toBeDefined();
-    // The probe is a bare sealed room: no env_cubemap was ever placed in it.
-    expect(c?.verdict).toBe("fail");
-    expect(c?.message).toMatch(/buildcubemaps/);
   });
 
   it("names the entity ceiling it judged against, so the answer is not ambiguous", () => {
     const stock = find(reportMap(PROBE, SOURCE_STOCK), "edicts");
     expect(stock?.message).toMatch(/2048/);
-    const gmod = find(reportMap(PROBE, GMOD_DARKRP), "edicts");
-    expect(gmod?.message).toMatch(/8192/);
-    expect(gmod?.message).toMatch(/UNVERIFIED/);
   });
 });
 
 describe("read_map_report", () => {
   it("refuses an unknown profile and names the ones that exist", () => {
     expect(() => readMapReportTool.handler({ path: PROBE, profile: "nope" }, ctx)).toThrow(
-      /source-stock, gmod-darkrp/,
+      /source-stock/,
     );
   });
 
