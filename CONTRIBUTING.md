@@ -70,3 +70,13 @@ Typecheck is separate from tests, and not out of habit: a stale `dist/` of
   offsets.
 - **Redistributing Valve content or the Hammer++ binaries.** They are installed, not vendored. No
   `.fgd`, `.bsp` or `.exe` that is not ours enters this repository.
+
+## Licence
+
+The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT notice it
+was forked from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in [`NOTICE`](NOTICE). By
+opening a pull request you agree that your contribution is licensed under the same terms, and that
+it carries no notice, dependency or vendored file that would add a restriction on top of the GPL.
+
+A contributed file that was copied from somewhere else is the one thing to say out loud in the PR:
+a GPL-compatible licence with its notice intact is fine, anything else is not.
