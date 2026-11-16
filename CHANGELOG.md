@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.6-alpha — 2026-11-16
+
+- `campaigns/` is ignored as a directory (root-anchored `/campaigns/`), not merely for the
+  files inside it.
+- Deployment keeps exactly one campaign in the game: the build removes earlier
+  `hsmcp*.vpk` archives from `left4dead2/addons/` and copies the new one as
+  `hsmcp_campaign.vpk`. History stays in the numbered campaign directories, where any run
+  can be rebuilt and deployed again.
+
 ## 0.0.5-alpha — 2026-11-16
 
 - Test campaigns are local only (`campaigns/` is ignored) and live in numbered directories:

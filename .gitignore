@@ -24,5 +24,6 @@ scratchpad/
 # Development diary: working notes for this fork, kept locally and never published.
 .develop-diary/
 
-# Campaign build output: campaigns are local test runs, never pushed.
-campaigns/
+# Test campaigns: the directory itself is local, never pushed.
+# History lives here; the game only ever holds the latest deploy.
+/campaigns/
