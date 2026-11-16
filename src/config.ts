@@ -10,7 +10,6 @@
  * machine-specific by nature. Nothing here may be assumed to exist: every tool that
  * depends on `binDir` degrades to a reported reason rather than throwing.
  */
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { loadConfig as coreLoadConfig } from "@projectsociety/mcp-core";
 import { z } from "zod";
@@ -39,19 +38,7 @@ export const ConfigFile = z.object({
    */
   gameProfiles: z.record(GameProfileOverride).default({}),
   /**
-   * How the Windows compilers are executed. Decided by measurement, not preference:
-   * plain wine was verified to run the Source compilers here on 02/08/2026 (see README).
-   * On Windows the default is `native`, which runs the .exe files directly.
-   */
-  backend: z
-    .enum(["wine", "proton", "native"])
-    .default(process.platform === "win32" ? "native" : "wine"),
-  /** WINEPREFIX for the `wine` backend. */
-  winePrefix: z.string().default(join(homedir(), ".wine")),
-  /** Proton entry script, for the `proton` backend. Not implemented: wine and native are. */
-  protonPath: z.string().optional(),
-  /**
-   * Interpreter for the Python sidecar. Defaults to the venv `sidecar/setup.sh` builds
+   * Interpreter for the Python sidecar. Defaults to the venv `sidecar/setup.ps1` builds
    * under the state directory. Set it only to point at an interpreter you manage.
    */
   sidecarPython: z.string().optional(),

@@ -74,7 +74,7 @@ export const readSourceGames = defineTool({
         installs.length === 0
           ? "Left 4 Dead 2 was not found in any Steam library. The compilers and FGDs " +
             "ship with the game client, not with a dedicated server."
-          : "Presence is read from disk; nothing here claims a binary will run under wine. " +
+          : "Presence is read from disk; nothing here claims a binary will run. " +
             "Tools++ is a separate standalone install and is reported by health, not here.",
     };
   },

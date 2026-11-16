@@ -2,10 +2,9 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { externalToolPresent } from "../compile/external.js";
-import { toolchainDir } from "../compile/wine.js";
+import { toolchainDir } from "../compile/toolchain.js";
 import { allGames, gameFor } from "../games/resolve.js";
 import { defineTool } from "../mcp/registry.js";
-import { run } from "../proc/run.js";
 import { probeSidecar } from "../sidecar/client.js";
 import { externalTools } from "./rename.js";
 import { buildFreshness, VERSION } from "../version.js";
@@ -47,11 +46,10 @@ export const health = defineTool({
   description:
     "State of the Left 4 Dead 2 toolchain this server depends on: repo root, the game's " +
     "bin directory (which ships with the client, not with srcds), which compilers and " +
-    ".fgd files are present, whether the Wine or native backend can be executed, and " +
-    "whether the Python sidecar (srctools) is installed. Also how many tools this server " +
-    "is serving and whether its build is older than the source -- a stale build silently " +
-    "offers fewer tools. Start here when a tool reports something missing, or is missing " +
-    "itself.",
+    ".fgd files are present, whether the Python sidecar (srctools) is installed. Also " +
+    "how many tools this server is serving and whether its build is older than the " +
+    "source -- a stale build silently offers fewer tools. Start here when a tool reports " +
+    "something missing, or is missing itself.",
   realm: "local",
   inputSchema: {},
   handler: async (_args, ctx) => {
@@ -59,10 +57,6 @@ export const health = defineTool({
     const binDir = config.binDir;
     const binDirExists = binDir !== null && existsSync(binDir);
 
-    const wine =
-      config.backend === "native"
-        ? null
-        : await run("wine", ["--version"], { timeoutMs: 10_000 }).catch(() => null);
     const sidecar = await probeSidecar(config);
 
     // Never throws: health has to stay callable precisely when the configuration is what
@@ -144,7 +138,7 @@ export const health = defineTool({
           "run_compile and run_pack DEFAULT to this chain, and fall back to the stock " +
           "compilers when it is absent -- saying so in toolchainNote rather than " +
           "substituting in silence. So absent is workable, not broken: it costs a much " +
-          "slower vvis and the culling flags. From tools_plusplus.zip (ficool2/misc_tools); " +
+          "slower vvis and the culling flags. From tools++_windows.zip (ficool2/misc_tools); " +
           "since October 2026 they are standalone and go wherever plusPlusBinDir points.",
       },
       // Standalone tools that belong to no game install, so nothing can discover them.
@@ -162,11 +156,9 @@ export const health = defineTool({
           "From ficool2's tools page (https://ficool2.github.io/HammerPlusPlus-Website/" +
           "tools.html). Put the .exe in the directory above, or set externalToolsDir.",
       },
-      backend: {
-        kind: config.backend,
-        winePrefix: config.winePrefix,
-        wineVersion: wine?.code === 0 ? wine.stdout.trim() : null,
-        protonPath: config.protonPath ?? null,
+      platform: {
+        kind: "windows",
+        native: process.platform === "win32",
       },
       sidecar,
       guardedToolsAllowlisted: config.toolAllowlist,

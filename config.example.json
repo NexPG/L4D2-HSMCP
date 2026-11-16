@@ -11,8 +11,5 @@
 
   "externalToolsDir": "D:\\tools\\source",
 
-  "backend": "native",
-  "winePrefix": "C:\\Users\\you\\.wine",
-
   "toolAllowlist": []
 }

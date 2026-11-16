@@ -9,7 +9,7 @@
  * happens by accident.
  *
  * `hmcp_probe.bsp` is committed, so this runs on a bare machine with no toolchain. That was
- * worth checking before the plan relied on it: an oracle that only runs where wine is
+ * worth checking before the plan relied on it: an oracle that only runs where the game is
  * installed is an oracle that runs nowhere in CI.
  *
  * ## What is deliberately excluded, and why saying so matters

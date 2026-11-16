@@ -12,7 +12,7 @@ config.json
 __pycache__/
 *.pyc
 
-# Python venv, when sidecar/setup.sh builds it in place.
+# Python venv, when sidecar/setup.ps1 builds it in place.
 .venv/
 
 # Dogfood runs: a round leaves its brief, its rules and its renders here.

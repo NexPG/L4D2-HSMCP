@@ -19,8 +19,8 @@ const INSTRUCTIONS = `Offline map tooling for Left 4 Dead 2.
 
 Reach for it to: measure a map (extents, entity counts and histogram, lump sizes) --
 including a 1 GB shipped .bsp, which it reads by offset in milliseconds rather than
-loading whole; inspect or edit a .vmf; and drive the Windows compilers under Wine or
-natively, with the game's own FGD as the entity schema.
+loading whole; inspect or edit a .vmf; and drive the Windows compilers natively, with the
+game's own FGD as the entity schema.
 
 Prefer it over reading map files by hand: a .bsp is binary, and a naive full read of a
 large map would stall this transport.
@@ -35,9 +35,9 @@ import { VERSION } from "./version.js";
 /**
  * Entry point of the l4d2-hsmcp MCP server (stdio transport, local-first).
  *
- * Offline file tooling for Left 4 Dead 2 maps: VMF, BSP and the Windows compilers under
- * Wine or natively. It holds no lock and opens no transport into a running game; anything
- * that needs the live engine belongs to a separate bridge.
+ * Offline file tooling for Left 4 Dead 2 maps: VMF, BSP and the Windows compilers,
+ * natively. It holds no lock and opens no transport into a running game; anything that
+ * needs the live engine belongs to a separate bridge.
  *
  * Launched by Claude Code, so nothing may go to stdout: that is the protocol channel.
  */
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   const audit = new AuditLog(config.stateDir);
   audit.record({
     kind: "server_start",
-    data: { version: VERSION, repoRoot: config.repoRoot, backend: config.backend },
+    data: { version: VERSION, repoRoot: config.repoRoot, platform: process.platform },
   });
 
   const registry = new ToolRegistry();
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   await server.connect(transport);
   process.stderr.write(
     `hammer-mcp ${VERSION} ready -- repoRoot=${config.repoRoot} ` +
-      `backend=${config.backend} tools=${registry.list().length}\n`,
+      `platform=${process.platform} tools=${registry.list().length}\n`,
   );
 }
 

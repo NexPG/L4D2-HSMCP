@@ -9,7 +9,6 @@
  * - **Discovery is lazy and memoised.** `loadConfig` stays a file read; scanning Steam
  *   libraries happens the first time a tool actually needs the game.
  */
-import { join } from "node:path";
 import type { Config } from "../config.js";
 import type { ResolvedGame } from "./profile.js";
 import { resolveProfiles } from "./profile.js";
@@ -82,14 +81,7 @@ export function gameBlock(
 /**
  * The FGDs to check a map against, as paths relative to `binDir`.
  *
- * Required ones come from the game's own `gameinfo.txt`. Optional ones are added only
- * when the file is there, and reported either way, so a lint never widens its schema
- * without saying so.
+ * Required ones come from the game's own `gameinfo.txt`; the caller adds optional files
+ * from the compiler directory it actually uses.
  */
-export function fgdNamesFor(game: ResolvedGame, exists: (p: string) => boolean): string[] {
-  if (!game.binDir) return [];
-  return [
-    ...game.fgd,
-    ...game.optionalFgd.filter((rel) => exists(join(game.binDir as string, rel))),
-  ];
-}
+

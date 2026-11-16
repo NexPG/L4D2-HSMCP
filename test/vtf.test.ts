@@ -54,7 +54,7 @@ const convert = async (image: string, over: Record<string, unknown> = {}): Promi
 describe("run_vtf_convert", () => {
   it("refuses a file VTFCmd cannot read, naming what it does read", async () => {
     // Its own answer is "Error loading input file", which says nothing about which part
-    // it disliked -- and it says it after the process has started under wine.
+    // it disliked -- and it says it after the process has started.
     const notAnImage = join(scratch, "notes.txt");
     writeFileSync(notAnImage, "this is not a texture\n");
     await expect(convert(notAnImage)).rejects.toThrow(/not an image VTFCmd reads/);

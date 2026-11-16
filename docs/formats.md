@@ -36,7 +36,7 @@ reads and writes VMF, BSP, VPK, VTF, VMT and FGD, it is maintained, and **no mat
 library exists for BSP**. Rewriting it would have been months of work on solved problems.
 
 So `sidecar/` is a pinned venv (`srctools==2.7.0`) behind a single entry point: a verb in
-`argv[1]`, JSON on stdin, JSON on stdout, diagnostics on stderr. `./sidecar/setup.sh` builds it;
+`argv[1]`, JSON on stdin, JSON on stdout, diagnostics on stderr. `./sidecar/setup.ps1` builds it;
 the venv lives under `<stateDir>/sidecar-venv`, outside the repository, because it is
 machine-specific build output.
 

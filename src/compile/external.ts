@@ -12,8 +12,8 @@
  * `bsp_rename.exe` prints `Enter the bsp name:` and waits. Written for a person dragging a
  * file onto it, which is exactly the shape an agent cannot use -- unless the answers are
  * fed on stdin, which is what `stdin` below is for. Measured 14/08/2026: three lines (the
- * path, the new name, and a newline for its "press any key") drive it to completion under
- * wine with no terminal at all.
+ * path, the new name, and a newline for its "press any key") drive it to completion with
+ * no terminal at all.
  *
  * The `Press any key to continue...` at the end is why every call needs a timeout it can
  * survive: a tool waiting on a key it will never get looks identical to a slow one.
@@ -22,7 +22,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { run } from "@projectsociety/mcp-core";
 import type { Config } from "../config.js";
-import { ToolchainError, windowsInvocation } from "./wine.js";
+import { ToolchainError, windowsInvocation } from "./toolchain.js";
 
 export interface ExternalRun {
   stdout: string;
@@ -45,11 +45,10 @@ export function externalToolPresent(config: Config, exe: string): boolean {
 }
 
 /**
- * Runs one external Windows tool under wine.
+ * Runs one external Windows tool natively.
  *
- * Same two load-bearing settings as the compilers, for the same measured reasons: the
- * working directory is the tool's own, and `WINEDEBUG=-all` keeps wine's `fixme:` lines
- * out of the tool's output.
+ * The working directory is the tool's own: several of these resolve sibling DLLs or
+ * relative paths from where they were launched.
  */
 export async function runExternalTool(
   config: Config,
@@ -67,7 +66,7 @@ export async function runExternalTool(
     );
   }
   const started = Date.now();
-  const [cmd, cmdArgs, env] = windowsInvocation(config, binary, args);
+  const [cmd, cmdArgs, env] = windowsInvocation(binary, args);
   const result = await run(cmd, cmdArgs, {
     cwd: options.where ?? config.externalToolsDir!,
     timeoutMs: options.timeoutMs ?? 300_000,

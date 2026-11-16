@@ -4,7 +4,7 @@ import { z } from "zod";
  * Where a tool does its work.
  *
  * `map` -- offline file work on a VMF, a BSP or a lump patch. Pure Node, no engine.
- * `local` -- shells out to a host binary (the Source compilers, under Wine).
+ * `local` -- shells out to a host binary (the Source compilers, natively on Windows).
  *
  * Deliberately not a live-engine realm: this server never speaks to a running game,
  * and anything needing the live engine belongs to a separate bridge.

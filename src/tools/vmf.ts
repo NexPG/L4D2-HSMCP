@@ -5,7 +5,7 @@ import { LUMP_SPECS } from "../bsp/geometry.js";
 import { LUMP_NAMES } from "../bsp/header.js";
 import type { Config } from "../config.js";
 import type { ResolvedGame } from "../games/profile.js";
-import { fgdNamesFor, gameBlock, gameFor } from "../games/resolve.js";
+import { gameBlock, gameFor } from "../games/resolve.js";
 import { defineTool } from "../mcp/registry.js";
 import { callSidecar } from "../sidecar/client.js";
 import { buildScene, MASK_SOLID } from "../space/scene.js";
@@ -34,22 +34,21 @@ const FINDING = z.object({
 });
 
 /**
- * The FGDs to check a map against, as paths relative to `binDir`.
+ * The FGDs to check a map against.
  *
- * The game's own is always there. The Hammer++ compilers add five classes of their own --
- * `func_detail_illusionary`, `func_detail_blocker`, `func_nobevel`, `light_directional`,
- * `light_projected` -- and without their FGD a map that uses them gets an
- * `unknown-classname` for each, which is the same false positive the repo's Lua classes
- * once produced.
+ * The game's own list comes from `gameinfo.txt`. Tools++ adds five classes of its own
+ * (`func_detail_illusionary`, `func_detail_blocker`, `func_nobevel`, `light_directional`,
+ * `light_projected`), and without their FGD a map that uses them gets an
+ * `unknown-classname` for each. Its file is read from the configured Tools++ directory
+ * when present, and reported back as `fgdsLoaded`: a schema that silently widens is a
+ * lint that silently stops catching things.
  *
- * Included only when the file is really there, and always reported back as `fgdsLoaded`:
- * a schema that silently widens is a lint that silently stops catching things.
- *
- * `hammerplusplus_fgd.fgd`, shipped with the editor, is deliberately not here. It mostly
+ * `hammerplusplus_fgd.fgd`, shipped with the editor, is deliberately not here: it mostly
  * redeclares existing classes to add editor helpers, so merging it would change the
  * accepted keyvalues of entities the game already defines.
  */
-const OPTIONAL_FGDS = ["win64/toolsplusplus.fgd"];
+const OPTIONAL_FGDS = ["win64/toolsplusplus.fgd"]; // the older in-game layout
+const TOOLS_PLUSPLUS_FGD = "toolsplusplus.fgd";
 
 /**
  * Resolves the game a call works against and the FGDs to check against.
@@ -69,12 +68,19 @@ export function fgdContext(
   id?: string,
 ): { game: ResolvedGame; from: "argument" | "config"; binDir: string; fgd: string[] } {
   const { game, from } = gameFor(config, id);
-  const withOptional: ResolvedGame = { ...game, optionalFgd: OPTIONAL_FGDS };
+  const plusDir = game.plusPlusBinDir ?? config.plusPlusBinDir;
+  const toolsFgd = plusDir ? join(plusDir, TOOLS_PLUSPLUS_FGD) : null;
   return {
     game,
     from,
     binDir: game.binDir ?? config.binDir ?? "",
-    fgd: fgdNamesFor(withOptional, existsSync),
+    fgd: [
+      ...game.fgd,
+      ...(toolsFgd && existsSync(toolsFgd) ? [toolsFgd] : []),
+      ...(game.binDir
+        ? OPTIONAL_FGDS.filter((rel) => existsSync(join(game.binDir as string, rel)))
+        : []),
+    ],
   };
 }
 

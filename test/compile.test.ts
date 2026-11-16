@@ -14,7 +14,7 @@ import {
   toolchainDir,
   toWindowsPath,
   windowsInvocation,
-} from "../src/compile/wine.js";
+} from "../src/compile/toolchain.js";
 import type { MapEntity } from "../src/entity/model.js";
 import type { ToolContext } from "../src/mcp/registry.js";
 import { readLeak, runCompile } from "../src/tools/compile.js";
@@ -26,19 +26,17 @@ const scratch = mkdtempSync(join(tmpdir(), "hammer-compile-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 describe("Windows path conversion", () => {
-  it("maps the root onto Z:", () => {
-    expect(toWindowsPath("/home/x/map.vmf")).toBe("Z:\\home\\x\\map.vmf");
-  });
-
   it("refuses a relative path", () => {
-    // The failure this prevents is silent: wine resolves a relative path against its
-    // own working directory, and vbsp then compiles a different file successfully.
+    // The failure this prevents is silent: the compiler resolves a relative path against
+    // its own working directory and compiles a different file successfully.
     expect(() => toWindowsPath("maps/foo.vmf")).toThrow(ToolchainError);
   });
 
-  it("leaves a drive path on its drive, normalising only the separators", () => {
-    // On Windows the path already is a Windows path. Prefixing Z: would hand vbsp
-    // "Z:C:\...", which names no file at all.
+  it("refuses a POSIX path: this fork does not translate one", () => {
+    expect(() => toWindowsPath("/home/x/map.vmf")).toThrow(ToolchainError);
+  });
+
+  it("normalises only the separators of an absolute drive path", () => {
     expect(toWindowsPath("C:/Steam/cstrike/maps/foo.vmf")).toBe("C:\\Steam\\cstrike\\maps\\foo.vmf");
     expect(toWindowsPath("D:\\maps\\foo.vmf")).toBe("D:\\maps\\foo.vmf");
   });
@@ -52,31 +50,18 @@ describe("how a Windows binary is executed", () => {
   afterEach(() => onPlatform(realPlatform));
 
   const binary = "C:\\game\\bin\\vbsp.exe";
-  const withBackend = (backend: string) => ({ ...config, backend }) as typeof config;
 
-  it("runs the binary itself under the native backend on Windows", () => {
+  it("runs the binary itself on Windows", () => {
     onPlatform("win32");
-    const [cmd, args, env] = windowsInvocation(withBackend("native"), binary, ["-game", "x"]);
+    const [cmd, args, env] = windowsInvocation(binary, ["-game", "x"]);
     expect(cmd).toBe(binary);
     expect(args).toEqual(["-game", "x"]);
-    expect(env.WINEDEBUG).toBe(process.env.WINEDEBUG);
+    expect(env).toBe(process.env);
   });
 
-  it("refuses the native backend anywhere but Windows", () => {
+  it("refuses to run anywhere but Windows, naming the platform", () => {
     onPlatform("linux");
-    expect(() => windowsInvocation(withBackend("native"), binary, [])).toThrow(/needs Windows/);
-  });
-
-  it("keeps wine's prefix and silences its fixme lines under the wine backend", () => {
-    const [cmd, args, env] = windowsInvocation(withBackend("wine"), binary, ["-game", "x"]);
-    expect(cmd).toBe("wine");
-    expect(args).toEqual([binary, "-game", "x"]);
-    expect(env.WINEDEBUG).toBe("-all");
-    expect(env.WINEPREFIX).toBe(config.winePrefix);
-  });
-
-  it("still refuses proton, which nothing here has run", () => {
-    expect(() => windowsInvocation(withBackend("proton"), binary, [])).toThrow(ToolchainError);
+    expect(() => windowsInvocation(binary, [])).toThrow(/Windows only/);
   });
 });
 
@@ -280,7 +265,7 @@ async function compile(
   )) as never;
 }
 
-describe("compiling for real, under wine", () => {
+describe("compiling for real, with the stock chain", () => {
   const sealed = join(scratch, "sealed.vmf");
   const leaky = join(scratch, "leaky.vmf");
 
@@ -325,7 +310,7 @@ describe("choosing the Tools++ toolchain", () => {
   it("resolves the binaries of each chain to its own directory", () => {
     // The correction gate C forced: the ++ compilers are not siblings of the stock ones.
     expect(compilerExe("vbsp", "stock")).toBe("vbsp.exe");
-    expect(compilerExe("vbsp", "plusplus")).toBe("vbspplusplus.exe");
+    expect(compilerExe("vbsp", "plusplus")).toBe("vbsp++.exe");
     expect(toolchainDir(config, "stock")).toBe(config.binDir);
     // Tools++ is standalone: null unless configured, never a guessed bin/win64.
     expect(toolchainDir(config, "plusplus")).toBe(config.plusPlusBinDir);
@@ -337,7 +322,7 @@ describe("choosing the Tools++ toolchain", () => {
     // one. Only the binary's own banner tells them apart, and it is the first line, so
     // run_compile's stdoutTail (the last 40) cannot carry it.
     const run = await runCompiler(config, compilerExe("vbsp", "plusplus"), [], 60_000, "plusplus");
-    expect(run.stdout.split("\n")[0]).toContain("vbspplusplus.exe");
+    expect(run.stdout.split("\n")[0]).toContain("vbsp++.exe");
   }, 120_000);
 
   it.skipIf(!hasPlus)("compiles the sealed probe the same way the stock chain does", async () => {
@@ -401,9 +386,9 @@ describe("choosing the Tools++ toolchain", () => {
     const chosen = chooseToolchain(absent, "plusplus", ["vbsp", "vvis"]);
     expect(chosen.chain).toBe("stock");
     expect(chosen.requested).toBe("plusplus");
-    expect(chosen.missing).toEqual(["vbspplusplus.exe", "vvisplusplus.exe"]);
+    expect(chosen.missing).toEqual(["vbsp++.exe", "vvis++.exe"]);
     expect(chosen.note).toMatch(/not installed/);
-    expect(chosen.note).toMatch(/tools_plusplus\.zip/);
+    expect(chosen.note).toMatch(/tools\+\+_windows\.zip/);
   });
 
   it("does not dress a stock request up as a fallback", () => {
@@ -448,7 +433,7 @@ describe("choosing the Tools++ toolchain", () => {
 
   it("names the missing chain rather than blaming the game install", async () => {
     // The negative control, and the reason the message is not the generic one: without
-    // the chain named, "vbspplusplus.exe not found" reads as a broken Left 4 Dead 2
+    // the chain named, "vbsp++.exe not found" reads as a broken Left 4 Dead 2
     // install -- and the stock compilers sitting right there are perfectly fine.
     const absent = { ...config, plusPlusBinDir: join(scratch, "no-such-toolchain") };
     await expect(

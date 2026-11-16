@@ -3,9 +3,9 @@
 [![CI](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-An MCP server for Left 4 Dead 2 map work. It reads `.vmf` and `.bsp` files, lints a map against
-the game's own FGD, edits a `.vmf` without reformatting it, drives the compilers under Wine or
-natively on Windows — **Tools++ by default**, stock on demand or as a fallback — and measures a
+An MCP server for Left 4 Dead 2 map work on Windows. It reads `.vmf` and `.bsp` files, lints a
+map against the game's own FGD, edits a `.vmf` without reformatting it, drives the Windows
+compilers natively — **Tools++ by default**, stock on demand or as a fallback — and measures a
 map against the limits of the format.
 
 **It never talks to a running engine.** It reads and writes files and runs compilers, and nothing
@@ -40,7 +40,7 @@ flowchart LR
   VMF[".vmf"] --> LINT["read_vmf_lint<br/>against the game's FGD"]
   LINT --> EDIT["edit_vmf<br/>splice, never reserialise"]
   EDIT --> VMF
-  LINT --> C["vbsp · vvis · vrad<br/>under Wine"]
+  LINT --> C["vbsp · vvis · vrad<br/>natively"]
   C --> BSP[".bsp"]
   BSP --> M["measure · pack · patch entities"]
   M -. never .-x ENG["a running engine"]
@@ -55,7 +55,7 @@ flowchart LR
 | **Edit** | entities, keyvalues and outputs of a `.vmf`, by splicing byte ranges — untouched bytes stay untouched |
 | **Build** | brushes from a shape description, wound and textured the way vbsp expects, refused unless they close |
 | **Optimise** | `func_detail`, hint brushes including diagonal ones, per-face lightmap scale — the decisions a compiled map no longer contains |
-| **Compile** | vbsp/vvis/vrad under Wine (natively on Windows), findings per stage, and a leak turned into a named entity |
+| **Compile** | vbsp/vvis/vrad natively on Windows, findings per stage, and a leak turned into a named entity |
 | **Ship** | resolve every asset a map references and find what will be missing, pack them into a `.bsp` — by hand or derived from the map — check a nav mesh still matches |
 
 ## Knowing when you are done
@@ -370,10 +370,10 @@ measurement in [`docs/`](docs/), or it says it is not.
 
 ## Install
 
-```bash
+```powershell
 git clone https://github.com/NexPG/l4d2-HSMCP
-cd l4d2-HSMCP && pnpm install && pnpm build
-./sidecar/setup.sh          # Python venv + srctools, for the VMF/FGD/pakfile tools
+cd l4d2-HSMCP; pnpm install; pnpm build
+powershell -ExecutionPolicy Bypass -File sidecar/setup.ps1   # Python venv + srctools
 node dist/index.js install  # declares the server in <repoRoot>/.mcp.json
 ```
 
@@ -391,8 +391,7 @@ source. On 13/08/2026 this cost twelve tools and forty minutes.
 |---|---|---|
 | Node ≥ 20 | everything | nothing starts |
 | Python 3 + [`srctools`](https://github.com/TeamSpen210/srctools) | VMF, FGD, pakfile | those tools only |
-| Wine (measured on 9.0), except on Windows | `run_compile`, `run_pack` | those two only |
-| A Source game with its compilers | same | same |
+| A Left 4 Dead 2 install with its compilers | `run_compile`, `run_pack` | those two only |
 
 ⚠️ **The compilers ship with the game *client*, never with a dedicated server.** `srcds/bin/` has
 none of them.
@@ -427,7 +426,7 @@ holds, and a tool not on the list keeps both gates, which stays the default.
 
 | Tool | Realm | Guarded | What it does |
 |---|---|---|---|
-| `health` | `local` | | State of the toolchain: game profile, binaries, FGDs, Wine, sidecar — and how many tools this build serves, and whether it is older than the source |
+| `health` | `local` | | State of the toolchain: game profile, binaries, FGDs, sidecar — and how many tools this build serves, and whether it is older than the source |
 | `read_source_games` | `local` | | Source games installed here, read from Steam and from `gameinfo.txt` |
 | `read_bsp_info` | `map` | | Header of a `.bsp`: ident, version, mapRevision, all 64 lumps, and whether vrad produced HDR |
 | `read_bsp_entities` | `map` | | Entities of lump 0, filtered and paginated, with a classname histogram |
@@ -490,7 +489,7 @@ holds, and a tool not on the list keeps both gates, which stays the default.
 | `run_cubemap2hdr` | `local` | ● | Turns an LDR cubemap into the HDR one Source loads in HDR mode. Refuses anything but DXT1 up front, naming the format the file actually is || `run_vtf_convert` | `local` | ● | Turns a `.tga`/`.png`/`.bmp` into a `.vtf`, and reports the format that actually came out rather than the one asked for. Drives VTFCmd from ficool2's VTFEdit++ |
 | `run_tga2skybox` | `local` | ● | Builds a cubemap `.vtf` from six TGA faces, LDR **and** HDR — the half of cubemap work that does not need the engine running. Drives ficool2's `tga2skybox` |
 | `run_bsp_rename` | `local` | ● | Renames a compiled `.bsp` **and the content packed inside it** — the nodegraph, cubemap patches, soundscripts. Drives ficool2's `bsp_rename`, a separate download; `health` says whether it is there |
-| `run_compile` | `local` | ● | vbsp, vvis and vrad under Wine, or natively on Windows, findings per stage. Drives the **Hammer++ chain by default**, with its culling flags; falls back to the stock compilers when Hammer++ is absent and says which one ran |
+| `run_compile` | `local` | ● | vbsp, vvis and vrad natively, findings per stage. Drives the **Tools++ chain by default**, with its culling flags; falls back to the stock compilers when Tools++ is absent and says which one ran |
 | `read_compile_log` | `map` | | Turns compiler output into findings, each with what the message actually means |
 | `read_leak` | `map` | | Turns `**** leaked ****` into a position and a named entity |
 | `read_map_dependencies` | `map` | | Every asset a map references, and whether each will be there: packed, from the game, or missing |
@@ -519,11 +518,11 @@ documented rather than filled, because no independent way to check the answer co
 
 The dated record of what was tried, measured, and got wrong:
 
-- [docs/gates.md](docs/gates.md) — the feasibility gates: do the compilers run under Wine, does
-  the engine honour a lump patch, does the Hammer++ chain behave like the stock one
+- [docs/gates.md](docs/gates.md) — the feasibility gates: do the compilers run, does
+  the engine honour a lump patch, does the Tools++ chain behave like the stock one
 - [docs/measuring.md](docs/measuring.md) — what a 1.13 GB production map says about itself, and
   the three ways of sampling sightlines that all returned confident, wrong numbers
-- [docs/compiling.md](docs/compiling.md) — Wine, Hammer++, what `cull` actually saves, and the
+- [docs/compiling.md](docs/compiling.md) — Tools++, what `cull` actually saves, and the
   compiler messages that name the wrong thing
 - [docs/formats.md](docs/formats.md) — the sidecar, the FGD, game profiles, and the KeyValues
   grammar they share
@@ -538,9 +537,7 @@ The dated record of what was tried, measured, and got wrong:
 | Field | Default |
 |---|---|
 | `gameProfiles.l4d2` | `{}` — overrides for the one profile: `binDir`, `gameDir`, `plusPlusBinDir`, `fgd`, `branch` |
-| `backend` | `native` on Windows, which runs the `.exe` files directly; `wine` everywhere else |
-| `winePrefix` | `~/.wine` |
-| `sidecarPython` | `<stateDir>/sidecar-venv/bin/python`, or `Scripts\python.exe` in that venv on Windows |
+| `sidecarPython` | `<stateDir>/sidecar-venv/Scripts/python.exe` |
 | `externalToolsDir` | `<stateDir>/tools` — standalone tools this server drives, such as ficool2's `bsp_rename.exe`. They belong to no game install, so nothing can discover them; `health` lists which are present |
 | `toolAllowlist` | `[]` |
 
@@ -558,13 +555,13 @@ pnpm test        # vitest
 pnpm typecheck   # tsc --noEmit, tests included
 ```
 
-Most of this suite is not unit tests: it drives the real compilers under Wine, the real Python
+Most of this suite is not unit tests: it drives the real compilers, the real Python
 sidecar and real maps. None of that ships with the repository, so `pnpm test` on a bare machine
 **skips** what it cannot run — and says so:
 
 ```
 [hammer-mcp] Tests needing these are SKIPPED, not passing:
-  - the Python sidecar venv (run sidecar/setup.sh)
+  - the Python sidecar venv (run sidecar/setup.ps1)
   - a large production .bsp
 ```
 

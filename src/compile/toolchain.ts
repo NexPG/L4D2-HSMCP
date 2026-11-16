@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { join } from "node:path";
 import { run } from "@projectsociety/mcp-core";
 import type { RunResult } from "@projectsociety/mcp-core";
 import type { Config } from "../config.js";
@@ -8,24 +8,20 @@ import type { ResolvedGame } from "../games/profile.js";
 export class ToolchainError extends Error {}
 
 /**
- * Converts a Linux path to the Windows form the compilers need.
+ * Normalises an absolute Windows path for the compilers.
  *
- * Wine maps `Z:` to `/`, so `/home/x` becomes `Z:\home\x`. This is not cosmetic: a
- * relative path is resolved against wine's own working directory, and vbsp then compiles
- * a different file than the one asked for, silently and successfully.
- *
- * A path that is already a Windows drive path (the `native` backend, on Windows) only has
- * its separators normalised: prefixing it with `Z:` would produce `Z:C:\...`.
+ * This fork runs on Windows only, so there is no `Z:` mapping and nothing to translate:
+ * a drive path has its separators normalised, and anything else is refused. A relative
+ * path is the dangerous case -- the compiler resolves it against its own working
+ * directory and can compile a different file than the one asked for, silently.
  */
 export function toWindowsPath(path: string): string {
-  if (/^[A-Za-z]:[\\/]/.test(path)) return path.replace(/\//g, "\\");
-  if (!isAbsolute(path)) {
+  if (!/^[A-Za-z]:[\\/]/.test(path)) {
     throw new ToolchainError(
-      `${path}: the Source compilers need an absolute path, because a relative one ` +
-        `resolves against wine's working directory and quietly compiles the wrong file`,
+      `${path}: the Source compilers need an absolute Windows drive path, not a relative one`,
     );
   }
-  return `Z:${path.replace(/\//g, "\\")}`;
+  return path.replace(/\//g, "\\");
 }
 
 export interface CompilerRun extends RunResult {
@@ -72,9 +68,30 @@ export function toolchainDir(
   return game?.plusPlusBinDir ?? config.plusPlusBinDir;
 }
 
-/** `vbsp.exe` or `vbspplusplus.exe`. One place knows the naming convention. */
+/**
+ * `vbsp.exe` or `vbsp++.exe`. One place knows the naming convention.
+ *
+ * The Tools++ download from October 2026 is standalone and names its binaries
+ * `vbsp++.exe`; the older in-game builds were `vbspplusplus.exe`. Both are accepted --
+ * the name is a fact about an install, not something to guess -- and every caller that
+ * reads a directory goes through `compilerCandidates`.
+ */
 export function compilerExe(stage: CompileStage, chain: Toolchain): string {
-  return chain === "stock" ? `${stage}.exe` : `${stage}plusplus.exe`;
+  return chain === "stock" ? `${stage}.exe` : `${stage}++.exe`;
+}
+
+/** Every filename a stage may carry on the `++` chain, newest convention first. */
+export function compilerCandidates(stage: CompileStage, chain: Toolchain): string[] {
+  if (chain === "stock") return [`${stage}.exe`];
+  return [`${stage}++.exe`, `${stage}plusplus.exe`];
+}
+
+/** The first candidate present in `dir`, or the canonical name when none is. */
+export function resolveCompiler(dir: string, stage: CompileStage, chain: Toolchain): string {
+  for (const name of compilerCandidates(stage, chain)) {
+    if (existsSync(join(dir, name))) return name;
+  }
+  return compilerExe(stage, chain);
 }
 
 export interface ChosenToolchain {
@@ -113,8 +130,10 @@ export function chooseToolchain(
     dir === null
       ? stages.map((s) => compilerExe(s, requested))
       : stages
-          .map((s) => compilerExe(s, requested))
-          .filter((exe) => !existsSync(join(dir, exe)));
+          .filter(
+            (s) => !compilerCandidates(s, requested).some((n) => existsSync(join(dir, n))),
+          )
+          .map((s) => compilerExe(s, requested));
 
   if (missing.length === 0) return { chain: requested, requested, missing: [], note: null };
   if (requested === "stock") {
@@ -136,17 +155,15 @@ export function chooseToolchain(
         : `The Tools++ chain is the default and is not installed here (${missing.join(", ")} ` +
           `missing from ${dir}), so this ran on the stock compilers. That is a slower vvis ` +
           `and no culling flags, not a different map. The four binaries come from ` +
-          `tools_plusplus.zip (ficool2/misc_tools); health reports which are present.`,
+          `tools++_windows.zip (ficool2/misc_tools); health reports which are present.`,
   };
 }
 
 /**
- * Runs one Source compiler under wine.
+ * Runs one Source compiler natively.
  *
- * Two settings are load-bearing, both measured rather than guessed (README, gate A):
- * the working directory must be the `bin` folder or `tier0.dll` fails to resolve, and
- * `WINEDEBUG=-all` must be set or stderr is a wall of `fixme:` lines that buries the
- * compiler's own output.
+ * The working directory is load-bearing, measured rather than guessed: it must be the
+ * compiler's own folder or `tier0.dll` fails to resolve.
  */
 export async function runCompiler(
   config: Config,
@@ -170,22 +187,44 @@ export async function runCompiler(
   }
   const binary = join(dir, exe);
   if (!existsSync(binary)) {
-    throw new ToolchainError(
-      chain === "stock"
-        ? `${binary} not found. Stock compilers ship with the Left 4 Dead 2 client, not ` +
-          `with srcds; check gameProfiles.l4d2.binDir with the health tool`
-        : // Naming the chain matters: without it this reads like a broken game install,
-          // when in fact the stock compilers are fine and only Tools++ is absent.
-          //
-          // Reaching this at all means a caller drove runCompiler directly: run_compile
-          // and run_pack ask chooseToolchain first, which falls back to stock and says so.
-          `${binary} not found: the "plusplus" toolchain is not installed. The four ` +
-          `compilers come from tools_plusplus.zip and go in ${dir}; the stock chain is ` +
-          `unaffected, and run_compile falls back to it. See health`,
-    );
+    // Accept either naming convention for the same stage before calling it missing.
+    const stage = /^(vbsp|vvis|vrad|bspzip)/.exec(exe)?.[1] as CompileStage | undefined;
+    const alias =
+      stage && chain !== "stock"
+        ? compilerCandidates(stage, chain).find((n) => existsSync(join(dir, n)))
+        : undefined;
+    if (alias === undefined) {
+      throw new ToolchainError(
+        chain === "stock"
+          ? `${binary} not found. Stock compilers ship with the Left 4 Dead 2 client, not ` +
+            `with srcds; check gameProfiles.l4d2.binDir with the health tool`
+          : // Naming the chain matters: without it this reads like a broken game install,
+            // when in fact the stock compilers are fine and only Tools++ is absent.
+            //
+            // Reaching this at all means a caller drove runCompiler directly: run_compile
+            // and run_pack ask chooseToolchain first, which falls back to stock and says so.
+            `${binary} not found: the "plusplus" toolchain is not installed. The four ` +
+            `compilers come from tools++_windows.zip and go in ${dir}; the stock chain is ` +
+            `unaffected, and run_compile falls back to it. See health`,
+      );
+    }
+    return launch(config, dir, alias, args, timeoutMs, chain);
   }
+  return launch(config, dir, exe, args, timeoutMs, chain);
+}
+
+/** Runs one resolved compiler binary; split out so the alias path is the same code. */
+async function launch(
+  config: Config,
+  dir: string,
+  exe: string,
+  args: readonly string[],
+  timeoutMs: number,
+  chain: Toolchain,
+): Promise<CompilerRun> {
+  const binary = join(dir, exe);
   const started = Date.now();
-  const [cmd, cmdArgs, env] = windowsInvocation(config, binary, args);
+  const [cmd, cmdArgs, env] = windowsInvocation(binary, args);
   const result = await run(cmd, cmdArgs, { cwd: dir, timeoutMs, env });
 
   return {
@@ -197,34 +236,20 @@ export async function runCompiler(
 }
 
 /**
- * The command line that executes a Windows binary under the configured backend.
+ * The command line that executes a Windows binary.
  *
- * `native` runs the .exe directly and only means something on Windows. `wine` keeps the
- * two settings measured as load-bearing: `WINEPREFIX`, and `WINEDEBUG=-all` so wine's
- * `fixme:` lines do not bury the tool's own output.
+ * Windows only, by decision: this server drives the game's own `.exe` files directly.
+ * The platform check is not decoration -- on another OS the call would fail deeper down
+ * with a message about a missing file, which blames the game install.
  */
 export function windowsInvocation(
-  config: Config,
   binary: string,
   args: readonly string[],
 ): [string, string[], NodeJS.ProcessEnv] {
-  if (config.backend === "native") {
-    if (process.platform !== "win32") {
-      throw new ToolchainError(
-        `backend "native" runs the Windows binaries directly and needs Windows; ` +
-          `this is ${process.platform}`,
-      );
-    }
-    return [binary, [...args], process.env];
-  }
-  if (config.backend !== "wine") {
+  if (process.platform !== "win32") {
     throw new ToolchainError(
-      `backend "${config.backend}" is not implemented; only wine and native are proven here`,
+      `this server drives Windows binaries and runs on Windows only; this is ${process.platform}`,
     );
   }
-  return [
-    "wine",
-    [binary, ...args],
-    { ...process.env, WINEPREFIX: config.winePrefix, WINEDEBUG: "-all" },
-  ];
+  return [binary, [...args], process.env];
 }

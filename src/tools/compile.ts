@@ -10,7 +10,7 @@ import {
   compilerExe,
   runCompiler,
   toWindowsPath,
-} from "../compile/wine.js";
+} from "../compile/toolchain.js";
 import { readEntityLump } from "../bsp/entities.js";
 import { checkNavFreshness } from "../bsp/nav.js";
 import { parseEntityText } from "../bsp/entities.js";
@@ -62,7 +62,7 @@ const STAGE_RESULT = z.object({
 export const runCompile = defineTool({
   name: "run_compile",
   description:
-    "Compiles a .vmf with vbsp, vvis and vrad under wine, and returns each stage's " +
+    "Compiles a .vmf with vbsp, vvis and vrad natively, and returns each stage's " +
     "findings rather than its raw output. Takes minutes to hours: vvis on a large map " +
     "is the slow part, and -fast exists for iteration. Stops at the first stage that " +
     "fails, because vvis and vrad results are meaningless after a leak. Run " +
@@ -137,7 +137,7 @@ export const runCompile = defineTool({
 
     const { game: profile, from } = gameFor(ctx.config, args.game);
     // Refused rather than attempted: a compile against a game whose toolchain we cannot
-    // locate fails deep inside wine, with a message about a missing DLL.
+    // locate fails deeper down, with a message about a missing file.
     if (profile.unusableForCompile) {
       throw new ToolchainError(`cannot compile against ${profile.id}: ${profile.unusableForCompile}`);
     }

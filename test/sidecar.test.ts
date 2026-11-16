@@ -18,25 +18,13 @@ function configWith(python?: string): Config {
 }
 
 describe("where the venv interpreter is looked for", () => {
-  const realPlatform = process.platform;
-  const onPlatform = (platform: string): void => {
-    Object.defineProperty(process, "platform", { value: platform, configurable: true });
-  };
-  afterEach(() => onPlatform(realPlatform));
   const venv = join(sharedConfig.stateDir, "sidecar-venv");
 
-  it("uses Scripts/python.exe on Windows, which is where venv puts it there", () => {
-    onPlatform("win32");
+  it("uses Scripts/python.exe, which is where a Windows venv puts it", () => {
     expect(pythonPath(configWith())).toBe(join(venv, "Scripts", "python.exe"));
   });
 
-  it("uses bin/python everywhere else", () => {
-    onPlatform("linux");
-    expect(pythonPath(configWith())).toBe(join(venv, "bin", "python"));
-  });
-
-  it("lets sidecarPython override both", () => {
-    onPlatform("win32");
+  it("lets sidecarPython override it", () => {
     expect(pythonPath(configWith("D:\\py\\python.exe"))).toBe("D:\\py\\python.exe");
   });
 });
@@ -50,7 +38,7 @@ describe("sidecar client, when it is not installed", () => {
     const status = await probeSidecar(broken);
     expect(status.installed).toBe(false);
     expect(status.ok).toBe(false);
-    expect(status.reason).toContain("setup.sh");
+    expect(status.reason).toContain("setup.ps1");
   });
 
   it("callSidecar throws, and says how to fix it", async () => {
@@ -58,7 +46,7 @@ describe("sidecar client, when it is not installed", () => {
     // call path and non-fatal on the probe path. If both merely reported, a real call
     // would return undefined and the failure would surface far from its cause.
     await expect(callSidecar("health", {}, broken)).rejects.toThrow(SidecarError);
-    await expect(callSidecar("health", {}, broken)).rejects.toThrow(/setup\.sh/);
+    await expect(callSidecar("health", {}, broken)).rejects.toThrow(/setup\.ps1/);
   });
 });
 

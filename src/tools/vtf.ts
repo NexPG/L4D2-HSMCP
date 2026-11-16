@@ -9,7 +9,7 @@
  * prompts, no "press any key". Two things about driving it were measured on 14/08/2026 and
  * are why this file looks the way it does:
  *
- * * **`-output` fails under wine**, with `System Error: 0x00000003: Path not found`, for a
+ * * **`-output` fails**, with `System Error: 0x00000003: Path not found`, for a
  *   directory that exists -- short path, long path, trailing separator, all the same. So
  *   the `.vtf` is written beside its source, which is VTFCmd's own default and works.
  * * **`-shader` refuses to write a `.vmt`** unless the texture sits under a `materials/`
@@ -28,7 +28,7 @@ import { CONFIRM, resolveInput } from "./paths.js";
 
 export const VTFCMD_EXE = "VTFCmd.exe";
 
-/** What DevIL reads. Anything else is refused here rather than failing inside wine. */
+/** What DevIL reads. Anything else is refused here rather than failing inside the tool. */
 const READABLE = [".tga", ".png", ".bmp", ".jpg", ".jpeg", ".gif", ".dds", ".psd"];
 
 export const runVtfConvert = defineTool({
@@ -105,7 +105,7 @@ export const runVtfConvert = defineTool({
     const vtf = join(dirname(image), `${basename(image, extname(image))}.vtf`);
     assertWritable(vtf, ctx.config);
 
-    // No -output: it fails under wine for a directory that exists (measured 14/08/2026),
+    // No -output: it fails for a directory that exists (measured 14/08/2026),
     // and VTFCmd's own default is to write beside the source, which works.
     const argv = [
       "-file",

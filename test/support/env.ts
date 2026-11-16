@@ -1,8 +1,8 @@
 /**
  * What the machine running the tests actually has.
  *
- * Most of this suite is not a unit test: it drives the real Source toolchain under wine,
- * the real Python sidecar, and real maps. None of that ships with the repo, so nearly
+ * Most of this suite is not a unit test: it drives the real Source toolchain, the real
+ * Python sidecar, and real maps. None of that ships with the repo, so nearly
  * every file guarded itself with its own `existsSync` against its own hand-built path.
  * Six of them also computed the repo root as `test/fixtures/../../..` -- three levels up,
  * which lands OUTSIDE this repository and only resolves to anything meaningful when the
@@ -64,8 +64,9 @@ export const has = {
   toolchain: config.binDir !== null && existsSync(join(config.binDir, "vbsp.exe")),
   /** ficool2's rebuild, installed separately. Absent is the normal case. */
   plusplus:
-    config.plusPlusBinDir !== null && existsSync(join(config.plusPlusBinDir, "vbspplusplus.exe")),
-  /** The srctools venv built by sidecar/setup.sh. */
+    config.plusPlusBinDir !== null &&
+    [`vbsp++.exe`, `vbspplusplus.exe`].some((n) => existsSync(join(config.plusPlusBinDir as string, n))),
+  /** The srctools venv built by sidecar/setup.ps1. */
   sidecar: existsSync(pythonPath(config)),
   /** The .fgd files, which live beside the compilers. */
   fgd: config.binDir !== null && existsSync(join(config.binDir, "left4dead2.fgd")),
@@ -106,7 +107,7 @@ export const has = {
 const LABELS: Record<keyof typeof has, string> = {
   toolchain: `the Left 4 Dead 2 compilers (${config.binDir ?? "no bin directory found"})`,
   plusplus: "the Tools++ compilers (optional)",
-  sidecar: "the Python sidecar venv (run sidecar/setup.sh)",
+  sidecar: "the Python sidecar venv (run sidecar/setup.ps1)",
   fgd: "the game's .fgd files",
   plusFgd: "the Tools++ .fgd (optional)",
   prodMap: "a large production .bsp",

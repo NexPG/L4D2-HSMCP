@@ -18,7 +18,6 @@
  * an engine branch, and never falls back to another game's `bin/` when one has none.
  */
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { children, get, getAll, parse } from "../kv/parse.js";
 import type { KvBlock } from "../kv/parse.js";
@@ -100,25 +99,13 @@ function realpathOrSelf(p: string): string {
  * comparison finds every game twice.
  */
 export function steamRoots(env: NodeJS.ProcessEnv = process.env): string[] {
-  const home = env.HOME ?? homedir();
-  // Windows installs Steam under Program Files, and the libraries live outside it. The
-  // env vars are what makes this testable: a fabricated env without them discovers
-  // nothing, even when the machine running the tests has Steam.
-  const winRoots =
-    process.platform === "win32"
-      ? [
-          env["ProgramFiles(x86)"] ? join(env["ProgramFiles(x86)"] as string, "Steam") : undefined,
-          env["ProgramFiles"] ? join(env["ProgramFiles"] as string, "Steam") : undefined,
-          env["LOCALAPPDATA"] ? join(env["LOCALAPPDATA"] as string, "Steam") : undefined,
-        ]
-      : [];
+  // Windows only, like the rest of this fork. `STEAM_ROOT` first so a test or a
+  // non-standard install can name it directly; then the three places Steam installs to.
   const candidates = [
     env.STEAM_ROOT,
-    ...winRoots,
-    join(home, ".steam", "steam"),
-    join(home, ".steam", "root"),
-    join(home, ".local", "share", "Steam"),
-    join(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+    env["ProgramFiles(x86)"] ? join(env["ProgramFiles(x86)"] as string, "Steam") : undefined,
+    env["ProgramFiles"] ? join(env["ProgramFiles"] as string, "Steam") : undefined,
+    env["LOCALAPPDATA"] ? join(env["LOCALAPPDATA"] as string, "Steam") : undefined,
   ].filter((c): c is string => Boolean(c));
 
   const seen = new Set<string>();
