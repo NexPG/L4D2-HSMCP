@@ -171,9 +171,8 @@ export function writePortal(
  * Fog is not among them, and an earlier version of this offered `fogenable`, `fogstart`,
  * `fogend` and `fogcolor` here. Source reads all four from an `env_fog_controller`; writing
  * them to `worldspawn` produces a file that parses, a tool that reports a successful
- * change, and no fog in game. This repository's own notes say where fog lives
- * (`.claude/skills/source-mapping/references/atmosphere.md`), which is what makes that
- * version worse than an omission: the answer was already written down.
+ * change, and no fog in game. What makes that worse than an omission is that the answer was
+ * already written down: the mapping notes this fork inherited said where fog lives.
  *
  * A tool that says it did something and did nothing is the failure every check here exists
  * to prevent, so the fog keys are gone rather than approximated. `edit_vmf` creates an

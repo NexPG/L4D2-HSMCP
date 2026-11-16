@@ -4,8 +4,8 @@
  * `hmcp_probe.vmf` is a sealed box that exists to make a compiler agree with a checker.
  * This is a place: a corner shop of two rooms, a counter, shelving and a doorway, built to
  * a written brief by an agent with these tools and nothing else — no text editor, no
- * script, every byte through a tool call. `docs/dogfood/2026-08-13-bodega/` has the brief
- * it was built to and the account of what building it was like.
+ * script, every byte through a tool call. The brief and the account of what building it was
+ * like were development notes and did not survive into this fork; the map itself did.
  *
  * It is a fixture rather than a demo. What it pins is the whole chain at once: a map that
  * seals, satisfies its own rules, and compiles. A regression anywhere between the solid

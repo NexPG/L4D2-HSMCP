@@ -334,35 +334,11 @@ uniform grid. Read that carefully, though: this metric is the *coarsest* grid ev
 fits, so a single odd coordinate anywhere on a brush drops the whole brush to 1. It measures
 how uniform the geometry ended up, not what grid someone worked at.
 
-## The craft, alongside the tool
+## Domain notes
 
-`.claude/skills/` carries two skills, and they live here rather than in the workshop that uses
-this server, because this is where map work belongs:
-
-| Skill | What it holds |
-|---|---|
-| [`source-map`](.claude/skills/source-map/SKILL.md) | **driving the tooling** — which tool answers which question, in what order, and what each one cannot tell you. [`building.md`](.claude/skills/source-map/references/building.md) is the order to build a map in, written from two real builds rather than from the tool list |
-| [`source-mapping`](.claude/skills/source-mapping/SKILL.md) | **the craft** — brushwork and grid, visibility, lighting, displacements, entities, performance, scale and composition, materials, atmosphere, and the myths |
-
-They reference each other and neither copies the other. Every rule in `source-mapping` carries
-**how to check it**, and marks itself:
-
-| Mark | Meaning |
-|---|---|
-| `[moteur]` | read in Valve's own source, with the file and the date |
-| `[consensus]` | widely agreed among mappers, not verified here |
-| `[contesté]` | mappers disagree, and the disagreement is stated |
-| `[mesuré]` | measured in this workshop, with the sample size |
-
-[`tooling-coverage.md`](.claude/skills/source-mapping/references/tooling-coverage.md) is
-the honest half: it maps each family of rules to the tool that verifies it, and names the ones
-**nothing** verifies. That column is not a gap in the tooling — it is the nature of the work, and
-an agent that dresses a judgement up as a metric produces a wrong number and false confidence.
-
-The `[mesuré]` markers come from an audit of shipped city maps whose raw files stay in a private
-repository. What is here is what survived a contradiction pass, together with what did not —
-[`measured-corpus.md`](.claude/skills/source-mapping/references/measured-corpus.md) keeps both, and
-the refutations are the more useful half.
+The two mapping skills that used to live in `.claude/skills/` described Garry's Mod and were
+removed in this fork. This README and `docs/` are the domain notes that ship; the Left 4 Dead 2
+material is being written against the game itself rather than inherited.
 
 ## Hammer, command by command
 
@@ -426,8 +402,7 @@ gitignored, so a checkout that has not been built serves the tool list of whatev
 last — silently, with no error and no warning. Reconnecting matters just as much: a client
 holds the tool list it was handed when it connected. `health` reports both halves under
 `tools`: how many tools this server is serving, and whether its build is older than the
-source. On 13/08/2026 this cost twelve tools and forty minutes —
-[the finding](docs/dogfood/2026-08-13-bodega/findings.md#1--the-server-was-serving-a-build-twelve-tools-old-and-nothing-said-so).
+source. On 13/08/2026 this cost twelve tools and forty minutes.
 
 | | Needed for | If missing |
 |---|---|---|
@@ -574,9 +549,6 @@ The dated record of what was tried, measured, and got wrong:
   profiles
 - [docs/architecture.md](docs/architecture.md) — why the write path is a splice, the write
   discipline, and shared plumbing
-- [docs/audits/fishke/](docs/audits/fishke/) — three production maps read end to end with this
-  server: the raw readings, the analyses, and the adversarial pass that refuted two of their own
-  conclusions
 
 ## Configuration
 

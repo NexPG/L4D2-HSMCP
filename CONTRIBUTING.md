@@ -1,6 +1,7 @@
-# Contributing to hammer-mcp
+# Contributing
 
-This repository has a narrow discipline and few rules. They come down to three ideas.
+This is a standalone fork of `hammer-mcp`, developed on its own terms and aimed at Left 4 Dead 2.
+The process is deliberately light; the three rules below are not.
 
 ## 1. A passing test proves nothing until it has been shown it can fail
 
@@ -10,19 +11,19 @@ tests nothing — and nothing in the output distinguishes the two.
 So for every test you add: **sabotage the code it covers, watch it go red, put it back.** Then say
 so in the commit message, naming what you broke.
 
-That is not a formality here. `edit_vmf` shipped with four tests asserting byte equality after a
+That is not a formality here. `edit_vmf` once shipped with four tests asserting byte equality after a
 splice; replacing the splice with a full reserialisation made **none of them fail**, because the
 fixtures were canonical enough to round-trip. The tests were proving nothing, and only the sabotage
-said so. [`docs/architecture.md`](docs/architecture.md#splicing) records it.
+said so.
 
-This suite makes the trap concrete in a second way: it drives real compilers, a real Python sidecar
-and real maps, none of which ships with the repository. A test that cannot find what it needs
-**skips**, and an over-broad `it.skipIf` is indistinguishable from a success. Hence:
+This suite also drives real compilers, a real Python sidecar and real maps, none of which ships with
+the repository. A test that cannot find what it needs **skips**, and an over-broad skip guard is
+indistinguishable from a success. Hence:
 
 - availability predicates live in `test/support/env.ts`, **all of them**, never reinvented inside a
   test file;
 - a run announces in plain text what it could not test;
-- CI **refuses** a green run in which too few tests actually executed.
+- CI refuses a green run in which too few tests actually executed.
 
 ## 2. No number nobody read
 
@@ -32,12 +33,9 @@ date**.
 
 A lump ceiling copied off a wiki page, a limit that is "probably the same on that game", a duration
 "in the region of": no. If a value cannot be verified, it is absent, or marked unverified — never
-presented as fact. A tool that returns a wrong number is worse than a tool that does not exist,
-because the caller has no way to suspect it.
-
-The corollary for tools: **no tool without an oracle.** If you cannot build an independent way to
-check what the tool returns, it does not ship. Several gaps are documented for exactly that reason
-rather than filled with guesswork.
+presented as fact. This matters more here than in most projects, because the target game's limits
+have not been measured yet: a number inherited from another Source branch is a guess wearing a
+format.
 
 ## 3. The commit carries its documentation
 
@@ -47,7 +45,11 @@ One atomic commit, one subject, in English, conventional format (`feat:`, `fix:`
 Documentation the change makes false is fixed **in the same commit**. A README describing a tool
 that does not exist is a bug, not a delay: somebody reads it and relies on it.
 
-## Before opening a PR
+There is a corollary for tools: **no tool without an oracle.** If you cannot build an independent
+way to check what the tool returns, it does not ship. Several gaps in this repository are documented
+rather than filled for exactly that reason.
+
+## Before committing
 
 ```bash
 pnpm install
@@ -59,7 +61,11 @@ pnpm test
 Typecheck is separate from tests, and not out of habit: a stale `dist/` of
 `@projectsociety/mcp-core` makes tests green and typecheck red on the same tree. Run both, always.
 
-`main` is reached by a merged PR, never by a push.
+## Workflow
+
+There is one branch, `main`, and commits go straight to it. A pull request is welcome when a change
+is large or wants a second pair of eyes, but nothing here depends on the review mechanism — the
+rules above do the work a reviewer would otherwise do.
 
 ## What is not wanted
 
@@ -68,15 +74,15 @@ Typecheck is separate from tests, and not out of habit: a stale `dist/` of
 - **A reader that loads a whole file.** Real maps run to the gigabyte, and a `readFileSync` on one
   kills the MCP transport — which the caller sees as a hang, not an error. Everything reads by
   offsets.
-- **Redistributing Valve content or the Hammer++ binaries.** They are installed, not vendored. No
-  `.fgd`, `.bsp` or `.exe` that is not ours enters this repository.
+- **Redistributing Valve content, the Hammer++/Tools++ binaries or the game's own FGDs.** They are
+  installed, not vendored. No `.fgd`, `.bsp` or `.exe` that is not ours enters this repository.
 
 ## Licence
 
 The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT notice it
 was forked from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in [`NOTICE`](NOTICE). By
-opening a pull request you agree that your contribution is licensed under the same terms, and that
-it carries no notice, dependency or vendored file that would add a restriction on top of the GPL.
+contributing you agree that your contribution is licensed under the same terms, and that it carries
+no notice, dependency or vendored file that would add a restriction on top of the GPL.
 
-A contributed file that was copied from somewhere else is the one thing to say out loud in the PR:
-a GPL-compatible licence with its notice intact is fine, anything else is not.
+A file copied from somewhere else is the one thing to say out loud in the commit or PR: a
+GPL-compatible licence with its notice intact is fine, anything else is not.

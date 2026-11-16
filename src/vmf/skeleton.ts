@@ -5,7 +5,7 @@
  * with no `world` block, so neither an absent file nor an empty one is a place to start.
  * Until this existed the only way to begin a map was a text editor -- which made the whole
  * toolkit's workflow impossible to complete through tools alone, a gap found by trying it
- * (issue #47, `docs/dogfood/2026-08-13-bodega/findings.md` finding 4).
+ * (issue #47).
  *
  * What is written is what Hammer writes for File > New, with two departures, both because
  * a default that is silently wrong is worse than one a caller had to choose:
