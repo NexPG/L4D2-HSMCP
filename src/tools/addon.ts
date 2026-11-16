@@ -28,11 +28,15 @@ export function addonInfoText(info: AddonInfo): string {
   const lines = [
     quote("addoninfo"),
     "{",
+    `\t"addonSteamAppID"\t${quote("550")}`,
     `\t"addonTitle"\t${quote(info.title)}`,
     `\t"addonAuthor"\t${quote(info.author ?? "")}`,
     `\t"addonVersion"\t${quote(info.version ?? "1")}`,
     `\t"addonTag"\t${quote(info.tag ?? "campaign")}`,
   ];
+  if ((info.tag ?? "campaign") === "campaign") {
+    lines.push(`\t"addonContent_Campaign"\t${quote("1")}`);
+  }
   if (info.description) lines.push(`\t"addonDesc"\t${quote(info.description)}`);
   lines.push("}");
   lines.push("");

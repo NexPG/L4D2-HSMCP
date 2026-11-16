@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.7-alpha — 2026-11-16
+
+- Campaign metadata is now shaped the way L4D2 matches it: the mission file's base name
+  equals the VPK's (`hsmcp_campaign.txt` in `hsmcp_campaign.vpk`), `"Name"` is alphanumeric,
+  and `"Image"` is set. The addon manifest carries `addonSteamAppID 550` and
+  `addonContent_Campaign 1`.
+- The staging tree is cleaned before a rebuild, so a renamed mission cannot survive and
+  register a second campaign.
+
 ## 0.0.6-alpha — 2026-11-16
 
 - `campaigns/` is ignored as a directory (root-anchored `/campaigns/`), not merely for the
