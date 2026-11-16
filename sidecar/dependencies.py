@@ -389,16 +389,19 @@ def map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     sky = _norm(spawn.get("skyname", ""))
     if sky:
         for side in ("rt", "lf", "bk", "ft", "up", "dn"):
-            _walk_material(f"skybox/{sky}{side}", resolver, seen, found, missing)
-            # The HDR set is optional -- an LDR-only map legitimately ships without it, so
-            # a probe that reported these as missing would fire on most maps. Recorded when
-            # present so they are not counted as dead weight instead.
-            hdr = _under_materials(f"skybox/{sky}{side}_hdr", ".vmt")
-            if hdr not in seen:
-                spot_hdr = resolver.where(hdr)
-                if spot_hdr is not None:
-                    seen.add(hdr)
-                    _walk_material(f"skybox/{sky}{side}_hdr", resolver, seen, found, missing)
+            # Left 4 Dead 2 ships many skies only with `_hdr` in the filename
+            # (`sky_l4d_c1_1_hdrbk`), where older games have `sky_xbk` and an optional
+            # `_hdr` copy. The engine derives the name it needs; try both spellings, and
+            # only call the side missing when neither exists.
+            ldr = f"skybox/{sky}{side}"
+            hdr = f"skybox/{sky}_hdr{side}"
+            walked = False
+            for name in (ldr, hdr):
+                if resolver.where(_under_materials(name, ".vmt")) is not None:
+                    _walk_material(name, resolver, seen, found, missing)
+                    walked = True
+            if not walked:
+                _walk_material(ldr, resolver, seen, found, missing)
 
     # The nodegraph is named after the map, and nothing checks that when it is packed.
     for packed_name in list(resolver.packed):

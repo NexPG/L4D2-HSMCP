@@ -46,15 +46,16 @@ function writeFaces(dir: string, base: string, size = 64): void {
 
 describe("the .vtf header reader", () => {
   it("reads the cubemap packed in the probe map", () => {
-    // Extracted by hand once and checked against this: 7.5, 32x32. If the offsets in
-    // vtf.ts were wrong, these would not be plausible numbers -- they would be garbage.
+    // Extracted by hand once and checked against this: 7.4, 32x32 (Left 4 Dead 2's vrad
+    // writes VTF 7.4; the older fixture was 7.5). If the offsets in vtf.ts were wrong,
+    // these would not be plausible numbers -- they would be garbage.
     const bytes = readFileSync(join(process.cwd(), "test", "fixtures", "hmcp_probe.bsp"));
     // The pakfile is a plain ZIP inside lump 40; the VTF signature is enough to find the
     // one file it holds without unpacking anything.
     const at = bytes.indexOf(Buffer.from("VTF\0", "latin1"));
     expect(at).toBeGreaterThan(0);
     const h = readVtfHeader(bytes.subarray(at))!;
-    expect(h.version).toBe("7.5");
+    expect(h.version).toBe("7.4");
     expect(h.width).toBe(32);
     expect(h.height).toBe(32);
   });

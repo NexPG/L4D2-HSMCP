@@ -32,7 +32,7 @@ import { applyVmfOps } from "../../src/vmf/edit.js";
 
 const SEED =
   'versioninfo\n{\n\t"editorversion" "400"\n}\nvisgroups\n{\n}\nworld\n{\n\t"id" "1"\n' +
-  '\t"classname" "worldspawn"\n\t"skyname" "sky_day01_01"\n}\n';
+  '\t"classname" "worldspawn"\n\t"skyname" "sky_l4d_c1_1"\n}\n';
 
 /**
  * Collapses the file onto one line and takes every side's id away.

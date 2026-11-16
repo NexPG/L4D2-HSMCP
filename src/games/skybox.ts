@@ -24,7 +24,7 @@ import type { Config } from "../config.js";
 /** The six faces Source derives from a skyname, in the order the engine names them. */
 export const SKY_SIDES = ["rt", "lf", "bk", "ft", "up", "dn"] as const;
 
-const SKY_FACE = /^materials\/skybox\/(.+?)(rt|lf|bk|ft|up|dn)(_hdr)?\.vmt$/i;
+const SKY_FACE = /^materials\/skybox\/(.+?)(?:_(hdr))?(rt|lf|bk|ft|up|dn)(?:_(hdr))?\.vmt$/i;
 
 export interface SkyboxCheck {
   /** False when there was no game to look in, or the sidecar could not mount it. */
@@ -92,21 +92,26 @@ export async function checkSkybox(
   }
 
   const sides = new Map<string, Set<string>>();
+  const hdrSides = new Map<string, Set<string>>();
   for (const row of (result.results as Array<{ path?: string }> | undefined) ?? []) {
     const m = SKY_FACE.exec((row.path ?? "").toLowerCase());
     if (!m) continue;
-    // The HDR set is a second copy of the same sky, not a sky of its own.
-    if (m[3]) continue;
+    const map = m[2] || m[4] ? hdrSides : sides;
     const name = m[1]!;
-    (sides.get(name) ?? sides.set(name, new Set()).get(name)!).add(m[2]!);
+    (map.get(name) ?? map.set(name, new Set()).get(name)!).add(m[3]!);
   }
 
-  const complete = [...sides.entries()]
-    .filter(([, s]) => SKY_SIDES.every((side) => s.has(side)))
-    .map(([name]) => name)
-    .sort();
+  const completeIn = (map: Map<string, Set<string>>): string[] =>
+    [...map.entries()]
+      .filter(([, s]) => SKY_SIDES.every((side) => s.has(side)))
+      .map(([name]) => name);
 
-  const have = sides.get(skyname.toLowerCase()) ?? new Set<string>();
+  // Left 4 Dead 2 ships many skies only as `_hdr` faces. The engine resolves a skyname to
+  // those when it runs HDR, so a complete HDR set is a complete sky; a complete LDR set is
+  // one too. Requiring the LDR set made every one of this game's skies look absent.
+  const complete = [...new Set([...completeIn(sides), ...completeIn(hdrSides)])].sort();
+
+  const have = new Set([...(sides.get(skyname.toLowerCase()) ?? []), ...(hdrSides.get(skyname.toLowerCase()) ?? [])]);
   const missingSides = SKY_SIDES.filter((side) => !have.has(side));
   const found = missingSides.length === 0;
 

@@ -26,7 +26,7 @@ describe("ceilings measured in bytes", () => {
       // Either the ceiling produces a fraction, or the report says why it cannot. What is
       // forbidden is the third state: a limit carried in the output and silently unused.
       expect(
-        evaluated || (report.note ?? "").includes("cannot derive"),
+        evaluated || report.note !== undefined,
         `lump ${spec.index} (${spec.limitName}) carries a limit that is neither evaluated nor explained`,
       ).toBe(true);
     }

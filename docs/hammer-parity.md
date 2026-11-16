@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 16/11/2026: **71 tools**.
+Last checked against the tool list on 16/11/2026: **74 tools**.
 
 ## The file itself
 
@@ -196,6 +196,9 @@ map and looking, or by not happening at all.
 | `read_vmf_lint` | nothing |
 | `write_vmf_fitting` | prefabs, which are a saved lump of geometry at whatever size somebody once drew it. Nothing in Hammer knows how tall a counter is |
 | `write_hint_brush` | a brush you texture yourself and hope |
+| `read_campaign` | nothing: the game reads mission files, the editor never shows them |
+| `write_campaign` | nothing: a mission file is written by hand |
+| `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
 
 The row that matters most is `read_vmf_solids`. Hammer draws an invalid solid in red and
 tells you nothing else; this says which face, which corner, and why — and it is the oracle

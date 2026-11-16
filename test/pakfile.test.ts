@@ -45,20 +45,21 @@ describe.skipIf(!has.sidecar)("run_pakfile_extract", () => {
     const into = join(scratch, "one");
     const r = await extract(into);
 
-    // The probe packs exactly one file, and read_pakfile has always said so. What is new
-    // is that the bytes come out.
-    expect(r.matched).toBe(1);
-    expect(r.count).toBe(1);
-    expect(r.written[0]!.name).toBe("materials/maps/hmcp_probe/cubemapdefault.vtf");
-    expect(r.written[0]!.path).toBe(
+    // L4D2's vrad packs an LDR and an HDR default cubemap; the older GMod probe packed
+    // only the LDR one. Both are real entries and both come out.
+    expect(r.matched).toBe(2);
+    expect(r.count).toBe(2);
+    const ldr = r.written.find((w) => w.name === "materials/maps/hmcp_probe/cubemapdefault.vtf");
+    expect(ldr).toBeDefined();
+    expect(ldr!.path).toBe(
       join(into, "materials", "maps", "hmcp_probe", "cubemapdefault.vtf"),
     );
 
     // And they are the real bytes, not an empty file of the right name: the header is a
     // .vtf, read by a reader that knows nothing about pakfiles.
-    const h = readVtfHeader(readFileSync(r.written[0]!.path))!;
-    expect(h.version).toBe("7.5");
-    expect(r.bytes).toBe(r.written[0]!.bytes);
+    const h = readVtfHeader(readFileSync(ldr!.path))!;
+    expect(h.version).toBe("7.4");
+    expect(r.bytes).toBe(r.written.reduce((n, w) => n + w.bytes, 0));
   }, 120_000);
 
   it("refuses to overwrite, and says which entry it refused", async () => {
@@ -68,12 +69,12 @@ describe.skipIf(!has.sidecar)("run_pakfile_extract", () => {
     await extract(into);
     const again = await extract(into);
     expect(again.count).toBe(0);
-    expect(again.refused).toHaveLength(1);
+    expect(again.refused).toHaveLength(2);
     expect(again.refused[0]!.why).toMatch(/already exists/);
 
     // With overwrite it goes through.
     const forced = await extract(into, { overwrite: true });
-    expect(forced.count).toBe(1);
+    expect(forced.count).toBe(2);
     expect(forced.refused).toEqual([]);
   }, 180_000);
 

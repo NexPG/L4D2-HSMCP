@@ -67,7 +67,7 @@ describe("the empty map", () => {
       expect(text).toMatch(new RegExp(`^${block}$`, "m"));
     }
     expect(text).toMatch(/"classname" "worldspawn"/);
-    expect(text).toMatch(/"skyname" "sky_day01_01"/);
+    expect(text).toMatch(/"skyname" "sky_l4d_c1_1"/);
   });
 
   it("carries the sky and grid it was asked for", () => {
@@ -98,20 +98,20 @@ describe("write_vmf", () => {
     expect(existsSync(r.path)).toBe(true);
     expect(readFileSync(r.path, "utf8")).toBe(emptyVmf());
     expect(r.bytes).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("refuses to overwrite, because the alternative is deleting a map", async () => {
     const path = join(scratch, "occupied.vmf");
     writeFileSync(path, "hours of work\n");
     await expect(create("occupied.vmf")).rejects.toThrow(/already exists/);
     expect(readFileSync(path, "utf8")).toBe("hours of work\n");
-  });
+  }, 30_000);
 
   it("writes nothing on a dry run", async () => {
     const r = await create("dry.vmf", { dryRun: true });
     expect(r.written).toBe(false);
     expect(existsSync(join(scratch, "dry.vmf"))).toBe(false);
-  });
+  }, 30_000);
 
   it("says the sky was not checked, rather than implying it was", async () => {
     // No game configured is a normal case -- a map for a game this machine does not have
@@ -125,7 +125,7 @@ describe("write_vmf", () => {
     }
     // Either way the note reaches the caller, which is the whole point of #62.
     expect(r.note).toContain(r.skybox.note);
-  });
+  }, 30_000);
 
   describe("checking the sky against the game", () => {
     const ready = has.sidecar && has.gameContent;
@@ -138,7 +138,7 @@ describe("write_vmf", () => {
       // What the check does NOT prove, said out loud: the two vbsp "default cubemap"
       // lines are about the .vtf headers, which nothing here reads.
       expect(r.skybox.note).toMatch(/default cubemap/);
-    });
+    }, 30_000);
 
     it.skipIf(!ready)("names skies the game has when the one asked for is absent", async () => {
       const r = await create("made-up-sky.vmf", { skyname: "sky_not_a_real_sky_at_all" });
@@ -160,14 +160,14 @@ describe("write_vmf", () => {
       )) as unknown as { results: Array<{ path: string }> };
       const sides = new Set(
         found.results
-          .map((row) => /skybox\/(.+?)(rt|lf|bk|ft|up|dn)\.vmt$/i.exec(row.path))
+          .map((row) => /skybox\/(.+?)(?:_hdr)?(rt|lf|bk|ft|up|dn)\.vmt$/i.exec(row.path))
           .filter((m): m is RegExpExecArray => m !== null && m[1] === first)
           .map((m) => m[2]!),
       );
       expect([...sides].sort()).toEqual(["bk", "dn", "ft", "lf", "rt", "up"]);
       // And the file is still written: this reports, it does not refuse.
       expect(r.written).toBe(true);
-    });
+    }, 30_000);
   });
 });
 

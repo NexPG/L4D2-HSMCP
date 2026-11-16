@@ -1,6 +1,7 @@
 import type { AnyToolDef } from "../mcp/registry.js";
 import { bspTools } from "./bsp.js";
 import { buildTools } from "./build.js";
+import { campaignTools } from "./campaign.js";
 import { clipTools } from "./clip.js";
 import { compileTools } from "./compile.js";
 import { contentTools } from "./content.js";
@@ -37,6 +38,7 @@ import { wiringTools } from "./wiring.js";
 export const allTools: AnyToolDef[] = [
   ...healthTools,
   ...gameTools,
+  ...campaignTools,
   ...bspTools,
   ...measureTools,
   ...materialsTools,

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.1--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.2--alpha-orange.svg)](CHANGELOG.md)
 
 An MCP server for Left 4 Dead 2 map work on Windows. It reads `.vmf` and `.bsp` files, lints a
 map against the game's own FGD, edits a `.vmf` without reformatting it, drives the Windows
@@ -496,6 +496,9 @@ holds, and a tool not on the list keeps both gates, which stays the default.
 | `read_map_dependencies` | `map` | | Every asset a map references, and whether each will be there: packed, from the game, or missing |
 | `run_pack` | `local` | ● | Packs files into a `.bsp` via bspzip. `auto` derives the list from the map itself |
 | `read_nav` | `map` | | Says whether a nav mesh still matches its map |
+| `read_campaign` | `map` | | Reads a campaign (`.txt` or a VPK entry): modes, numbered chapters, maps and images |
+| `write_campaign` | `map` | ● | Writes a campaign file from a name and its modes/chapters |
+| `check_campaign` | `map` | | Checks chapters against the maps and images that exist, in directories or VPKs |
 
 The `map` realm is offline file work; `local` runs a binary on the host.
 

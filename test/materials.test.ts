@@ -9,6 +9,7 @@ import { LZMA_MAGIC } from "../src/bsp/header.js";
 import type { ToolContext } from "../src/mcp/registry.js";
 import { readMaterialsTool } from "../src/tools/materials.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "./support/env.js";
+import { lumpFields } from "./support/lumps.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 const ctx = sharedCtx as unknown as ToolContext;
@@ -21,10 +22,10 @@ const lumpDescAt = (i: number): number => 8 + i * 16;
 /** Marks lump `index` of a copy of the probe as individually LZMA-compressed. */
 function withCompressedLump(index: number): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(index);
-  const offset = buf.readInt32LE(desc);
+  const fields = lumpFields(buf, index);
+  const offset = buf.readInt32LE(fields.offset);
   buf.write(LZMA_MAGIC, offset, "ascii");
-  buf.writeInt32LE(999, desc + 12);
+  buf.writeInt32LE(999, fields.fourCC);
   const path = join(scratch, `materials-compressed-${index}.bsp`);
   writeFileSync(path, buf);
   return path;
@@ -33,9 +34,9 @@ function withCompressedLump(index: number): string {
 /** Truncates lump `index` by one byte, breaking its divisibility by its record size. */
 function withMisalignedLump(index: number): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(index);
-  const length = buf.readInt32LE(desc + 4);
-  buf.writeInt32LE(length - 1, desc + 4);
+  const fields = lumpFields(buf, index);
+  const length = buf.readInt32LE(fields.length);
+  buf.writeInt32LE(length - 1, fields.length);
   const path = join(scratch, `materials-misaligned-${index}.bsp`);
   writeFileSync(path, buf);
   return path;

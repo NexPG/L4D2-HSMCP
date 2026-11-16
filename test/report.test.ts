@@ -13,6 +13,7 @@ import {
 import type { BudgetProfile } from "../src/report/budget.js";
 import { readMapReportTool } from "../src/tools/report.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "./support/env.js";
+import { lumpFields } from "./support/lumps.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 const ctx = sharedCtx as unknown as ToolContext;
@@ -26,7 +27,7 @@ const LUMP_VISIBILITY = 4;
 /** Erases the PVS the way a map shipped without vvis would have none. */
 function withoutVis(): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  buf.writeInt32LE(0, lumpDescAt(LUMP_VISIBILITY) + 4);
+  buf.writeInt32LE(0, lumpFields(buf, LUMP_VISIBILITY).length);
   const path = join(scratch, "no-vis.bsp");
   writeFileSync(path, buf);
   return path;

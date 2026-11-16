@@ -85,7 +85,8 @@ describe("BSP header", () => {
   it("reads ident, version and mapRevision from the probe map", () => {
     const h = readHeader(PROBE);
     expect(h.ident).toBe("VBSP");
-    expect(h.version).toBe(20);
+    expect(h.version).toBe(21);
+    expect(h.layout).toBe("l4d2");
     // The probe VMF declares mapversion 1, and vbsp copies it into the header.
     expect(h.mapRevision).toBe(1);
     expect(h.lumps).toHaveLength(64);

@@ -112,7 +112,7 @@ world
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
 	"maxpropscreenwidth" "-1"
-	"skyname" "sky_day01_01"
+	"skyname" "sky_l4d_c1_1"
 {solids}}}
 {entity("info_player_start", "0 0 16")}{entity("light", "0 0 192", {"_light": "255 255 255 400"})}{entity("info_target", "0 0 64", {"targetname": "hmcp_probe"})}cameras
 {{

@@ -135,8 +135,9 @@ describe("the Hammer++ compilers' own FGD", () => {
     const r = (await readVmfLint.handler({ path: PROBE_VMF, limit: 5, collapseInstances: false }, ctx)) as {
       fgdsLoaded: string[];
     };
-    expect(r.fgdsLoaded[0]).toBe("garrysmod.fgd");
-    expect(r.fgdsLoaded.includes("win64/toolsplusplus.fgd")).toBe(hasPlusFgd);
+    expect(r.fgdsLoaded[0]).toBe("left4dead2.fgd");
+    const plusFgd = r.fgdsLoaded.find((f) => /toolsplusplus\.fgd$/i.test(f));
+    expect(Boolean(plusFgd)).toBe(hasPlusFgd);
   }, 60_000);
 
   it.skipIf(!ready || !hasPlusFgd)("knows the classes only Hammer++ declares", async () => {
@@ -184,7 +185,7 @@ describe("a prop sunk by its own model origin (#76)", () => {
 {
 	"id" "9001"
 	"classname" "prop_door_rotating"
-	"model" "models/props_c17/door01_left.mdl"
+	"model" "models/props_junk/gascan001a.mdl"
 	"origin" "${x} 0 ${z}"
 }
 entity`,
@@ -192,15 +193,16 @@ entity`,
     );
 
   it.skipIf(!both)("reports the sink, naming the model and how far", async () => {
-    // door01_left is 108.5 tall with its origin at the centre, mins z -54.25. Placed at the
-    // floor's own z it stands half underground -- the case hmcp_backyard shipped with.
+    // gascan001a is 21.3 tall with its origin at the centre, mins z -10.719. Placed at the
+    // floor's own z it stands half underground -- the same class of case #76 recorded. The
+    // lint reports the sink on the map's grid (10.75), not the model's float.
     const r = await lint(withDoor("sunk-prop", 0));
     expect(r.byRule["prop-below-floor"]).toBe(1);
     const f = r.findings.find((x) => x.rule === "prop-below-floor")!;
-    expect(String(f.message)).toMatch(/door01_left/);
+    expect(String(f.message)).toMatch(/gascan001a/);
     expect(f.severity).toBe("warning");
-    expect(f.sinkUnits).toBeCloseTo(54.25, 1);
-    expect(f.suggestedZ).toBeCloseTo(54.25, 1);
+    expect(f.sinkUnits).toBeCloseTo(10.75, 1);
+    expect(f.suggestedZ).toBeCloseTo(10.75, 1);
   }, 120_000);
 
   it.skipIf(!both)("says nothing about the same prop stood on its own base", async () => {

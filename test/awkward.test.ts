@@ -74,7 +74,7 @@ describe("every writer, on a file it was not written for", () => {
     const r = deleteSolids(AWKWARD_VMF, { ids: [AWKWARD_OFFSET] });
     expect(r.matched).toBe(1);
     expect(r.text).toContain("worldspawn");
-    expect(r.text).toContain('"skyname" "sky_day01_01"');
+    expect(r.text).toContain('"skyname" "sky_l4d_c1_1"');
     expect(read(r.text)).toHaveLength(1);
   });
 

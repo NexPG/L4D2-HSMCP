@@ -108,14 +108,14 @@ describe("setMapProperties", () => {
   it("replaces one it did, and reports what it was", () => {
     const r = setMapProperties(probe(), { skyname: "sky_night01_01" });
     expect(r.changed["skyname"]).toEqual({
-      from: "sky_day01_01",
+      from: "sky_l4d_c1_1",
       to: "sky_night01_01",
     });
     expect((r.text.match(/"skyname"/g) ?? [])).toHaveLength(1);
   });
 
   it("writes nothing when the value is already there", () => {
-    const again = setMapProperties(probe(), { skyname: "sky_day01_01" });
+    const again = setMapProperties(probe(), { skyname: "sky_l4d_c1_1" });
     expect(again.unchanged).toBe(true);
     expect(again.text).toBe(probe());
   });
@@ -151,7 +151,7 @@ describe("setMapProperties", () => {
 
   it("leaves the geometry alone", () => {
     const before = read(probe());
-    const after = read(setMapProperties(probe(), { skyname: "sky_day01_01" }).text);
+    const after = read(setMapProperties(probe(), { skyname: "sky_l4d_c1_1" }).text);
     expect(after).toHaveLength(before.length);
     for (const b of before) {
       expect(after.find((s) => s.id === b.id)!.volume).toBe(b.volume);
@@ -160,7 +160,7 @@ describe("setMapProperties", () => {
 
   it("works on a one-line .vmf too", () => {
     const r = setMapProperties(AWKWARD_VMF, { skyname: "sky_night01_01" });
-    expect(r.changed["skyname"]).toEqual({ from: "sky_day01_01", to: "sky_night01_01" });
+    expect(r.changed["skyname"]).toEqual({ from: "sky_l4d_c1_1", to: "sky_night01_01" });
     expect(r.text).toContain('"classname" "worldspawn"');
   });
 });

@@ -168,6 +168,66 @@ def _pakfile_extract(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("vpk_list")
+def _vpk_list(req: dict[str, Any]) -> dict[str, Any]:
+    """Lists entries of a VPK, optionally under one prefix.
+
+    Read-only and index-only: a 1 GB addon is not unpacked to answer what is inside it.
+    Used to check a campaign's maps and images without extracting anything.
+    """
+    from srctools.filesys import VPKFileSystem
+
+    path = req["path"]
+    prefix = req.get("prefix", "")
+    limit = int(req.get("limit", 20_000))
+    fs = VPKFileSystem(path)
+    entries: list[str] = []
+    truncated = False
+    for entry in fs.walk_folder(prefix):
+        if len(entries) >= limit:
+            truncated = True
+            break
+        entries.append(entry.path)
+    entries.sort()
+    return {
+        "path": path,
+        "prefix": prefix,
+        "entries": entries,
+        "returned": len(entries),
+        "truncated": truncated,
+    }
+
+
+@verb("vpk_read")
+def _vpk_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads one text entry from a VPK, by exact path.
+
+    Text only, with a byte ceiling: this exists for campaign files and configs, not for
+    pulling a map or a texture through the JSON channel.
+    """
+    from srctools.filesys import VPKFileSystem
+
+    path = req["path"]
+    entry_name = req["entry"]
+    max_bytes = int(req.get("maxBytes", 4_000_000))
+    fs = VPKFileSystem(path)
+    try:
+        entry = fs[entry_name]
+    except KeyError:
+        raise ValueError(f"{entry_name} is not in {path}") from None
+    data = entry.open_bin().read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError(
+            f"{entry_name} is larger than {max_bytes} bytes; this verb reads text files"
+        )
+    return {
+        "path": path,
+        "entry": entry_name,
+        "bytes": len(data),
+        "text": data.decode("utf8", errors="replace"),
+    }
+
+
 def _fgd_names(req: dict[str, Any]) -> tuple[str, ...]:
     """Which FGDs to check against, relative to `binDir` or absolute.
 

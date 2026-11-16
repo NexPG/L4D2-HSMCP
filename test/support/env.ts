@@ -29,13 +29,12 @@ export const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fix
 /**
  * The tree the server anchors its state and its game content to.
  *
- * `HAMMER_MCP_REPO` wins. Otherwise the historical guess is kept verbatim: three levels
- * up from `test/fixtures`. Inside the workspace this file was written in, that is the
- * root holding `srcds/`; anywhere else it is some unrelated directory, and every
- * predicate below simply reports false -- which is the honest answer, not a failure.
+ * `HAMMER_MCP_REPO` wins. Otherwise the repository root itself: `test/fixtures` is two
+ * levels below it. (It used to be three, the private workspace layout this project was
+ * born in, which made every game-content predicate false on a normal checkout.)
  */
 export function repoRoot(): string {
-  return process.env.HAMMER_MCP_REPO ?? join(FIXTURES, "..", "..", "..");
+  return process.env.HAMMER_MCP_REPO ?? join(FIXTURES, "..", "..");
 }
 
 export const REPO = repoRoot();

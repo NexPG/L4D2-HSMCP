@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { readGeometry } from "../src/bsp/geometry.js";
 import { readHeader } from "../src/bsp/header.js";
 import { FIXTURES, has, paths } from "./support/env.js";
+import { lumpFields } from "./support/lumps.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 const LEAFS = 10;
@@ -14,7 +15,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 /** The probe with lump `index`'s own version field forced to `version`. */
 function withLumpVersion(index: number, version: number): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  buf.writeInt32LE(version, 8 + index * 16 + 8);
+  buf.writeInt32LE(version, lumpFields(buf, index).version);
   const path = join(scratch, `leafs-v${version}.bsp`);
   writeFileSync(path, buf);
   return path;

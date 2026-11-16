@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { readGeometry } from "../src/bsp/geometry.js";
 import { LZMA_MAGIC, readHeader } from "../src/bsp/header.js";
 import { FIXTURES } from "./support/env.js";
+import { lumpFields } from "./support/lumps.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 const scratch = mkdtempSync(join(tmpdir(), "hammer-lzma-"));
@@ -24,10 +25,10 @@ const lumpDescAt = (i: number): number => 8 + i * 16;
  */
 function withCompressedLump(index: number, declaredUncompressed: number): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(index);
-  const offset = buf.readInt32LE(desc);
+  const fields = lumpFields(buf, index);
+  const offset = buf.readInt32LE(fields.offset);
   buf.write(LZMA_MAGIC, offset, "ascii");
-  buf.writeInt32LE(declaredUncompressed, desc + 12);
+  buf.writeInt32LE(declaredUncompressed, fields.fourCC);
 
   const path = join(scratch, `compressed-${index}.bsp`);
   writeFileSync(path, buf);

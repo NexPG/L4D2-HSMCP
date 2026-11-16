@@ -8,6 +8,7 @@ import { readVisleafStats } from "../src/bsp/visleaf.js";
 import type { ToolContext } from "../src/mcp/registry.js";
 import { readVisleafStatsTool } from "../src/tools/visleaf.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "./support/env.js";
+import { lumpFields } from "./support/lumps.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 const ctx = sharedCtx as unknown as ToolContext;
@@ -21,10 +22,10 @@ const LUMP_VISIBILITY = 4;
 
 function withCompressedLump(index: number): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(index);
-  const offset = buf.readInt32LE(desc);
+  const fields = lumpFields(buf, index);
+  const offset = buf.readInt32LE(fields.offset);
   buf.write(LZMA_MAGIC, offset, "ascii");
-  buf.writeInt32LE(999, desc + 12);
+  buf.writeInt32LE(999, fields.fourCC);
   const path = join(scratch, `visleaf-compressed-${index}.bsp`);
   writeFileSync(path, buf);
   return path;
@@ -32,9 +33,9 @@ function withCompressedLump(index: number): string {
 
 function withMisalignedLeafs(): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(LUMP_LEAFS);
-  const length = buf.readInt32LE(desc + 4);
-  buf.writeInt32LE(length - 1, desc + 4);
+  const fields = lumpFields(buf, LUMP_LEAFS);
+  const length = buf.readInt32LE(fields.length);
+  buf.writeInt32LE(length - 1, fields.length);
   const path = join(scratch, "visleaf-misaligned.bsp");
   writeFileSync(path, buf);
   return path;
@@ -42,8 +43,8 @@ function withMisalignedLeafs(): string {
 
 function withUnsupportedLeafVersion(): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(LUMP_LEAFS);
-  buf.writeInt32LE(2, desc + 8); // version field
+  const fields = lumpFields(buf, LUMP_LEAFS);
+  buf.writeInt32LE(2, fields.version);
   const path = join(scratch, "visleaf-badversion.bsp");
   writeFileSync(path, buf);
   return path;
@@ -58,9 +59,9 @@ function withUnsupportedLeafVersion(): string {
  */
 function asLeafVersion0(): string {
   const buf = Buffer.from(readFileSync(PROBE));
-  const desc = lumpDescAt(LUMP_LEAFS);
-  const offset = buf.readInt32LE(desc);
-  const length = buf.readInt32LE(desc + 4);
+  const fields = lumpFields(buf, LUMP_LEAFS);
+  const offset = buf.readInt32LE(fields.offset);
+  const length = buf.readInt32LE(fields.length);
   const count = length / 32;
 
   const rewritten = Buffer.alloc(count * 56);
@@ -72,9 +73,9 @@ function asLeafVersion0(): string {
 
   // The rewritten lump does not fit where LEAFS used to sit, so it goes at EOF.
   const out = Buffer.concat([buf, rewritten]);
-  out.writeInt32LE(buf.length, desc); // new offset: right after the original file
-  out.writeInt32LE(rewritten.length, desc + 4);
-  out.writeInt32LE(0, desc + 8); // version 0
+  out.writeInt32LE(buf.length, fields.offset);
+  out.writeInt32LE(rewritten.length, fields.length);
+  out.writeInt32LE(0, fields.version);
 
   const path = join(scratch, "visleaf-v0.bsp");
   writeFileSync(path, out);

@@ -350,7 +350,9 @@ describe("choosing the Tools++ toolchain", () => {
     // one. Only the binary's own banner tells them apart, and it is the first line, so
     // run_compile's stdoutTail (the last 40) cannot carry it.
     const run = await runCompiler(config, compilerExe("vbsp", "plusplus"), [], 60_000, "plusplus");
-    expect(run.stdout.split("\n")[0]).toContain("vbsp++.exe");
+    // The banner goes to whichever stream the build chose; the command does not lie.
+    expect(run.command).toBe("vbsp++.exe");
+    expect(`${run.stdout}\n${run.stderr}`).toContain("vbsp++");
   }, 120_000);
 
   it.skipIf(!hasPlus)("compiles the sealed probe the same way the stock chain does", async () => {

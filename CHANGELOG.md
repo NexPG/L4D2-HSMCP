@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.2-alpha — 2026-11-16
+
+- Campaign files: `read_campaign`, `write_campaign` and `check_campaign`. The schema was
+  read from the game's own `missions/campaign1.txt` inside `pak01_dir.vpk`; a campaign can
+  be written, checked against its maps and images, and the game's own campaigns can be
+  checked in place.
+- The sidecar can list and read VPK entries (`vpk_list`, `vpk_read`), so campaigns and
+  their maps are checked without extracting a 1 GB archive.
+- Sky checks accept Left 4 Dead 2's `_hdr`-prefixed sky faces, and dependency resolution
+  does the same; `write_vmf` now defaults to `sky_l4d_c1_1`, a sky this game really has.
+- The probe fixture is compiled by this game's own compilers (BSP 21, L4D2 field order),
+  not inherited from Garry's Mod.
+- Test environment: the repo root default was one level too high, which had silently
+  skipped every game-content test on a normal checkout. With it fixed, 1020 tests pass on
+  Windows against the real install.
+
 ## 0.0.1-alpha — 2026-11-16
 
 First version of the Left 4 Dead 2 fork.

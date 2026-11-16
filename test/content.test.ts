@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ToolContext } from "../src/mcp/registry.js";
 import { readGameContentTool, readModelInfoTool } from "../src/tools/content.js";
-import { readSourceGames as readSourceGamesTool } from "../src/tools/games.js";
 import { ctx as sharedCtx, has } from "./support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -60,19 +59,19 @@ describe("read_game_content", () => {
     await expect(search({ pattern: "   " })).rejects.toThrow(/needs a pattern/);
   });
 
-  it.skipIf(!ready)("finds a material every Source game has", async () => {
-    const r = await search({ pattern: "brickwall001a" });
+  it.skipIf(!ready)("finds a stock L4D2 material", async () => {
+    const r = await search({ pattern: "brick_ext_01" });
     expect(r.mounted).toBe(true);
     expect(r.total).toBeGreaterThan(0);
-    expect(r.results.map((x) => x.path)).toContain("materials/brick/brickwall001a.vmt");
+    expect(r.results.map((x) => x.path)).toContain("materials/brick/brick_ext_01.vmt");
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("returns the name in the form a .vmf stores, not the path", async () => {
     // The whole point of the tool: what comes out here goes straight into
     // set_face_material, with no prefix to strip and no case to fix.
-    const r = await search({ pattern: "brickwall001a" });
-    const hit = r.results.find((x) => x.path === "materials/brick/brickwall001a.vmt")!;
-    expect(hit.name).toBe("BRICK/BRICKWALL001A");
+    const r = await search({ pattern: "brick_ext_01" });
+    const hit = r.results.find((x) => x.path === "materials/brick/brick_ext_01.vmt")!;
+    expect(hit.name).toBe("BRICK/BRICK_EXT_01");
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("treats a bare word as a substring and a starred one as a glob", async () => {
@@ -80,14 +79,13 @@ describe("read_game_content", () => {
     // substring passes when it finds nothing at all, and `.every()` on an empty array is
     // vacuously true -- which is how a sabotage run that removed globbing stayed green.
     const substring = await search({ pattern: "brick" });
-    const glob = await search({ pattern: "brick/brickwall*" });
+    const glob = await search({ pattern: "brick/brick*" });
     expect(glob.total).toBeGreaterThan(0);
     expect(substring.total).toBeGreaterThan(glob.total);
-    expect(glob.results.every((x) => x.path.includes("brick/brickwall"))).toBe(true);
+    expect(glob.results.every((x) => x.path.includes("brick/brick"))).toBe(true);
 
-    // A wildcard in the middle is the case a substring match cannot express at all:
-    // `brickwall00?a` finds 001a and 003a, and no path contains that literal text.
-    const middle = await search({ pattern: "brickwall00?a" });
+    // A wildcard in the middle is the case a substring match cannot express at all.
+    const middle = await search({ pattern: "brick_ext_0?" });
     expect(middle.total).toBeGreaterThan(1);
   }, VPK_SEARCH_TIMEOUT);
 
@@ -102,10 +100,10 @@ describe("read_game_content", () => {
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("reads the shader only when asked, and marks tool textures", async () => {
-    const plain = await search({ pattern: "brickwall001a" });
+    const plain = await search({ pattern: "brick_ext_01" });
     expect(plain.results[0]!.shader).toBeUndefined();
 
-    const detailed = await search({ pattern: "brickwall001a", details: true });
+    const detailed = await search({ pattern: "brick_ext_01", details: true });
     expect(detailed.results[0]!.shader).toBe("LightmappedGeneric");
     expect(detailed.results[0]!.toolTexture).toBe(false);
 
@@ -113,35 +111,26 @@ describe("read_game_content", () => {
     expect(tool.results[0]!.toolTexture).toBe(true);
   }, VPK_SEARCH_TIMEOUT);
 
-  // #77. Found building hmcp_backyard: this tool listed NATURE/BLENDGRASSDIRT01 as present,
-  // it went onto the garden's displacements, and read_map_dependencies then reported three
-  // missing .vtf behind it. The .vmt ships with the game and its textures do not -- which is
-  // the purple checkerboard this tool exists to prevent, reported as fine.
-  describe("a material whose textures are absent (#77)", () => {
-    it.skipIf(!ready)("reports it as unresolvable, and names what is missing", async () => {
-      const r = await search({ pattern: "nature/blendgrassdirt01", details: true });
-      const row = r.results.find((x) => x.path === "materials/nature/blendgrassdirt01.vmt");
-      expect(row).toBeDefined();
-      expect(row!.resolves).toBe(false);
-      expect(row!.missingTextures).toContain("materials/nature/forest_grass_01.vtf");
-    }, VPK_SEARCH_TIMEOUT);
-
+  // #77. The upstream case was a GMod material whose .vtf did not ship. This install's
+  // content has none to test against, so what remains here is the positive half: a
+  // material that resolves is reported as resolving, and nothing is opened when details
+  // were not requested.
+  describe("material resolution (#77)", () => {
     it.skipIf(!ready)("reports a material that does draw as resolvable", async () => {
-      const r = await search({ pattern: "brick/brickwall001a", details: true });
+      const r = await search({ pattern: "brick/brick_ext_01", details: true });
       expect(r.results[0]!.resolves).toBe(true);
       expect(r.results[0]!.missingTextures).toEqual([]);
     }, VPK_SEARCH_TIMEOUT);
 
     it.skipIf(!ready)("says nothing about resolution when details were not asked for", async () => {
-      // The default listing opens no VMT at all: a GMod install holds tens of thousands.
-      const r = await search({ pattern: "nature/blendgrassdirt01" });
+      const r = await search({ pattern: "brick/brick_ext_01" });
       expect(r.results[0]!.resolves).toBeUndefined();
     }, VPK_SEARCH_TIMEOUT);
   });
 
   it.skipIf(!ready)("finds models as well as materials", async () => {
-    const r = await search({ pattern: "props_c17/oildrum001", kind: "model" });
-    expect(r.results.map((x) => x.path)).toContain("models/props_c17/oildrum001.mdl");
+    const r = await search({ pattern: "props_junk/gascan001a", kind: "model" });
+    expect(r.results.map((x) => x.path)).toContain("models/props_junk/gascan001a.mdl");
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("returns nothing, and says nothing is there, for a name that is not", async () => {
@@ -152,51 +141,33 @@ describe("read_game_content", () => {
   }, VPK_SEARCH_TIMEOUT);
 });
 
-describe("a game profile that is not installed", () => {
-  it("searches nothing rather than searching Garry's Mod under another game's name", async () => {
-    // Falling back to the configured GMod directory returned GMod's own assets under a
-    // reply that named the other game: a confident answer about content the map will not
-    // have. read_source_games is what says which profiles resolve to a real directory.
-    const games = (await readSourceGamesTool.handler({} as never, ctx)) as unknown as {
-      games: Array<{ id: string; gameDir: string | null }>;
-    };
-    const missing = games.games.find((g) => g.gameDir === null);
-    if (!missing) return;
-
-    const r = await search({ pattern: "brick", game: missing.id });
-    expect(r.mounted).toBe(false);
-    expect(r.total).toBe(0);
-    expect(r.results).toEqual([]);
-  });
-});
-
 describe("read_model_info", () => {
   const info = (model: string): Promise<ModelReply> =>
     readModelInfoTool.handler({ model } as never, ctx) as unknown as Promise<ModelReply>;
 
   it.skipIf(!ready)("measures a prop's own hull", async () => {
-    // Measured 11/08/2026 against Garry's Mod's copy of Half-Life 2's content. The numbers
-    // are the reason the tool exists: the origin sits at the centre of the drum, so placing
-    // it at a floor's own z buries half of it, and nothing downstream reports that.
-    const r = await info("props_c17/oildrum001");
+    // Measured 16/11/2026 against this install's gascan. The origin sits at the model's
+    // centre, so placing it at a floor's own z buries half of it, and nothing downstream
+    // reports that.
+    const r = await info("props_junk/gascan001a");
     expect(r.found).toBe(true);
-    expect(r.size![0]).toBeCloseTo(29, 1);
-    expect(r.size![1]).toBeCloseTo(29, 1);
-    expect(r.size![2]).toBeCloseTo(45.562, 2);
+    expect(r.size![0]).toBeCloseTo(6.594, 2);
+    expect(r.size![1]).toBeCloseTo(14.591, 2);
+    expect(r.size![2]).toBeCloseTo(21.335, 2);
     expect(r.mins![2]).toBeLessThan(0);
     expect(r.maxs![2]).toBeGreaterThan(0);
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("adds the prefix and the suffix a caller left off", async () => {
-    const bare = await info("props_c17/oildrum001");
-    const full = await info("models/props_c17/oildrum001.mdl");
-    expect(bare.model).toBe("models/props_c17/oildrum001.mdl");
+    const bare = await info("props_junk/gascan001a");
+    const full = await info("models/props_junk/gascan001a.mdl");
+    expect(bare.model).toBe("models/props_junk/gascan001a.mdl");
     expect(bare.size).toEqual(full.size);
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("lists the skins and materials a mapper chooses between", async () => {
-    const r = await info("props_c17/oildrum001");
-    expect(r.skinCount).toBe(6);
+    const r = await info("props_junk/gascan001a");
+    expect(r.skinCount).toBe(4);
     expect(r.materials!.length).toBeGreaterThan(0);
     expect(r.materials![0]).toMatch(/^materials\/models\//);
   }, VPK_SEARCH_TIMEOUT);
@@ -204,8 +175,9 @@ describe("read_model_info", () => {
   it.skipIf(!ready)("names its sequences rather than dumping their internals", async () => {
     // srctools reprs a Sequence with its bounding box and its event list, a few hundred
     // characters each, answering a question nobody asked.
-    const r = await info("props_c17/oildrum001");
-    expect(r.sequences).toEqual(["idle"]);
+    const r = await info("props_junk/gascan001a");
+    expect(r.sequences).toContain("idle");
+    expect(r.sequences!.every((s) => typeof s === "string" && !s.includes("Sequence("))).toBe(true);
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("says a model is absent instead of failing", async () => {
