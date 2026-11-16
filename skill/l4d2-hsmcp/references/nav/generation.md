@@ -16,6 +16,25 @@ and any agent doing this must follow the same steps.
 
 ## Procedure
 
+Use the tool:
+
+```
+run_nav_generate(
+  maps: ["<campaign>/addon/maps/map_a.bsp", "<campaign>/addon/maps/map_b.bsp"],
+  addonsToHide: ["<game>/left4dead2/addons/my_campaign.vpk"],
+  confirm: true
+)
+```
+
+It copies each map into `left4dead2/maps`, moves the named add-on archives aside, writes the
+config, launches the game, waits for the `.nav`, copies the mesh and the engine's
+`<map>_nav.txt` beside the source `.bsp`, removes the loose copies and the engine's rotating
+backups, restores the config and the archives, and returns the verdict from
+`read_nav_dump`. `addonsToHide` is not optional when an installed VPK contains a map with the
+same name — the archive would shadow the loose map.
+
+The manual procedure, when the tool cannot run:
+
 1. Copy the compiled `.bsp` into `left4dead2/maps/`, remove any `.nav` with that name.
 2. Write a temporary `cfg/listenserver.cfg`:
 
@@ -31,9 +50,6 @@ and any agent doing this must follow the same steps.
 5. Copy the `.nav` and `<map>_nav.txt` into the campaign's `nav/` directory.
 6. Restore the original config, delete the loose map and nav, and remove the engine's
    `*.navNN` backups and `*_nav.txt` dumps from the game tree.
-
-The project script `campaigns/001-hsmcp-test/nav.ps1` does all of this. Treat it as the
-reference implementation until `run_nav_generate` exists as a tool.
 
 ## What to verify
 

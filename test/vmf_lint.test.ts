@@ -109,7 +109,7 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["l4d2-trigger-changelevel"]).toBe(1);
   }, 60_000);
 
-  it.skipIf(!ready)("flags a Standard finale as unused by Valve", async () => {
+  it.skipIf(!ready)("flags a finale map that is missing its arrival changelevel", async () => {
     const path = broken("l4d2-finale-template", (s) =>
       s.replace(
         '"classname" "info_player_start"',
@@ -117,7 +117,7 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
       ),
     );
     const r = await lint(path);
-    expect(r.byRule["l4d2-finale-type-standard"]).toBe(1);
+    expect(r.byRule["l4d2-finale-no-arrival-changelevel"]).toBe(1);
   }, 60_000);
 
   it.skipIf(!ready)("catches a texture scale vbsp will refuse", async () => {

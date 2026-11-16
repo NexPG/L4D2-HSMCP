@@ -7,7 +7,8 @@ comparable between builds.
 
 - The add-on is enabled in *Extras → Add-ons*.
 - The game was restarted after the VPK was replaced.
-- The console is available (`-console`), and ideally `-condebug` so the log survives.
+- `run_map_test` can launch the map and wait for a console pattern; use it for the parts that
+  can be automated, and keep the human steps for what it cannot see.
 
 ## What to check, in order
 

@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.18--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.19--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -140,7 +140,7 @@ practical rules are in [`docs/campaigns.md`](docs/campaigns.md).
 
 ## Tools
 
-77 tools, grouped by what they answer:
+79 tools, grouped by what they answer:
 
 - **Inspect** — `health`, `read_source_games`, `read_bsp_info`, `read_bsp_entities`,
   `read_nav_dump`, `read_map_geometry`, `read_map_report`, `read_vmf`, `read_vmf_lint`.
@@ -150,7 +150,7 @@ practical rules are in [`docs/campaigns.md`](docs/campaigns.md).
 - **Build and edit** — solids, fittings, clips, hollows, vertices, faces, lights, hints,
   portals, visgroups, displacements.
 - **Compile and ship** — `run_compile`, `read_compile_log`, `read_leak`,
-  `read_map_dependencies`, `run_pack`, `run_vpk_pack`.
+  `read_map_dependencies`, `run_pack`, `run_vpk_pack`, `run_nav_generate`, `run_map_test`.
 - **Campaigns** — `read_campaign`, `write_campaign`, `check_campaign`.
 
 Every tool states its realm (`map` for files, `local` for a host binary) and whether it is

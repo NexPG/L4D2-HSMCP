@@ -114,17 +114,23 @@ why bots appear to run around on their own.
 `read_vmf_lint` reports the structural faults that otherwise compile clean:
 `l4d2-trigger-changelevel`, `l4d2-changelevel-no-landmark`,
 `l4d2-changelevel-landmark-missing`, `l4d2-changelevel-no-brush`,
-`l4d2-changelevel-no-checkpoint-door`, `l4d2-changelevel-no-checkpoint-nav` and
-`l4d2-finale-type-standard`. A clean lint is not proof that the transition fires — only a play
-test is — but it catches every failure this project has hit so far.
-`read_nav_dump` returns the mesh verdict (`playable`, `no-goal`, `no-flow`, `empty`) from the
-engine's own dump.
+`l4d2-changelevel-no-checkpoint-door`, `l4d2-changelevel-no-checkpoint-nav`,
+`l4d2-finale-no-arrival-changelevel` and `l4d2-no-director`. A clean lint is not proof that
+the transition fires — only a play test is — but it catches every failure this project has hit
+so far. `read_nav_dump` returns the mesh verdict (`playable`, `no-goal`, `no-flow`, `empty`)
+from the engine's own dump.
 
 ## The finale
 
 Every stock finale uses `trigger_finale` with `type 2` (Custom): a radio, generator or sound
-board starts the sequence. `type 0` (Standard) and `type 1` (Gauntlet) exist in the FGD, but no
-base campaign uses either, so a finale that completes by itself is not something to assume.
+board starts a scripted sequence. `type 0` (Standard) and `type 1` (Gauntlet) exist in the FGD
+and no base campaign uses them.
+
+Type 0 is not broken, though: on a map with a FINALE nav area and an arrival
+`info_changelevel`, firing its `ForceFinaleStart` input produced
+`Director::OnFinaleStarted: Finale started` in the console. That is the scriptless path this
+project uses. Type 2 without a finale script starts nothing — it needs the script that drives
+its waves.
 
 The engine does expose the end of a finale as an input, and the Authoring Tools' own rescue
 template (`sdk_content/scripting/scripts/vscripts/entitygroups/rescue_helicopter_group.nut`)
@@ -138,6 +144,10 @@ So a minimal completable finale is entity work, not a script: a `trigger_finale`
 `FinaleStart` enables a `trigger_multiple` after the wave delay, and that trigger's
 `OnStartTouch` fires `FinaleEscapeFinished` on the finale and `RollStatsCrawl` on the outtro.
 `info_survivor_rescue` marks where the rescue stands; it is not required for the victory.
+
+A finale map also needs the **disabled** `info_changelevel` that marks where the team arrived
+(`spawnflags 2`, `map` = the previous chapter, same landmark). Every stock finale has one.
+Without it the Director logs `No exit checkpoint could be found` and never starts the finale.
 
 ## VScript in an add-on
 
@@ -155,14 +165,18 @@ The game ships its scripts compiled as `.nuc`; the readable sources in the Autho
 
 There is no offline nav generator. The game generates the mesh:
 
+- `run_nav_generate` wraps the whole loop: loose maps, `sv_cheats 1` and `nav_edit 1`, the
+  VPK moved aside, the mesh and dump collected, the game closed, everything restored.
 - `nav_generate` needs **`sv_cheats 1` and `nav_edit 1`**; without `nav_edit` it silently
   produces nothing.
 - The map must be **loose** in `left4dead2/maps/`. A `.nav` cannot be written beside a map
   inside a VPK.
 - `nav_generate` also analyses; the resulting file records the `.bsp` size it belongs to.
   `read_nav` compares that with the map and reports `fresh` or `stale`.
+- `read_nav_dump` reads the engine's `<map>_nav.txt` and returns a `playable` / `no-goal` /
+  `no-flow` verdict.
 - Nav editing needs the engine, and on Windows the game client is the engine that is
-  installed — a separate `srcds` binary is not required for this step.
+  installed — a separate `srcds` binary is not required.
 - `nav_generate` writes `<map>_nav.txt` beside the mesh: area centres, connection counts and
   the attribute flags. It is the only readable view of a `.nav`, and it is the evidence that
   the mesh has the attributes and the flow path the Director needs. Keep it with the `.nav`.

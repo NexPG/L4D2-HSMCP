@@ -1,6 +1,6 @@
 # Tool catalogue
 
-77 tools. This page groups them by the job you are doing; each tool's own description is the
+79 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -105,6 +105,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_leak` | turn a leak into a location |
 | `run_pack` | bspzip assets into a compiled map |
 | `run_vpk_pack` | pack a staging directory into an addon VPK, then verify the entry list |
+| `run_nav_generate` | launch the game and generate `.nav` + `<map>_nav.txt` for loose maps, with the add-on archives moved aside |
+| `run_map_test` | launch an installed map and wait for a pattern in `console.log` |
 | `read_nav` | nav header and freshness against the `.bsp` |
 | `run_bsp_rename` | rename a `.bsp` and the content packed inside it |
 | `run_pakfile_extract` | extract a map's embedded pakfile |

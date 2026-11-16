@@ -5,6 +5,30 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.19-alpha — 2026-11-17
+
+- **`run_nav_generate`** (78th tool) wraps the whole nav loop: loose copies, the VPK moved
+  aside, `sv_cheats 1` + `nav_edit 1`, launch, wait for the mesh, collect `.nav` and the
+  engine dump, clean the rotating backups, restore the config and the archives. It returns
+  the mesh size, the dump, the decoded verdict and the flow warnings. Verified on both maps
+  of campaign 001: `playable`, 12 areas, no flow warnings, everything restored.
+- **`run_map_test`** (79th tool) launches an installed map with `-condebug`, waits for a
+  console pattern, closes the game and returns the match and log tail. It is the automated
+  half of a play test.
+- The finale starts without a human: `trigger_finale` **type 0** plus `ForceFinaleStart`
+  produces `Finale started`; type 2 without a finale script starts nothing. A finale map also
+  needs the disabled arrival `info_changelevel` — without it the Director reports
+  `No exit checkpoint could be found`. The lint gains
+  `l4d2-finale-no-arrival-changelevel`, and the incorrect `l4d2-finale-type-standard` warning
+  is gone.
+- The escape trigger is touched after the warp (`HSMCP_ESCAPE_TOUCHED`), but victory and the
+  outtro are not reached yet: the standard finale cannot spawn a mob (`MOB SPAWN ERROR`) on
+  this test map, so its state machine does not advance to the escape phase. That is the next
+  block: a combat area with spawn nav, then waves/rescue.
+- `Director.WarpAllSurvivorsToCheckpoint()` fails on a finale map (no exit checkpoint); the
+  self-test uses `WarpAllSurvivorsToFinale()`. `run_map_test` accepts `extraArgs`, used with
+  `+sv_pausable 0 +sv_cheats 1` so an unfocused game does not pause.
+
 ## 0.0.18-alpha — 2026-11-17
 
 - **The chapter transition is verified end to end without a human.** The engine needs two

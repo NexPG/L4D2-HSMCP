@@ -310,19 +310,6 @@ def lint_vmf(vmf: Any, fgd: Any) -> list[dict[str, Any]]:
                 )
             )
 
-    for ent in by_class.get("trigger_finale", []):
-        if ent["type", "0"].strip() == "0":
-            findings.append(
-                _finding(
-                    "warning",
-                    "l4d2-finale-type-standard",
-                    "trigger_finale type 0 (Standard) is used by no stock Left 4 Dead 2 "
-                    "campaign; type 2 with FinaleEscapeFinished is the verified path",
-                    entity_id=int(ent.id),
-                    classname="trigger_finale",
-                )
-            )
-
     is_campaign_map = bool(
         by_class.get("info_changelevel") or by_class.get("trigger_finale")
     )
@@ -333,6 +320,17 @@ def lint_vmf(vmf: Any, fgd: Any) -> list[dict[str, Any]]:
                 "l4d2-no-director",
                 "a campaign map needs info_director; without it there is no Director "
                 "behaviour and no flow-driven spawning",
+            )
+        )
+
+    if by_class.get("trigger_finale") and not by_class.get("info_changelevel"):
+        findings.append(
+            _finding(
+                "warning",
+                "l4d2-finale-no-arrival-changelevel",
+                "a finale map needs the disabled info_changelevel that marks where the team "
+                "arrived; without it the Director reports 'No exit checkpoint could be "
+                "found' and the finale does not start",
             )
         )
 

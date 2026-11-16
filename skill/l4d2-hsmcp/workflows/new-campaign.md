@@ -49,12 +49,14 @@ Checkpoint: `sealed`, `lint 0`, `vbsp:0 vvis:0 vrad:0`.
 
 ## 4. Nav
 
-1. Generate the mesh with `references/nav/generation.md`.
+1. Generate the mesh with `run_nav_generate` and `addonsToHide` (see
+   `references/nav/generation.md`).
 2. Put the `.nav` beside its `.bsp` in staging; keep `<map>_nav.txt` as evidence.
 3. `read_nav` must say `fresh`.
 
-Checkpoint: the dump shows CHECKPOINT/PLAYER_START/FINALE on the right areas and
-`0x20000000` on the flow path. No flow means no playable map, even with a valid file.
+Checkpoint: `read_nav_dump` says `playable` for every map. The dump shows
+CHECKPOINT/PLAYER_START/FINALE on the right areas and `0x20000000` on the flow path. No flow
+means no playable map, even with a valid file.
 
 ## 5. Mission and add-on
 

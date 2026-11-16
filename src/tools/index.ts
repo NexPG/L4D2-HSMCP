@@ -26,6 +26,7 @@ import { renameTools } from "./rename.js";
 import { renderTools } from "./render.js";
 import { reportTools } from "./report.js";
 import { rulesTools } from "./rules.js";
+import { runtimeTools } from "./runtime.js";
 import { sceneTools } from "./scene.js";
 import { solidTools } from "./solids.js";
 import { spaceTools } from "./space.js";
@@ -73,4 +74,5 @@ export const allTools: AnyToolDef[] = [
   ...cubemapTools,
   ...pakfileTools,
   ...vtfTools,
+  ...runtimeTools,
 ];
