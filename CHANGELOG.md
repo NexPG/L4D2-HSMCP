@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.4-alpha — 2026-11-16
+
+- First campaign built through the tools: two sealed chapters with a transition and a
+  finale, a mission file, an addon manifest and a packed VPK. `check_campaign` passes on
+  the unpacked tree and on the archive itself.
+- `campaigns/hsmcp-test/` keeps the source `.vmf` files, the mission and a `build.mjs` that
+  reproduces the build; compiled maps and the VPK are build output.
+
 ## 0.0.3-alpha — 2026-11-16
 
 - `run_vpk_pack`: packs a staging directory into an addon VPK with the game's own

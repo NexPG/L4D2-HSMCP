@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ProjectSocietyStudio/hammer-mcp/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.3--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.4--alpha-orange.svg)](CHANGELOG.md)
 
 An MCP server for Left 4 Dead 2 map work on Windows. It reads `.vmf` and `.bsp` files, lints a
 map against the game's own FGD, edits a `.vmf` without reformatting it, drives the Windows
