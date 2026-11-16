@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.12-alpha — 2026-11-17
+
+- README drops the "What works today" feature table. The project has only just entered
+  development, and the page now says so plainly: the map and campaign pipeline is the first
+  piece being built, and the feature set will keep expanding.
+- Upstream credit names **Project Society Studio** as the copyright holder, which is how the
+  original authors identify themselves; the MIT notice in `LICENSE-MIT` is unchanged.
+
 ## 0.0.11-alpha — 2026-11-17
 
 - README gains a full Requirements section: L4D2 (app 550) and its Authoring Tools (app 563),

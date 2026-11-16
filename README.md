@@ -1,16 +1,16 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.11--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.12--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
 and addons — made through an MCP server and a skill, not by hand-editing files.
 
-> **Early development — 0.0.10-alpha.** The map and campaign pipeline works end to end on a
-> real install: a two-chapter campaign is built, compiled, given nav meshes, packed and
-> loaded by the game. VScript, model and wider addon support are the next stages.
-> Windows only, Left 4 Dead 2 only.
+> **Early development.** The project has only just entered development. The map and campaign
+> pipeline is the first piece being built; VScript, model and wider addon support will follow,
+> and the toolkit will keep growing. Interfaces and tool names can change between `0.0.x`
+> releases. Windows only, Left 4 Dead 2 only.
 
 ## What it is
 
@@ -54,25 +54,6 @@ The design rules come from the project this fork grew out of, and they still hol
 - **No number without a source.** Limits and measurements carry a file and a date.
 - **No tool without an oracle.** If the answer cannot be checked independently, it does
   not ship.
-
-## What works today
-
-| Area | State |
-|---|---|
-| BSP 21 reading, L4D2 lump layout | working; counts match `vbspinfo` exactly |
-| VMF read, lint against `left4dead2.fgd` | working |
-| VMF edit, brush building, clipping, hollowing, vertices | working |
-| Compile: stock L4D2 and Tools++ | working, with per-stage findings |
-| Campaign files: read, write, check | working; the game's own campaigns can be checked in place |
-| VPK addon packing and deployment | working |
-| Nav mesh generation | working via the campaign script (engine-side) |
-| Two-chapter test campaign | built, compiled, packed, deployed |
-| In-game play test of that campaign | next |
-| VScript editing | planned |
-| Model and wider addon tooling | planned |
-
-The suite currently runs **1023 tests** on Windows with the game installed (33 skipped,
-none failed).
 
 ## Requirements
 
@@ -201,18 +182,22 @@ docs/             campaign guide and inherited measurements
 
 ## Status
 
-This is an early, actively changing project. The map and campaign path is proven on a real
-Left 4 Dead 2 install; everything beyond it — VScript, models, broader addon formats,
-automated in-game verification, the agent skill itself — is being built. Interfaces may
-change between `0.0.x` releases.
+The project has only just entered development. The map and campaign pipeline is the first
+piece being built; VScript, model and wider addon tooling, automated in-game verification
+and the agent skill itself are still ahead, so the feature set will keep expanding.
+Interfaces and tool names may change between `0.0.x` releases.
+
+Every tool is covered by tests. The suite runs on Windows against a real Left 4 Dead 2
+install, and the checks that need game content skip themselves when the game is absent.
 
 ## License
 
 **GPL-3.0-only.** Copyright (C) 2026 **NexPG**.
 
-This project is a fork of [`hammer-mcp`](https://github.com/Sycatle/hammer-mcp) by
-**Sycatle**, which is MIT licensed. The original MIT notice is kept verbatim in
-[`LICENSE-MIT`](LICENSE-MIT), and [`NOTICE`](NOTICE) records the provenance, the modification
-date and what the GPL asks of anyone redistributing this work.
+This project is a fork of [`hammer-mcp`](https://github.com/Sycatle/hammer-mcp),
+Copyright (c) 2026 **Project Society Studio**, released under the MIT licence. The original
+MIT notice is kept verbatim in [`LICENSE-MIT`](LICENSE-MIT), and [`NOTICE`](NOTICE) records
+the provenance, the modification date and what the GPL asks of anyone redistributing this
+work.
 
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.
