@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.16--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.17--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -90,9 +90,10 @@ requirements:
 - **An MCP client over stdio with tool use.** OpenCode and Claude Code are the two this
   project is developed against; any client that can call MCP tools and show permission
   prompts should work.
-- **The skill.** The L4D2 skill that turns these tools into a map-and-campaign workflow is
-  being written. Until it ships, the tool descriptions, [`docs/campaigns.md`](docs/campaigns.md)
-  and this page are the interface.
+- **The skill.** [`skill/l4d2-hsmcp/`](skill/l4d2-hsmcp/SKILL.md) is the workflow an agent
+  follows: it routes the task to a reference, a procedure or a troubleshooting page instead of
+  loading everything at once. The repository's `opencode.json` points at it, so it is
+  available in this project without copying.
 - **Permission to run the local tools.** Compilers, `vpk.exe` and the game are `local`
   tools. They need `confirm: true`, or an entry in `toolAllowlist` for an unattended run.
 - **Permission to launch the game once per map for nav generation.** That is the only GUI
@@ -166,6 +167,7 @@ src/space/        offline traces, rooms, measurement
 src/render/       offline views and plans
 src/compile/      compilers, logs, leaks, external tools
 sidecar/          Python/srctools helper
+skill/            the agent skill: SKILL.md, references, workflows, troubleshooting
 test/             the oracle-heavy suite
 docs/             campaign guide and inherited measurements
 ```
@@ -174,6 +176,8 @@ docs/             campaign guide and inherited measurements
 
 - [`CHANGELOG.md`](CHANGELOG.md) — what each version changed.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — the three rules this project works by.
+- [`skill/l4d2-hsmcp/SKILL.md`](skill/l4d2-hsmcp/SKILL.md) — the agent workflow, with
+  campaign, nav, VScript and troubleshooting references.
 - [`docs/campaigns.md`](docs/campaigns.md) — mission files, VPK layout, nav, deployment.
 - [`docs/architecture.md`](docs/architecture.md) — the inherited design notes on splicing,
   offset reads and shared plumbing.

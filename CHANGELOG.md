@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.17-alpha — 2026-11-17
+
+- The agent skill is added at `skill/l4d2-hsmcp/`, structured for progressive disclosure:
+  a short `SKILL.md` router, then `references/` (campaign, nav, scripting, mapping,
+  compiling, tools), `workflows/`, `troubleshooting/` and `checklists/`. `opencode.json`
+  points at it so it is available in this repository.
+- The skill documents only what the project has verified — mission rules, the safe-room
+  transition, nav attributes and flow, the finale inputs, add-on VScript, the tool catalogue —
+  and names what is not built yet instead of inventing it.
+- Campaign 001: the checkpoint door stood on a solid wall. The corridor now ends in a real
+  doorway and a safe room behind it, with the changelevel volume over the room floor. Nav was
+  regenerated: 12 areas per map, CHECKPOINT on both safe rooms, FINALE in the radio corridor,
+  and the flow path reaching the safe room.
+
 ## 0.0.16-alpha — 2026-11-17
 
 - A chapter transition needs more than `info_changelevel`: a `prop_door_rotating_checkpoint`
