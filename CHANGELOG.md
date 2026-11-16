@@ -5,6 +5,13 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.8-alpha — 2026-11-16
+
+- The project moved to its own repository, `NexPG/L4D2-HSMCP`, with the full history. The
+  old fork's remote is gone; metadata, clone URL and CI badge point at the new home.
+- The upstream MIT notice and the provenance in `NOTICE` stay exactly where the licences
+  require them.
+
 ## 0.0.7-alpha — 2026-11-16
 
 - Campaign metadata is now shaped the way L4D2 matches it: the mission file's base name
