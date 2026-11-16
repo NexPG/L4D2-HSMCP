@@ -17,3 +17,6 @@ __pycache__/
 
 # Dogfood runs: a round leaves its brief, its rules and its renders here.
 scratchpad/
+
+# Development diary: working notes for this fork, kept locally and never published.
+.develop-diary/
