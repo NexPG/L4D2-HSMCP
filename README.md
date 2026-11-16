@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.12--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.13--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -194,10 +194,10 @@ install, and the checks that need game content skip themselves when the game is 
 
 **GPL-3.0-only.** Copyright (C) 2026 **NexPG**.
 
-This project is a fork of [`hammer-mcp`](https://github.com/Sycatle/hammer-mcp),
-Copyright (c) 2026 **Project Society Studio**, released under the MIT licence. The original
-MIT notice is kept verbatim in [`LICENSE-MIT`](LICENSE-MIT), and [`NOTICE`](NOTICE) records
-the provenance, the modification date and what the GPL asks of anyone redistributing this
-work.
+This project is a fork of [`hammer-mcp`](https://github.com/Sycatle/hammer-mcp), made by the
+original developers at **Project Society Studio** and released under the MIT licence. The
+original MIT notice is kept verbatim in [`LICENSE-MIT`](LICENSE-MIT), and [`NOTICE`](NOTICE)
+records the provenance, the modification date and what the GPL asks of anyone redistributing
+this work.
 
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.
