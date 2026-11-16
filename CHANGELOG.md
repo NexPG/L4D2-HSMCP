@@ -5,6 +5,13 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.11-alpha — 2026-11-17
+
+- README gains a full Requirements section: L4D2 (app 550) and its Authoring Tools (app 563),
+  Node, pnpm, Python/srctools, Windows, disk; recommended Hammer++ and standalone Tools++,
+  the VTF tools, Steam for nav and testing; and the agent side (MCP client, skill,
+  permission to run local tools and launch the game once per map for nav).
+
 ## 0.0.10-alpha — 2026-11-17
 
 - README rewritten around what this project is: an agent toolkit for Left 4 Dead 2 maps,
