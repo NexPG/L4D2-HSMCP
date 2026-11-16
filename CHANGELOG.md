@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.9-alpha — 2026-11-17
+
+- Gate F answered: `nav_generate` runs in the client's listen server, not a dedicated
+  binary, and it requires `sv_cheats 1` **and** `nav_edit 1`; without `nav_edit` it does
+  nothing. The map must be loose, because a `.nav` cannot be written beside a map inside a
+  VPK.
+- `campaigns/001-hsmcp-test/nav.ps1` automates the loop: loose maps, generate, collect
+  `nav/`, restore the game config, re-pack and deploy.
+- Both maps now carry analysed nav meshes (version 16/14, `savedBspSize` matches), and the
+  addon has 6 entries (two maps, two navs, mission, manifest).
+- A transition needs a landmark: both maps carry `info_landmark landmark_transition` and
+  `trigger_changelevel.landmark` points at it.
+
 ## 0.0.8-alpha — 2026-11-16
 
 - The project moved to its own repository, `NexPG/L4D2-HSMCP`, with the full history. The
