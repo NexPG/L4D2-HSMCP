@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.16-alpha — 2026-11-17
+
+- A chapter transition needs more than `info_changelevel`: a `prop_door_rotating_checkpoint`
+  must exist (without one the changelevel never spawns), and the nav areas must carry
+  CHECKPOINT, with PLAYER_START on the first map. `func_nav_attribute_region` applies those
+  attributes during generation, and the `<map>_nav.txt` dump proves it: `0x800` is CHECKPOINT,
+  `0x40` FINALE, and `0x20000000` marks the computed flow path.
+- Campaign 001 now has all of it: a checkpoint door at the exit and at the second map's start,
+  Mission Start + Checkpoint on the spawn area, Checkpoint in the exit corridor and Finale in
+  the radio corridor. Nav regenerated with those attributes and the flow path present.
+- `docs/campaigns.md` records the three non-optional requirements and explains why bots run
+  ahead: they path to the goal area, not to the player.
+- `nav.ps1` captures each generation's console log and reports flow and checkpoint errors, so
+  a mesh that exists but has no goal is caught without a play test.
+
 ## 0.0.15-alpha — 2026-11-17
 
 - An add-on VPK can carry VScript: `scripts/vscripts/hsmcp_finale.nut` is packed into the

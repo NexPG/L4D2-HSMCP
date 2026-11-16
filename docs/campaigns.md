@@ -92,6 +92,25 @@ So a transition is a pair: a brush entity with a destination and a landmark name
 `info_landmark` with that name in **both** maps. The one in the map being left sits at the
 exit; the one in the map being entered sits where the survivors should appear.
 
+Three more things are required, and none of them is optional:
+
+- a `prop_door_rotating_checkpoint` in the safe room — without one, `info_changelevel` does
+  not even spawn;
+- nav areas in both safe rooms carrying **CHECKPOINT**, and **PLAYER_START** on the first
+  map's spawn area;
+- an `info_changelevel` brush that covers the safe room floor.
+
+`func_nav_attribute_region` marks those attributes during generation. Its `spawnflags` are the
+attribute bits: 128 Mission Start, 2048 Checkpoint, 64 Finale, 8192 No mobs, 524288 No threat.
+`nav_generate` writes `<map>_nav.txt` beside the mesh, and that dump is the oracle: attributes
+appear as "Terror Spawn Attribute Flags" (`0x800` is CHECKPOINT, `0x40` FINALE), and areas on
+the computed flow path get `0x20000000` in "Base Attribute Flags". No flow path means the
+Director found no goal.
+
+Bots do not follow the player as their first rule: they path to the goal area (CHECKPOINT or
+FINALE). If the player falls behind, they run ahead and wait there. A map with no goal area is
+why bots appear to run around on their own.
+
 ## The finale
 
 Every stock finale uses `trigger_finale` with `type 2` (Custom): a radio, generator or sound
@@ -135,6 +154,9 @@ There is no offline nav generator. The game generates the mesh:
   `read_nav` compares that with the map and reports `fresh` or `stale`.
 - Nav editing needs the engine, and on Windows the game client is the engine that is
   installed — a separate `srcds` binary is not required for this step.
+- `nav_generate` writes `<map>_nav.txt` beside the mesh: area centres, connection counts and
+  the attribute flags. It is the only readable view of a `.nav`, and it is the evidence that
+  the mesh has the attributes and the flow path the Director needs. Keep it with the `.nav`.
 
 ## Deploying
 
