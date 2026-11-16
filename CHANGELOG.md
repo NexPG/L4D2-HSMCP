@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.10-alpha — 2026-11-17
+
+- README rewritten around what this project is: an agent toolkit for Left 4 Dead 2 maps,
+  campaigns, VScripts, models and addons. It states the early-development status, how the
+  pieces fit together, what works today and what is planned.
+- `docs/campaigns.md` added: mission format and naming rules, addon layout, nav generation,
+  deployment, and the checks `check_campaign` performs.
+- Provenance points at `Sycatle/hammer-mcp`, the upstream this fork grew from; the MIT
+  notice and copyright remain in `LICENSE-MIT`.
+
 ## 0.0.9-alpha — 2026-11-17
 
 - Gate F answered: `nav_generate` runs in the client's listen server, not a dedicated

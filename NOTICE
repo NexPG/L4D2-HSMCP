@@ -1,9 +1,9 @@
 # Licensing and provenance
 
-This repository is a fork of **hammer-mcp**, originally published by Project Society Studio at
-<https://github.com/ProjectSocietyStudio/hammer-mcp>. It is now distributed as a whole under the
-**GNU General Public License, version 3 only** (`GPL-3.0-only`). The full licence text is in
-[`LICENSE`](LICENSE).
+This repository is a fork of **hammer-mcp**, published by **Sycatle** at
+<https://github.com/Sycatle/hammer-mcp> (formerly `ProjectSocietyStudio/hammer-mcp`). It is now
+distributed as a whole under the **GNU General Public License, version 3 only**
+(`GPL-3.0-only`). The full licence text is in [`LICENSE`](LICENSE).
 
 ## The upstream licence is kept
 
