@@ -6,12 +6,12 @@ import { ctx as sharedCtx, has } from "../support/env.js";
 const ctx = sharedCtx as unknown as ToolContext;
 
 describe.skipIf(!has.gameContent)("run_hlmv", () => {
-  it("refuses a model that does not exist", () => {
-    expect(() =>
+  it("refuses a model that does not exist", async () => {
+    await expect(
       runHlmvTool.handler(
         { model: "hsmcp_test/definitely_missing.mdl", confirm: true },
         ctx,
       ),
-    ).toThrow(/does not exist/);
+    ).rejects.toThrow(/does not exist/);
   });
 });

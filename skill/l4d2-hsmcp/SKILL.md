@@ -58,6 +58,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/tools/index.md` | choosing a tool for a job |
 | `references/tools/primitives.md` | which tool is the general operation, and which is only a shortcut |
 | `troubleshooting/cubemaps-do-not-build.md` | `buildcubemaps` writes nothing, or says a path is not writable |
+| `troubleshooting/hlmv-screenshot.md` | HLMV shows an error, a black viewport, or the screenshot is blank |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 
 ## The pipeline

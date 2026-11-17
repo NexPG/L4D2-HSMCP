@@ -3,6 +3,7 @@ import { bspTools } from "./bsp.js";
 import { bspEditTools } from "./bspedit.js";
 import { buildCubemapTools } from "./buildcubemaps.js";
 import { buildTools } from "./build.js";
+import { captureTools } from "./capture.js";
 import { campaignTools } from "./campaign.js";
 import { addonTools } from "./addon.js";
 import { clipTools } from "./clip.js";
@@ -58,6 +59,7 @@ export const allTools: AnyToolDef[] = [
   ...bspTools,
   ...bspEditTools,
   ...buildCubemapTools,
+  ...captureTools,
   ...measureTools,
   ...materialsTools,
   ...lightmapTools,

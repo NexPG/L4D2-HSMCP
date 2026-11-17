@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **95 tools**.
+Last checked against the tool list on 17/11/2026: **96 tools**.
 
 ## The file itself
 
@@ -99,7 +99,8 @@ getting `ENOENT` on the first call.
 | Outputs and inputs | `edit_vmf` | |
 | **Check the wiring** | `validate_io` | Hammer does not do this. An output into a name nothing has is silent everywhere else. Takes a `.vmf` **or a compiled `.bsp`** — Hammer cannot open one at all |
 | Compile a model | `run_studiomdl` | The game's `studiomdl.exe`; reads `$modelname` and proves the `.mdl` and its companions exist |
-| Preview a model | `run_hlmv` | Launches HLMV and returns; GUI, no screenshot. `read_model_info` is the machine-readable view |
+| Preview a model | `run_hlmv` | Launches HLMV, optionally captures the window; the screenshot comes back as a real image block |
+| See a GUI | `capture_window` | Captures any window by process id or name; PrintWindow works while occluded, screen mode is the 3D fallback |
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Areaportals | `write_portal` | |

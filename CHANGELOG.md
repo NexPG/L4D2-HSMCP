@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.51-alpha — 2026-11-17
+
+- **The agent can see a GUI.** `run_hlmv` now optionally captures the HLMV window and
+  returns it as a real MCP image block; `capture_window` (96th tool) captures any window by
+  process id or name. `window` mode uses `PrintWindow` and works while another window is in
+  front; `screen` mode brings the window forward for a 3D canvas.
+- HLMV launch fixed for this build: `VPROJECT` plus the game directory as cwd and a relative
+  model path. `-game` produced `Unable to find gameinfo.txt`.
+- Verified: HLMV launched on the compiled sample, the window title showed the model, and a
+  real PNG image block came back. The 3D canvas is black on this sandbox desktop; that is an
+  environment limit and is documented rather than claimed as a rendered model.
+
 ## 0.0.50-alpha — 2026-11-17
 
 - **`run_hlmv`** (95th tool): launches the game's HLMV on one compiled model, after resolving

@@ -88,7 +88,8 @@ no way to do it yet.
 | 3D skybox | `write_sky_camera` + `clone_solids` + `transform_solids`; sealing and layout manual | partial (camera and copy tools, layout gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
 | Prefabs | — | **gap** |
-| Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv` | tool: sample compiled and HLMV launched; GUI has no screenshot |
+| Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
+| Visual capture | `capture_window` | tool: real MCP image; `window` method captures occluded UI, `screen` is the 3D fallback |
 
 ## Compile, run, nav, campaign
 
