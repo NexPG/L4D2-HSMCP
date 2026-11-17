@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.63-alpha — 2026-11-17
+
+- **Multi-client testing was attempted and its limit documented.** Two clients start with
+  `-multirun -windowed` (the second fails D3D in fullscreen), connect to the local listen
+  server and load the map, but Steam drops the second with `No Steam logon` / failure code
+  8: one account cannot authenticate twice. `-insecure` is not a workaround.
+- New `testing/multi-client.md` lists the solo options: a dedicated server plus one client
+  (survivor bots, client on Infected), a second Steam account, or split-screen; and says a
+  single client only proves mode load/HUD, not a two-team round.
+
 ## 0.0.62-alpha — 2026-11-17
 
 - **Survival's setup phase is documented.** Loading the map in `survival` gives the HUD but

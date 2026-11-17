@@ -64,6 +64,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `troubleshooting/cubemaps-do-not-build.md` | `buildcubemaps` writes nothing, or says a path is not writable |
 | `troubleshooting/hlmv-screenshot.md` | HLMV shows an error, a black viewport, or the screenshot is blank |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
+| `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 
 ## The pipeline
 
