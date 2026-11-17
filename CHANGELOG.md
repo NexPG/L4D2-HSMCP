@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.53-alpha — 2026-11-17
+
+- **`write_skybox_copy`** (97th tool): the copy/scale/move half of a 3D skybox. It copies
+  selected brushes at 1/16 scale around the map origin and moves them so the origin lands at
+  `targetOrigin`, where `sky_camera` should sit. It warns when the map has no camera or the
+  camera is elsewhere, and it refuses hidden or displaced brushes. Sealing the skybox area
+  and choosing what to copy remain design work.
+- With this, the only remaining limitation in the skill is 3D-skybox design; every Hammer
+  operation has a tool.
+
 ## 0.0.52-alpha — 2026-11-17
 
 - **`run_map_test` can show the agent the running game.** With `screenshot: true` it waits

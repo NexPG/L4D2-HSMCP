@@ -85,7 +85,7 @@ no way to do it yet.
 | Sound browser | `read_game_content(kind: "sound")` | verified |
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
 | Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
-| 3D skybox | `write_sky_camera` + `clone_solids` + `transform_solids`; sealing and layout manual | partial (camera and copy tools, layout gap) |
+| 3D skybox | `write_sky_camera` + `write_skybox_copy`; sealing and design manual | partial (copy and camera tools, sealing/design gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
 | Prefabs | — | **gap** |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
@@ -110,7 +110,7 @@ no way to do it yet.
 
 Ordered by how often a mapper needs it:
 
-1. **3D skybox layout** - `clone_solids` makes the copy and `transform_solids` scales it; choosing what to copy, sealing the skybox area and matching the camera remain manual.
+1. **3D-skybox design** - `write_skybox_copy` makes the scaled copy and `write_sky_camera` places the camera; choosing what to copy, sealing the area and matching the view remain design work.
 2. **HLMV preview** - model source and `studiomdl` compile are covered; launching HLMV to look at the result is not.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

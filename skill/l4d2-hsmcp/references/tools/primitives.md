@@ -48,4 +48,4 @@ of that path, but deleting it must not remove the capability.
 
 These are not menus; they are capabilities that do not exist yet:
 
-- 3D-skybox layout (the copy and camera tools exist; choosing and sealing the area is design work).
+- 3D-skybox design (the copy and camera tools exist; choosing what to copy and sealing the area is design work).

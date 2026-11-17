@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **96 tools**.
+Last checked against the tool list on 17/11/2026: **97 tools**.
 
 ## The file itself
 
@@ -185,6 +185,7 @@ map and looking, or by not happening at all.
 | `write_overlay` | the overlay tool, driven by a side id and a point instead of a drag |
 | `write_instance` | the instance tool, without the GUI or the file dialog |
 | `write_sky_camera` | the sky_camera entity, with the one-per-map and skyname checks |
+| `write_skybox_copy` | the copy/scale/move half of a 3D skybox; sealing and design stay with the mapper |
 | `write_weather` | `func_precipitation` and `env_fog_controller` with FGD-checked choices and a checked brush |
 | `read_map_extents` | nothing |
 | `read_map_geometry` | nothing — how full each lump is against vbsp's ceiling |
