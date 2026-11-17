@@ -59,6 +59,7 @@ no way to do it yet.
 | Texture browser | `read_game_content(kind: "material")` | verified |
 | Material assign | `set_face_material` | verified |
 | Texture alignment | `align_faces`, `copy_face_alignment`, `set_face_uv` | tool |
+| Manual U/V vectors (skew) | `set_face_uv` | verified: skewed axes accepted by vbsp and the map loaded |
 | Smoothing groups | `set_smoothing_groups` | tool |
 | Lightmap scale | `set_lightmap_scale` | tool |
 | Light entities | `edit_vmf` | verified |
@@ -87,7 +88,7 @@ no way to do it yet.
 | Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
 | 3D skybox | `write_sky_camera` + `write_skybox_copy`; sealing and design manual | partial (copy and camera tools, sealing/design gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
-| Prefabs | `insert_prefab` | tool: paste a saved `.vmf` fragment, remap ids, optional move |
+| Prefabs | `insert_prefab` | verified: the inserted fragment compiles with vbsp and the map loads; ids, move and entity append tested |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
 | Visual capture | `capture_window`, `run_map_test` screenshot, `run_hlmv` screenshot | tool: real MCP image; `screen` captures a 3D game canvas, `window` captures occluded UI/dialogs |
 

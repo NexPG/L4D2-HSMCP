@@ -5,6 +5,13 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.69-alpha — 2026-11-17
+
+- **`insert_prefab` and `set_face_uv` were proven end to end.** A prefab brush plus an
+  `info_target` was pasted into a copy of the test campaign, a face was given a skewed U/V
+  pair, and vbsp compiled the map with no errors; the compiled BSP then loaded in game and
+  was captured. The coverage table marks both verified.
+
 ## 0.0.68-alpha — 2026-11-17
 
 - **`set_face_uv`: the face sheet's U/V vectors by hand.** `align_faces` derives axes from a
