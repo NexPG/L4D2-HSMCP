@@ -29,6 +29,7 @@ import { organiseTools } from "./organise.js";
 import { overlayTools } from "./overlay.js";
 import { pakfileTools } from "./pakfile.js";
 import { planTools } from "./plan.js";
+import { prefabTools } from "./prefab.js";
 import { renameTools } from "./rename.js";
 import { renderTools } from "./render.js";
 import { reportTools } from "./report.js";
@@ -75,6 +76,7 @@ export const allTools: AnyToolDef[] = [
   ...rulesTools,
   ...renderTools,
   ...planTools,
+  ...prefabTools,
   ...displacementTools,
   ...exportMapTools,
   ...buildTools,

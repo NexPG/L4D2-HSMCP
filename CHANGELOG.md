@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.65-alpha — 2026-11-17
+
+- **`insert_prefab`: paste a saved Hammer prefab into a map.** A prefab is a `.vmf`
+  fragment, not a live `func_instance`. World brushes and root entities are inserted, every
+  brush/side/entity id is remapped to a free one, and the fragment can be offset. Every
+  inserted world brush is checked as a valid solid before the write.
+- Brush-entity geometry is inserted but the offset is not applied inside it, and point
+  entities without an origin cannot move; the tool returns a warning instead of pretending
+  the whole fragment moved. The Hammer coverage table no longer has a `Prefabs` gap.
+
 ## 0.0.64-alpha — 2026-11-17
 
 - **Split-screen was researched and tested.** The PC build has an unsupported

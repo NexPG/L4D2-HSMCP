@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **97 tools**.
+Last checked against the tool list on 17/11/2026: **98 tools**.
 
 ## The file itself
 
@@ -102,6 +102,7 @@ getting `ENOENT` on the first call.
 | Preview a model | `run_hlmv` | Launches HLMV, optionally captures the window; the screenshot comes back as a real image block |
 | See a GUI | `capture_window` | Captures any window by process id or name; PrintWindow works while occluded, screen mode is the 3D fallback |
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
+| Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, optional offset, brush-entity geometry is not moved |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Areaportals | `write_portal` | |
 | Occluders | `write_portal` | |
