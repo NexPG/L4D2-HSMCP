@@ -38,6 +38,7 @@ before promising anything.
 | `references/nav/attributes-and-flow.md` | marking CHECKPOINT/FINALE, or bots ignore the map |
 | `references/scripting/vscript.md` | shipping a `.nut` in the add-on |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
+| `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |

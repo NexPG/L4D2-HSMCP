@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.26-alpha — 2026-11-17
+
+- The skill gains `references/testing/live-debugging.md`: how an agent runs the game itself
+  (`run_map_test`, `-condebug`, `+sv_pausable 0`, `+sv_cheats 1`), moves survivors
+  (`WarpAllSurvivorsToCheckpoint` vs `WarpAllSurvivorsToFinale`, why `setpos` in a config
+  silently does nothing), fires entity inputs, plants markers, and the recipes for testing a
+  transition, a finale, nav attributes and spawning. It also names the false passes: a stale
+  log, `Mission credits` at startup, and `Host_NewGame` versus `Map:`.
+
 ## 0.0.25-alpha — 2026-11-17
 
 - **The campaign is completable again, and this time it is verified.** A 768×768 arena with
