@@ -24,7 +24,7 @@ when it has all four:
 | Special infected | Director spawn set, nav | not yet |
 | Tanks, witches | Director, nav, spawn rules | not yet |
 | Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | class list read from the FGD (37 classes); placement documented, play test not yet |
-| Crescendo / panic events | trigger areas, Director, outputs | entity names and wiring verified from the FGD; play test pending |
+| Crescendo / panic events | trigger areas, Director, outputs | **verified** in game: `PanicEvent` ran `STAGE_INITIAL_DELAY → STAGE_MEGA_MOB → STAGE_WAIT_FOR_COMBAT_TO_END → STAGE_DONE` (51 s). `OnPanicEventFinished` did not fire on this map, so the stage transition is the evidence |
 | Scavenge finale | gas cans, `type 4`, scavenge items | not yet |
 | Survival mode | mission mode, nav, timers | not yet |
 | Versus mode | mission mode, nav, infected spawns | mission parsing only |

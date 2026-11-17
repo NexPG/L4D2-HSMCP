@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.57-alpha — 2026-11-17
+
+- **Crescendo/panic is verified in game.** The test map starts a panic event ten seconds
+  after spawn with `director,PanicEvent`; the Director logs
+  `STAGE_INITIAL_DELAY → STAGE_MEGA_MOB → STAGE_WAIT_FOR_COMBAT_TO_END → STAGE_DONE` and
+  `run_map_test({ waitFor: "STAGE_DONE" })` matched in **51 s**. `ForcePanicEvent` produced
+  the same stages.
+- `OnPanicEventFinished` did not fire on this map, with either input, so the docs no longer
+  present it as the only proof; the stage transition is the reliable evidence.
+
 ## 0.0.56-alpha — 2026-11-17
 
 - **PANIC and TANK finale stages are verified in game.** The test finale runs

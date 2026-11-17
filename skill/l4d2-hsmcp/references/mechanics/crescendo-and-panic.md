@@ -11,7 +11,7 @@ behind every "hold out here" moment.
 | Trigger | `func_button`, `trigger_once` or `trigger_multiple` |
 | Start the wave | output to `director` → `ForcePanicEvent` (or `PanicEvent`) |
 | The Director | `info_director`, required |
-| Wave finished | `info_director` output `OnPanicEventFinished` |
+| Wave finished | `info_director` output `OnPanicEventFinished`; in the test map this output did **not** fire, so the Director stage transition (`STAGE_WAIT_FOR_COMBAT_TO_END → STAGE_DONE`) is the reliable evidence |
 | Reward / next step | a `logic_relay` fired by that output |
 | Defend spot | nav `func_nav_attribute_region` with 32 (Battlestation) |
 | Arena | nav region with 256 (Battlefield) |
@@ -37,7 +37,20 @@ func_nav_attribute_region at the hold spot spawnflags 32    (Battlestation)
 spawning while survivors stand in it**. Mark the arena, not the whole map. `BATTLESTATION`
 tells the Director where the survivors are supposed to hold.
 
-## Testing
+## Verified in game
+
+The test campaign runs a panic event ten seconds after spawn. With `director,PanicEvent` the
+log shows:
+
+```
+STAGE_INITIAL_DELAY -> STAGE_MEGA_MOB
+STAGE_MEGA_MOB -> STAGE_WAIT_FOR_COMBAT_TO_END
+STAGE_WAIT_FOR_COMBAT_TO_END -> STAGE_DONE
+```
+
+`run_map_test({ map, waitFor: "STAGE_DONE" })` matched in **51 s**. The
+`OnPanicEventFinished` output wired to a `point_servercommand` did not produce its marker on
+this map; do not rely on it as the only proof. `ForcePanicEvent` produced the same stages.
 
 A manual test: launch the map with `-condebug`, walk into the trigger, and read the log for
 `Panic event started` and the `OnPanicEventFinished` marker.
@@ -62,5 +75,6 @@ run_map_test(waitFor: "HSMCP_PANIC_DONE", timeoutSeconds: 120)
 
 ## Status
 
-Entity names and the wiring are verified from the FGD. The play test of a crescendo on the
-test map is still pending; see `references/mechanics/coverage.md`.
+Entity names and the wiring are verified from the FGD. The play test is verified on the test
+map: `PanicEvent` reached `STAGE_DONE` in 51 s. The `OnPanicEventFinished` output did not
+fire there, so the stage transition is the proof. See `references/mechanics/coverage.md`.
