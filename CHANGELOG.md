@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.62-alpha — 2026-11-17
+
+- **Survival's setup phase is documented.** Loading the map in `survival` gives the HUD but
+  leaves the timer at `00:00.00`; the round needs a `trigger_finale` / `ForcePanicEvent`.
+  Waiting 45 s without one produced no wave and no timer movement. `mechanics/survival.md`
+  now says this explicitly, so a later test does not mistake the setup phase for a broken
+  map or a finished wave.
+- No functional changes.
+
 ## 0.0.61-alpha — 2026-11-17
 
 - **Versus is verified to load.** The mission lists `hsmcp_test_m1` under `versus`, and

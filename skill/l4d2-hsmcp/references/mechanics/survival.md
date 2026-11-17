@@ -33,6 +33,16 @@ run_map_test({
 
 The `+mp_gamemode` must come before `+map`; `run_map_test` puts `extraArgs` there.
 
+## Starting the round
+
+Loading the map in Survival is not enough: the HUD shows the timer at `00:00.00` and waits.
+A `trigger_finale` / `ForcePanicEvent` is what starts the survival finale. On the test map
+without that trigger the timer stayed at zero and no wave began; that is the expected
+setup phase, not a broken map.
+
+Place a `trigger_finale` in the arena and start it (a radio `+use`, or `ForceFinaleStart`
+from a relay/timer). Verify the timer leaves `00:00.00` before claiming a wave ran.
+
 ## What proves it
 
 - the game loads the map, not the main menu;
