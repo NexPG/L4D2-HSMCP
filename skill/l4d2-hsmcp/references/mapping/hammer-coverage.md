@@ -84,7 +84,7 @@ no way to do it yet.
 | Sound browser | `read_game_content(kind: "sound")` | verified |
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
 | Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
-| 3D skybox | — | **gap** (2D sky is `skyname`) |
+| 3D skybox | `write_sky_camera`; scaled geometry still manual | partial (camera tool, copy gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
 | Prefabs | — | **gap** |
 | Model authoring (HLMV, studiomdl) | `run_model_info` read-only | **gap** |

@@ -3,7 +3,7 @@ import { readLightmapBudget } from "../bsp/lightmap.js";
 import { defineTool } from "../mcp/registry.js";
 import { resolveInput } from "./paths.js";
 
-/** Ceilings chosen to spread real-map luxel counts, not a formula: see `docs/measuring.md`. */
+/** Ceilings chosen to spread real-map luxel counts, not a formula: see `docs/map/measuring.md`. */
 const BUCKETS: Array<{ label: string; max: number }> = [
   { label: "1-16", max: 16 },
   { label: "17-64", max: 64 },

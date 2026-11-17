@@ -2,7 +2,7 @@
  * Building a cubemap without the engine.
  *
  * `buildcubemaps` is a console command: it needs the game running, which is why
- * `docs/hammer-parity.md` lists cubemaps under *the running engine* and hands them to
+ * `docs/reference/hammer-parity.md` lists cubemaps under *the running engine* and hands them to
  * `gmod-mcp`. That is still true for **capturing** a cubemap from inside a map.
  *
  * It is not true for *making* one. ficool2's `tga2skybox` takes six TGA faces and writes a

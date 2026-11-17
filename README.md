@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.32--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.33--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -136,11 +136,11 @@ run_vpk_pack                    an addon VPK
 ```
 
 A complete worked example lives in the development notes, outside this repository. The
-practical rules are in [`docs/campaigns.md`](docs/campaigns.md).
+practical rules are in [`docs/campaign/overview.md`](docs/campaign/overview.md).
 
 ## Tools
 
-82 tools, grouped by what they answer:
+83 tools, grouped by what they answer:
 
 - **Inspect** — `health`, `read_source_games`, `read_bsp_info`, `read_bsp_entities`,
   `read_nav_dump`, `read_map_geometry`, `read_map_report`, `read_vmf`, `read_vmf_lint`.
@@ -170,8 +170,8 @@ src/render/       offline views and plans
 src/compile/      compilers, logs, leaks, external tools
 sidecar/          Python/srctools helper
 skill/            the agent skill: SKILL.md, references, workflows, troubleshooting
-test/             the oracle-heavy suite
-docs/             campaign guide and inherited measurements
+test/             the oracle-heavy suite, mirroring src/
+docs/             campaign guide, map reference and project reference
 ```
 
 ## Documentation
@@ -180,11 +180,16 @@ docs/             campaign guide and inherited measurements
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — the three rules this project works by.
 - [`skill/l4d2-hsmcp/SKILL.md`](skill/l4d2-hsmcp/SKILL.md) — the agent workflow, with
   campaign, nav, VScript and troubleshooting references.
-- [`docs/campaigns.md`](docs/campaigns.md) — mission files, VPK layout, nav, deployment.
-- [`docs/architecture.md`](docs/architecture.md) — the inherited design notes on splicing,
-  offset reads and shared plumbing.
-- [`docs/measuring.md`](docs/measuring.md), [`docs/spatial.md`](docs/spatial.md),
-  [`docs/compiling.md`](docs/compiling.md) — dated measurements from the project's history.
+- [`docs/README.md`](docs/README.md) — the documentation index.
+- [`docs/campaign/overview.md`](docs/campaign/overview.md) — mission files, VPK layout, nav,
+  deployment.
+- [`docs/map/architecture.md`](docs/map/architecture.md) — the inherited design notes on
+  splicing, offset reads and shared plumbing.
+- [`docs/map/measuring.md`](docs/map/measuring.md),
+  [`docs/map/spatial.md`](docs/map/spatial.md), [`docs/map/compiling.md`](docs/map/compiling.md)
+  — dated measurements from the project's history.
+- [`docs/reference/hammer-parity.md`](docs/reference/hammer-parity.md) — the tool-by-tool
+  Hammer parity table.
 
 ## Status
 

@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.33-alpha — 2026-11-17
+
+- **`write_sky_camera`** (83rd tool): places the single `sky_camera` a 3D skybox needs, with
+  its scale, refuses a second one, and warns when the map has no `skyname`. The 3D skybox is
+  now `partial` in the Hammer coverage: the camera is a tool, copying and scaling the
+  geometry is still manual.
+- **The project is organised into logical directories.** `docs/` is split into `campaign/`,
+  `map/` and `reference/` with an index; `test/` now mirrors `src/` (`bsp/`, `vmf/`, `space/`,
+  `render/`, `compile/`, `campaign/`, `kv/`, `tools/`) instead of 80 files in one folder, with
+  `test/README.md` stating the rules. All imports, fixture paths and cross-links were updated;
+  the suite still passes at 1055 tests.
+- The diary rules now say it for every future change: a flat dump of files is a structural
+  defect, and moving a file includes updating every link in the same commit.
+
 ## 0.0.32-alpha — 2026-11-17
 
 - **`write_instance`** (82nd tool): places a `func_instance` from an instance `.vmf`, with

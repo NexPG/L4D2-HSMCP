@@ -30,6 +30,7 @@ import { reportTools } from "./report.js";
 import { rulesTools } from "./rules.js";
 import { runtimeTools } from "./runtime.js";
 import { sceneTools } from "./scene.js";
+import { skyboxTools } from "./skybox.js";
 import { solidTools } from "./solids.js";
 import { spaceTools } from "./space.js";
 import { vertexTools } from "./vertex.js";
@@ -81,4 +82,5 @@ export const allTools: AnyToolDef[] = [
   ...vscriptTools,
   ...overlayTools,
   ...instanceTools,
+  ...skyboxTools,
 ];
