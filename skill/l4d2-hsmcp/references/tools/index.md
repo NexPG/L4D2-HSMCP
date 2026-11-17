@@ -127,7 +127,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_pack` | bspzip assets into a compiled map |
 | `run_vpk_pack` | pack a staging directory into an addon VPK, then verify the entry list |
 | `run_nav_generate` | launch the game and generate `.nav` + `<map>_nav.txt` for loose maps, with the add-on archives moved aside |
-| `run_map_test` | launch an installed map, wait for a pattern in `console.log`, optionally install a nav and capture the window |
+| `run_map_test` | launch an installed map, wait for a pattern in `console.log`, optionally install a bsp/nav and capture the window |
 | `run_build_cubemaps` | build a map's cubemaps with the engine's `-buildcubemaps` mode, and optionally pack them into a copy |
 | `read_nav` | nav header and freshness against the `.bsp` |
 | `run_bsp_rename` | rename a `.bsp` and the content packed inside it |

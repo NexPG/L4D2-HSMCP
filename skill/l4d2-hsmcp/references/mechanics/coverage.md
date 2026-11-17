@@ -29,7 +29,7 @@ when it has all four:
 | Survival mode | mission mode, nav, timers | not yet |
 | Versus mode | mission mode, nav, infected spawns | mission parsing only |
 | Mutations / ScriptedMode | VScript mode framework | not yet |
-| Weather, fog, sky | `func_precipitation`, `env_fog_controller`, `skyname` | tool + static checks (`write_weather`); in-game look pending |
+| Weather, fog, sky | `func_precipitation`, `env_fog_controller`, `skyname` | tool + static checks; rain verified visually on an open-sky test map; fog not separately judged |
 | Cubemaps | `env_cubemap` in the VMF, `run_build_cubemaps` | verified HDR and LDR on the test campaign (29 s / 24 s); `both` verified |
 | Displacements | displacement tools | tools exist, not L4D2-tested |
 | Instances | `write_instance`, `read_vmf` with `collapseInstances` | tool (fixture-tested); in-game visual pending |

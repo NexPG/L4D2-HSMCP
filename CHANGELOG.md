@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.55-alpha — 2026-11-17
+
+- **`run_map_test` can install the BSP too.** `bsp` and `nav` are now both optional: the tool
+  copies them beside the map, reports `bspInstalled`/`navInstalled`, and restores any
+  previous files in a `finally`. The earlier `nav`-only version launched the main menu when
+  the map itself was not installed.
+- **Rain is verified visually.** A synthetic open-sky test map with `func_precipitation`
+  loaded and the captured frame shows rain streaks. The same map's nav is `no-flow` (one
+  area, no goal), so it still shows `NAV ERRORS`; that is a test-map nav defect, not a
+  weather defect. The distinction is documented in `troubleshooting/nav-stale.md`.
+- Fog was compiled and loaded but is not separately judged; the coverage says so.
+
 ## 0.0.54-alpha — 2026-11-17
 
 - **`run_map_test` can install the nav with the map.** A loose BSP copied for a test does

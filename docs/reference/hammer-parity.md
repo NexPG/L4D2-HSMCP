@@ -124,7 +124,7 @@ getting `ENOENT` on the first call.
 | Hammer | Here | Notes |
 |---|---|---|
 | Run map | `run_compile` | vbsp, vvis, vrad, stock or the Hammer++/Tools++ chain; the compilers are Windows-native here |
-| See the running map | `run_map_test` | waits for a marker, can install a nav, and can capture the game window as a real image; `screen` method |
+| See the running map | `run_map_test` | waits for a marker, can install a bsp and nav, and can capture the game window as a real image; `screen` method |
 | Read the compile log | `read_compile_log` | Turns each message into what it actually means |
 | Find the leak | `read_leak` | A position and the entity that caused it, from a compile that already ran |
 | Find the leak **before** compiling | `read_vmf_leak` | Hammer cannot. vbsp is the only thing that answers this today, and it costs a toolchain and minutes |

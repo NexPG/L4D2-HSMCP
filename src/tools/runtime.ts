@@ -230,6 +230,10 @@ const runMapTest = defineTool({
   guarded: true,
   inputSchema: {
     map: z.string().describe("Map name without a path or .bsp, for example hsmcp_test_m1."),
+    bsp: z
+      .string()
+      .optional()
+      .describe("Optional .bsp to install as this map name before launch; restored afterwards."),
     nav: z
       .string()
       .optional()
@@ -280,6 +284,7 @@ const runMapTest = defineTool({
     screenshotWidth: z.number().nullable(),
     screenshotHeight: z.number().nullable(),
     navInstalled: z.boolean(),
+    bspInstalled: z.boolean(),
     logTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
@@ -294,8 +299,23 @@ const runMapTest = defineTool({
 
     const targetNav = join(gameDir, "maps", `${args.map}.nav`);
     const navBackup = `${targetNav}.hsmcp-backup`;
+    const targetBsp = join(gameDir, "maps", `${args.map}.bsp`);
+    const bspBackup = `${targetBsp}.hsmcp-backup`;
     let navInstalled = false;
+    let bspInstalled = false;
     let hadNav = false;
+    let hadBsp = false;
+    if (args.bsp) {
+      const sourceBsp = resolveInput(args.bsp, ctx.config);
+      if (!existsSync(sourceBsp)) throw new Error(`${sourceBsp} does not exist`);
+      mkdirSync(dirname(targetBsp), { recursive: true });
+      if (existsSync(targetBsp)) {
+        copyFileSync(targetBsp, bspBackup);
+        hadBsp = true;
+      }
+      copyFileSync(sourceBsp, targetBsp);
+      bspInstalled = true;
+    }
     if (args.nav) {
       const sourceNav = resolveInput(args.nav, ctx.config);
       if (!existsSync(sourceNav)) throw new Error(`${sourceNav} does not exist`);
@@ -359,6 +379,10 @@ const runMapTest = defineTool({
         rmSync(targetNav, { force: true });
         if (hadNav && existsSync(navBackup)) renameSync(navBackup, targetNav);
       }
+      if (bspInstalled) {
+        rmSync(targetBsp, { force: true });
+        if (hadBsp && existsSync(bspBackup)) renameSync(bspBackup, targetBsp);
+      }
     }
 
     const log = readLog(consoleLog);
@@ -372,6 +396,7 @@ const runMapTest = defineTool({
       screenshotWidth,
       screenshotHeight,
       navInstalled,
+      bspInstalled,
       logTail: log
         .split(/\r?\n/)
         .map((line) => line.trim())
