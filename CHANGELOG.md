@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.20-alpha — 2026-11-17
+
+- **The finale is verified end to end.** `verify-finale.mjs` deploys a self-test build, starts
+  the finale (`Finale started`), warps the team into the corridor, and the escape trigger
+  fires `FinaleEscapeFinished`; the engine then loads `Mission credits`. That credits load is
+  the victory marker.
+- `env_outtro_stats` is presentation, not the win: `OnOuttroStatsDone` did not report during
+  the run, and the campaign completed anyway. The docs and the skill now say so.
+- The test escape zone moved into the finale corridor, so the warp lands inside it; the
+  self-test uses `WarpAllSurvivorsToFinale` and `+sv_pausable 0`.
+- Gate G is complete: spawn, bots, chapter transition, finale start, escape, victory/credits.
+  What remains is combat quality: this tiny map cannot spawn a mob
+  (`Director failed to spawn a special`), so waves and specials are the next block, not a
+  completion blocker.
+
 ## 0.0.19-alpha — 2026-11-17
 
 - **`run_nav_generate`** (78th tool) wraps the whole nav loop: loose copies, the VPK moved

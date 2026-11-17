@@ -50,6 +50,17 @@ Entity work, no script required:
 This wins the campaign without waves. Waves are VScript work and are not built yet; do not
 describe an untested wave script as working.
 
+## Confirming the win
+
+`FinaleEscapeFinished` loads the `credits` mission. In `-condebug` the proof is:
+
+```
+Mission credits ver 1 loading...
+Mission credits ver 1 loaded 1 game modes.
+```
+
+`env_outtro_stats` is the stats crawl, not the victory: a map can complete without it.
+
 ## Checklist
 
 - [ ] `trigger_finale` type 2 compiles and responds to +use

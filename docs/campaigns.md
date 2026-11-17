@@ -140,6 +140,11 @@ uses exactly these:
 - `FinaleEscapeForceSurvivorPositions` — hold them on the vehicle.
 - `env_outtro_stats` `RollStatsCrawl` — the stats crawl.
 
+Firing `FinaleEscapeFinished` ends the campaign: the engine loads the `credits` mission. That
+is the definitive victory marker in the console (`Mission credits ver 1 loading...`). The
+outtro stats crawl is presentation, not the win — a map without a working `env_outtro_stats`
+can still complete.
+
 So a minimal completable finale is entity work, not a script: a `trigger_finale` (type 2) whose
 `FinaleStart` enables a `trigger_multiple` after the wave delay, and that trigger's
 `OnStartTouch` fires `FinaleEscapeFinished` on the finale and `RollStatsCrawl` on the outtro.
