@@ -33,7 +33,7 @@ when it has all four:
 | Cubemaps | `env_cubemap` in the VMF, `run_build_cubemaps` | verified HDR and LDR on the test campaign (29 s / 24 s); `both` verified |
 | Displacements | displacement tools | tools exist, not L4D2-tested |
 | Instances | `write_instance`, `read_vmf` with `collapseInstances` | tool (fixture-tested); in-game visual pending |
-| Model/material authoring | mdl/vmt/vtf pipeline | partial (`run_vtf_convert`) |
+| Model/material authoring | QC/SMD source, `studiomdl`, `run_vtf_convert` | tool: sample model compiled; HLMV preview not covered |
 | Non-campaign add-ons | other addon types | not yet |
 
 ## Order of work

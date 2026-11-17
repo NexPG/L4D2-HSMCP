@@ -87,7 +87,7 @@ no way to do it yet.
 | 3D skybox | `write_sky_camera` + `clone_solids` + `transform_solids`; sealing and layout manual | partial (camera and copy tools, layout gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
 | Prefabs | — | **gap** |
-| Model authoring (HLMV, studiomdl) | `run_model_info` read-only | **gap** |
+| Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl` | tool: QC/SMD source + compile verified on Valve's sample; HLMV preview not launched |
 
 ## Compile, run, nav, campaign
 
@@ -109,6 +109,6 @@ no way to do it yet.
 Ordered by how often a mapper needs it:
 
 1. **3D skybox layout** - `clone_solids` makes the copy and `transform_solids` scales it; choosing what to copy, sealing the skybox area and matching the camera remain manual.
-2. **Model authoring** - HLMV/studiomdl, a separate pipeline.
+2. **HLMV preview** - model source and `studiomdl` compile are covered; launching HLMV to look at the result is not.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

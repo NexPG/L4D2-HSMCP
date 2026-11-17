@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.48-alpha — 2026-11-17
+
+- **Model authoring primitives** (91–93): `read_text_file` and `write_text_file` handle
+  arbitrary QC/SMD/VMT source text with no template, and `run_studiomdl` compiles a QC with
+  the game's own `studiomdl.exe`, reads `$modelname`, and proves the `.mdl`, `.vvd`, `.vtx`
+  and `.phy` exist instead of trusting the exit code.
+- Verified in game with Valve's `wood_railing001.qc` sample: compiled in **395 ms** into
+  `models/hsmcp_test/rail.mdl` (1,864 bytes) plus `.vvd`, `.vtx` and `.phy`. The test model
+  directory was removed afterwards; the source sample was not modified.
+- Model authoring is no longer a gap: the remaining model-related gap is launching HLMV to
+  preview a compiled model.
+
 ## 0.0.47-alpha — 2026-11-17
 
 - **`run_build_cubemaps` can pack the result into a copy of the map.** `pack: true` with

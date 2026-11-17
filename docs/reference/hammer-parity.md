@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **90 tools**.
+Last checked against the tool list on 17/11/2026: **93 tools**.
 
 ## The file itself
 
@@ -98,6 +98,7 @@ getting `ENOENT` on the first call.
 | Entity Report | `read_entity_report` | Filterable by classname, targetname or a key's presence. Takes a `.vmf` **or a compiled `.bsp`** |
 | Outputs and inputs | `edit_vmf` | |
 | **Check the wiring** | `validate_io` | Hammer does not do this. An output into a name nothing has is silent everywhere else. Takes a `.vmf` **or a compiled `.bsp`** — Hammer cannot open one at all |
+| Compile a model | `run_studiomdl` | The game's `studiomdl.exe`; reads `$modelname` and proves the `.mdl` and its companions exist |
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Areaportals | `write_portal` | |
@@ -172,6 +173,8 @@ map and looking, or by not happening at all.
 | `read_bsp_info` | nothing: a compiled map is opaque to the editor |
 | `read_bsp_entities` | nothing |
 | `edit_bsp_entities` | nothing: Hammer edits the VMF, and the compiled entity lump is opaque |
+| `read_text_file` | nothing: Hammer does not open QC, SMD or VMT as text |
+| `write_text_file` | nothing: source formats are edited in a text editor |
 | `read_nav_dump` | nothing: the engine's own nav dump is not readable from Hammer |
 | `run_nav_generate` | the engine's nav generator, driven without a person at the console |
 | `run_map_test` | nothing: loading a map and watching the console is a manual act |

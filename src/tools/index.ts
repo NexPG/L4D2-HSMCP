@@ -35,6 +35,8 @@ import { sceneTools } from "./scene.js";
 import { skyboxTools } from "./skybox.js";
 import { solidTools } from "./solids.js";
 import { spaceTools } from "./space.js";
+import { studiomdlTools } from "./studiomdl.js";
+import { textTools } from "./text.js";
 import { vertexTools } from "./vertex.js";
 import { visleafTools } from "./visleaf.js";
 import { vtfTools } from "./vtf.js";
@@ -91,4 +93,6 @@ export const allTools: AnyToolDef[] = [
   ...skyboxTools,
   ...weatherTools,
   ...worldspawnTools,
+  ...textTools,
+  ...studiomdlTools,
 ];

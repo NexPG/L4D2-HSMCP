@@ -48,4 +48,4 @@ of that path, but deleting it must not remove the capability.
 
 These are not menus; they are capabilities that do not exist yet:
 
-- model authoring (HLMV/studiomdl).
+- HLMV preview (the model source and `studiomdl` pipeline are covered).
