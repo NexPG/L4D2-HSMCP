@@ -3,6 +3,13 @@
 Use this before calling a campaign build done. Each line is a check with a tool or a log, not
 an opinion.
 
+## Brief
+
+- [ ] The user's wish is written back as a spec: chapters, setting, flow, mechanics, constraints.
+- [ ] Every asset name came from `read_game_content`; every entity class from `read_fgd_class`.
+- [ ] Each requested mechanic has a named place in a chapter and a planned proof.
+- [ ] Anything the environment cannot prove (for example a two-team round) is named now.
+
 ## Source
 
 - [ ] Every chapter has a `.vmf`, and it is the file that was compiled.
@@ -39,6 +46,8 @@ an opinion.
 - [ ] Older campaign archives removed.
 - [ ] Game restarted; add-on enabled.
 - [ ] Play test recorded: spawn, bots, transition, finale, evidence.
+- [ ] Each requested mechanic has its own evidence line or screenshot, not only "map loads".
+- [ ] Every requested feature that is not proven is listed with what it would take.
 
 ## Housekeeping
 

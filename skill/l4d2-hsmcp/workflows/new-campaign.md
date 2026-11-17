@@ -1,5 +1,8 @@
 # Workflow: a campaign from scratch
 
+If the input is a user's description rather than a spec, start with
+[`from-a-wish.md`](from-a-wish.md). This page assumes the chapters and mechanics are decided.
+
 A campaign is numbered and local: `campaigns/<NNN-slug>/`. It never goes into git. The work
 below is ordered so each step can fail cheaply.
 

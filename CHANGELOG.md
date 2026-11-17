@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.74-alpha — 2026-11-17
+
+- **A wish-first campaign workflow.** `workflows/from-a-wish.md` turns a user's description
+  into a spec (chapters, flow, mechanics, assets, done-means), then hands the spec to the
+  build workflow. It requires every asset from `read_game_content`, every entity from
+  `read_fgd_class`, and one evidence line per requested mechanic.
+- The campaign checklist now opens with the brief and closes with per-wish evidence, so
+  "map loads" cannot stand in for "the tank and the finale work". `SKILL.md` and README
+  route a description through the new page first.
+
 ## 0.0.73-alpha — 2026-11-17
 
 - **Three Hammer++ editing operations became one call each.** `merge_solids` replaces

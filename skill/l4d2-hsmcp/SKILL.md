@@ -21,6 +21,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 
 | Task | Read |
 |---|---|
+| Turn a user's campaign wish into a spec and build | `workflows/from-a-wish.md` |
 | Build a campaign from nothing | `workflows/new-campaign.md` |
 | Rebuild, pack and deploy | `workflows/build-and-deploy.md` |
 | Check a build in game | `workflows/playtest.md` |
@@ -36,6 +37,8 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 
 | File | Read when |
 |---|---|
+| `workflows/from-a-wish.md` | the user describes a campaign instead of naming files |
+| `workflows/new-campaign.md` | the spec exists and the first .vmf is about to be written |
 | `references/campaign/mission-file.md` | writing or debugging a mission file |
 | `references/campaign/safe-room-and-transition.md` | building a chapter exit |
 | `references/campaign/finale.md` | building or debugging the last chapter |
