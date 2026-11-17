@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **93 tools**.
+Last checked against the tool list on 17/11/2026: **94 tools**.
 
 ## The file itself
 
@@ -32,7 +32,7 @@ getting `ENOENT` on the first call.
 | File > New | `write_vmf` | worldspawn with a `skyname`, and the five blocks Hammer writes. Refuses to overwrite |
 | File > Open | `read_vmf` | |
 | File > Save | *every writer* | Each tool writes its own change by splicing. There is no document held open to save |
-| File > Export to .map | *not covered* | The old format. Nothing here reads or writes it, and nothing has asked |
+| File > Export to .map | `export_vmf_map` | Valve 220 text: planes, materials, uaxis/vaxis; VMF-only constructs are reported, not silently lost |
 
 ## Blocks and geometry
 
@@ -148,9 +148,9 @@ getting `ENOENT` on the first call.
 Everything a mapper *builds* is reachable. Everything a mapper *checks* is reachable, and a
 few things Hammer never checked are too — the wiring, the seams, the packing list.
 
-One row says "not covered" rather than "not applicable": **exporting to `.map`**. It is not
-hard, simply not written. That is the whole of the gap, and naming it is the point of the
-table.
+No row says "not covered" any more. The remaining limitations are tracked in the skill
+coverage: HLMV preview, 3D-skybox layout and the visual checks that need a person at the
+screen. Naming them is the point of the table.
 
 It is worth saying what this document got wrong, because it bears on how much the rest of it
 is worth. Until 13/08/2026 there was no `File` section at all, so the table claimed near-total

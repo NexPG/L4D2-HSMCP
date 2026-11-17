@@ -13,6 +13,7 @@ no way to do it yet.
 | Open/inspect VMF | `read_vmf`, `read_entity_report` | verified |
 | Open/inspect BSP | `read_bsp_info`, `read_bsp_entities`, `read_map_report` | verified |
 | Save / rename map | `edit_vmf`, `run_bsp_rename` | verified |
+| Export to `.map` | `export_vmf_map` | tool: format 220, reported warnings for VMF-only data |
 | Backups | `backup: true` on writers | verified |
 
 ## World geometry

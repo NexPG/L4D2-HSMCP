@@ -11,6 +11,7 @@ import { contentTools } from "./content.js";
 import { cubemapTools } from "./cubemap.js";
 import { depsTools } from "./deps.js";
 import { displacementTools } from "./displacement.js";
+import { exportMapTools } from "./exportmap.js";
 import { faceTools } from "./face.js";
 import { gameTools } from "./games.js";
 import { healthTools } from "./health.js";
@@ -70,6 +71,7 @@ export const allTools: AnyToolDef[] = [
   ...renderTools,
   ...planTools,
   ...displacementTools,
+  ...exportMapTools,
   ...buildTools,
   ...modifyTools,
   ...clipTools,

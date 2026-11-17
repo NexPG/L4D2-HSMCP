@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.49-alpha — 2026-11-17
+
+- **`export_vmf_map`** (94th tool): exports a `.vmf` to Valve's `.map` format 220. Every
+  brush face keeps its three points, material, `uaxis`/`vaxis` and scale; every entity keeps
+  its keyvalues and outputs. VMF-only data (visgroups, instances, displacements) cannot exist
+  in the format and is reported as warnings instead of disappearing.
+- With this, no Hammer parity row says "not covered". The remaining limitations are tracked
+  in the skill coverage: HLMV preview, 3D-skybox layout and the checks that need a person at
+  the screen.
+
 ## 0.0.48-alpha — 2026-11-17
 
 - **Model authoring primitives** (91–93): `read_text_file` and `write_text_file` handle
