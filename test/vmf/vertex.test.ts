@@ -20,6 +20,21 @@ const EAST_TOP: [Vec3, Vec3] = [
   [288, 288, 0],
 ];
 
+describe("moveVertices: Hammer++ precise vertices", () => {
+  it("moves vertices_plus corners with the face", () => {
+    const marked = probe().replace(/^(\t+)"plane"[^\n]*$/gm, (line: string, indent: string) =>
+      `${line}\n${indent}vertices_plus\n${indent}{\n` +
+      `${indent}\t"v" "288 -288 0"\n${indent}\t"v" "288 288 0"\n${indent}}`,
+    );
+    const r = moveVertices(marked, FLOOR, [
+      { from: EAST_TOP[0], to: [288, -288, -16] },
+      { from: EAST_TOP[1], to: [288, 288, -16] },
+    ]);
+    expect(r.text).toContain('"v" "288 -288 -16"');
+    expect(r.text).toContain('"v" "288 288 -16"');
+  });
+});
+
 describe("moveVertices: a move every face survives", () => {
   /**
    * Dropping one whole edge of the top face turns the slab into a wedge. Every face stays

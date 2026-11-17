@@ -106,6 +106,18 @@ describe("transformSolids: what must be conserved", () => {
   });
 });
 
+describe("transformSolids: Hammer++ precise vertices", () => {
+  it("moves vertices_plus with the brush instead of leaving it behind", () => {
+    const marked = probe().replace(/^(\t+)"plane"[^\n]*$/gm, (line: string, indent: string) =>
+      `${line}\n${indent}vertices_plus\n${indent}{\n${indent}\t"v" "1 2 3"\n${indent}}`,
+    );
+    expect(marked).toContain("vertices_plus");
+    const r = transformSolids(marked, { ids: ALL }, translation([10, 20, 30]));
+    expect(r.text).not.toContain('"v" "1 2 3"');
+    expect(r.text).toContain('"v" "11 22 33"');
+  });
+});
+
 describe("transformSolids: texture lock", () => {
   const uOf = (s: SolidCheck, i: number): { axis: Vec3; offset: number; scale: number } =>
     s.sides[i]!.uaxis!;

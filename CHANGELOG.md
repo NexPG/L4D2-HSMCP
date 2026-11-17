@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.71-alpha — 2026-11-17
+
+- **Hammer++'s `vertices_plus` stays in step with geometry edits.** `transform_solids` and
+  `move_vertices` move the exact face loop through the same matrix as the plane;
+  `clip_solids` drops it from cut and surviving faces because their loop changed. Before
+  this, a moved brush kept its old loop and Hammer++ would draw it where it used to be.
+- Unknown Hammer++ root blocks still survive byte-for-byte; the coverage page now documents
+  both behaviours.
+
 ## 0.0.70-alpha — 2026-11-17
 
 - **`insert_prefab` now turns as well as moves.** It takes `rotate` (yaw degrees) and

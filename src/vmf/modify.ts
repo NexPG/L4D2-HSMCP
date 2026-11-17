@@ -22,10 +22,11 @@
  * approximated: a wrong texture is exactly the "compiles and is wrong" failure this repo's
  * checks exist to catch, and it is one no compiler will report.
  */
-import { parse } from "../kv/parse.js";
+import { children, parse } from "../kv/parse.js";
 import type { KvBlock } from "../kv/parse.js";
 import { findSolids, isEmptySelector, lineRange, matchesSolid } from "./select.js";
 import type { SolidSelector } from "./select.js";
+import { mapVerticesPlus } from "./precision.js";
 import { checkVmfSolids, parsePlanePoints, parseTextureAxis } from "./solid.js";
 import type { SolidCheck, TextureAxis, Vec3 } from "./solid.js";
 import { applySplices } from "./splice.js";
@@ -255,6 +256,19 @@ export function transformSolids(
         const v = side.vaxis ?? readAxis(sideBlock, "vaxis");
         if (u) setPairIn(sideBlock, "uaxis", axisText(lockAxis(u, matrix, k)), splices);
         if (v) setPairIn(sideBlock, "vaxis", axisText(lockAxis(v, matrix, k)), splices);
+      }
+      // Hammer++ stores the exact face loop beside the plane. Moving the plane but not the
+      // loop would make Hammer++ draw the brush where it used to be, so the block is moved
+      // through the same matrix and snapped by the same grid.
+      const vp = children(sideBlock, "vertices_plus")[0];
+      if (vp) {
+        const vpText = source.slice(vp.start, vp.end);
+        const movedVp = mapVerticesPlus(vpText, (p) =>
+          snapPoint(applyPoint(matrix, p), grid),
+        );
+        if (movedVp !== vpText) {
+          splices.push({ start: vp.start, end: vp.end, text: movedVp });
+        }
       }
       for (const p of side.vertices) movedVertices.push(snapPoint(applyPoint(matrix, p), grid));
     }

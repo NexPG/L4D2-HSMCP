@@ -135,6 +135,20 @@ its file-level result or named as view-only.
 These are not gaps in what a map can contain. They are the editor application's own surface,
 and the table above says which primitive stands in for each one.
 
+## Hammer++ files
+
+Hammer++ writes data vanilla Hammer does not. The writers splice rather than reserialise, so
+unknown root blocks and keyvalues survive an edit. Two pieces need more than that:
+
+| Data | What happens |
+|---|---|
+| `palette_plus`, `colorcorrection_plus`, lighting-preview and background blocks | Kept byte-for-byte at the root; a write adds or edits one block and touches nothing else |
+| `vertices_plus` inside a side | The exact face loop. `transform_solids` and `move_vertices` move it through the same matrix as the plane. A clip drops it from cut and surviving faces, because their loop changed; the plane is still valid and Hammer++ regenerates the block on save |
+| New brushes from `write_vmf_solid` and friends | Written with planes and axes only, as vanilla Hammer does. Hammer++ derives `vertices_plus` when it saves |
+
+A stale `vertices_plus` is worse than none: Hammer++ would draw the brush where it used to
+be. That is why geometry edits update or drop it rather than leave it behind.
+
 ## What is genuinely missing
 
 Ordered by how often a mapper needs it:

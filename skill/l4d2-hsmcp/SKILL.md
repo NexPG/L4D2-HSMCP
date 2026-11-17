@@ -8,9 +8,9 @@ description: Build and ship Left 4 Dead 2 campaigns, maps, nav meshes, chapter t
 Left 4 Dead 2 content, built through the MCP server. The server does the file work; this
 skill says what "correct" looks like in L4D2 and in what order to do it.
 
-The toolkit is early: maps and campaigns are proven, VScript is proven to load, models and
-wider addon formats are not built yet. Read [What is not supported](#what-is-not-supported)
-before promising anything.
+The toolkit is early, but maps, campaigns, finales, nav, model compilation and add-on VPKs
+are proven. Two-team rounds and a few visual checks still need a person or a second client.
+Read [What is not supported](#what-is-not-supported) before promising the rest.
 
 **Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
 `edit_vmf`, `set_worldspawn`, `transform_solids`, `clone_solids`, `write_vscript`); the
@@ -122,10 +122,20 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 
 ## What is not supported
 
-- VScripted finale waves, and the VScript API beyond loading a script.
-- Model import, materials beyond stock content, non-campaign add-on formats.
-- Automated in-game play tests. The play test is manual; the console log is the evidence.
-- A nav tool. Nav generation is still a project script, not an MCP tool.
+- **Fully automated two-team rounds.** One Steam account cannot authenticate two clients
+  (`No Steam logon`), and no dedicated server is installed here. `run_map_test` proves map
+  load, mode script and HUD; a real Versus/Scavenge round still needs a server or a second
+  account. See `references/testing/multi-client.md`.
+- **A full Survival wave.** Setup and HUD are verified; the round still starts from the
+  map's own `trigger_finale` or `ForcePanicEvent`, which the map author must place.
+- **HLMV's 3D canvas in a headless session.** The editor launches and its UI captures; the
+  viewport needs an interactive desktop.
+- **A general VScript API wrapper.** Scripts are authored and attached, but what they call
+  at runtime is the map's own logic.
+- **Model import from DCC formats.** QC/SMD compilation with `studiomdl` is covered;
+  exporting from Blender or Maya is not.
+- **3D-skybox composition.** `write_sky_camera` places the camera and `write_skybox_copy`
+  makes the scaled copy; choosing and sealing what to copy is design work.
 
 If a request depends on one of these, say so plainly and do not fake the step.
 

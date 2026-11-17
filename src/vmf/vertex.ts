@@ -21,9 +21,10 @@
  * Texture axes are left exactly as they were, which is what Hammer does: the plane under a
  * face moves, the projection onto it does not, and the texture slides with the geometry.
  */
-import { parse } from "../kv/parse.js";
+import { children, parse } from "../kv/parse.js";
 import type { KvBlock } from "../kv/parse.js";
 import { findSolids } from "./select.js";
+import { mapVerticesPlus } from "./precision.js";
 import {
   checkVmfSolids,
   hullFromPlanes,
@@ -255,6 +256,20 @@ export function moveVertices(
       end: planePair.end,
       text: `"plane" "(${vec(pts[0])}) (${vec(pts[1])}) (${vec(pts[2])})"`,
     });
+
+    // Hammer++'s exact loop for this face. A corner that moved must move here too, or
+    // Hammer++ keeps drawing the old face.
+    const vp = children(block, "vertices_plus")[0];
+    if (vp) {
+      const vpText = source.slice(vp.start, vp.end);
+      const movedVp = mapVerticesPlus(vpText, (v) => {
+        const idx = check.vertices.findIndex((c) => near(c, v, tolerance));
+        return idx >= 0 ? (mapping.get(idx) ?? v) : v;
+      });
+      if (movedVp !== vpText) {
+        splices.push({ start: vp.start, end: vp.end, text: movedVp });
+      }
+    }
   }
 
   // The shape the new planes really enclose, which is the only thing that decides whether

@@ -97,8 +97,9 @@ The source map must already have the `.vtf` names it will use; packing the new f
   materials directory. The launch mode is the supported path.
 - Verified in a live run: a loose map can be shadowed by a mounted add-on; hide it with
   `addonsToHide` or the packed copy loads instead.
-- **Not yet verified:** LDR and `both` modes, and a map with more than one cubemap sample.
-  They are implemented and expose the same launch mode; the result reports what was built.
+- Verified in live runs: HDR in 29 s, LDR in 24 s and both modes in one call; the game
+  install was left clean. A map with more than one cubemap sample is implemented and has not
+  been measured separately.
 
 ## Clean up
 

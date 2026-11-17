@@ -90,6 +90,23 @@ describe("clipSolids: the conservation law", () => {
   });
 });
 
+describe("clipSolids: Hammer++ precise vertices", () => {
+  it("drops vertices_plus from a face whose loop the cut changed", () => {
+    const empty =
+      'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';
+    const built = insertSolids(empty, [{ shape: "box", mins: [-64, -64, 0], maxs: [64, 64, 32] }], {
+      material: "BRICK/BRICKWALL001A",
+    }).text;
+    const id = read(built)[0]!.id!;
+    const marked = built.replace(/^(\t+)"plane"[^\n]*$/gm, (line: string, indent: string) =>
+      `${line}\n${indent}vertices_plus\n${indent}{\n${indent}\t"v" "1 2 3"\n${indent}}`,
+    );
+    expect(marked).toContain("vertices_plus");
+    const r = clipSolids(marked, { ids: [id] }, THROUGH_ORIGIN, { keep: "front" });
+    expect(r.text).not.toContain("vertices_plus");
+  });
+});
+
 describe("clipSolids: what happens to the faces", () => {
   it("leaves a surviving face's material and texture axes exactly as they were", () => {
     // A clip that reset the texturing of every face it did not remove would be technically

@@ -29,7 +29,7 @@
  * oracle for this file, and it is exact enough to catch a plane taken in the wrong sense:
  * the sum comes out doubled or zero, not slightly off.
  */
-import { get, parse } from "../kv/parse.js";
+import { children, get, parse } from "../kv/parse.js";
 import type { KvBlock } from "../kv/parse.js";
 import { textureAxesFor } from "./build.js";
 import { findSolids, isEmptySelector, lineRange, matchesSolid } from "./select.js";
@@ -44,6 +44,7 @@ import {
 import type { Plane, SolidCheck, Vec3 } from "./solid.js";
 import { applySplices } from "./splice.js";
 import type { Splice } from "./splice.js";
+import { stripVerticesPlus } from "./precision.js";
 import { maxId } from "./edit.js";
 
 export class VmfClipError extends Error {
@@ -154,7 +155,10 @@ function sideBlocks(solid: KvBlock): KvBlock[] {
 /** A copy of a `side` block's text with a new id. */
 function renumberSide(source: string, side: KvBlock, id: number): string {
   const text = source.slice(side.start, side.end);
-  return text.replace(/"id"\s+"\d+"/, `"id" "${id}"`);
+  // Hammer++'s exact loop belongs to the face as it was before the cut. A surviving face
+  // may now be bounded by different corners, so the plane becomes the only description;
+  // Hammer++ regenerates the block on save.
+  return stripVerticesPlus(text).replace(/"id"\s+"\d+"/, `"id" "${id}"`);
 }
 
 /** A fresh `side` block for the cut face, indented like the ones beside it. */
@@ -354,6 +358,13 @@ export function clipSolids(
     for (let i = 0; i < blocks.length; i++) {
       if (primary.keptSides.includes(i)) continue;
       splices.push({ ...lineRange(source, blocks[i]!), text: "" });
+    }
+    // A face that survived may have lost corners to the cut, so Hammer++'s exact loop is
+    // no longer the loop of this brush. The plane still describes it; Hammer++ rebuilds the
+    // block when it next saves.
+    for (const i of primary.keptSides) {
+      const vp = children(blocks[i]!, "vertices_plus")[0];
+      if (vp) splices.push({ ...lineRange(source, vp), text: "" });
     }
     const newFace = cutFaceText(
       primaryCut,
