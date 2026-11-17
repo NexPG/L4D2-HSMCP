@@ -5,6 +5,31 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.22-alpha — 2026-11-17
+
+- `read_game_content` now browses assets the way Hammer's tabs do, with the numbers that
+  matter: `details: true` on a model returns its hull bounds (`mins`, `maxs`, `size`) — the
+  size the model viewer shows and the number needed before placing a building — and
+  `kind: "particle"` lists `.pcf` files for the Particle Browser. Verified against the
+  install: 246 `props_urban` models with sizes, 52 particle systems.
+- The skill gains `references/mapping/hammer-tabs.md` (every Hammer++ tab mapped to the tool
+  that replaces it, and recipes for roads, skyboxes, buildings and street props) and
+  `references/mechanics/coverage.md`, an honest table of which L4D2 mechanics are verified and
+  which are still `not yet`.
+- Mechanics coverage is now the project's definition of done: a row moves to verified only
+  with in-game evidence. The open rows are the next blocks — spawn areas and waves, weapons
+  and items, crescendos, tanks and witches, Scavenge/Survival/Versus, weather, VScript waves,
+  displacements and instances.
+
+## 0.0.21-alpha — 2026-11-17
+
+- **`write_vscript`** (80th tool) writes a L4D2 `.nut`, refuses unbalanced braces, warns
+  about Lua habits (`local`, `end`, `--[[`) and about a missing `printl`/`Msg` banner, and
+  can attach the script to a map by adding a `logic_script` entity with `vscripts` set to the
+  file's base name. A compiled map is refused by name, like every other `.vmf` tool.
+- The scripting reference now points at the tool, so an agent can ship a script and attach it
+  without hand-editing the VMF.
+
 ## 0.0.20-alpha — 2026-11-17
 
 - **The finale is verified end to end.** `verify-finale.mjs` deploys a self-test build, starts

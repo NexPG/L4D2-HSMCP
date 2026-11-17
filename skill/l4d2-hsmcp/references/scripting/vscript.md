@@ -12,6 +12,11 @@ addon/scripts/vscripts/<name>.nut
 No compilation step. The engine loads the `.nut` source; Valve's own scripts ship compiled as
 `.nuc`, which is not required for add-ons.
 
+`write_vscript` writes the file, refuses unbalanced braces, warns about Lua habits
+(`local`, `end`, `--[[`) and, when given a `vmf`, adds the `logic_script` entity for you. It
+also warns when the script has no `printl`/`Msg` banner, because then a load failure is
+invisible.
+
 ## How the map attaches it
 
 A `logic_script` entity:

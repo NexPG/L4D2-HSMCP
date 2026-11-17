@@ -35,6 +35,7 @@ import { visleafTools } from "./visleaf.js";
 import { vtfTools } from "./vtf.js";
 import { vmfTools } from "./vmf.js";
 import { vmfEditTools } from "./vmfedit.js";
+import { vscriptTools } from "./vscript.js";
 import { wiringTools } from "./wiring.js";
 
 export const allTools: AnyToolDef[] = [
@@ -75,4 +76,5 @@ export const allTools: AnyToolDef[] = [
   ...pakfileTools,
   ...vtfTools,
   ...runtimeTools,
+  ...vscriptTools,
 ];

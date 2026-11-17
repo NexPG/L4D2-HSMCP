@@ -15,19 +15,20 @@ export const readGameContentTool = defineTool({
     "suffix -- which is exactly what set_face_material takes. A pattern with * or ? is a " +
     "glob; anything else is a substring. Mounts the same VPK-and-loose chain the engine " +
     "reads through, so this and read_map_dependencies cannot disagree about what exists. " +
-    "A .vmt being present is NOT the same as the material drawing: NATURE/BLENDGRASSDIRT01 " +
-    "ships with Garry's Mod and the three .vtf it points at do not, which is the same purple " +
-    "checkerboard by another route. Pass details to resolve every texture a material names " +
-    "and get `resolves` with what is missing. Needs the Python sidecar; see health.",
+    "A .vmt being present is NOT the same as the material drawing: a material can name a " +
+    "texture this install does not have, which is the same purple checkerboard by another " +
+    "route. Pass details to resolve every texture a material names, or to read a model's " +
+    "hull bounds -- the size Hammer's model viewer shows and the number needed before " +
+    "placing a house on the floor. Needs the Python sidecar; see health.",
   realm: "map",
   inputSchema: {
     pattern: z
       .string()
       .describe("Name to look for. 'brick' matches anything containing it; 'brick*' is a glob."),
     kind: z
-      .enum(["material", "model"])
+      .enum(["material", "model", "particle"])
       .default("material")
-      .describe("Materials (.vmt) or models (.mdl)."),
+      .describe("Materials (.vmt), models (.mdl) or particle systems (.pcf)."),
     details: z
       .boolean()
       .optional()
@@ -70,6 +71,10 @@ export const readGameContentTool = defineTool({
         resolves: z.boolean().nullable().optional(),
         /** The .vtf this material names and the install does not have. `details` only. */
         missingTextures: z.array(z.string()).optional(),
+        /** Models only, `details` only: the hull Hammer's model viewer reports. */
+        mins: z.array(z.number()).nullable().optional(),
+        maxs: z.array(z.number()).nullable().optional(),
+        size: z.array(z.number()).nullable().optional(),
         error: z.string().nullable().optional(),
       }),
     ),

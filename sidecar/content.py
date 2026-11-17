@@ -170,6 +170,36 @@ def _material_details(fsys: Any, rel: str) -> dict[str, Any]:
     return out
 
 
+def _model_bounds(fsys: Any, rel: str) -> dict[str, Any]:
+    """Hull bounds of one model, the numbers Hammer's model viewer shows.
+
+    `details` is what asks for this: opening every model to answer a name search would cost
+    seconds, and a building's size is only needed when the caller is about to place it.
+    """
+    try:
+        from srctools.mdl import Model
+
+        mdl = Model(fsys, fsys[rel])
+        mins = getattr(mdl, "hull_min", None)
+        maxs = getattr(mdl, "hull_max", None)
+
+        def vec(value: Any) -> list[float] | None:
+            try:
+                return [round(float(value.x), 3), round(float(value.y), 3), round(float(value.z), 3)]
+            except Exception:  # noqa: BLE001
+                return None
+
+        lo, hi = vec(mins), vec(maxs)
+        size = (
+            [round(hi[i] - lo[i], 3) for i in range(3)]
+            if lo is not None and hi is not None
+            else None
+        )
+        return {"mins": lo, "maxs": hi, "size": size}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
 def search_content(req: dict[str, Any]) -> dict[str, Any]:
     """Finds materials and models in the game, by name."""
     game_dir = req.get("gameDir")
@@ -207,9 +237,11 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
             "note": "nothing was searched, so an empty result here says nothing about the game",
         }
 
-    prefix, suffix = (
-        ("materials/", ".vmt") if kind == "material" else ("models/", ".mdl")
-    )
+    prefix, suffix = {
+        "material": ("materials/", ".vmt"),
+        "model": ("models/", ".mdl"),
+        "particle": ("particles/", ".pcf"),
+    }.get(kind, ("materials/", ".vmt"))
     match = _matcher(pattern)
     hits: list[str] = []
     for path in _walk(fsys):
@@ -230,6 +262,10 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
             row["name"] = _vmf_name(rel)
             if want_details:
                 row.update(_material_details(fsys, rel))
+        elif want_details:
+            # A model's size is the number a mapper needs before placing it: a house whose
+            # origin is at its centre is not a house placed on the floor's z.
+            row.update(_model_bounds(fsys, rel))
         results.append(row)
 
     return {
@@ -243,8 +279,9 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
         "truncated": total > len(results),
         "results": results,
         "note": (
-            "names only unless details was asked for: a Garry's Mod install holds tens of "
-            "thousands of VMTs and parsing them all to answer one search would cost seconds"
+            "names only unless details was asked for. Materials: details reads the VMT and "
+            "every texture it names. Models: details reads the hull bounds Hammer's model "
+            "viewer shows"
         ),
     }
 

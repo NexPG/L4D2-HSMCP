@@ -40,6 +40,8 @@ before promising anything.
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
+| `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |
+| `references/mechanics/coverage.md` | what of L4D2 is covered, and what is not yet |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
 
