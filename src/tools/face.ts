@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { writeGuarded } from "../fs/write.js";
 import { defineTool } from "../mcp/registry.js";
-import { alignFaces, setFaceMaterial, setSmoothingGroups } from "../vmf/face.js";
+import { alignFaces, copyFaceAlignment, setFaceMaterial, setSmoothingGroups } from "../vmf/face.js";
 import type { AlignMode } from "../vmf/face.js";
 import type { FaceSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
@@ -10,6 +10,10 @@ import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "./paths.
 
 const SELECTOR = {
   solidIds: z.array(z.number()).optional().describe("Only faces of these solids."),
+  sideIds: z
+    .array(z.number())
+    .optional()
+    .describe("Only these side ids, for targeting one exact face."),
   material: z
     .string()
     .optional()
@@ -30,6 +34,7 @@ const SELECTOR = {
 
 const selectorFrom = (args: {
   solidIds?: number[];
+  sideIds?: number[];
   material?: string;
   facing?: "up" | "down" | "side" | "any";
   minArea?: number;
@@ -46,6 +51,7 @@ const selectorFrom = (args: {
   }
   const sel: FaceSelector = {
     ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
+    ...(args.sideIds !== undefined ? { sideIds: args.sideIds } : {}),
     ...(args.material !== undefined ? { material: args.material } : {}),
     ...(args.facing !== undefined ? { facing: args.facing } : {}),
     ...(args.minArea !== undefined ? { minArea: args.minArea } : {}),
@@ -77,6 +83,29 @@ function assertGeometryUntouched(path: string, before: string, after: string): v
         `refusing to write: solid ${x.id} changed shape during a face edit. It never should.`,
       );
     }
+  }
+}
+
+/** The algebra oracle: read_vmf_solids refuses axes no texture can use. */
+function assertAxesAccepted(path: string, text: string): void {
+  const after = checkVmfSolids(path, text);
+  const bad = after.solids.filter((s) =>
+    s.findings.some(
+      (f) =>
+        f.severity === "error" &&
+        (f.rule === "texture-axis-along-normal" ||
+          f.rule === "zero-texture-scale" ||
+          f.rule === "degenerate-texture-axis"),
+    ),
+  );
+  if (bad.length > 0) {
+    throw new Error(
+      `refusing to write: this alignment produced texture axes the checker rejects on ` +
+        `${bad.length} solid(s). ` +
+        bad
+          .flatMap((s) => s.findings.filter((f) => f.severity === "error").map((f) => f.message))
+          .join(" | "),
+    );
   }
 }
 
@@ -226,25 +255,7 @@ export const alignFacesTool = defineTool({
     // The algebra oracle, run before the file is touched: read_vmf_solids already refuses
     // a texture axis lying along the face normal, a zero scale and a degenerate pair. An
     // alignment that produced any of those would compile and look wrong, silently.
-    const after = checkVmfSolids(path, result.text);
-    const bad = after.solids.filter((s) =>
-      s.findings.some(
-        (f) =>
-          f.severity === "error" &&
-          (f.rule === "texture-axis-along-normal" ||
-            f.rule === "zero-texture-scale" ||
-            f.rule === "degenerate-texture-axis"),
-      ),
-    );
-    if (bad.length > 0) {
-      throw new Error(
-        `refusing to write: this alignment produced texture axes the checker rejects on ` +
-          `${bad.length} solid(s). ` +
-          bad
-            .flatMap((s) => s.findings.filter((f) => f.severity === "error").map((f) => f.message))
-            .join(" | "),
-      );
-    }
+    assertAxesAccepted(path, result.text);
 
     const write = writeGuarded(path, result.text, ctx.config, {
       dryRun: args.dryRun,
@@ -262,6 +273,102 @@ export const alignFacesTool = defineTool({
       nextStep:
         "Alignment is one of the things no offline check can judge. The axes are legal and " +
         "the offsets start at the face's edge; whether it looks right is for the eye.",
+    };
+  },
+});
+
+export const copyFaceAlignmentTool = defineTool({
+  name: "copy_face_alignment",
+  description:
+    "Copies ONE face's exact texture alignment -- uaxis, vaxis, offset and scale -- onto " +
+    "other faces, the operation Hammer calls copy/paste alignment. The axes are copied as " +
+    "stored, not recomputed from each target's normal, so brick carries on from the same " +
+    "place across two walls instead of restarting at every face. Optionally copies the " +
+    "material and an explicit lightmap scale. On a face pointing a different way the exact " +
+    "axes are legal but may stretch; the tool says which faces those are, and refuses axes " +
+    "the reader rejects. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    sourceSolidId: z.number().describe("Hammer id of the face's solid, from read_vmf."),
+    sourceSideId: z.number().describe("The side id to copy from, from read_vmf."),
+    copyMaterial: z
+      .boolean()
+      .optional()
+      .describe("Also copy the source face's material. Off by default: alignment only."),
+    copyLightmapScale: z
+      .boolean()
+      .optional()
+      .describe("Also copy an explicit lightmapscale. Off by default."),
+    ...SELECTOR,
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    unchanged: z.boolean(),
+    matched: z.number(),
+    changed: z.array(
+      z.object({
+        solidId: z.number(),
+        sideId: z.number().nullable(),
+        field: z.enum(["material", "uaxis", "vaxis", "lightmapscale"]),
+        from: z.string().nullable(),
+        to: z.string(),
+      }),
+    ),
+    source: z.object({
+      solidId: z.number(),
+      sideId: z.number().nullable(),
+      material: z.string(),
+      uaxis: z.string(),
+      vaxis: z.string(),
+      lightmapScale: z.number().nullable(),
+    }),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    const result = copyFaceAlignment(
+      before,
+      args.sourceSolidId,
+      args.sourceSideId,
+      selectorFrom(args),
+      {
+        ...(args.copyMaterial !== undefined ? { copyMaterial: args.copyMaterial } : {}),
+        ...(args.copyLightmapScale !== undefined
+          ? { copyLightmapScale: args.copyLightmapScale }
+          : {}),
+      },
+    );
+    assertGeometryUntouched(path, before, result.text);
+    assertAxesAccepted(path, result.text);
+
+    const write = writeGuarded(path, result.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: result.unchanged,
+    });
+    return {
+      path,
+      written: write.written,
+      backupPath: write.backupPath,
+      unchanged: result.unchanged,
+      matched: result.matched,
+      changed: result.changed,
+      source: result.source,
+      warnings: result.warnings,
+      nextStep:
+        "Exact alignment on a face pointing another way is legal and may still look " +
+        "squashed. Compile and look; for a curve, align_faces mode 'arc' is the tool that " +
+        "carries the texture around the turn instead of copying one flat pair everywhere.",
     };
   },
 });
@@ -327,4 +434,9 @@ export const setSmoothingGroupsTool = defineTool({
   },
 });
 
-export const faceTools = [setFaceMaterialTool, alignFacesTool, setSmoothingGroupsTool];
+export const faceTools = [
+  setFaceMaterialTool,
+  alignFacesTool,
+  copyFaceAlignmentTool,
+  setSmoothingGroupsTool,
+];

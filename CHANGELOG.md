@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.40-alpha — 2026-11-17
+
+- **`copy_face_alignment`** (87th tool): Hammer's copy alignment. Copies one face's exact
+  `uaxis`/`vaxis` -- direction, offset and scale -- onto selected faces, optionally with the
+  material and an explicit lightmap scale. The axes are not recomputed from each target's
+  normal, so brick carries on from the same place instead of restarting; faces pointing a
+  different way are reported, and axes the reader rejects are refused. `FaceSelector` gained
+  `sideIds`, so a caller can name one exact target face rather than a whole solid.
+- The parity table's "Alt+click (copy alignment)" gap is closed; displacement subdivision
+  and `.map` export are the two remaining "not covered" rows.
+- This is the third named gap closed under the no-templates rule, after `set_worldspawn`
+  and arbitrary mission keys.
+
 ## 0.0.39-alpha — 2026-11-17
 
 - **`write_campaign` accepts arbitrary keyvalues at mission, mode and chapter level.** Its

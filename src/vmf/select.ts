@@ -23,6 +23,8 @@ import type { SolidCheck, SolidSide, Vec3 } from "./solid.js";
 export interface FaceSelector {
   /** Only faces of these solids. */
   solidIds?: number[];
+  /** Only these side ids, as `read_vmf` / `read_vmf_solids` report them. */
+  sideIds?: number[];
   /** Only faces whose material contains this, case-insensitively. */
   material?: string;
   /**
@@ -72,6 +74,7 @@ export function isEmptySelector(sel: SolidSelector | FaceSelector): boolean {
 export const FACING_COSINE = 0.7;
 
 export function matchesFace(side: SolidSide, sel: FaceSelector): boolean {
+  if (sel.sideIds && (side.id === null || !sel.sideIds.includes(side.id))) return false;
   if (sel.material && !side.material.toLowerCase().includes(sel.material.toLowerCase())) {
     return false;
   }

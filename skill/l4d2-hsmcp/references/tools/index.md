@@ -1,6 +1,6 @@
 # Tool catalogue
 
-86 tools. This page groups them by the job you are doing; each tool's own description is the
+87 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -78,6 +78,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `hollow_solids` | turn blocks into room walls |
 | `set_face_material` | material on selected faces |
 | `align_faces` | texture alignment |
+| `copy_face_alignment` | copy one face's exact uaxis/vaxis (and optionally material/lightmap) onto others |
 | `set_smoothing_groups` | smoothing groups |
 | `set_visgroup` / `group_solids` / `set_cordon` | organisation |
 | `write_hint_brush` | hint brush for vvis |

@@ -10,6 +10,7 @@ of that path, but deleting it must not remove the capability.
 |---|---|---|
 | Any brush shape | `write_vmf_solid` with `shape: "convex"` | Arbitrary face loops; the named shapes are shortcuts |
 | Move / rotate / scale / mirror | `transform_solids` | One operation per call, any pivot, optional grid |
+| Copy one face's alignment | `copy_face_alignment` | Exact uaxis/vaxis, optional material and lightmap scale; `align_faces` is the computed alternative |
 | Copy / paste | `clone_solids` | Fresh ids, byte-for-byte materials and alignment |
 | Any entity, keyvalue or output | `edit_vmf` | `add`, `update`, `remove`, `addOutput`, `removeOutput` |
 | Any worldspawn key | `set_worldspawn` | `worldspawn` is not an `entity` block, so `edit_vmf` cannot reach it |
@@ -48,5 +49,4 @@ These are not menus; they are capabilities that do not exist yet:
 
 - engine `buildcubemaps` (the running-game step);
 - writing the compiled entity lump of a `.bsp`;
-- model authoring (HLMV/studiomdl);
-- copying one face's exact alignment onto another (`align_faces` can approximate, not copy).
+- model authoring (HLMV/studiomdl).

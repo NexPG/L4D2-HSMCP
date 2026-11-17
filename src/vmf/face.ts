@@ -15,7 +15,7 @@
  */
 import { get, parse } from "../kv/parse.js";
 import type { KvBlock, KvNode } from "../kv/parse.js";
-import { eachSide, matchesFace } from "./select.js";
+import { eachSide, isEmptySelector, matchesFace } from "./select.js";
 import type { FaceSelector } from "./select.js";
 import { textureAxesFor } from "./build.js";
 import { checkSolid, parsePlanePoints, planeFromPoints } from "./solid.js";
@@ -603,5 +603,143 @@ export function setSmoothingGroups(
     groups: mask >>> 0,
     warnings,
     unchanged: text === source,
+  };
+}
+
+export interface CopyAlignmentOptions {
+  /** Copy the source face's material as well as its axes. Off by default. */
+  copyMaterial?: boolean;
+  /** Copy an explicit `lightmapscale`. Off by default. */
+  copyLightmapScale?: boolean;
+}
+
+export interface CopyAlignmentChange {
+  solidId: number;
+  sideId: number | null;
+  field: "material" | "uaxis" | "vaxis" | "lightmapscale";
+  from: string | null;
+  to: string;
+}
+
+export interface CopyAlignmentResult {
+  text: string;
+  matched: number;
+  changed: CopyAlignmentChange[];
+  warnings: string[];
+  unchanged: boolean;
+  source: {
+    solidId: number;
+    sideId: number | null;
+    material: string;
+    uaxis: string;
+    vaxis: string;
+    lightmapScale: number | null;
+  };
+}
+
+/**
+ * Copies one face's exact texture axes onto other faces: Hammer's "copy alignment".
+ *
+ * The axes are copied as stored -- same direction, offset and scale -- rather than
+ * recomputed from the target's normal. That is the whole point: two faces of the same
+ * building or two sides of a doorway should carry the brick on from the same place, and
+ * `align_faces` starts each face at its own edge. On a face whose normal differs the same
+ * axes squash the texture, which is legal; the tool says so rather than silently
+ * re-projecting. Axes that end up along the target's own normal are refused by the reader.
+ */
+export function copyFaceAlignment(
+  source: string,
+  sourceSolidId: number,
+  sourceSideId: number,
+  selector: FaceSelector,
+  options: CopyAlignmentOptions = {},
+): CopyAlignmentResult {
+  if (isEmptySelector(selector)) {
+    throw new VmfFaceError(
+      "refusing an empty target selector: it would copy this alignment onto every face in the map",
+    );
+  }
+  const sourceFaces = resolveFaces(source, { solidIds: [sourceSolidId] });
+  const src = sourceFaces.find((f) => f.side.id === sourceSideId);
+  if (!src) {
+    throw new VmfFaceError(
+      `solid ${sourceSolidId} has no face with side id ${sourceSideId}. read_vmf shows ` +
+        `side ids; a .vmf written without them cannot be a copy source.`,
+    );
+  }
+  const uaxis = get(src.block, "uaxis");
+  const vaxis = get(src.block, "vaxis");
+  if (!uaxis || !vaxis) {
+    throw new VmfFaceError(
+      `face ${sourceSolidId}/${sourceSideId} has no uaxis or vaxis pair to copy`,
+    );
+  }
+
+  const faces = resolveFaces(source, selector);
+  const splices: Splice[] = [];
+  const changed: CopyAlignmentChange[] = [];
+  const warnings: string[] = [];
+  let warnedLightmap = false;
+
+  for (const face of faces) {
+    if (face.block === src.block) continue;
+    const pairs: Array<["material" | "uaxis" | "vaxis" | "lightmapscale", string]> = [];
+    if (options.copyMaterial && face.side.material !== src.side.material) {
+      pairs.push(["material", src.side.material]);
+    }
+    if (get(face.block, "uaxis") !== uaxis) pairs.push(["uaxis", uaxis]);
+    if (get(face.block, "vaxis") !== vaxis) pairs.push(["vaxis", vaxis]);
+    if (options.copyLightmapScale) {
+      if (src.side.lightmapScale === null) {
+        if (!warnedLightmap) {
+          warnings.push(
+            "the source face has no explicit lightmapscale; the default is 16, and nothing " +
+              "was copied for it",
+          );
+          warnedLightmap = true;
+        }
+      } else {
+        const value = String(src.side.lightmapScale);
+        if (get(face.block, "lightmapscale") !== value) pairs.push(["lightmapscale", value]);
+      }
+    }
+
+    for (const [field, value] of pairs) {
+      const from = get(face.block, field) ?? null;
+      if (!setSidePair(source, face.block, field, value, splices)) continue;
+      changed.push({ solidId: face.solidId, sideId: face.side.id, field, from, to: value });
+    }
+
+    if (face.side.plane && src.side.plane) {
+      const a = face.side.plane.normal;
+      const b = src.side.plane.normal;
+      const dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+      if (dot < 0.9999) {
+        warnings.push(
+          `face ${face.solidId}/${face.side.id ?? "?"} does not point the same way as the ` +
+            `source (dot ${dot.toFixed(3)}); the copied axes are exact, so the texture may ` +
+            `stretch or squash there`,
+        );
+      }
+    }
+  }
+
+  if (faces.length === 0) warnings.push("nothing matched the target selector, so nothing changed");
+
+  const text = applySplices(source, splices);
+  return {
+    text,
+    matched: faces.length,
+    changed,
+    warnings,
+    unchanged: text === source,
+    source: {
+      solidId: sourceSolidId,
+      sideId: src.side.id,
+      material: src.side.material,
+      uaxis,
+      vaxis,
+      lightmapScale: src.side.lightmapScale,
+    },
   };
 }

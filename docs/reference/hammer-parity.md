@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **86 tools**.
+Last checked against the tool list on 17/11/2026: **87 tools**.
 
 ## The file itself
 
@@ -71,7 +71,7 @@ getting `ENOENT` on the first call.
 | Justify (top/left/…) | `align_faces` (`shift`) | Expressed as a shift rather than as nine buttons |
 | Lightmap scale | `set_lightmap_scale` | Projects the luxel bill before writing |
 | Smoothing groups | `set_smoothing_groups` | Takes Hammer's 1–32 and does the bit shifting |
-| Alt+click (copy alignment) | *not covered* | Reachable by reading one face and applying its axes; no tool wraps it yet |
+| Alt+click (copy alignment) | `copy_face_alignment` | Exact uaxis/vaxis from a named face; optional material and lightmap scale |
 
 ## Displacements
 
@@ -147,9 +147,9 @@ getting `ENOENT` on the first call.
 Everything a mapper *builds* is reachable. Everything a mapper *checks* is reachable, and a
 few things Hammer never checked are too — the wiring, the seams, the packing list.
 
-Three rows say "not covered" rather than "not applicable": **displacement subdivision**,
-**copying a face's alignment**, and **exporting to `.map`**. None is hard; all three are
-simply not written. They are the whole of the gap, and naming them is the point of the table.
+Two rows say "not covered" rather than "not applicable": **displacement subdivision**
+and **exporting to `.map`**. Neither is hard; both are simply not written. They are the whole
+of the gap, and naming them is the point of the table.
 
 It is worth saying what this document got wrong, because it bears on how much the rest of it
 is worth. Until 13/08/2026 there was no `File` section at all, so the table claimed near-total

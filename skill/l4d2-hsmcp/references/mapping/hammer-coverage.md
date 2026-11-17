@@ -56,7 +56,7 @@ no way to do it yet.
 |---|---|---|
 | Texture browser | `read_game_content(kind: "material")` | verified |
 | Material assign | `set_face_material` | verified |
-| Texture alignment | `align_faces` | tool |
+| Texture alignment | `align_faces`, `copy_face_alignment` | tool |
 | Smoothing groups | `set_smoothing_groups` | tool |
 | Lightmap scale | `set_lightmap_scale` | tool |
 | Light entities | `edit_vmf` | verified |
