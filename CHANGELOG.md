@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.35-alpha — 2026-11-17
+
+- **Conventional Commits are a written project rule.** `CONTRIBUTING.md` and diary rule 11
+  spell out the format: `type(scope): imperative summary`, allowed types, an optional scope,
+  a body that explains why, and `!`/`BREAKING CHANGE:` for a break. A subject that does not
+  parse is a defect even when the change is right.
+- Two decisions shared the ID D33; the language decision is now D61 and the correction is
+  recorded as D60.
+
 ## 0.0.34-alpha — 2026-11-17
 
 - **CI runs on the machine the project targets.** The workflow moved from `ubuntu-latest`

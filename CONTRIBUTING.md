@@ -39,8 +39,23 @@ format.
 
 ## 3. The commit carries its documentation
 
-One atomic commit, one subject, in English, conventional format (`feat:`, `fix:`, `docs:`,
-`chore:`, `test:`, `refactor:`). The body says **why**, not what — the diff already says what.
+One atomic commit, one subject, in English, **Conventional Commits** format:
+
+```
+type(scope): imperative summary
+
+Why this change exists, what it makes true, and what it makes false.
+```
+
+- **Types:** `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`, `ci`, `build`.
+- **Scope** is optional but wanted when it narrows the change: `feat(map):`, `ci:`,
+  `docs(skill):`.
+- **Summary** is imperative, lower case, no trailing period, and under ~72 characters.
+- **Body** starts after a blank line and says **why**, not what — the diff already says what.
+- **Breaking change** takes `!` before the colon (`feat(tools)!:`) and a `BREAKING CHANGE:`
+  footer.
+- A commit that does not parse as Conventional Commits is a defect, even when the change is
+  right: the history is read by tools and by people scanning for `fix:`.
 
 Documentation the change makes false is fixed **in the same commit**. A README describing a tool
 that does not exist is a bug, not a delay: somebody reads it and relies on it.
