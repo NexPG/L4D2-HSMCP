@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.23-alpha — 2026-11-17
+
+- **Correction: the finale victory is not verified.** 0.0.20 claimed it from
+  `Mission credits ver 1 loading...`, but the engine loads every mission file at startup,
+  credits included. The real marker is the map starting: `Host_NewGame on map credits`. A
+  rerun with that marker did not win: `Finale started` and `HSMCP_ESCAPE_TOUCHED` appear,
+  the credits map does not.
+- The standard finale cannot spawn: 1662 `MOB SPAWN ERROR` and 47
+  `Director failed to spawn a special` lines. `AdvanceFinaleState` on a timer did not move it
+  to the escape phase. The map needs a real combat area with spawnable nav, then waves.
+- `run_map_test` truncates `console.log` instead of deleting it. A delete that silently leaves
+  yesterday's lines made a wait-for match return in five seconds on a stale marker.
+- The finale map gets a Battlefield nav region; the spawn errors remain, so the region alone is
+  not the fix.
+- `verify-finale.mjs` now waits for `Host_NewGame on map credits`, not `Mission credits`.
+  The mechanics coverage table marks the finale as start/escape verified, victory not yet.
+
 ## 0.0.22-alpha — 2026-11-17
 
 - `read_game_content` now browses assets the way Hammer's tabs do, with the numbers that

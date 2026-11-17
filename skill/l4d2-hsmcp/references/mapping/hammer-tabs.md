@@ -8,7 +8,7 @@ This page is the map from one to the other, and the recipes for browsing a city'
 | Texture Browser | `read_game_content(kind: "material", pattern: "...")`; `details: true` checks that every texture the material names exists |
 | Model Browser | `read_game_content(kind: "model", pattern: "...", details: true)` for names **and hull sizes**; `read_model_info` for skins, sequences and materials of one model |
 | Particle Browser | `read_game_content(kind: "particle", pattern: "*")` |
-| Entity Report | `read_entity_report`; `read_fgd_class` for what a class accepts |
+| Entity Report / Entity Tool | `read_entity_report` shows what the map has; `read_fgd_class` with no classname lists classes by prefix, and with a classname returns every keyvalue, input and output |
 | Face Edit Sheet | `set_face_material`, `align_faces`, `set_smoothing_groups`, `set_lightmap_scale` |
 | Visgroups / Groups | `read_map_organisation`, `set_visgroup`, `group_solids` |
 | Cordon | `set_cordon` |
@@ -51,6 +51,7 @@ two-letter suffix and the extension.
 2. **A `.vmt` existing is not the material drawing.** `details: true` resolves the textures it
    names; missing ones are the checkerboard.
 3. **Size before placement.** Use the model bounds and the origin offset.
-4. **The FGD is the authority for entities.** `read_fgd_class` answers what a class accepts;
-   `read_entity_report` shows what the map already has.
+4. **The FGD is the authority for entities.** `read_fgd_class` with no classname lists the
+   classes (`prefix: "trigger_"` is the Entity Tool's filter); with a classname it answers
+   what that class accepts. `read_entity_report` shows what the map already has.
 5. **The editor's helper FGD is not the engine.** See `references/mapping/editor-and-fgd.md`.

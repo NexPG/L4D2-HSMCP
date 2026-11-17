@@ -52,14 +52,17 @@ describe an untested wave script as working.
 
 ## Confirming the win
 
-`FinaleEscapeFinished` loads the `credits` mission. In `-condebug` the proof is:
+`FinaleEscapeFinished` only means something once the finale is in its escape phase. A test
+that started the finale and fired the input did not load the credits map.
+
+Do **not** use `Mission credits ver 1 loading...` as proof: every mission file, credits
+included, is loaded at startup. The real marker is the map being started:
 
 ```
-Mission credits ver 1 loading...
-Mission credits ver 1 loaded 1 game modes.
+Host_NewGame on map credits
 ```
 
-`env_outtro_stats` is the stats crawl, not the victory: a map can complete without it.
+or `Spawn Server: credits`. `env_outtro_stats` is the stats crawl, not the victory.
 
 ## Checklist
 

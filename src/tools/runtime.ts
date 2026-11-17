@@ -247,7 +247,9 @@ const runMapTest = defineTool({
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
     const consoleLog = join(gameDir, "console.log");
-    rmSync(consoleLog, { force: true });
+    // Truncate rather than delete: a delete that silently fails leaves yesterday's
+    // "Mission credits" in the file and a wait-for match returns immediately.
+    writeFileSync(consoleLog, "", "utf8");
 
     const started = Date.now();
     const handle = launchGame(exe, [
