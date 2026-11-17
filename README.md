@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.72--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.73--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -50,6 +50,7 @@ clear description, and anything that writes asks for confirmation.
 - **Build a 3D skybox copy** at 1/16 scale with `write_skybox_copy`.
 - **Paste a saved prefab** with `insert_prefab`, optionally moved and yaw-rotated about a pivot.
 - **Skew a texture** by writing a face's U/V vectors directly with `set_face_uv`.
+- **Merge brushes**, **drop or raise objects to a surface**, and **extract a selection into an instance**.
 - **Export** a `.vmf` to Valve's `.map` format.
 
 ## Requirements

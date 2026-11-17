@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.73-alpha — 2026-11-17
+
+- **Three Hammer++ editing operations became one call each.** `merge_solids` replaces
+  convex brushes with the one brush around them and refuses a non-convex or overlapping
+  selection; `move_to_surface` drops or raises brushes to a traced floor or ceiling, with
+  optional alignment to the surface; `create_instance_from_selection` writes a selection as
+  an instance and leaves a `func_instance`, taking a brush entity whole.
+- These were reachable through primitives before; they are helpers now, not new limits.
+
 ## 0.0.72-alpha — 2026-11-17
 
 - **New troubleshooting page for mapping edits.** `troubleshooting/mapping-edits.md` covers

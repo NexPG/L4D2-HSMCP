@@ -19,10 +19,12 @@ import { healthTools } from "./health.js";
 import { hlmvTools } from "./hlmv.js";
 import { hollowTools } from "./hollow.js";
 import { instanceTools } from "./instance.js";
+import { instanceCreateTools } from "./instancecreate.js";
 import { lightmapTools } from "./lightmap.js";
 import { materialsTools } from "./materials.js";
 import { measureTools } from "./measure.js";
 import { measureTools2 } from "./measurespace.js";
+import { mergeTools } from "./merge.js";
 import { modifyTools } from "./modify.js";
 import { optimiseTools } from "./optimise.js";
 import { organiseTools } from "./organise.js";
@@ -38,6 +40,7 @@ import { runtimeTools } from "./runtime.js";
 import { sceneTools } from "./scene.js";
 import { skyboxTools } from "./skybox.js";
 import { skyboxCopyTools } from "./skyboxcopy.js";
+import { snapTools } from "./snap.js";
 import { solidTools } from "./solids.js";
 import { spaceTools } from "./space.js";
 import { studiomdlTools } from "./studiomdl.js";
@@ -81,6 +84,9 @@ export const allTools: AnyToolDef[] = [
   ...exportMapTools,
   ...buildTools,
   ...modifyTools,
+  ...mergeTools,
+  ...snapTools,
+  ...instanceCreateTools,
   ...clipTools,
   ...vertexTools,
   ...hollowTools,

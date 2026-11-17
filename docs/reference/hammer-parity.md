@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **99 tools**.
+Last checked against the tool list on 17/11/2026: **102 tools**.
 
 ## The file itself
 
@@ -57,6 +57,8 @@ getting `ENOENT` on the first call.
 | **Carve** | *not implemented, on purpose* | Its result comes from `clip_solids` repeated. An operation whose correct use is "don't" is not a gap |
 | Snap to grid | `transform_solids` (`grid`) | Optional and measured: snapping is what makes a face stop being flat |
 | Nudge | `transform_solids` (`move`) | |
+| Merge brushes | `merge_solids` | One convex brush; refuses a non-convex or overlapping selection |
+| Move objects to floor/ceiling | `move_to_surface` | Traces the .vmf; optional alignment to the surface |
 
 ## Faces and textures
 
@@ -105,6 +107,7 @@ getting `ENOENT` on the first call.
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
 | Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
+| Create instance from selection | `create_instance_from_selection` | Writes the instance file, recentres it and leaves one `func_instance`; a brush entity is taken whole |
 | Areaportals | `write_portal` | |
 | Occluders | `write_portal` | |
 | Map Properties | `set_map_properties` | worldspawn only. Says when `detailvbsp` and `detailmaterial` are set apart |

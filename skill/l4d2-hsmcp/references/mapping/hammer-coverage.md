@@ -25,6 +25,8 @@ no way to do it yet.
 | Hollow | `hollow_solids` | tool |
 | Vertex edit | `move_vertices` | tool |
 | Move/rotate/scale/mirror | `transform_solids` | tool |
+| Merge convex brushes | `merge_solids` | tool: refuses a non-convex or overlapping union |
+| Move objects to floor/ceiling | `move_to_surface` | tool: traced, optional align to the surface |
 | Delete | `delete_solids` | verified |
 | Carve | several clips | tool |
 | Fitting (door casing, counter, skirting) | `write_vmf_fitting` | tool |
@@ -88,6 +90,7 @@ no way to do it yet.
 | Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
 | 3D skybox | `write_sky_camera` + `write_skybox_copy`; sealing and design manual | partial (copy and camera tools, sealing/design gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
+| Instance from selection | `create_instance_from_selection` | tool: writes the instance, recentres it, leaves one `func_instance`, takes a brush entity whole |
 | Prefabs | `insert_prefab` | verified: paste a saved `.vmf` fragment; ids remapped, move and yaw about a pivot; brush entities and entity angles turn with it |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
 | Visual capture | `capture_window`, `run_map_test` screenshot, `run_hlmv` screenshot | tool: real MCP image; `screen` captures a 3D game canvas, `window` captures occluded UI/dialogs |
@@ -121,12 +124,12 @@ its file-level result or named as view-only.
 | Microgrid / custom grid size | Coordinates are already arbitrary; `transform_solids` accepts any `grid`, including 0.125 |
 | Polygon tool | `write_vmf_solid` shape `convex`, from explicit faces |
 | Sprinkle tool | No preset menu by design (D64). Place each object with an explicit `write_vmf_solid` / `edit_vmf` call |
-| Merge tool | The result is one convex brush: `write_vmf_solid` shape `convex` after computing the hull, then `delete_solids` for the originals. Not one call |
-| Move objects to floor / ceiling | Ray or nearest-surface read (`read_vmf_trace`, `read_vmf_nearest_surface`), then `transform_solids` |
+| Merge tool | The result is one convex brush: `merge_solids` checks the union is convex and keeps the original face data |
+| Move objects to floor / ceiling | `move_to_surface`, with optional alignment to the surface normal |
 | Face sheet U/V vectors | `set_face_uv` writes the vectors, offsets, scales and `rotation`; `align_faces` is the mode-based path |
 | Physics tool | Posing is editor simulation; what a map stores is an entity's `origin` and `angles`, set with `edit_vmf` or `transform_solids`. Brushes have no saved pose |
 | Overlay face preservation after clip | `clip_solids` edits geometry; re-check or re-create overlays with `write_overlay` after a clip |
-| Create Instance from Selection | Reachable through primitives: `read_vmf`, `write_text_file` for the fragment, `write_instance` to place it, `delete_solids` to remove the originals. Not one call |
+| Create Instance from Selection | `create_instance_from_selection`: writes the fragment, recentres it and replaces the selection with one `func_instance` |
 | `editor_text` | `edit_vmf` can write the entity. It is Hammer++-only and has no in-game effect |
 | Compile window | `run_compile` plus `read_compile_log`; no CMD window, but the log is parsed |
 | Color picker | `edit_vmf` sets `rendercolor`; the palette is editor state |

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-99 tools. This page groups them by the job you are doing; each tool's own description is the
+102 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -73,6 +73,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_vmf_solid` | brushes from box, wedge, cylinder, convex; also into a brush entity by id |
 | `write_vmf_fitting` | door casing, counter, skirting, cornice |
 | `transform_solids` | move, turn, scale, mirror brushes |
+| `merge_solids` | merge convex brushes into the one brush around them |
+| `move_to_surface` | drop or raise brushes to a traced floor or ceiling, optionally aligned |
 | `delete_solids` | remove brushes |
 | `clip_solids` | cut with a plane, keep front, back or both |
 | `move_vertices` | Hammer's vertex manipulation |
@@ -92,6 +94,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_vscript` | write a `.nut`, catch Lua habits, attach it with `logic_script` |
 | `write_overlay` | put a decal on a brush face by side id, origin and size |
 | `write_instance` | place a `func_instance` from an instance VMF, with origin, angles and fixup |
+| `create_instance_from_selection` | write selected brushes as an instance and leave a `func_instance` |
 | `write_sky_camera` | place the single `sky_camera` a 3D skybox needs |
 | `write_skybox_copy` | copy brushes at 1/16 scale and move them to the skybox origin |
 | `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation |

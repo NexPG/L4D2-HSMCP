@@ -30,6 +30,9 @@ of that path, but deleting it must not remove the capability.
 | `write_weather` | `edit_vmf` for the entities + `write_vmf_solid` for the volume |
 | `write_sky_camera` | `edit_vmf` with `sky_camera` |
 | `write_instance` | `edit_vmf` with `func_instance` |
+| `create_instance_from_selection` | Read the selection, write it as a VMF, place `func_instance`, delete the originals |
+| `merge_solids` | Convex hull of the selected corners, `write_vmf_solid` convex, `delete_solids` |
+| `move_to_surface` | `read_vmf_trace` plus `transform_solids` (the tool batches the rays) |
 | `set_map_properties` | `set_worldspawn` |
 | `group_solids`, `set_visgroup`, `set_cordon` | `edit_vmf` plus the VMF `editor` blocks |
 | `write_displacement`, `subdivide_displacements`, `sculpt_displacement`, `paint_displacement` | Direct `dispinfo` editing, which is its own format |
