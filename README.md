@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.46--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.47--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -41,7 +41,8 @@ clear description, and anything that writes asks for confirmation.
 - **Work with game content**: textures, models and their real dimensions, particles, sounds,
   VTF conversion and cubemap utilities.
 - **Test** a map by launching it and watching the console for a real marker.
-- **Build cubemaps** with the engine's own `-buildcubemaps` launch mode.
+- **Build cubemaps** with the engine's own `-buildcubemaps` launch mode, and pack them into
+  a copy of the map.
 
 ## Requirements
 

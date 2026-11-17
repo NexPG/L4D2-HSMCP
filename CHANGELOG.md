@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.47-alpha — 2026-11-17
+
+- **`run_build_cubemaps` can pack the result into a copy of the map.** `pack: true` with
+  `outBsp` writes a new `.bsp` containing the built `.vtf` files and reports the pakfile
+  count and how many entries were added. Nothing is packed unless asked; the game install
+  is still restored.
+- Verified in game: an HDR build packed one new entry into the copy, which then held six
+  pakfile entries (five `.vtf`, one `.dct`). The generated copy and the materials directory
+  were removed after the check.
+
 ## 0.0.46-alpha — 2026-11-17
 
 - **`run_build_cubemaps`** (90th tool): builds a map's cubemaps with the engine's own

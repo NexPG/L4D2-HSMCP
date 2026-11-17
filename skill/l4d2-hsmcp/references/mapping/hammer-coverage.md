@@ -63,7 +63,7 @@ no way to do it yet.
 | Light entities | `edit_vmf` | verified |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |
 | Cubemap placement | `edit_vmf` (`env_cubemap`) | tool: the entity is internal and must be in the VMF before compile |
-| Build cubemaps in engine | `run_build_cubemaps` | verified HDR on the test campaign (`-buildcubemaps`, 29 s); LDR/both not yet measured |
+| Build cubemaps in engine | `run_build_cubemaps` | verified HDR/LDR/both; `pack` copies them into an `outBsp` |
 
 ## Detail, hints, portals
 

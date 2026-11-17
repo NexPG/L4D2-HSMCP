@@ -63,6 +63,16 @@ matching add-on, launches Steam with `-buildcubemaps`, waits for `.vtf` files, c
 out, then restores the map and add-on and removes the test materials directory. `HDR` uses
 `+mat_hdr_level 2`; `LDR` uses `0`; `both` runs the engine twice.
 
+## Packing the result
+
+`run_build_cubemaps` does not pack by default: it copies the `.vtf` files out. Pass
+`pack: true` and `outBsp: "finished_map.bsp"` to write a copy of the map with the new
+cubemaps inside; the pakfile count and the number added are returned. The copy is the
+result, and the game install is still restored.
+
+The source map must already have the `.vtf` names it will use; packing the new file under
+`materials/maps/<map>/` is what `buildcubemaps` and `vbspzip` expect.
+
 ## What the log lines mean
 
 | Line | Meaning |

@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../mcp/registry.js";
 import { gameExecutable, launchGame, sleep } from "../game/launch.js";
+import { runPack } from "./compile.js";
 import { CONFIRM, resolveInput } from "./paths.js";
 
 const STEAM_APP = "550";
@@ -94,7 +95,9 @@ export const runBuildCubemapsTool = defineTool({
     "loose, writable and have cubemap samples compiled in (an `env_cubemap` in the VMF); a " +
     "map packed in an add-on is copied out first. Copies the files to `outDir`, restores the " +
     "map, materials directory and hidden add-ons, and removes every test artefact in a " +
-    "finally. LDR, HDR or both; the engine reloads for each mode. Long-running and guarded.",
+    "finally. With `pack`/`outBsp` it packs the built files into a copy of the map and " +
+    "reports the pakfile count. LDR, HDR or both; the engine reloads for each mode. " +
+    "Long-running and guarded.",
   realm: "local",
   guarded: true,
   inputSchema: {
@@ -117,6 +120,17 @@ export const runBuildCubemapsTool = defineTool({
         "Where to copy the .vtf files. Defaults to <stateDir>/cubemaps/<map>. Files are " +
           "copied out before the game install is restored.",
       ),
+    pack: z
+      .boolean()
+      .optional()
+      .describe(
+        "Pack the built .vtf files into a copy of the map. Requires outBsp; the copy is " +
+          "left on disk as the result.",
+      ),
+    outBsp: z
+      .string()
+      .optional()
+      .describe("Destination .bsp for pack:true. Must not already exist."),
     addonsToHide: z
       .array(z.string())
       .default([])
@@ -139,6 +153,13 @@ export const runBuildCubemapsTool = defineTool({
         files: z.array(z.object({ name: z.string(), path: z.string(), bytes: z.number() })),
       }),
     ),
+    packed: z
+      .object({
+        bsp: z.string(),
+        filesAfter: z.number(),
+        added: z.number(),
+      })
+      .nullable(),
     restored: z.boolean(),
     consoleTail: z.array(z.string()),
   },
@@ -164,6 +185,16 @@ export const runBuildCubemapsTool = defineTool({
           `pass bsp: <path>.`,
       );
     }
+    if (args.pack && !args.outBsp) {
+      throw new Error("pack: true needs outBsp: where should the packed .bsp be written?");
+    }
+    if (!args.pack && args.outBsp) {
+      throw new Error("outBsp is only used with pack: true");
+    }
+    const outBspPath = args.outBsp ? resolveInput(args.outBsp, ctx.config) : null;
+    if (outBspPath && existsSync(outBspPath)) {
+      throw new Error(`${outBspPath} already exists; pack writes a new .bsp, never replaces one`);
+    }
 
     const hidden: Array<{ path: string; off: string }> = [];
     const hadMap = existsSync(target);
@@ -176,6 +207,8 @@ export const runBuildCubemapsTool = defineTool({
       seconds: number;
       files: Array<{ name: string; path: string; bytes: number }>;
     }> = [];
+    let packed: { bsp: string; filesAfter: number; added: number } | null = null;
+    let packedOk = false;
     let restored = false;
 
     try {
@@ -257,7 +290,31 @@ export const runBuildCubemapsTool = defineTool({
         if (direct) direct.stop();
         await sleep(1000);
       }
+
+      if (args.pack && outBspPath) {
+        copyFileSync(target, outBspPath);
+        const files = modes.flatMap((entry) =>
+          entry.files.map((file) => ({
+            internal: `materials/maps/${args.map}/${file.name}`,
+            source: file.path,
+          })),
+        );
+        const result = (await runPack.handler(
+          {
+            bsp: outBspPath,
+            files,
+            toolchain: "plusplus",
+            confirm: true,
+          },
+          ctx,
+        )) as { filesAfter: number; added: number };
+        packed = { bsp: outBspPath, filesAfter: result.filesAfter, added: result.added };
+        packedOk = true;
+      }
     } finally {
+      if (outBspPath && !packedOk && existsSync(outBspPath)) {
+        rmSync(outBspPath, { force: true });
+      }
       for (const entry of hidden) {
         if (existsSync(entry.off)) renameSync(entry.off, entry.path);
       }
@@ -279,6 +336,7 @@ export const runBuildCubemapsTool = defineTool({
       map: args.map,
       outDir,
       modes,
+      packed,
       restored,
       consoleTail: log.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(-20),
     };

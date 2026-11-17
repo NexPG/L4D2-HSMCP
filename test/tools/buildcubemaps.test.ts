@@ -36,4 +36,21 @@ describe.skipIf(!has.gameContent)("run_build_cubemaps", () => {
       ),
     ).rejects.toThrow(/ENOENT|no such file/i);
   });
+
+  it("refuses pack without an output map", async () => {
+    await expect(
+      runBuildCubemapsTool.handler(
+        {
+          map: "hsmcp_map_that_does_not_exist",
+          bsp: "test/fixtures/hmcp_probe.bsp",
+          pack: true,
+          mode: "hdr",
+          addonsToHide: [],
+          timeoutSeconds: 30,
+          confirm: true,
+        },
+        ctx,
+      ),
+    ).rejects.toThrow(/pack: true needs outBsp/);
+  });
 });
