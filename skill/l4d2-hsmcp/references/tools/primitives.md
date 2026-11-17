@@ -48,5 +48,4 @@ of that path, but deleting it must not remove the capability.
 
 These are not menus; they are capabilities that do not exist yet:
 
-- engine `buildcubemaps` (the running-game step);
 - model authoring (HLMV/studiomdl).

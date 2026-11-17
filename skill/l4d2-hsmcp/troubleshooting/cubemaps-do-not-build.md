@@ -2,8 +2,11 @@
 
 `buildcubemaps` is an engine command, not a compiler stage. It captures the six faces of
 every cubemap sample in the loaded map and writes `.vtf` files under
-`left4dead2/materials/maps/<map>/`. The map must be loose, writable, and already contain
-cubemap samples.
+`left4dead2/materials/maps/<map>/`. The supported automation is the engine's own
+`-buildcubemaps` launch mode: load the map, build, quit. `run_build_cubemaps` wraps it,
+copies the files out and restores the game install.
+
+The map must be loose, writable, and already contain cubemap samples.
 
 ## What a cubemap sample is
 
@@ -32,14 +35,33 @@ A map with no CUBEMAPS lump can run `buildcubemaps` all day and produce nothing.
    in the error line: ` is not writable!!!  Check it out before running buildcubemaps.`
    Build the map under the name it was compiled with, then rename the finished file with
    `run_bsp_rename` if needed.
-5. Launch with `-insecure` (and `-allowdebug` if injecting entities); `sv_cheats 1` is
-   needed for some console paths.
+5. Launch with `-insecure` and `-buildcubemaps`; the engine builds when the map is fully
+   loaded and quits. `-allowdebug` is useful while diagnosing. `sv_cheats 1` is needed for
+   some console paths, but not for the launch mode.
 6. The map must have `env_cubemap` in the source and must have been compiled after adding it.
 7. **A mounted add-on can shadow the loose map.** If `left4dead2/addons/*.vpk` contains the
    same map, the engine may load the packed one even though `left4dead2/maps/<map>.bsp`
    exists. Move the add-on aside (`run_nav_generate` does this with `addonsToHide`) before
    concluding that the injected entities did nothing. A run with no `buildcubemaps` line at
    all is often this, not a failed injection.
+
+## Automated: `run_build_cubemaps`
+
+```
+run_build_cubemaps(
+  map: "my_map",
+  bsp: "path/to/my_map.bsp",       // optional if the map is already installed
+  mode: "hdr" | "ldr" | "both",
+  addonsToHide: [".../hsmcp_campaign.vpk"],
+  outDir: "...",
+  timeoutSeconds: 240
+)
+```
+
+The tool copies the BSP into `left4dead2/maps`, backs up the materials directory and any
+matching add-on, launches Steam with `-buildcubemaps`, waits for `.vtf` files, copies them
+out, then restores the map and add-on and removes the test materials directory. `HDR` uses
+`+mat_hdr_level 2`; `LDR` uses `0`; `both` runs the engine twice.
 
 ## What the log lines mean
 
@@ -56,15 +78,17 @@ A map with no CUBEMAPS lump can run `buildcubemaps` all day and produce nothing.
 
 - Verified from files and engine logs: `env_cubemap` is absent from Valve L4D2 entity lumps
   while the CUBEMAPS lump is non-empty; the engine writes into `materials/maps/<map>/`.
-- Verified in a live run: `buildcubemaps` started and logged the default-cubemap fallback;
-  no files were produced in the test because the map was renamed and the materials directory
-  did not match the derived path.
-- Verified in a live run: a loose map injected with `point_servercommand` + `logic_auto` can
-  still be shadowed by a mounted add-on; no `buildcubemaps` line appears. Hide the add-on and
-  repeat before debugging the injection.
-- **Not yet verified:** a complete build that writes `.vtf` files. The tool
-  `run_build_cubemaps` does not exist yet. Until it does, this is a manual checklist, not a
-  supported operation.
+- Verified in a live run: `run_build_cubemaps` with `-buildcubemaps` built an HDR cubemap on
+  the test campaign in **29 seconds**: one `c0_0_64_hdr.pwl.vtf`, 76,536 bytes. The map,
+  materials directory and hidden add-on were restored afterwards.
+- Verified in a live run: injecting `point_servercommand` or `point_clientcommand` plus
+  `logic_auto` and calling `buildcubemaps` from the map did **not** work; it logged
+  ` is not writable!!!` with an empty path even with the original map name and a writable
+  materials directory. The launch mode is the supported path.
+- Verified in a live run: a loose map can be shadowed by a mounted add-on; hide it with
+  `addonsToHide` or the packed copy loads instead.
+- **Not yet verified:** LDR and `both` modes, and a map with more than one cubemap sample.
+  They are implemented and expose the same launch mode; the result reports what was built.
 
 ## Clean up
 

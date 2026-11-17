@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **89 tools**.
+Last checked against the tool list on 17/11/2026: **90 tools**.
 
 ## The file itself
 
@@ -129,7 +129,7 @@ getting `ENOENT` on the first call.
 | Budgets | `read_map_report` | A verdict per criterion rather than another number |
 | Walking the map to check it | `read_vmf_trace`, `read_vmf_visibility` | Hammer has no answer at all: you compile and go and look. These trace the `.vmf` itself |
 | Rename a finished map | `run_bsp_rename` | Hammer cannot: the map is compiled by then. Renaming the file alone orphans everything packed under `maps/<name>/`, silently. Drives ficool2's `bsp_rename`, a separate download |
-| Build cubemaps | *the running engine* | `buildcubemaps` **captures** one from inside a running map; this toolkit launches and watches the game (`run_map_test`) but does not yet send console commands, so the engine half stays manual. **Making** one from six images does not: `run_tga2skybox` writes the LDR and HDR cubemap `.vtf` offline |
+| Build cubemaps | `run_build_cubemaps` | The engine's `-buildcubemaps` launch mode: loads the map, captures every sample, writes the `.vtf` files and quits. HDR verified on the test campaign; LDR and both-mode are runnable but not yet measured |
 | Generate a nav mesh | *the running engine* | Same. `read_nav` says whether one still matches its map |
 
 ## What is not here, and will not be
@@ -186,6 +186,7 @@ map and looking, or by not happening at all.
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
 | `run_cubemap2hdr` | nothing offline. The engine builds cubemaps in whichever mode it is running |
+| `run_tga2skybox` | nothing offline: six TGAs into LDR and HDR cubemap `.vtf` files |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |
 | `read_sightlines` | the eye, standing in the map |
 | `read_vmf_rooms` | nothing: Hammer has no idea what a room is |

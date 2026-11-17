@@ -63,7 +63,7 @@ no way to do it yet.
 | Light entities | `edit_vmf` | verified |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |
 | Cubemap placement | `edit_vmf` (`env_cubemap`) | tool: the entity is internal and must be in the VMF before compile |
-| Build cubemaps in engine | - | **gap** (engine `buildcubemaps` is a manual step; see `troubleshooting/cubemaps-do-not-build.md`) |
+| Build cubemaps in engine | `run_build_cubemaps` | verified HDR on the test campaign (`-buildcubemaps`, 29 s); LDR/both not yet measured |
 
 ## Detail, hints, portals
 
@@ -108,8 +108,7 @@ no way to do it yet.
 
 Ordered by how often a mapper needs it:
 
-1. **3D skybox layout** — `clone_solids` makes the copy and `transform_solids` scales it; choosing what to copy, sealing the skybox area and matching the camera remain manual.
-2. **Cubemap building** — the engine step, not just the HDR conversion.
-3. **Model authoring** — HLMV/studiomdl, a separate pipeline.
+1. **3D skybox layout** - `clone_solids` makes the copy and `transform_solids` scales it; choosing what to copy, sealing the skybox area and matching the camera remain manual.
+2. **Model authoring** - HLMV/studiomdl, a separate pipeline.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

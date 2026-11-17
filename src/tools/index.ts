@@ -1,6 +1,7 @@
 import type { AnyToolDef } from "../mcp/registry.js";
 import { bspTools } from "./bsp.js";
 import { bspEditTools } from "./bspedit.js";
+import { buildCubemapTools } from "./buildcubemaps.js";
 import { buildTools } from "./build.js";
 import { campaignTools } from "./campaign.js";
 import { addonTools } from "./addon.js";
@@ -51,6 +52,7 @@ export const allTools: AnyToolDef[] = [
   ...addonTools,
   ...bspTools,
   ...bspEditTools,
+  ...buildCubemapTools,
   ...measureTools,
   ...materialsTools,
   ...lightmapTools,

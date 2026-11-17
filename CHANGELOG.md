@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.46-alpha — 2026-11-17
+
+- **`run_build_cubemaps`** (90th tool): builds a map's cubemaps with the engine's own
+  `-buildcubemaps` launch mode — load the map, capture every sample, write `.vtf`, quit.
+  Supports HDR, LDR or both, copies the files out, and restores the map, materials
+  directory and hidden add-ons in a `finally`. Verified on the test campaign: HDR in 29 s
+  (`c0_0_64_hdr.pwl.vtf`, 76,536 bytes), LDR in 24 s (`c0_0_64.pwl.vtf`, 4,968 bytes), both
+  modes in one call; the game install was left clean.
+- The engine launch mode replaces the earlier attempt to inject `point_servercommand` /
+  `point_clientcommand` + `logic_auto`: that path logged an empty ` is not writable!!!`
+  even with the original map name and a writable materials directory.
+- The test campaign now compiles one `env_cubemap` at the arena centre, so the map has a
+  non-empty CUBEMAPS lump to build.
+
 ## 0.0.45-alpha — 2026-11-17
 
 - **README rewritten for readers, not maintainers.** It now answers what the project is,
