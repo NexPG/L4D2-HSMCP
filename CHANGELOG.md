@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.25-alpha — 2026-11-17
+
+- **The campaign is completable again, and this time it is verified.** A 768×768 arena with
+  four cover pillars was added south of the main room; nav grew from 12 to 38 areas per map,
+  and `MOB SPAWN ERROR` / special-spawn failures dropped to zero once the Director's safety
+  range was lowered. The safety ranges are per-chapter mission convars, and `write_campaign`
+  / `read_campaign` now read and write the `convar` block.
+- The standard finale still never reaches its escape phase, so the test map ends with a
+  deliberate `point_servercommand changelevel credits` from the escape trigger. That is a
+  scripted end for the harness, not a template; a shipping campaign needs a VScript finale.
+- Victory is verified by the credits map loading: `---- Host_Changelevel ----` then
+  `Map: credits`, at 66 seconds. `Map:` is a changelevel; `Host_NewGame on map credits` is a
+  direct `map` command, and `Mission credits ver 1 loading...` is startup noise.
+- `verify-finale.mjs` waits for `Map: credits`. The mechanics table marks the finale victory
+  verified with a scripted end, and the Director-driven escape phase still `not yet`.
+
 ## 0.0.24-alpha — 2026-11-17
 
 - The nav-attribute trap is documented and fixed in the test map: FINALE must be applied

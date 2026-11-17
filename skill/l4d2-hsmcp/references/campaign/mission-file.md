@@ -42,6 +42,21 @@ references without refusing.
 | Chapters numbered from `"1"` without gaps | Chapters missing or out of order in the lobby |
 | `Map` is a bare `.bsp` name | Path or extension breaks the lookup |
 | `DisplayName` on every chapter | Blank lobby entry |
+| `convar` block when the map is compact | `MOB SPAWN ERROR` and no horde; sets `z_spawn_safety_range` and the finale variants |
+
+A chapter can carry launch convars of its own:
+
+```
+"2"
+{
+    "Map" "my_map_b"
+    "DisplayName" "Chapter Two"
+    "convar"
+    {
+        "z_finale_spawn_mob_safety_range" "100"
+    }
+}
+```
 
 The campaign-level `Image` is what the menu draws; chapter images are optional and live under
 `materials/vgui/`.

@@ -50,19 +50,32 @@ Entity work, no script required:
 This wins the campaign without waves. Waves are VScript work and are not built yet; do not
 describe an untested wave script as working.
 
+## The standard finale's limit
+
+Type 0 starts (`Finale started`) and its horde can spawn once the map has space and a sane
+safety range, but on the test map it never reaches the escape phase, so `FinaleEscapeFinished`
+alone does not end the campaign. The test campaign therefore ends with a deliberate
+`point_servercommand` `changelevel credits` from the escape trigger. That is a **test
+harness**, not a template: a shipping campaign needs a scripted custom finale (`type 2` with a
+`ScriptFile`).
+
 ## Confirming the win
 
-`FinaleEscapeFinished` only means something once the finale is in its escape phase. A test
-that started the finale and fired the input did not load the credits map.
-
-Do **not** use `Mission credits ver 1 loading...` as proof: every mission file, credits
-included, is loaded at startup. The real marker is the map being started:
+The credits map loading is the victory marker:
 
 ```
-Host_NewGame on map credits
+---- Host_Changelevel ----
+Map: credits
 ```
 
-or `Spawn Server: credits`. `env_outtro_stats` is the stats crawl, not the victory.
+`Map:` is a changelevel; `Host_NewGame on map credits` is a direct `map` command. Do **not**
+use `Mission credits ver 1 loading...` — every mission file, credits included, is loaded at
+startup.
+
+`env_outtro_stats` is the stats crawl, not the victory. On this test map the standard finale
+never reaches its escape phase, so the escape trigger ends the campaign with a deliberate
+`point_servercommand` `changelevel credits`; a shipping campaign needs a scripted custom
+finale instead.
 
 ## Checklist
 

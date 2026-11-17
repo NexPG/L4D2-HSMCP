@@ -22,7 +22,16 @@ from the game's own files or measured on a real install, not copied from a wiki.
     {
         "coop"
         {
-            "1" { "Map" "my_map_a" "DisplayName" "Chapter One" "Image" "maps/my_map_a" }
+            "1"
+            {
+                "Map" "my_map_a"
+                "DisplayName" "Chapter One"
+                "Image" "maps/my_map_a"
+                "convar"
+                {
+                    "z_spawn_safety_range" "100"
+                }
+            }
             "2" { "Map" "my_map_b" "DisplayName" "Chapter Two" "Image" "maps/my_map_b" }
         }
     }
@@ -156,11 +165,20 @@ uses exactly these:
 - `FinaleEscapeForceSurvivorPositions` — hold them on the vehicle.
 - `env_outtro_stats` `RollStatsCrawl` — the stats crawl.
 
-Firing `FinaleEscapeFinished` does not by itself end the campaign: the standard finale has to
-reach its escape phase first. A run that started the finale and fired the input from the escape
-trigger did **not** load the credits map. `Mission credits ver 1 loading...` is not a victory
-marker — the engine loads every mission file at startup, credits included. The real marker is
-the map load: `Host_NewGame on map credits` or `Spawn Server: credits`.
+Firing `FinaleEscapeFinished` does not by itself end the campaign on this map: the standard
+finale starts and the horde spawns, but it never reaches its escape phase. The test campaign
+ends with a deliberate `point_servercommand` `changelevel credits` from the escape trigger —
+a scripted end for the test harness, not a template.
+
+The victory marker is the credits map loading:
+
+```
+---- Host_Changelevel ----
+Map: credits
+```
+
+`Map:` is what a changelevel prints; `Host_NewGame on map ...` is a direct `map` command.
+`Mission credits ver 1 loading...` is not a marker — every mission file is loaded at startup.
 
 So a minimal completable finale is entity work, not a script: a `trigger_finale` (type 2) whose
 `FinaleStart` enables a `trigger_multiple` after the wave delay, and that trigger's

@@ -20,6 +20,8 @@ export interface CampaignChapter {
   map: string;
   displayName: string | null;
   image: string | null;
+  /** Per-chapter launch convars, from the `convar` block. */
+  convars: Record<string, string>;
   /** The parsed block, so unknown keys survive a rewrite. */
   node: KvBlock;
 }
@@ -87,11 +89,19 @@ export function parseMission(text: string, path: string | null = null): Mission 
           `${path ?? "mission"}: mode "${entry.name}" chapter "${child.name}" has no "Map"`,
         );
       }
+      const convarBlock = firstBlock(child, "convar");
+      const convars: Record<string, string> = {};
+      if (convarBlock) {
+        for (const entry of convarBlock.entries) {
+          if (entry.kind === "pair") convars[entry.key] = entry.value;
+        }
+      }
       chapters.push({
         key: child.name,
         map,
         displayName: value(child, "DisplayName"),
         image: value(child, "Image"),
+        convars,
         node: child,
       });
     }
@@ -154,7 +164,13 @@ export interface CampaignSpec {
   author?: string;
   modes: Array<{
     name: string;
-    chapters: Array<{ map: string; displayName: string; image?: string }>;
+    chapters: Array<{
+      map: string;
+      displayName: string;
+      image?: string;
+      /** Launch convars for this chapter, e.g. z_finale_spawn_mob_safety_range. */
+      convars?: Record<string, string>;
+    }>;
   }>;
 }
 
@@ -184,6 +200,14 @@ export function missionFromSpec(spec: CampaignSpec): Mission {
         pair("DisplayName", chapter.displayName),
       ];
       if (chapter.image) entries.push(pair("Image", chapter.image));
+      if (chapter.convars && Object.keys(chapter.convars).length > 0) {
+        entries.push(
+          block(
+            "convar",
+            Object.entries(chapter.convars).map(([key, valueText]) => pair(key, valueText)),
+          ),
+        );
+      }
       return block(String(i + 1), entries);
     });
     return block(mode.name, chapterBlocks);
@@ -204,6 +228,7 @@ export function missionFromSpec(spec: CampaignSpec): Mission {
         map: chapter.map,
         displayName: chapter.displayName,
         image: chapter.image ?? null,
+        convars: chapter.convars ?? {},
         node: (modeBlocks[i] as KvBlock).entries[j] as KvBlock,
       })),
     })),

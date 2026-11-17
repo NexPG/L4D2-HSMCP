@@ -19,6 +19,7 @@ const CHAPTER = z.object({
   map: z.string(),
   displayName: z.string().nullable(),
   image: z.string().nullable(),
+  convars: z.record(z.string()).optional(),
 });
 
 const MODE = z.object({ name: z.string(), chapters: z.array(CHAPTER) });
@@ -74,7 +75,16 @@ async function loadMission(
 }
 
 function summary(mission: Mission): {
-  modes: Array<{ name: string; chapters: Array<{ key: string; map: string; displayName: string | null; image: string | null }> }>;
+  modes: Array<{
+    name: string;
+    chapters: Array<{
+      key: string;
+      map: string;
+      displayName: string | null;
+      image: string | null;
+      convars: Record<string, string>;
+    }>;
+  }>;
   chapterCount: number;
 } {
   const modes = mission.modes.map((mode) => ({
@@ -84,6 +94,7 @@ function summary(mission: Mission): {
       map: c.map,
       displayName: c.displayName,
       image: c.image,
+      convars: c.convars,
     })),
   }));
   return { modes, chapterCount: modes.reduce((n, m) => n + m.chapters.length, 0) };
@@ -154,6 +165,13 @@ export const writeCampaignTool = defineTool({
                 map: z.string().describe(".bsp name without path or extension."),
                 displayName: z.string().describe("Chapter title or localisation token."),
                 image: z.string().optional().describe('Chapter image, e.g. "maps/c1m1_hotel".'),
+                convars: z
+                  .record(z.string())
+                  .optional()
+                  .describe(
+                    "Per-chapter launch convars, e.g. z_finale_spawn_mob_safety_range for a " +
+                      "compact finale map.",
+                  ),
               }),
             )
             .min(1),
