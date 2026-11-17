@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **84 tools**.
+Last checked against the tool list on 17/11/2026: **85 tools**.
 
 ## The file itself
 
@@ -48,6 +48,7 @@ getting `ENOENT` on the first call.
 | Block tool — stairs | `write_vmf_solid` | Says when the rise exceeds the 18 units a player climbs |
 | Arbitrary convex solid | `write_vmf_solid` (`convex`) | Face by face, for what the primitives do not reach |
 | Selection: move / rotate / scale | `transform_solids` | Texture lock on by default, refused where it cannot be exact |
+| Copy / paste | `clone_solids` | Fresh solid and side ids; materials and alignment copied byte for byte |
 | Flip / mirror | `transform_solids` | |
 | Delete | `delete_solids` | |
 | **Clip tool** | `clip_solids` | Front, back or both. Both must sum to the original volume or the write is refused |

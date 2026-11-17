@@ -2,11 +2,12 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { writeGuarded } from "../fs/write.js";
 import { defineTool } from "../mcp/registry.js";
+import { cloneSolids } from "../vmf/clone.js";
 import { deleteSolids, transformSolids } from "../vmf/modify.js";
 import { matchesSolid } from "../vmf/select.js";
 import type { SolidSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
-import { mirror, rotation, scaling, translation } from "../vmf/transform.js";
+import { IDENTITY, mirror, rotation, scaling, translation } from "../vmf/transform.js";
 import type { Mat34 } from "../vmf/transform.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "./paths.js";
 
@@ -53,6 +54,95 @@ const selectorFrom = (args: {
     : {}),
 });
 
+const TRANSFORM_FIELDS = {
+  move: Vec3.optional().describe("Translate by this, in Hammer units."),
+  rotate: z
+    .object({
+      axis: Vec3.describe("Axis to turn about. Need not be unit length."),
+      degrees: z.number(),
+      pivot: Vec3.optional().describe("Point to turn about. Default the selection's centre."),
+    })
+    .optional()
+    .describe("Multiples of 90 are exact; other angles leave the brush off the grid, as Hammer does."),
+  scale: z
+    .object({
+      factor: Vec3,
+      pivot: Vec3.optional().describe("Default the selection's centre."),
+    })
+    .optional(),
+  mirror: z
+    .object({
+      axis: z.enum(["x", "y", "z"]),
+      pivot: Vec3.optional().describe("Default the selection's centre."),
+    })
+    .optional(),
+  textureLock: z
+    .boolean()
+    .optional()
+    .describe(
+      "Default true: the texture stays put on its face. Refused on a scale that " +
+        "stretches one axis more than another, because no texture axis pair can express " +
+        "that -- pass false to accept the stretch.",
+    ),
+  grid: z
+    .number()
+    .optional()
+    .describe(
+      "Round every corner to this grid afterwards. Default 0, which rounds nothing. " +
+        "Snapping is what makes a face stop being flat, so what it costs is measured and " +
+        "reported as planarityError rather than assumed to be nothing.",
+    ),
+};
+
+interface TransformInput {
+  move?: number[] | undefined;
+  rotate?: { axis: number[]; degrees: number; pivot?: number[] | undefined } | undefined;
+  scale?: { factor: number[]; pivot?: number[] | undefined } | undefined;
+  mirror?: { axis: "x" | "y" | "z"; pivot?: number[] | undefined } | undefined;
+}
+
+/**
+ * The matrix for whichever single transform was asked for, around the selected centre.
+ *
+ * Shared by `transform_solids` and `clone_solids` so the two cannot drift on what a pivot
+ * means. Exactly one of the four is allowed: two in one call hides which one produced the
+ * result, and a caller who wants both can call twice.
+ */
+function matrixFrom(
+  args: TransformInput,
+  centre: () => [number, number, number],
+  allowNone: boolean,
+): Mat34 {
+  const chosen = [args.move, args.rotate, args.scale, args.mirror].filter(
+    (x) => x !== undefined,
+  );
+  if (allowNone && chosen.length === 0) return IDENTITY;
+  if (chosen.length !== 1) {
+    throw new Error(
+      "give exactly one of move, rotate, scale or mirror. Combining them in one call " +
+        "would hide which one produced the result; call twice instead.",
+    );
+  }
+  if (args.move) return translation(args.move as [number, number, number]);
+  if (args.rotate) {
+    return rotation(
+      args.rotate.axis as [number, number, number],
+      args.rotate.degrees,
+      (args.rotate.pivot as [number, number, number] | undefined) ?? centre(),
+    );
+  }
+  if (args.scale) {
+    return scaling(
+      args.scale.factor as [number, number, number],
+      (args.scale.pivot as [number, number, number] | undefined) ?? centre(),
+    );
+  }
+  return mirror(
+    args.mirror!.axis,
+    (args.mirror!.pivot as [number, number, number] | undefined) ?? centre(),
+  );
+}
+
 export const transformSolidsTool = defineTool({
   name: "transform_solids",
   description:
@@ -71,43 +161,7 @@ export const transformSolidsTool = defineTool({
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
     ...SELECTOR,
-    move: Vec3.optional().describe("Translate by this, in Hammer units."),
-    rotate: z
-      .object({
-        axis: Vec3.describe("Axis to turn about. Need not be unit length."),
-        degrees: z.number(),
-        pivot: Vec3.optional().describe("Point to turn about. Default the selection's centre."),
-      })
-      .optional()
-      .describe("Multiples of 90 are exact; other angles leave the brush off the grid, as Hammer does."),
-    scale: z
-      .object({
-        factor: Vec3,
-        pivot: Vec3.optional().describe("Default the selection's centre."),
-      })
-      .optional(),
-    mirror: z
-      .object({
-        axis: z.enum(["x", "y", "z"]),
-        pivot: Vec3.optional().describe("Default the selection's centre."),
-      })
-      .optional(),
-    textureLock: z
-      .boolean()
-      .optional()
-      .describe(
-        "Default true: the texture stays put on its face. Refused on a scale that " +
-          "stretches one axis more than another, because no texture axis pair can express " +
-          "that -- pass false to accept the stretch.",
-      ),
-    grid: z
-      .number()
-      .optional()
-      .describe(
-        "Round every corner to this grid afterwards. Default 0, which rounds nothing. " +
-          "Snapping is what makes a face stop being flat, so what it costs is measured and " +
-          "reported as planarityError rather than assumed to be nothing.",
-      ),
+    ...TRANSFORM_FIELDS,
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -140,19 +194,6 @@ export const transformSolidsTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
 
-    const chosen = [args.move, args.rotate, args.scale, args.mirror].filter(
-      (x) => x !== undefined,
-    );
-    if (chosen.length !== 1) {
-      throw new Error(
-        "give exactly one of move, rotate, scale or mirror. Combining them in one call " +
-          "would hide which one produced the result; call twice instead.",
-      );
-    }
-
-    // The default pivot is the centre of what was selected, which is what a mapper means
-    // by "turn this". Computed from the reader rather than from the caller's own idea of
-    // where the selection is.
     const selector = selectorFrom(args);
     const report = checkVmfSolids(path, before);
     // The whole selector, not half of it. Filtering on ids and owner only meant that a
@@ -166,26 +207,7 @@ export const transformSolidsTool = defineTool({
       return [(mins[0]! + maxs[0]!) / 2, (mins[1]! + maxs[1]!) / 2, (mins[2]! + maxs[2]!) / 2];
     };
 
-    let matrix: Mat34;
-    if (args.move) {
-      matrix = translation(args.move as [number, number, number]);
-    } else if (args.rotate) {
-      matrix = rotation(
-        args.rotate.axis as [number, number, number],
-        args.rotate.degrees,
-        (args.rotate.pivot as [number, number, number] | undefined) ?? centre(),
-      );
-    } else if (args.scale) {
-      matrix = scaling(
-        args.scale.factor as [number, number, number],
-        (args.scale.pivot as [number, number, number] | undefined) ?? centre(),
-      );
-    } else {
-      matrix = mirror(
-        args.mirror!.axis,
-        (args.mirror!.pivot as [number, number, number] | undefined) ?? centre(),
-      );
-    }
+    const matrix = matrixFrom(args, centre, false);
 
     const result = transformSolids(before, selector, matrix, {
       ...(args.textureLock !== undefined ? { textureLock: args.textureLock } : {}),
@@ -348,4 +370,111 @@ export const deleteSolidsTool = defineTool({
   },
 });
 
-export const modifyTools = [transformSolidsTool, deleteSolidsTool];
+export const cloneSolidsTool = defineTool({
+  name: "clone_solids",
+  description:
+    "Copies brushes that are already in a .vmf, giving every copy new solid and side ids " +
+    "and keeping its materials, texture axes and smoothing groups byte for byte. Hammer's " +
+    "Ctrl+C / Ctrl+V, and the missing half of the 3D skybox workflow: the sky camera needs " +
+    "a scaled copy of geometry that must not belong to the playable map. Optionally applies " +
+    "one move, rotation, scale or mirror to the copies. Refuses hidden and displaced brushes, " +
+    "and every copy is checked as a solid before anything is written. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    ...SELECTOR,
+    count: z
+      .number()
+      .int()
+      .min(1)
+      .max(256)
+      .optional()
+      .describe("How many copies of each selected brush. Default 1."),
+    ...TRANSFORM_FIELDS,
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    unchanged: z.boolean(),
+    matched: z.number(),
+    clones: z.array(
+      z.object({ sourceId: z.number(), newId: z.number(), owner: z.string() }),
+    ),
+    solidsBefore: z.number(),
+    solidsAfter: z.number(),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    const selector = selectorFrom(args);
+    const report = checkVmfSolids(path, before);
+    const chosenSolids = report.solids.filter((s) => matchesSolid(s, selector));
+    const centre = (): [number, number, number] => {
+      if (chosenSolids.length === 0) return [0, 0, 0];
+      const mins = [0, 1, 2].map((a) => Math.min(...chosenSolids.map((s) => s.mins[a]!)));
+      const maxs = [0, 1, 2].map((a) => Math.max(...chosenSolids.map((s) => s.maxs[a]!)));
+      return [(mins[0]! + maxs[0]!) / 2, (mins[1]! + maxs[1]!) / 2, (mins[2]! + maxs[2]!) / 2];
+    };
+    const matrix = matrixFrom(args, centre, true);
+
+    const result = cloneSolids(before, selector, args.count ?? 1, matrix, {
+      ...(args.textureLock !== undefined ? { textureLock: args.textureLock } : {}),
+      ...(args.grid !== undefined ? { grid: args.grid } : {}),
+    });
+
+    if (result.clones.length === 0) {
+      return {
+        path,
+        written: false,
+        backupPath: null,
+        unchanged: true,
+        matched: 0,
+        clones: [],
+        solidsBefore: report.solidCount,
+        solidsAfter: report.solidCount,
+        warnings: result.warnings,
+        nextStep: "Nothing matched. Check the selector with read_vmf_solids first.",
+      };
+    }
+
+    const after = checkVmfSolids(path, result.text);
+    if (after.solidCount !== report.solidCount + result.clones.length) {
+      throw new Error(
+        `refusing to write: ${report.solidCount} solids in, ${result.clones.length} copies, ` +
+          `${after.solidCount} out`,
+      );
+    }
+
+    const write = writeGuarded(path, result.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: result.unchanged,
+    });
+
+    return {
+      path,
+      written: write.written,
+      backupPath: write.backupPath,
+      unchanged: result.unchanged,
+      matched: new Set(result.clones.map((c) => c.sourceId)).size,
+      clones: result.clones,
+      solidsBefore: report.solidCount,
+      solidsAfter: after.solidCount,
+      warnings: result.warnings,
+      nextStep:
+        "Copies keep their original owner, so a world brush stays world and a func_detail " +
+        "brush stays detail. For a 3D skybox, scale the copies around the sky_camera origin " +
+        "and seal the skybox area; a copy that overlaps the playable map is just z-fighting.",
+    };
+  },
+});
+
+export const modifyTools = [transformSolidsTool, cloneSolidsTool, deleteSolidsTool];

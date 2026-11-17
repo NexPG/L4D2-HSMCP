@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.37-alpha — 2026-11-17
+
+- **`clone_solids`** (85th tool): Hammer's copy/paste. Copies selected brushes with fresh
+  solid and side ids while keeping materials, texture axes and smoothing groups byte for
+  byte, and can apply one move, rotation, scale or mirror to the copy. Copying plus scaling
+  is the missing half of the 3D skybox workflow; sealing and layout remain manual. Hidden
+  and displaced brushes are refused, `count` cannot be combined with a transform, and every
+  copy is checked as a solid before the write. Verified on the campaign map: 37 solids in,
+  38 out, the copy valid.
+- `transform_solids` and `clone_solids` now share one matrix builder, so a pivot cannot mean
+  two different things in two tools.
+- The parity table covers Copy/Paste; the 3D skybox moves from "copy gap" to "layout gap".
+
 ## 0.0.36-alpha — 2026-11-17
 
 - **`write_weather`** (84th tool): adds rain, snow, ash or a particle variant as a

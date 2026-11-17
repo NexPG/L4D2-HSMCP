@@ -13,22 +13,43 @@ distant buildings, hills or a city skyline that the player can never reach.
 4. The skybox geometry uses sky materials; the playable map is untouched.
 
 ```
-write_sky_camera(path: "my_map.vmf", origin: [0, 0, 0], scale: 16)
+write_sky_camera(path: "my_map.vmf", origin: [0, 0, 10000], scale: 16)
 ```
 
 The tool refuses a second camera and warns when `skyname` is missing.
 
+## Making the copy
+
+`clone_solids` is Hammer's copy/paste, and `transform_solids` scales the copy:
+
+```
+clone_solids(
+  path: "my_map.vmf",
+  within: { mins: [-512, -512, 0], maxs: [512, 512, 256] },
+  count: 1,
+  scale: { factor: [0.0625, 0.0625, 0.0625], pivot: [0, 0, 0] }
+)
+
+transform_solids(
+  path: "my_map.vmf",
+  solidIds: <the ids clone_solids returned>,
+  move: [0, 0, 10000]
+)
+```
+
+The scale is 1/16 around the map origin, then the whole copy moves to the skybox area. Do
+not leave the copy in the playable map: it will z-fight with the original. The copy keeps its
+materials and texture alignment, which is why it is a byte copy rather than a rebuild.
+
+Then seal the skybox area with `write_vmf_solid` and compile. `clone_solids` refuses hidden
+and displaced brushes, and refuses `count` with a transform because every copy would land on
+the same spot.
+
 ## What is still manual
 
-Copying the playable geometry into the skybox and scaling it 1/16 is not a tool yet. The
-existing `transform_solids` can scale brushes, but it does not clone them, so the workflow is:
-
-- build the skybox copy with `write_vmf_solid` (or copy the source in Hammer),
-- scale it around the camera origin,
-- seal it,
-- compile and look up.
-
-The scaled-copy step is the remaining 3D-skybox gap in `hammer-coverage.md`.
+Choosing which geometry is worth copying, laying out the skybox area, sealing it, and
+matching the camera to what the player sees. Those are design decisions, not file edits.
+The remaining layout gap is named in `hammer-coverage.md`.
 
 ## Checking
 
