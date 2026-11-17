@@ -61,21 +61,20 @@ harness**, not a template: a shipping campaign needs a scripted custom finale (`
 
 ## Confirming the win
 
-The credits map loading is the victory marker:
+The credits map loading is the victory marker. The reliable line in the test run was:
 
 ```
 ---- Host_Changelevel ----
-Map: credits
 ```
 
-`Map:` is a changelevel; `Host_NewGame on map credits` is a direct `map` command. Do **not**
-use `Mission credits ver 1 loading...` — every mission file, credits included, is loaded at
-startup.
+`Map: credits` may follow, but `Host_Changelevel` is the line the harness waits for. Do
+**not** use `Mission credits ver 1 loading...` — every mission file, credits included, is
+loaded at startup.
 
-`env_outtro_stats` is the stats crawl, not the victory. On this test map the standard finale
-never reaches its escape phase, so the escape trigger ends the campaign with a deliberate
-`point_servercommand` `changelevel credits`; a shipping campaign needs a scripted custom
-finale instead.
+`env_outtro_stats` is the stats crawl, not the victory. On the test map the custom finale
+reaches its escape phase; the harness ends the campaign with a deliberate
+`point_servercommand` `changelevel credits`. A shipping campaign fires
+`FinaleEscapeFinished` from a rescue vehicle script instead.
 
 ## Checklist
 

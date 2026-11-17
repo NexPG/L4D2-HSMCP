@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.56-alpha — 2026-11-17
+
+- **PANIC and TANK finale stages are verified in game.** The test finale runs
+  PANIC → DELAY → TANK → DELAY → DELAY, then `HSMCP_ESCAPE_STARTED`,
+  `HSMCP_ESCAPE_TOUCHED`, `Host_Changelevel` and the credits map in **137 s**. A final PANIC
+  stage was replaced by DELAY: its commons did not clear and the stage hung. The TANK stage
+  transitioned, but bots killing a tank is not proven.
+- `verify-finale.mjs` now waits for `Host_Changelevel`, the line that actually appeared;
+  `Map: credits` did not. The old wait caused a false timeout after the campaign had already
+  reached credits.
+
 ## 0.0.55-alpha — 2026-11-17
 
 - **`run_map_test` can install the BSP too.** `bsp` and `nav` are now both optional: the tool

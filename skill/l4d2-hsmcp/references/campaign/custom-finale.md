@@ -69,14 +69,20 @@ escape_trigger.OnStartTouch -> outtro.RollStatsCrawl
 
 ## The test campaign's finale
 
-`hsmcp_test_m2_finale.nut`: two DELAY stages of 5 s each (a shipping finale would use PANIC and
-TANK). It logs `[HSMCP] finale stage N type T` so an automated run can prove the stages ran,
-and the escape point opens on `FinaleEscapeStarted`.
+`hsmcp_test_m2_finale.nut`: five stages — PANIC, DELAY 5, TANK, DELAY 5, DELAY 10. It
+logs `[HSMCP] finale stage N type T` so an automated run can prove the stages ran, and the
+escape point opens on `FinaleEscapeStarted`.
+
+Verified in game: stages 1 (PANIC), 2 (DELAY), 3 (TANK), 4 (DELAY), 5 (DELAY), then
+`HSMCP_ESCAPE_STARTED`, `HSMCP_ESCAPE_TOUCHED`, `Host_Changelevel` and the credits map,
+in 137 s. The TANK stage transitioned; the test does not prove the bots killed a tank,
+because the stage clock moved on. A final PANIC stage was replaced by DELAY: its commons did
+not clear, and the stage hung instead of reaching the escape.
 
 `FinaleEscapeFinished` alone did not end the campaign even after the escape phase; the test
-harness adds a `point_servercommand changelevel credits` on the escape trigger, and the credits
-map load is the deterministic end. A shipping campaign fires `FinaleEscapeFinished` from a
-rescue vehicle script instead.
+harness adds a `point_servercommand changelevel credits` on the escape trigger, and the
+credits map load (`Host_Changelevel`) is the deterministic end. A shipping campaign fires
+`FinaleEscapeFinished` from a rescue vehicle script instead.
 
 ## Rules
 
