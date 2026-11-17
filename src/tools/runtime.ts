@@ -10,8 +10,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { parseNavDump } from "../bsp/navdump.js";
+import { basename, dirname, join } from "node:path";import { parseNavDump } from "../bsp/navdump.js";
 import {
   flowWarnings,
   gameExecutable,
@@ -23,6 +22,7 @@ import {
   waitForLog,
 } from "../game/launch.js";
 import { defineTool } from "../mcp/registry.js";
+import { captureWindow } from "../screenshot/window.js";
 import { resolveInput } from "./paths.js";
 
 const VEC3 = z.array(z.number()).length(3);
@@ -222,7 +222,10 @@ const runMapTest = defineTool({
     "closes the game. This is the automated half of a play test: 'did the next chapter " +
     "load', 'did the finale script run', 'did the map finish loading at all'. The map must " +
     "already be installed in `left4dead2/maps` or a mounted add-on VPK. Returns the match, " +
-    "the elapsed time and the log tail; the full log stays at `<game>/left4dead2/console.log`.",
+    "the elapsed time and the log tail; the full log stays at `<game>/left4dead2/console.log`. " +
+    "With `screenshot: true`, captures the game window as a real image block after the " +
+    "marker; use `method: 'screen'` (the default) for a 3D game canvas. Match a marker that " +
+    "fires after loading, such as `Loading: [0-9]`, before asking for a picture.",
   realm: "local",
   guarded: true,
   inputSchema: {
@@ -232,6 +235,32 @@ const runMapTest = defineTool({
       .describe("Regular expression to find in the console log, e.g. a map name or a banner."),
     timeoutSeconds: z.number().int().min(10).max(600).default(120),
     extraArgs: z.array(z.string()).default([]).describe("Extra game command-line arguments."),
+    screenshot: z
+      .boolean()
+      .optional()
+      .describe(
+        "Capture the game window after the marker matches and return it as a real image " +
+          "block. Use it for weather, skybox, lighting or a finale that only the eye can judge.",
+      ),
+    out: z
+      .string()
+      .optional()
+      .describe("Screenshot path. Defaults to <stateDir>/screenshots/<map>-<time>.png."),
+    waitAfterMatchMs: z
+      .number()
+      .int()
+      .min(0)
+      .max(15_000)
+      .optional()
+      .describe("How long to let the frame settle before capture. Default 1200 ms."),
+    method: z
+      .enum(["window", "screen"])
+      .optional()
+      .describe(
+        "'screen' (default) brings the game forward and copies the desktop, which is what " +
+          "captures a 3D game canvas; 'window' uses PrintWindow and is usually black for " +
+          "the game renderer.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -239,6 +268,10 @@ const runMapTest = defineTool({
     matched: z.boolean(),
     reason: z.enum(["matched", "exited", "timeout"]),
     elapsedSeconds: z.number(),
+    processId: z.number().nullable(),
+    screenshotPath: z.string().nullable(),
+    screenshotWidth: z.number().nullable(),
+    screenshotHeight: z.number().nullable(),
     logTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
@@ -263,6 +296,10 @@ const runMapTest = defineTool({
       args.map,
     ]);
     let reason: "matched" | "exited" | "timeout" = "timeout";
+    let screenshotPath: string | null = null;
+    let screenshotWidth: number | null = null;
+    let screenshotHeight: number | null = null;
+    let image: { data: string; mimeType: string } | null = null;
     try {
       reason = await waitForLog(
         consoleLog,
@@ -270,6 +307,27 @@ const runMapTest = defineTool({
         args.timeoutSeconds * 1000,
         () => handle.child.exitCode === null,
       );
+      if (args.screenshot && reason === "matched") {
+        const pid = handle.child.pid;
+        if (pid === undefined) throw new Error("the game process has no pid to capture");
+        await sleep(args.waitAfterMatchMs ?? 1200);
+        const out = args.out
+          ? resolveInput(args.out, ctx.config)
+          : join(
+              ctx.config.stateDir,
+              "screenshots",
+              `${args.map}-${new Date().toISOString().replace(/[:.]/g, "-")}.png`,
+            );
+        mkdirSync(dirname(out), { recursive: true });
+        const captured = await captureWindow(pid, out, 3000, args.method ?? "screen");
+        screenshotPath = captured.path;
+        screenshotWidth = captured.width;
+        screenshotHeight = captured.height;
+        image = {
+          data: readFileSync(captured.path).toString("base64"),
+          mimeType: "image/png",
+        };
+      }
     } finally {
       handle.stop();
       await sleep(1000);
@@ -281,11 +339,16 @@ const runMapTest = defineTool({
       matched: reason === "matched",
       reason,
       elapsedSeconds: Math.round((Date.now() - started) / 1000),
+      processId: handle.child.pid ?? null,
+      screenshotPath,
+      screenshotWidth,
+      screenshotHeight,
       logTail: log
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean)
         .slice(-25),
+      ...(image ? { _image: image } : {}),
     };
   },
 });

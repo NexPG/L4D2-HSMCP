@@ -15,18 +15,17 @@ that worked.
 
 ## The screenshot
 
-`run_hlmv(screenshot: true)` and `capture_window` return a real MCP image block, not
-base64 in a text field.
+`run_hlmv(screenshot: true)`, `run_map_test(screenshot: true)` and `capture_window` return a
+real MCP image block, not base64 in a text field.
 
 | Method | What it does | When |
 |---|---|---|
-| `window` (default) | `PrintWindow`, captures the window even when another window is in front | UI, title, error dialogs, tabs |
-| `screen` | brings the window to the front and copies the desktop region | when a 3D canvas is blank under `PrintWindow` |
+| `window` (default for HLMV/capture) | `PrintWindow`, captures the window even when another window is in front | UI, title, error dialogs, tabs |
+| `screen` (default for `run_map_test`) | brings the window to the front and copies the desktop region | a 3D canvas: the game, HLMV's viewport |
 
-A 3D canvas can be black on a headless or non-interactive desktop. That is an environment
-limit, not proof that the model is missing: the title and the Model/Sequence tabs still
-tell you what loaded. `read_model_info` is the authoritative machine-readable answer for
-bounds, sequences and materials.
+The game renderer is 3D: `window` gives a black canvas, `screen` is the method that worked.
+For a map, match a marker that fires after loading (`Loading: [0-9]`) and allow
+`waitAfterMatchMs` for the frame to settle.
 
 ## Error dialogs
 

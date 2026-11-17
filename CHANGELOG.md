@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.52-alpha — 2026-11-17
+
+- **`run_map_test` can show the agent the running game.** With `screenshot: true` it waits
+  for the marker, lets the frame settle, captures the game window and returns a real MCP
+  image block. The default method is `screen` because the game canvas is 3D; `window`
+  (`PrintWindow`) produces a black canvas for the game renderer.
+- Verified live: `run_map_test` matched `Host_NewGame on map hsmcp_test_m1`, captured a
+  2560×1440 frame after 2.5 s and returned a 2.7 MB PNG image block showing the campaign
+  loading screen. The game process was stopped afterwards.
+- The screenshot workflow is documented with the marker advice: match a post-load line such
+  as `Loading: [0-9]`, not the first map-name line, before asking for a picture.
+
 ## 0.0.51-alpha — 2026-11-17
 
 - **The agent can see a GUI.** `run_hlmv` now optionally captures the HLMV window and
