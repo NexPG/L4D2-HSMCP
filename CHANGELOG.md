@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.60-alpha — 2026-11-17
+
+- **Scavenge is verified.** The mission lists `hsmcp_test_m1` under `scavenge`, and the map
+  has 16 `weapon_scavenge_item_spawn` points. `run_map_test` with
+  `extraArgs: ["+mp_gamemode", "scavenge"]` loaded it in 32 s: the HUD showed
+  `SCORE 0 / 16`, the `01:30.00` round timer, `SECONDS UNTIL ROUND BEGINS`, and a gas can in
+  the frame. A full two-team round was not played.
+- New reference `mechanics/scavenge.md`: mission block, the 16 gas-can points, the launch
+  argument, HUD evidence, and the leak pitfall when a spawn sits outside the hull.
+
 ## 0.0.59-alpha — 2026-11-17
 
 - **Survival mode is verified.** The mission file now lists `hsmcp_test_m1` under a

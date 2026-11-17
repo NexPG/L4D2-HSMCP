@@ -55,6 +55,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mechanics/crescendo-and-panic.md` | triggered hordes, nav Battlefield/Battlestation, testing |
 | `references/mechanics/tanks-and-witches.md` | `z_spawn`, cheats, the log lines that prove a tank or witch exists |
 | `references/mechanics/survival.md` | mission mode, `+mp_gamemode survival`, HUD evidence |
+| `references/mechanics/scavenge.md` | gas-can spawns, `+mp_gamemode scavenge`, HUD evidence |
 | `references/mechanics/weather.md` | `func_precipitation`, `env_fog_controller`, and what a static check can prove |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
