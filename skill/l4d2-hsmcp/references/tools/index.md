@@ -1,6 +1,6 @@
 # Tool catalogue
 
-83 tools. This page groups them by the job you are doing; each tool's own description is the
+84 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -89,6 +89,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_overlay` | put a decal on a brush face by side id, origin and size |
 | `write_instance` | place a `func_instance` from an instance VMF, with origin, angles and fixup |
 | `write_sky_camera` | place the single `sky_camera` a 3D skybox needs |
+| `write_weather` | add rain/snow/ash as `func_precipitation` and distance fog as `env_fog_controller` |
 
 ## Displacements
 

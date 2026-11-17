@@ -25,14 +25,13 @@ when it has all four:
 | Tanks, witches | Director, nav, spawn rules | not yet |
 | Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | class list read from the FGD (37 classes); placement documented, play test not yet |
 | Crescendo / panic events | trigger areas, Director, outputs | entity names and wiring verified from the FGD; play test pending |
-| Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | not yet |
 | Scavenge finale | gas cans, `type 4`, scavenge items | not yet |
 | Survival mode | mission mode, nav, timers | not yet |
 | Versus mode | mission mode, nav, infected spawns | mission parsing only |
 | Mutations / ScriptedMode | VScript mode framework | not yet |
-| Weather, fog, sky | env_fog_controller, skybox, map properties | not yet |
+| Weather, fog, sky | `func_precipitation`, `env_fog_controller`, `skyname` | tool + static checks (`write_weather`); in-game look pending |
 | Displacements | displacement tools | tools exist, not L4D2-tested |
-| Instances | read_vmf collapse, no writer | read-only |
+| Instances | `write_instance`, `read_vmf` with `collapseInstances` | tool (fixture-tested); in-game visual pending |
 | Model/material authoring | mdl/vmt/vtf pipeline | partial (`run_vtf_convert`) |
 | Non-campaign add-ons | other addon types | not yet |
 

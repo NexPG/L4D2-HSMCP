@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.36-alpha — 2026-11-17
+
+- **`write_weather`** (84th tool): adds rain, snow, ash or a particle variant as a
+  `func_precipitation` volume, and distance fog as an `env_fog_controller`. The precipitation
+  types come from the stock FGD, the brush is checked by `read_vmf_solids`'s reader, and a
+  second fog controller or an inverted fog range is refused. Static checks only: whether the
+  weather looks right is an eye question, and the page says so.
+- **The coverage tables no longer understate what exists.** `arch`, `sphere`, `torus`,
+  `cone` and `stairs` were already in `write_vmf_solid`; the skill still called arch/torus a
+  gap. The instances row now mentions `write_instance`, and a duplicate weapons row is gone.
+- **The Hammer parity page stopped naming machines this project does not use.** It said the
+  compilers run under Wine, cubemaps need `gmod-mcp`, and the server never talks to a live
+  engine — all false for a Windows-only L4D2 toolkit that already runs the game.
+
 ## 0.0.35-alpha — 2026-11-17
 
 - **Conventional Commits are a written project rule.** `CONTRIBUTING.md` and diary rule 11

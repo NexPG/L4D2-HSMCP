@@ -19,14 +19,13 @@ no way to do it yet.
 
 | Feature | Tool | Status |
 |---|---|---|
-| Brush create: box, wedge, cylinder, convex | `write_vmf_solid` | verified |
+| Brush create: box, wedge, cylinder, convex, cone, stairs, arch, sphere, torus | `write_vmf_solid` | verified for box/wedge/cylinder/convex; the compound shapes are checked by `read_vmf_solids` and each reports its brush count |
 | Clip | `clip_solids` | tool |
 | Hollow | `hollow_solids` | tool |
 | Vertex edit | `move_vertices` | tool |
 | Move/rotate/scale/mirror | `transform_solids` | tool |
 | Delete | `delete_solids` | verified |
 | Carve | several clips | tool |
-| Arch / torus | — | **gap** |
 | Fitting (door casing, counter, skirting) | `write_vmf_fitting` | tool |
 
 ## Displacements
@@ -110,7 +109,6 @@ Ordered by how often a mapper needs it:
 
 1. **3D skybox** — `sky_camera` and the scaled copy of the geometry.
 2. **Cubemap building** — the engine step, not just the HDR conversion.
-3. **Arch/torus geometry** — the two primitive tools `write_vmf_solid` lacks.
-4. **Model authoring** — HLMV/studiomdl, a separate pipeline.
+3. **Model authoring** — HLMV/studiomdl, a separate pipeline.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

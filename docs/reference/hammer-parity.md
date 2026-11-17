@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **83 tools**.
+Last checked against the tool list on 17/11/2026: **84 tools**.
 
 ## The file itself
 
@@ -118,7 +118,7 @@ getting `ENOENT` on the first call.
 
 | Hammer | Here | Notes |
 |---|---|---|
-| Run map | `run_compile` | vbsp, vvis, vrad under Wine. Hammer++ toolchain too |
+| Run map | `run_compile` | vbsp, vvis, vrad, stock or the Hammer++/Tools++ chain; the compilers are Windows-native here |
 | Read the compile log | `read_compile_log` | Turns each message into what it actually means |
 | Find the leak | `read_leak` | A position and the entity that caused it, from a compile that already ran |
 | Find the leak **before** compiling | `read_vmf_leak` | Hammer cannot. vbsp is the only thing that answers this today, and it costs a toolchain and minutes |
@@ -127,7 +127,7 @@ getting `ENOENT` on the first call.
 | Budgets | `read_map_report` | A verdict per criterion rather than another number |
 | Walking the map to check it | `read_vmf_trace`, `read_vmf_visibility` | Hammer has no answer at all: you compile and go and look. These trace the `.vmf` itself |
 | Rename a finished map | `run_bsp_rename` | Hammer cannot: the map is compiled by then. Renaming the file alone orphans everything packed under `maps/<name>/`, silently. Drives ficool2's `bsp_rename`, a separate download |
-| Build cubemaps | *the running engine* | `buildcubemaps` **captures** one from inside a running map, and that still needs the game — `gmod-mcp`. **Making** one from six images does not: `run_tga2skybox` writes the LDR and HDR cubemap `.vtf` offline |
+| Build cubemaps | *the running engine* | `buildcubemaps` **captures** one from inside a running map; this toolkit launches and watches the game (`run_map_test`) but does not yet send console commands, so the engine half stays manual. **Making** one from six images does not: `run_tga2skybox` writes the LDR and HDR cubemap `.vtf` offline |
 | Generate a nav mesh | *the running engine* | Same. `read_nav` says whether one still matches its map |
 
 ## What is not here, and will not be
@@ -138,7 +138,7 @@ getting `ENOENT` on the first call.
 | Judging whether a map looks right | Aesthetic judgement does not have a number. A tool that produced one would be producing a false one |
 | Carve | Covered by `clip_solids`; see above |
 | VIS/RAD preview in the editor | The running engine |
-| Anything that needs the game running | `gmod-mcp`, deliberately: this server never talks to a live engine and holds no lock |
+| Driving the game console interactively | `run_map_test` waits for a log pattern; it does not type commands into a live session |
 
 ## The honest summary
 
@@ -176,6 +176,7 @@ map and looking, or by not happening at all.
 | `write_overlay` | the overlay tool, driven by a side id and a point instead of a drag |
 | `write_instance` | the instance tool, without the GUI or the file dialog |
 | `write_sky_camera` | the sky_camera entity, with the one-per-map and skyname checks |
+| `write_weather` | `func_precipitation` and `env_fog_controller` with FGD-checked choices and a checked brush |
 | `read_map_extents` | nothing |
 | `read_map_geometry` | nothing — how full each lump is against vbsp's ceiling |
 | `read_prop_survey` | nothing |

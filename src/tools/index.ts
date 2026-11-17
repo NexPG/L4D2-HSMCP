@@ -40,6 +40,7 @@ import { vmfTools } from "./vmf.js";
 import { vmfEditTools } from "./vmfedit.js";
 import { vscriptTools } from "./vscript.js";
 import { wiringTools } from "./wiring.js";
+import { weatherTools } from "./weather.js";
 
 export const allTools: AnyToolDef[] = [
   ...healthTools,
@@ -83,4 +84,5 @@ export const allTools: AnyToolDef[] = [
   ...overlayTools,
   ...instanceTools,
   ...skyboxTools,
+  ...weatherTools,
 ];
