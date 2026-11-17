@@ -45,6 +45,7 @@ before promising anything.
 | `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |
 | `references/mechanics/coverage.md` | what of L4D2 is covered, and what is not yet |
 | `references/mechanics/weapons-and-items.md` | the spawn classes, how to place one, and the saferoom rules |
+| `references/mechanics/crescendo-and-panic.md` | triggered hordes, nav Battlefield/Battlestation, testing |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
 

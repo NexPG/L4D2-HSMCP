@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.29-alpha — 2026-11-17
+
+- The skill gains `references/mechanics/crescendo-and-panic.md`: the `func_button` /
+  `trigger_once` → `director ForcePanicEvent` wiring, `OnPanicEventFinished`, and the nav
+  Battlefield (256) / Battlestation (32) split, with the automated test recipe. Entity names
+  are read from the installed FGD; the play test is still pending.
+- A project rule now says the agent's documentation is part of the product: every error,
+  command, self-test recipe, asset and mechanic needs a page, and a question the agent had to
+  ask is a documentation gap to close the same day.
+
 ## 0.0.28-alpha — 2026-11-17
 
 - The skill gains `references/mechanics/weapons-and-items.md`: all 37 `weapon_*` spawn classes

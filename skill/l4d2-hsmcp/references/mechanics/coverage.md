@@ -24,7 +24,7 @@ when it has all four:
 | Special infected | Director spawn set, nav | not yet |
 | Tanks, witches | Director, nav, spawn rules | not yet |
 | Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | class list read from the FGD (37 classes); placement documented, play test not yet |
-| Crescendo / panic events | trigger areas, Director, outputs | not yet |
+| Crescendo / panic events | trigger areas, Director, outputs | entity names and wiring verified from the FGD; play test pending |
 | Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | not yet |
 | Scavenge finale | gas cans, `type 4`, scavenge items | not yet |
 | Survival mode | mission mode, nav, timers | not yet |
