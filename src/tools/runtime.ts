@@ -230,6 +230,13 @@ const runMapTest = defineTool({
   guarded: true,
   inputSchema: {
     map: z.string().describe("Map name without a path or .bsp, for example hsmcp_test_m1."),
+    nav: z
+      .string()
+      .optional()
+      .describe(
+        "Optional .nav to install beside the map before launch. A loose BSP without its nav " +
+          "loads with 'Map is unplayable!'; this copies the nav and restores any previous one.",
+      ),
     waitFor: z
       .string()
       .describe("Regular expression to find in the console log, e.g. a map name or a banner."),
@@ -272,6 +279,7 @@ const runMapTest = defineTool({
     screenshotPath: z.string().nullable(),
     screenshotWidth: z.number().nullable(),
     screenshotHeight: z.number().nullable(),
+    navInstalled: z.boolean(),
     logTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
@@ -283,6 +291,22 @@ const runMapTest = defineTool({
     // Truncate rather than delete: a delete that silently fails leaves yesterday's
     // "Mission credits" in the file and a wait-for match returns immediately.
     writeFileSync(consoleLog, "", "utf8");
+
+    const targetNav = join(gameDir, "maps", `${args.map}.nav`);
+    const navBackup = `${targetNav}.hsmcp-backup`;
+    let navInstalled = false;
+    let hadNav = false;
+    if (args.nav) {
+      const sourceNav = resolveInput(args.nav, ctx.config);
+      if (!existsSync(sourceNav)) throw new Error(`${sourceNav} does not exist`);
+      mkdirSync(dirname(targetNav), { recursive: true });
+      if (existsSync(targetNav)) {
+        copyFileSync(targetNav, navBackup);
+        hadNav = true;
+      }
+      copyFileSync(sourceNav, targetNav);
+      navInstalled = true;
+    }
 
     const started = Date.now();
     const handle = launchGame(exe, [
@@ -331,6 +355,10 @@ const runMapTest = defineTool({
     } finally {
       handle.stop();
       await sleep(1000);
+      if (navInstalled) {
+        rmSync(targetNav, { force: true });
+        if (hadNav && existsSync(navBackup)) renameSync(navBackup, targetNav);
+      }
     }
 
     const log = readLog(consoleLog);
@@ -343,6 +371,7 @@ const runMapTest = defineTool({
       screenshotPath,
       screenshotWidth,
       screenshotHeight,
+      navInstalled,
       logTail: log
         .split(/\r?\n/)
         .map((line) => line.trim())

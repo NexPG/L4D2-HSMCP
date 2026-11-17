@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.54-alpha — 2026-11-17
+
+- **`run_map_test` can install the nav with the map.** A loose BSP copied for a test does
+  not bring its `.nav`, and the game opens on `NAV ERRORS — Map is unplayable!`. The new
+  `nav` argument copies the mesh beside the map and restores the previous one in a
+  `finally`; the result reports `navInstalled`.
+- Found in the weather test: the first screenshot of the arena was an unplayable map with
+  the nav error screen. Copying the nav fixed it. The finding is in
+  `troubleshooting/nav-stale.md`.
+- Weather entities were added and compiled, but the closed brick arena cannot prove rain or
+  fog visually; that check needs an open-sky map and remains pending.
+
 ## 0.0.53-alpha — 2026-11-17
 
 - **`write_skybox_copy`** (97th tool): the copy/scale/move half of a 3D skybox. It copies

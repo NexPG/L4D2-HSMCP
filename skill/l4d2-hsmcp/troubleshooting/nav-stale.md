@@ -24,6 +24,15 @@ After regenerating, `read_nav` must say `fresh` for **every** map in the campaig
   archive's map instead of the new one. Move the VPK aside first.
 - A `.nav` from a previous campaign with the same map name is still in `left4dead2/maps/`.
 
+## "Nav Errors — Map is unplayable!"
+
+That screen means the map has no usable `.nav` at all, not merely a stale one. A loose
+`left4dead2/maps/<map>.bsp` copied for a test does not bring its nav with it.
+
+Use `run_map_test({ map, nav: "path/to/<map>.nav", ... })`: it copies the nav beside the
+map, launches, and restores the previous nav in a `finally`. Copying only the BSP is the
+common mistake.
+
 ## Check the pair that ships
 
 ```
