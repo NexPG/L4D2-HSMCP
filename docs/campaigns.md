@@ -101,11 +101,27 @@ Three more things are required, and none of them is optional:
 - an `info_changelevel` brush that covers the safe room floor.
 
 `func_nav_attribute_region` marks those attributes during generation. Its `spawnflags` are the
-attribute bits: 128 Mission Start, 2048 Checkpoint, 64 Finale, 8192 No mobs, 524288 No threat.
+attribute bits: 2 Empty, 32 Battlestation, 64 Finale, 128 Mission Start, 256 Battlefield,
+2048 Checkpoint, 8192 No mobs, 32768 Rescue vehicle, 65536 Rescue closet, 524288 No threat.
 `nav_generate` writes `<map>_nav.txt` beside the mesh, and that dump is the oracle: attributes
 appear as "Terror Spawn Attribute Flags" (`0x800` is CHECKPOINT, `0x40` FINALE), and areas on
 the computed flow path get `0x20000000` in "Base Attribute Flags". No flow path means the
 Director found no goal.
+
+**FINALE is not BATTLEFIELD.** A finale needs FINALE applied liberally over the arena and the
+space the horde spawns in. BATTLEFIELD is a crescendo arena, and infected spawning stops while
+survivors stand inside it — marking the finale corridor Battlefield leaves the Director with an
+empty spawn set (`MOB SPAWN ERROR: ANYWHERE = Empty spawn area set`) and the finale never
+advances. `info_zombie_spawn` points must also sit on a nav area, not between areas.
+
+On a compact map the Director can still refuse every area because they are closer than its
+safety range. The convars are `z_spawn_safety_range`, `z_finale_spawn_safety_range` and
+`z_finale_spawn_mob_safety_range`; a mission chapter can set them in its own `convar` block.
+Lowering them helps, but space is the durable fix.
+
+Bots do not follow the player as their first rule: they path to the goal area (CHECKPOINT or
+FINALE). If the player falls behind, they run ahead and wait there. A map with no goal area is
+why bots appear to run around on their own.
 
 Bots do not follow the player as their first rule: they path to the goal area (CHECKPOINT or
 FINALE). If the player falls behind, they run ahead and wait there. A map with no goal area is

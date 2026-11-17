@@ -40,11 +40,16 @@ const BASE_ATTRIBUTES: Array<[number, string]> = [
 ];
 
 const TERROR_ATTRIBUTES: Array<[number, string]> = [
+  [0x2, "empty"],
+  [0x20, "battlestation"],
   [0x40, "finale"],
   [0x80, "player-start"],
+  [0x100, "battlefield"],
   [0x800, "checkpoint"],
   [0x1000, "not-clearable"],
   [0x2000, "no-mobs"],
+  [0x8000, "rescue-vehicle"],
+  [0x10000, "rescue-closet"],
 ];
 
 function decode(flags: number, table: Array<[number, string]>): string[] {

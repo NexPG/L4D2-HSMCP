@@ -43,7 +43,7 @@ West Connection Count: 0
 Up Ladder Count: 0
 Down Ladder Count: 0
 Base Attribute Flags: 0x00000000
-Terror Spawn Attribute Flags: 0x00000000
+Terror Spawn Attribute Flags: 0x00000100
 `;
 
 describe("parseNavDump", () => {
@@ -55,7 +55,7 @@ describe("parseNavDump", () => {
     expect(r.areas[0]!.attributes).toContain("checkpoint");
     expect(r.areas[0]!.attributes).toContain("escape-route");
     expect(r.areas[1]!.attributes).toEqual(["escape-route", "finale"]);
-    expect(r.areas[2]!.attributes).toEqual([]);
+    expect(r.areas[2]!.attributes).toEqual(["battlefield"]);
     expect(r.summary).toMatchObject({
       checkpoint: 1,
       finale: 1,

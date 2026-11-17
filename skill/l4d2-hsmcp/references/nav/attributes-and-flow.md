@@ -10,13 +10,47 @@ its volume during `nav_generate`. Its `spawnflags` value is the set of attribute
 
 | Value | Attribute | Meaning |
 |---|---|---|
-| 64 | FINALE | the area the finale happens in |
+| 2 | Empty | no wandering zombies; use around the start, outside the checkpoint |
+| 32 | Battlestation | the spot a crescendo defends |
+| 64 | FINALE | the finale area; apply it **liberally**, the horde spawns here |
 | 128 | Mission Start | the spawn area of the first map |
-| 2048 | Checkpoint | a safe room |
+| 256 | Battlefield | a crescendo arena; **spawning halts while survivors are inside** |
+| 2048 | Checkpoint | a safe room; no zombies spawn here |
 | 8192 | No mobs | do not spawn common infected here |
+| 32768 | Rescue vehicle | where the rescue vehicle stands |
+| 65536 | Rescue closet | a respawn closet |
 | 524288 | No threat | the Director should not build threat here |
 
 Combine by adding: the first map's spawn is `128 + 2048 = 2176`; the exit safe room is `2048`.
+
+**FINALE vs BATTLEFIELD is the trap.** A finale map needs FINALE over a large area with
+spawn space; marking the same area BATTLEFIELD stops infected spawning while survivors stand
+in it. In a test map that is the whole play space, so nothing spawns and the finale never
+advances (`MOB SPAWN ERROR: ANYWHERE = Empty spawn area set`).
+
+## Small maps and the safety range
+
+The Director refuses spawn areas closer than a safety range. On a compact map every area is
+closer, so the console spams `MOB SPAWN ERROR: ANYWHERE = Empty spawn area set` and no horde
+appears. The convars are `z_spawn_safety_range`, `z_finale_spawn_safety_range` and
+`z_finale_spawn_mob_safety_range`; a mission chapter can carry them in its own `convar` block:
+
+```
+"1"
+{
+    "Map" "my_map"
+    "convar"
+    {
+        "z_spawn_safety_range"          "100"
+        "z_finale_spawn_safety_range"   "100"
+        "z_finale_spawn_mob_safety_range" "100"
+    }
+}
+```
+
+Lowering them cut the errors on the test map from ~1800 to ~60 in the first seconds, but a map
+this small still starves the Director later. The durable fix is space: a real arena with
+hidden spawn areas, not a corridor.
 
 The attributes land in the nav file and are visible in the dump. The dump calls them "Terror
 Spawn Attribute Flags":
@@ -36,7 +70,7 @@ check of what was asked for.
 |---|---|
 | First chapter | PLAYER_START **and** CHECKPOINT at the spawn; CHECKPOINT in the exit safe room |
 | Middle chapter | CHECKPOINT at the arrival safe room; CHECKPOINT in the exit safe room |
-| Finale chapter | CHECKPOINT at the arrival safe room; FINALE where the finale runs |
+| Finale chapter | CHECKPOINT at the arrival safe room; FINALE **liberally** over the arena and its spawn space |
 
 Bots path to the goal area (CHECKPOINT or FINALE). That is why bots run ahead and wait: they
 are going to the goal, not following the player. A map with no goal area is why they wander.

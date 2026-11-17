@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.24-alpha — 2026-11-17
+
+- The nav-attribute trap is documented and fixed in the test map: FINALE must be applied
+  liberally, while BATTLEFIELD stops infected spawning for as long as survivors stand in it.
+  The finale corridor was both, so the Director had an empty spawn set. Battlefield is gone;
+  FINALE now covers the whole eastern half.
+- `info_zombie_spawn` points moved from between nav areas to two area centres.
+- The remaining spawn blocker is the Director's safety range: on a ~700-unit map every area is
+  closer than `z_spawn_safety_range` / `z_finale_spawn_safety_range` /
+  `z_finale_spawn_mob_safety_range`. Setting them to 100 dropped `MOB SPAWN ERROR` from ~1800
+  to ~60 in the first seconds and removed special-spawn failures, but a map this small still
+  starves the Director later. The convars and the mission `convar` block are in the docs.
+- `read_nav_dump` decodes the full spawn-attribute set (empty, battlestation, battlefield,
+  rescue vehicle, rescue closet, no-mobs) instead of only checkpoint/finale.
+- Victory is still not automated: the finale starts and the escape trigger fires, but the
+  campaign does not reach the credits map. The user's observation stands — a stats crawl or
+  credits means the survivors escaped; the correct marker is `Host_NewGame on map credits`,
+  not `Mission credits`.
+
 ## 0.0.23-alpha — 2026-11-17
 
 - **Correction: the finale victory is not verified.** 0.0.20 claimed it from
