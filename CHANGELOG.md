@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.27-alpha — 2026-11-17
+
+- **The finale is a real custom finale now.** `trigger_finale` type 2 loads
+  `scripts/vscripts/<mapname>_finale.nut` automatically; the script declares an
+  `A_CustomFinale_StageCount` list (PANIC/DELAY/TANK/SCRIPTED) and receives
+  `OnBeginCustomFinaleStage`. After the last stage the trigger fires `FinaleEscapeStarted`,
+  which opens the escape point.
+- The test campaign's script runs two DELAY stages (a shipping finale would use PANIC and
+  TANK), and the verification passes: `[HSMCP] finale stage 1/2` → `HSMCP_ESCAPE_STARTED` →
+  escape touch → `Map: credits` at 70 s.
+- Type 0 is gone from the test map: it starts but has no stage list and never reaches the
+  escape phase.
+- `FinaleEscapeFinished` alone still does not end the campaign even after the escape phase, so
+  the test harness adds `changelevel credits` on the escape trigger. A shipping campaign would
+  fire the input from a rescue vehicle script.
+- The skill gains `references/campaign/custom-finale.md` with the stage table, the callback,
+  the escape wiring and the type-0 warning.
+
 ## 0.0.26-alpha — 2026-11-17
 
 - The skill gains `references/testing/live-debugging.md`: how an agent runs the game itself

@@ -11,8 +11,8 @@ when it has all four:
 | Mechanic | What it needs | Status |
 |---|---|---|
 | Campaign, chapter transition, saferoom | info_changelevel, checkpoint door, CHECKPOINT, landmark pair | **verified** (`verify.ps1`, PASS) |
-| Finale: start, escape, victory | trigger_finale, FINALE nav, arrival changelevel, FinaleEscapeFinished | **verified** with a scripted `changelevel credits` (`Map: credits`); Director-driven escape phase **not yet** |
-| Finale: waves, tanks, specials | spawn areas, Director state machine | horde spawns on the arena (0 `MOB SPAWN ERROR`); state machine does not reach escape |
+| Finale: start, escape, victory | trigger_finale, FINALE nav, arrival changelevel, FinaleEscapeFinished | **verified** with a custom type-2 stage list: stages → `FinaleEscapeStarted` → escape → `Map: credits` (70 s) |
+| Finale: waves, tanks, specials | spawn areas, Director state machine | custom finale PANIC/TANK stages are implemented; horde spawns on the arena. Stage completion depends on the bots killing the wave/tank, which the test run does not prove |
 | Director flow, goal area | nav CHECKPOINT/FINALE, info_director | **verified** (dump + bots) |
 | Nav generation and attributes | run_nav_generate, func_nav_attribute_region, read_nav_dump | **verified** |
 | Assets: textures, models, sizes, skyboxes, particles | read_game_content (details), read_model_info | **verified** |

@@ -33,6 +33,7 @@ before promising anything.
 | `references/campaign/mission-file.md` | writing or debugging a mission file |
 | `references/campaign/safe-room-and-transition.md` | building a chapter exit |
 | `references/campaign/finale.md` | building or debugging the last chapter |
+| `references/campaign/custom-finale.md` | type 2 stages, `[map]_finale.nut`, the escape phase |
 | `references/campaign/addon-and-deployment.md` | staging, packing, deploying |
 | `references/nav/generation.md` | generating a nav mesh |
 | `references/nav/attributes-and-flow.md` | marking CHECKPOINT/FINALE, or bots ignore the map |

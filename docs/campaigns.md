@@ -189,6 +189,15 @@ A finale map also needs the **disabled** `info_changelevel` that marks where the
 (`spawnflags 2`, `map` = the previous chapter, same landmark). Every stock finale has one.
 Without it the Director logs `No exit checkpoint could be found` and never starts the finale.
 
+A **type 2** finale loads `scripts/vscripts/<mapname>_finale.nut` automatically and runs the
+stage list in its `DirectorOptions` (PANIC/DELAY/TANK/SCRIPTED); after the last stage it fires
+`FinaleEscapeStarted`. See the skill's custom-finale page for the table. A type 0 finale starts
+but has no stage list and never reaches the escape phase.
+
+`FinaleEscapeFinished` alone does not end the campaign on the test map even after
+`FinaleEscapeStarted`; the test harness ends with a `point_servercommand changelevel credits`,
+and the credits map load (`Map: credits`) is the verified end.
+
 ## VScript in an add-on
 
 An add-on VPK can carry VScript, and the engine loads it:
