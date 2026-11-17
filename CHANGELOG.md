@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.31-alpha — 2026-11-17
+
+- **`write_overlay`** (81st tool): puts an `info_overlay` decal on a brush face from a side id,
+  a point on the face, a material and a size. The format is read from Valve's own
+  `sdk_content/mapsrc/styleguide_urban.vmf`; the tool computes the basis normal/U/V, checks
+  that the point is on the plane, and adds the entity. Tested on the campaign VMF: `side 3`,
+  `decals/blood1`, 64×64 → normal `0 0 1`, four corners, `lint 0`.
+- Hammer's overlay tool is no longer a gap in `hammer-coverage.md`; an in-game look at the
+  decal is still pending. The skill's Hammer-tab map gained the overlay row.
+
 ## 0.0.30-alpha — 2026-11-17
 
 - The project goal is recorded in the charter and the diary: the agent must have **all** of

@@ -83,7 +83,7 @@ no way to do it yet.
 | Particle browser | `read_game_content(kind: "particle")` | verified |
 | Sound browser | `read_game_content(kind: "sound")` | verified |
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
-| Overlays / decals | — | **gap** |
+| Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
 | 3D skybox | — | **gap** (2D sky is `skyname`) |
 | Instances | `read_vmf` `collapseInstances` only | **gap** (no writer) |
 | Prefabs | — | **gap** |
@@ -108,11 +108,10 @@ no way to do it yet.
 
 Ordered by how often a mapper needs it:
 
-1. **Overlays/decals** — road markings, blood, signage.
-2. **Instances and prefabs** — writing them, not just reading.
-3. **3D skybox** — `sky_camera` and the scaled copy of the geometry.
-4. **Cubemap building** — the engine step, not just the HDR conversion.
-5. **Arch/torus geometry** — the two primitive tools `write_vmf_solid` lacks.
-6. **Model authoring** — HLMV/studiomdl, a separate pipeline.
+1. **Instances and prefabs** — writing them, not just reading.
+2. **3D skybox** — `sky_camera` and the scaled copy of the geometry.
+3. **Cubemap building** — the engine step, not just the HDR conversion.
+4. **Arch/torus geometry** — the two primitive tools `write_vmf_solid` lacks.
+5. **Model authoring** — HLMV/studiomdl, a separate pipeline.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

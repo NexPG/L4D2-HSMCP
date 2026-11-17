@@ -10,6 +10,7 @@ This page is the map from one to the other, and the recipes for browsing a city'
 | Particle Browser | `read_game_content(kind: "particle", pattern: "*")` |
 | Entity Report / Entity Tool | `read_entity_report` shows what the map has; `read_fgd_class` with no classname lists classes by prefix, and with a classname returns every keyvalue, input and output |
 | Face Edit Sheet | `set_face_material`, `align_faces`, `set_smoothing_groups`, `set_lightmap_scale` |
+| Overlay tool (decals) | `write_overlay(sideId, origin, material, width, height)` — the target face's id from `read_vmf_surfaces` |
 | Visgroups / Groups | `read_map_organisation`, `set_visgroup`, `group_solids` |
 | Cordon | `set_cordon` |
 | Displacements | `read_displacements`, `write_displacement`, `sew_displacements`, `sculpt_displacement`, `paint_displacement` |

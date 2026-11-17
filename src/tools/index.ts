@@ -20,6 +20,7 @@ import { measureTools2 } from "./measurespace.js";
 import { modifyTools } from "./modify.js";
 import { optimiseTools } from "./optimise.js";
 import { organiseTools } from "./organise.js";
+import { overlayTools } from "./overlay.js";
 import { pakfileTools } from "./pakfile.js";
 import { planTools } from "./plan.js";
 import { renameTools } from "./rename.js";
@@ -77,4 +78,5 @@ export const allTools: AnyToolDef[] = [
   ...vtfTools,
   ...runtimeTools,
   ...vscriptTools,
+  ...overlayTools,
 ];

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **80 tools**.
+Last checked against the tool list on 17/11/2026: **81 tools**.
 
 ## The file itself
 
@@ -173,6 +173,7 @@ map and looking, or by not happening at all.
 | `run_nav_generate` | the engine's nav generator, driven without a person at the console |
 | `run_map_test` | nothing: loading a map and watching the console is a manual act |
 | `write_vscript` | nothing: Hammer cannot author or attach a Squirrel script |
+| `write_overlay` | the overlay tool, driven by a side id and a point instead of a drag |
 | `read_map_extents` | nothing |
 | `read_map_geometry` | nothing — how full each lump is against vbsp's ceiling |
 | `read_prop_survey` | nothing |

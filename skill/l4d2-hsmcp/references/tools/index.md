@@ -1,6 +1,6 @@
 # Tool catalogue
 
-80 tools. This page groups them by the job you are doing; each tool's own description is the
+81 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -86,6 +86,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_portal` | areaportal, areaportal window, occluder |
 | `set_map_properties` | worldspawn keys: sky, detail sprites, prop fade |
 | `write_vscript` | write a `.nut`, catch Lua habits, attach it with `logic_script` |
+| `write_overlay` | put a decal on a brush face by side id, origin and size |
 
 ## Displacements
 
