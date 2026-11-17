@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.45-alpha — 2026-11-17
+
+- **README rewritten for readers, not maintainers.** It now answers what the project is,
+  what an agent can do with it, what is required, how to install it, a typical campaign
+  workflow, where the documentation is and what state the project is in. The internal
+  architecture diagram, design-rule list and root-file table were removed; the root-file
+  table moved to `CONTRIBUTING.md`, where contributor material belongs. The status is stated
+  as alpha only, without a list of what is proven or finished.
+- No functional changes.
+
 ## 0.0.44-alpha — 2026-11-17
 
 - **The repository root is now a documented, tested set.** README lists the job of every

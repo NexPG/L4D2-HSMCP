@@ -22,8 +22,8 @@ const SKILL = join(ROOT, "skill");
  *
  * The root had accrued a pile of one-off files once already. A whitelist is blunt on
  * purpose: adding a root file is a decision, and the decision is this table plus the one in
- * README.md. Generated and machine-specific files are ignored by `.gitignore`, not listed
- * here because they are not tracked.
+ * CONTRIBUTING.md. Generated and machine-specific files are ignored by `.gitignore`, not
+ * listed here because they are not tracked.
  */
 const ROOT_FILES = new Set([
   ".gitattributes",

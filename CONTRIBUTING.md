@@ -95,6 +95,25 @@ from. A canned option that is the only way to do something is a defect, however 
 - **Review question for every new tool:** "How would the agent do this without this tool?" If the
   answer is "it could not", write the primitive first. Then the helper is a shortcut, not a cage.
 
+## Repository layout
+
+The root holds only files with a build, licence or documentation job. Everything else lives
+in a directory.
+
+| File | Job |
+|---|---|
+| `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` | package, locked dependencies, pnpm build approvals |
+| `tsconfig.json`, `tsconfig.test.json`, `vitest.config.ts` | build config, test typecheck, shared test setup |
+| `config.example.json` | template for the local `.hammer-mcp/config.json` |
+| `opencode.json` | registers the repository skill with OpenCode |
+| `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md` | front page, rules, version history |
+| `LICENSE`, `LICENSE-MIT`, `NOTICE` | GPL-3.0-only, upstream MIT notice, provenance |
+| `.gitattributes`, `.gitignore` | line endings and local/generated files |
+
+`.mcp.json`, `config.json`, `dist/`, `node_modules/`, `campaigns/`, `.develop-diary/` and
+`.hammer-mcp/` are local and gitignored. A new tracked file at the root fails
+`test/support/structure.test.ts` until it is added to that allowlist and this table.
+
 ## Before committing
 
 ```bash
