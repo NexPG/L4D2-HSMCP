@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.41-alpha — 2026-11-17
+
+- **`subdivide_displacements`** (88th tool): Hammer's Subdivide. Raises a displacement's
+  power from 2 or 3 to 3 or 4, samples the old grid bilinearly so the silhouette survives,
+  rounds alpha, renormalises normals and keeps non-walkable triangle tags non-walkable. The
+  warning names the seam that may crack if its neighbour was not subdivided, and the result
+  is read back to prove power and vertex count. With this, `.map` export is the only Hammer
+  operation still marked "not covered".
+- The diary now states how proof works: file-format changes are proved by static readers and
+  tests, but visuals and runtime behaviour are only `verified` after a game run. A batch of
+  game checks is pending for weather, clone/skybox, exact alignment, mission extras and
+  subdivision; none of them is called verified yet.
+
 ## 0.0.40-alpha — 2026-11-17
 
 - **`copy_face_alignment`** (87th tool): Hammer's copy alignment. Copies one face's exact

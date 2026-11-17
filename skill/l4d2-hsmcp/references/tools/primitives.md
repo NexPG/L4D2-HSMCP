@@ -31,7 +31,7 @@ of that path, but deleting it must not remove the capability.
 | `write_instance` | `edit_vmf` with `func_instance` |
 | `set_map_properties` | `set_worldspawn` |
 | `group_solids`, `set_visgroup`, `set_cordon` | `edit_vmf` plus the VMF `editor` blocks |
-| `write_displacement`, `sculpt_displacement`, `paint_displacement` | Direct `dispinfo` editing, which is its own format |
+| `write_displacement`, `subdivide_displacements`, `sculpt_displacement`, `paint_displacement` | Direct `dispinfo` editing, which is its own format |
 | `write_campaign` | The mission KeyValues format; `keyvalues` at mission, mode and chapter level covers anything the spec does not model |
 
 ## Rules for new tools

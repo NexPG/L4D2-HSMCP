@@ -180,6 +180,279 @@ function indentOf(source: string, block: KvBlock): string {
 export { children, get, parse, readDisplacements };
 export type { Displacement, DispVertex };
 
+export interface DisplacementSelector {
+  solidIds?: number[];
+  sideIds?: number[];
+  material?: string;
+  /** Required to mean every displacement in the map. */
+  all?: boolean;
+}
+
+export interface SubdivideResult {
+  text: string;
+  matched: number;
+  subdivided: Array<{
+    solidId: number;
+    sideIndex: number;
+    fromPower: number;
+    toPower: number;
+    vertices: number;
+  }>;
+  warnings: string[];
+  unchanged: boolean;
+}
+
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+/**
+ * Hammer's Subdivide: raises a displacement's power while keeping its shape.
+ *
+ * The new grid samples the old one bilinearly at the points it adds, so a power-2 hillside
+ * becomes a power-3 one with the same silhouette and four times the vertices to sculpt.
+ * `alpha` is rounded because it is a byte; normals are interpolated and renormalised.
+ * Triangle tags are carried by nearest old quad, so a non-walkable patch stays non-walkable.
+ *
+ * Subdividing one side of a seam changes the vertex density on that side and not the
+ * neighbour's, which can open a crack; the warning says so, and `sew_displacements` is the
+ * next call. The tool is an operation, not a preset: any selected displacement, any higher
+ * power.
+ */
+export function subdivideDisplacements(
+  source: string,
+  selector: DisplacementSelector,
+  power: number,
+): SubdivideResult {
+  if (power !== 3 && power !== 4) {
+    throw new VmfDispWriteError(`subdivide target must be power 3 or 4, not ${power}`);
+  }
+  if (
+    selector.all !== true &&
+    !selector.solidIds &&
+    !selector.sideIds &&
+    !selector.material
+  ) {
+    throw new VmfDispWriteError(
+      "refusing an empty selector: it would subdivide every displacement in the map. " +
+        "Name solidIds, sideIds or a material, or pass all:true.",
+    );
+  }
+
+  const report = readDisplacements(source);
+  const wanted = report.displacements.filter((d) => {
+    if (selector.solidIds && !selector.solidIds.includes(d.solidId)) return false;
+    if (selector.sideIds && (d.sideId === null || !selector.sideIds.includes(d.sideId))) {
+      return false;
+    }
+    if (
+      selector.material &&
+      !d.material.toLowerCase().includes(selector.material.toLowerCase())
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  if (wanted.length === 0) {
+    return {
+      text: source,
+      matched: 0,
+      subdivided: [],
+      warnings: ["nothing matched the selector"],
+      unchanged: true,
+    };
+  }
+
+  const nodes = parse(source);
+  const roots = nodes.filter((n): n is KvBlock => n.kind === "block");
+  const solidBlocks = new Map<number, KvBlock>();
+  const collect = (list: readonly KvBlock[]): void => {
+    for (const block of list) {
+      for (const solid of children(block, "solid")) {
+        const id = get(solid, "id");
+        if (id !== undefined && /^\d+$/.test(id)) solidBlocks.set(Number(id), solid);
+      }
+      for (const hidden of children(block, "hidden")) collect([hidden]);
+    }
+  };
+  collect(roots);
+
+  const splices: Splice[] = [];
+  const subdivided: SubdivideResult["subdivided"] = [];
+  const warnings: string[] = [];
+
+  for (const d of wanted) {
+    if (d.power >= power) {
+      throw new VmfDispWriteError(
+        `the displacement on solid ${d.solidId} side ${d.sideIndex} is already power ` +
+          `${d.power}; subdivide only increases it`,
+      );
+    }
+    const solid = solidBlocks.get(d.solidId);
+    if (!solid) throw new VmfDispWriteError(`no solid with id ${d.solidId}`);
+    const sideBlocks = children(solid, "side");
+    const sideBlock = sideBlocks[d.sideIndex];
+    if (!sideBlock) {
+      throw new VmfDispWriteError(
+        `solid ${d.solidId} has no side ${d.sideIndex}; the reader and writer disagree`,
+      );
+    }
+    const disp = children(sideBlock, "dispinfo")[0];
+    if (!disp) {
+      throw new VmfDispWriteError(
+        `solid ${d.solidId} side ${d.sideIndex} is displaced according to the reader but has ` +
+          `no dispinfo block`,
+      );
+    }
+
+    const size = 2 ** power + 1;
+    const oldSize = d.size;
+    const oldQuads = 2 ** d.power;
+    const factor = 2 ** (power - d.power);
+
+    const oldTags: number[][] = [];
+    const tagBlock = children(disp, "triangle_tags")[0];
+    for (let y = 0; y < oldQuads; y += 1) {
+      const raw = tagBlock ? get(tagBlock, `row${y}`) : undefined;
+      oldTags.push(raw ? raw.trim().split(/\s+/).map(Number) : []);
+    }
+
+    const distances: number[][] = [];
+    const alphas: number[][] = [];
+    const normals: Vec3[][] = [];
+    const offsets: Vec3[][] = [];
+    for (let y = 0; y < size; y += 1) {
+      const rowD: number[] = [];
+      const rowA: number[] = [];
+      const rowN: Vec3[] = [];
+      const rowO: Vec3[] = [];
+      for (let x = 0; x < size; x += 1) {
+        const u = (x / (size - 1)) * (oldSize - 1);
+        const v = (y / (size - 1)) * (oldSize - 1);
+        const x0 = Math.floor(u);
+        const y0 = Math.floor(v);
+        const x1 = Math.min(oldSize - 1, x0 + 1);
+        const y1 = Math.min(oldSize - 1, y0 + 1);
+        const tx = u - x0;
+        const ty = v - y0;
+        const at = (xx: number, yy: number): DispVertex =>
+          d.vertices[yy * oldSize + xx]!;
+
+        const sample = (pick: (vertex: DispVertex) => number): number =>
+          lerp(
+            lerp(pick(at(x0, y0)), pick(at(x1, y0)), tx),
+            lerp(pick(at(x0, y1)), pick(at(x1, y1)), tx),
+            ty,
+          );
+
+        rowD.push(sample((vertex) => vertex.distance));
+        rowA.push(Math.round(sample((vertex) => vertex.alpha)));
+        const n: Vec3 = [
+          sample((vertex) => vertex.normal[0]),
+          sample((vertex) => vertex.normal[1]),
+          sample((vertex) => vertex.normal[2]),
+        ];
+        const nl = Math.hypot(n[0], n[1], n[2]);
+        rowN.push(nl < 1e-9 ? [0, 0, 1] : [n[0] / nl, n[1] / nl, n[2] / nl]);
+        rowO.push([
+          sample((vertex) => vertex.offset[0]),
+          sample((vertex) => vertex.offset[1]),
+          sample((vertex) => vertex.offset[2]),
+        ]);
+      }
+      distances.push(rowD);
+      alphas.push(rowA);
+      normals.push(rowN);
+      offsets.push(rowO);
+    }
+
+    const tags: number[][] = [];
+    for (let y = 0; y < 2 ** power; y += 1) {
+      const row: number[] = [];
+      for (let x = 0; x < 2 ** power; x += 1) {
+        const ox = Math.min(oldQuads - 1, Math.floor(x / factor));
+        const oy = Math.min(oldQuads - 1, Math.floor(y / factor));
+        row.push(oldTags[oy]?.[ox] ?? 9);
+      }
+      tags.push(row);
+    }
+
+    const indent = indentOf(source, disp);
+    const text = gridText(d, power, distances, alphas, normals, offsets, tags, indent);
+    const nameAt = source.lastIndexOf("dispinfo", disp.start);
+    const start = source.lastIndexOf("\n", nameAt - 1) + 1;
+    let end = disp.end;
+    while (end < source.length && (source[end] === " " || source[end] === "\t")) end += 1;
+    if (source[end] === "\r") end += 1;
+    if (source[end] === "\n") end += 1;
+    splices.push({ start, end, text });
+    subdivided.push({
+      solidId: d.solidId,
+      sideIndex: d.sideIndex,
+      fromPower: d.power,
+      toPower: power,
+      vertices: size * size,
+    });
+  }
+
+  if (wanted.some((d) => d.findings.length > 0)) {
+    warnings.push("the source displacement already had reader findings; fix those first if they matter");
+  }
+  warnings.push(
+    "subdividing one side of a seam changes the vertex density on that side only. " +
+      "Subdivide the neighbour too, or run sew_displacements, before trusting the join.",
+  );
+
+  const text = applySplices(source, splices);
+  const after = readDisplacements(text);
+  for (const s of subdivided) {
+    const got = after.displacements.find(
+      (d) => d.solidId === s.solidId && d.sideIndex === s.sideIndex,
+    );
+    if (!got || got.power !== s.toPower || got.size * got.size !== s.vertices) {
+      throw new VmfDispWriteError(
+        `refusing to write: solid ${s.solidId} side ${s.sideIndex} did not read back as ` +
+          `power ${s.toPower} with ${s.vertices} vertices`,
+      );
+    }
+  }
+
+  return { text, matched: wanted.length, subdivided, warnings, unchanged: text === source };
+}
+
+/** The replacement `dispinfo` text, from explicit grids. */
+function gridText(
+  d: Displacement,
+  power: number,
+  distances: number[][],
+  alphas: number[][],
+  normals: Vec3[][],
+  offsets: Vec3[][],
+  tags: number[][],
+  indent: string,
+): string {
+  const size = 2 ** power + 1;
+  const inner = `${indent}\t`;
+  const tagRows = tags
+    .map((row, y) => `${inner}\t"row${y}" "${row.join(" ")}"`)
+    .join("\n");
+  return (
+    `${indent}dispinfo\n${indent}{\n` +
+    `${inner}"power" "${power}"\n` +
+    `${inner}"startposition" "[${d.startPosition.map(fmt).join(" ")}]"\n` +
+    `${inner}"flags" "${d.flags}"\n` +
+    `${inner}"elevation" "${fmt(d.elevation)}"\n` +
+    `${inner}"subdiv" "0"\n` +
+    rowBlock("normals", size, inner, (x, y) => [...normals[y]![x]!]) +
+    rowBlock("distances", size, inner, (x, y) => [distances[y]![x]!]) +
+    rowBlock("offsets", size, inner, (x, y) => [...offsets[y]![x]!]) +
+    rowBlock("offset_normals", size, inner, (x, y) => [...normals[y]![x]!]) +
+    rowBlock("alphas", size, inner, (x, y) => [alphas[y]![x]!]) +
+    `${inner}triangle_tags\n${inner}{\n${tagRows}\n${inner}}\n` +
+    `${inner}allowed_verts\n${inner}{\n${inner}\t"10" "-1 -1 -1 -1 -1 -1 -1 -1 -1 -1"\n${inner}}\n` +
+    `${indent}}\n`
+  );
+}
+
 export interface SewResult {
   text: string;
   /** Vertex pairs that were pulled together. */

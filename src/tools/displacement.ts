@@ -7,6 +7,7 @@ import {
   paintDisplacements,
   sculptDisplacements,
   sewDisplacements,
+  subdivideDisplacements,
   writeDisplacements,
 } from "../vmf/dispwrite.js";
 import type { FaceSelector } from "../vmf/select.js";
@@ -501,9 +502,112 @@ export const paintDisplacementTool = defineTool({
   },
 });
 
+export const subdivideDisplacementsTool = defineTool({
+  name: "subdivide_displacements",
+  description:
+    "Hammer's Subdivide: raises a displacement's power from 2 or 3 to 3 or 4 while keeping " +
+    "its shape. The new grid samples the old one bilinearly, so the silhouette is preserved " +
+    "and there are four times as many vertices to sculpt; alpha is rounded and normals are " +
+    "renormalised, and a non-walkable triangle tag stays non-walkable. Warns that a seam " +
+    "whose neighbour was not subdivided can crack, and reads the result back to prove the " +
+    "power and vertex count. Selects by solid id, side id or material; an empty selector is " +
+    "refused unless all:true. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    power: z.number().int().min(3).max(4).describe("The new power: 3 or 4."),
+    solidIds: z.array(z.number()).optional().describe("Only displacements on these solids."),
+    sideIds: z
+      .array(z.number())
+      .optional()
+      .describe("Only these side ids, for one exact face."),
+    material: z
+      .string()
+      .optional()
+      .describe("Only displacements carrying this material. Substring, case-insensitive."),
+    all: z
+      .boolean()
+      .optional()
+      .describe("Required to subdivide every displacement in the map."),
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    unchanged: z.boolean(),
+    matched: z.number(),
+    subdivided: z.array(
+      z.object({
+        solidId: z.number(),
+        sideIndex: z.number(),
+        fromPower: z.number(),
+        toPower: z.number(),
+        vertices: z.number(),
+      }),
+    ),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    const result = subdivideDisplacements(
+      before,
+      {
+        ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
+        ...(args.sideIds !== undefined ? { sideIds: args.sideIds } : {}),
+        ...(args.material !== undefined ? { material: args.material } : {}),
+        ...(args.all !== undefined ? { all: args.all } : {}),
+      },
+      args.power,
+    );
+
+    const b = checkVmfSolids(path, before);
+    const a = checkVmfSolids(path, result.text);
+    if (a.solidCount !== b.solidCount) {
+      throw new Error("refusing to write: subdividing a displacement changed the brush count");
+    }
+    for (const x of b.solids) {
+      if (x.id === null) continue;
+      const y = a.solids.find((s) => s.id === x.id);
+      if (!y || y.volume !== x.volume) {
+        throw new Error(
+          `refusing to write: solid ${x.id} changed shape during a displacement edit. ` +
+            `Only the dispinfo block may change.`,
+        );
+      }
+    }
+
+    const write = writeGuarded(path, result.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: result.unchanged,
+    });
+    return {
+      path,
+      written: write.written,
+      backupPath: write.backupPath,
+      unchanged: result.unchanged,
+      matched: result.matched,
+      subdivided: result.subdivided,
+      warnings: result.warnings,
+      nextStep:
+        "Compile with lighting and look at the terrain: the silhouette should be the same, " +
+        "with more vertices to sculpt. If the displacement shares a seam with one that kept " +
+        "its old power, run sew_displacements or subdivide the neighbour too.",
+    };
+  },
+});
+
 export const displacementTools = [
   readDisplacementsTool,
   writeDisplacementTool,
+  subdivideDisplacementsTool,
   sewDisplacementsTool,
   sculptDisplacementTool,
   paintDisplacementTool,

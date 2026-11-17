@@ -32,7 +32,8 @@ no way to do it yet.
 
 | Feature | Tool | Status |
 |---|---|---|
-| Create / subdivide | `write_displacement` | tool |
+| Create | `write_displacement` | tool |
+| Subdivide (raise power) | `subdivide_displacements` | tool |
 | Sew | `sew_displacements` | tool |
 | Sculpt (flatten, raise, slope, noise) | `sculpt_displacement` | tool |
 | Paint blend | `paint_displacement` | tool |

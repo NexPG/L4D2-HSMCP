@@ -1,6 +1,6 @@
 # Tool catalogue
 
-87 tools. This page groups them by the job you are doing; each tool's own description is the
+88 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -96,8 +96,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 
 ## Displacements
 
-`read_displacements`, `write_displacement`, `sew_displacements`, `sculpt_displacement`,
-`paint_displacement`.
+`read_displacements`, `write_displacement`, `subdivide_displacements`, `sew_displacements`,
+`sculpt_displacement`, `paint_displacement`.
 
 ## Look at it
 
