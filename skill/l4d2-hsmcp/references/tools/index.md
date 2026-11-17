@@ -1,6 +1,6 @@
 # Tool catalogue
 
-94 tools. This page groups them by the job you are doing; each tool's own description is the
+95 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -112,6 +112,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_text_file` | read UTF-8 source text (QC, SMD, VMT, mission) with a byte cap and line window |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |
+| `run_hlmv` | launch HLMV on one model for a person; no screenshot, use `read_model_info` for data |
 | `export_vmf_map` | write a `.vmf` as Valve `.map` 220, with planes, materials and texture axes |
 
 ## Compile and ship

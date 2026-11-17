@@ -15,6 +15,7 @@ import { exportMapTools } from "./exportmap.js";
 import { faceTools } from "./face.js";
 import { gameTools } from "./games.js";
 import { healthTools } from "./health.js";
+import { hlmvTools } from "./hlmv.js";
 import { hollowTools } from "./hollow.js";
 import { instanceTools } from "./instance.js";
 import { lightmapTools } from "./lightmap.js";
@@ -50,6 +51,7 @@ import { worldspawnTools } from "./worldspawn.js";
 
 export const allTools: AnyToolDef[] = [
   ...healthTools,
+  ...hlmvTools,
   ...gameTools,
   ...campaignTools,
   ...addonTools,

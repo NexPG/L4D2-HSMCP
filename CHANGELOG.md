@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.50-alpha — 2026-11-17
+
+- **`run_hlmv`** (95th tool): launches the game's HLMV on one compiled model, after resolving
+  it against the game's `models/` tree and refusing a missing file. It returns the process id
+  immediately; HLMV is a GUI, so there is no screenshot and no machine-readable result.
+  `read_model_info` remains the answer for bounds, sequences and materials.
+- Verified live: the sample model compiled, HLMV opened on it (`processId` returned), and the
+  test model directory was removed after the process was closed. Model preview is no longer
+  a gap; only 3D-skybox layout remains in the skill's limitation list.
+
 ## 0.0.49-alpha — 2026-11-17
 
 - **`export_vmf_map`** (94th tool): exports a `.vmf` to Valve's `.map` format 220. Every
