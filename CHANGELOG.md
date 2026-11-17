@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.72-alpha — 2026-11-17
+
+- **New troubleshooting page for mapping edits.** `troubleshooting/mapping-edits.md` covers
+  a prefab pasted in the wrong place or invisible, a skewed texture, a moved brush that
+  Hammer++ still draws at the old position, an overlay lost to a clip, and a brush entity
+  that did not move. Each has symptom, cause, check and fix, with the tool that answers it.
+- The stale capability list in `SKILL.md` is corrected: nav generation and model compilation
+  are tools, and the unsupported list now names two-team rounds, a full Survival wave, the
+  headless HLMV canvas and the genuinely manual design work.
+
 ## 0.0.71-alpha — 2026-11-17
 
 - **Hammer++'s `vertices_plus` stays in step with geometry edits.** `transform_solids` and
