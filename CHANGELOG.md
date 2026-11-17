@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.28-alpha — 2026-11-17
+
+- The skill gains `references/mechanics/weapons-and-items.md`: all 37 `weapon_*` spawn classes
+  read from the installed FGD, grouped by tier and use, plus the placement rules — spawn on a
+  nav area, not inside the floor, and do not give `Must Exist` to safe-room items because it
+  duplicates them after a transition.
+- The mechanics table records the class list as verified and the placement as documented but
+  not yet play-tested.
+
 ## 0.0.27-alpha — 2026-11-17
 
 - **The finale is a real custom finale now.** `trigger_finale` type 2 loads
