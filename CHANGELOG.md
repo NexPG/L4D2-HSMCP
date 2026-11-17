@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.34-alpha — 2026-11-17
+
+- **CI runs on the machine the project targets.** The workflow moved from `ubuntu-latest`
+  to `windows-latest` and from Node 20/22 to 22/24, and the pass-floor check is a `pwsh`
+  step instead of `bash`. It now tests the platform the toolkit actually drives.
+- **The suite no longer needs the Python sidecar to check VMF writes.** The instance and
+  skybox tests assert the written VMF text directly, so a bare runner can prove the tools
+  without a sidecar it does not have. This was the Ubuntu failure.
+- **The layout rules are enforced by tests.** `test/support/structure.test.ts` fails the
+  build on a loose `.test.ts` at the test root, an unlisted or empty test directory, a flat
+  file in `docs/`, a `docs/` directory without an index, or a broken relative link in the
+  README, `docs/` or the skill.
+
 ## 0.0.33-alpha — 2026-11-17
 
 - **`write_sky_camera`** (83rd tool): places the single `sky_camera` a 3D skybox needs, with

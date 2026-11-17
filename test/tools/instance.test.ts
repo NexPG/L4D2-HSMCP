@@ -1,10 +1,9 @@
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/mcp/registry.js";
 import { inspectInstance, writeInstance } from "../../src/tools/instance.js";
-import { readVmf } from "../../src/tools/vmf.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -57,16 +56,10 @@ describe("write_instance", () => {
     expect(out.file).toBe("small.vmf");
     expect(out.warnings).toEqual([]);
 
-    const read = (await readVmf.handler(
-      { path: target, limit: 500, collapseInstances: false },
-      ctx,
-    )) as {
-      entities: Array<{ classname: string; keyvalues: Record<string, string> }>;
-    };
-    const placed = read.entities.find((e) => e.classname === "func_instance");
-    expect(placed).toBeDefined();
-    expect(placed!.keyvalues["file"]).toBe("small.vmf");
-    expect(placed!.keyvalues["fixup_style"]).toBe("1");
+    const read = readFileSync(target, "utf8");
+    expect(read).toContain('"classname" "func_instance"');
+    expect(read).toContain('"file" "small.vmf"');
+    expect(read).toContain('"fixup_style" "1"');
   });
 
   it("refuses a missing instance file", async () => {

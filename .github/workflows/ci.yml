@@ -7,11 +7,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # The toolkit only targets Windows: it drives the Source SDK compilers, srcds and a
+    # real L4D2 install. A Linux runner would test a machine this project cannot run on.
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        node: ["20", "22"]
+        # Node 20 is past end-of-life; the project declares node >=20, and these are the
+        # versions a contributor in 2026 actually has.
+        node: ["22", "24"]
 
     steps:
       - uses: actions/checkout@v4
@@ -29,22 +33,24 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
 
-      # The runner has no Source game, no wine and no Python sidecar, so most of this
-      # suite skips. That is the point: it proves the package builds and its pure logic
-      # holds on a bare machine, which is the machine a new contributor has.
+      # This runner has no L4D2 install, no Source SDK and no Python sidecar, so every
+      # suite that needs them skips itself and prints why. What is left is the pure logic,
+      # and it has to hold on a bare Windows machine — the machine a new contributor has.
       - run: pnpm test --reporter=json --outputFile=vitest-report.json
 
       # A green run with zero tests executed looks exactly like a green run that proved
       # something. If a skip guard is ever widened too far, this is what notices.
       #
-      # Measured on a machine with no game, no wine and no sidecar (11/08/2026):
-      # 172 passed. The floor sits below that so ordinary churn does not trip it, and far
-      # above zero so a collapse does.
+      # The floor sits far below the ~1000 tests a machine with the game runs, and far
+      # above zero so a collapse does. It is deliberately low enough that a bare runner
+      # passing on pure logic does not trip it.
       - name: Refuse a green run that tested nothing
+        shell: pwsh
         run: |
-          passed=$(node -e "process.stdout.write(String(require('./vitest-report.json').numPassedTests))")
-          echo "passed on a bare runner: $passed"
-          if [ "$passed" -lt 100 ]; then
-            echo "::error::only $passed tests actually ran; a skip guard is too wide"
+          $report = Get-Content vitest-report.json -Raw | ConvertFrom-Json
+          $passed = $report.numPassedTests
+          Write-Host "passed on a bare runner: $passed"
+          if ($passed -lt 100) {
+            Write-Host "::error::only $passed tests actually ran; a skip guard is too wide"
             exit 1
-          fi
+          }

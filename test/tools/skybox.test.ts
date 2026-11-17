@@ -1,10 +1,9 @@
-import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/mcp/registry.js";
 import { writeSkyCamera } from "../../src/tools/skybox.js";
-import { readVmf } from "../../src/tools/vmf.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -22,12 +21,9 @@ describe("write_sky_camera", () => {
     )) as { entityId: number | null; warnings: string[] };
 
     expect(out.entityId).not.toBeNull();
-    const read = (await readVmf.handler(
-      { path, limit: 500, collapseInstances: false },
-      ctx,
-    )) as { entities: Array<{ classname: string; keyvalues: Record<string, string> }> };
-    const camera = read.entities.find((e) => e.classname === "sky_camera");
-    expect(camera?.keyvalues["scale"]).toBe("16");
+    const read = readFileSync(path, "utf8");
+    expect(read).toContain('"classname" "sky_camera"');
+    expect(read).toContain('"scale" "16"');
   });
 
   it("refuses a second sky_camera", async () => {

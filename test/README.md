@@ -13,7 +13,7 @@ answers "where is the test for this file" without a search.
 | [`campaign/`](campaign/) | mission files, convars, addons |
 | [`kv/`](kv/) | KeyValues parse/serialise |
 | [`tools/`](tools/) | tool contracts and their own suites: output schemas, parity, overlays, instances, skybox, VScript, game runtime |
-| [`support/`](support/) | shared env, `global-setup`, helpers |
+| [`support/`](support/) | shared env, `global-setup`, helpers, and the layout checks that enforce these rules |
 | [`fixtures/`](fixtures/) | real files the suite reads: probe BSP/VMF, logs |
 
 Rules:
