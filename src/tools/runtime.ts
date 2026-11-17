@@ -59,6 +59,16 @@ const runNavGenerate = defineTool({
           "each source .bsp.",
       ),
     timeoutSeconds: z.number().int().min(30).max(900).default(240).describe("Per map."),
+    navSlopeLimit: z
+      .number()
+      .min(0.1)
+      .max(1)
+      .optional()
+      .describe(
+        "Passed to the engine as `nav_slope_limit` before generation. The ground normal's Z " +
+          "must be greater than this; the default rejects steep ramps and escalators. 0.5 " +
+          "allows a 60-degree slope. Absent leaves the game default.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -69,6 +79,7 @@ const runNavGenerate = defineTool({
         generated: z.boolean(),
         reason: z.enum(["matched", "exited", "timeout"]),
         nav: z.string().nullable(),
+        bsp: z.string().nullable(),
         navBytes: z.number().nullable(),
         dump: z.string().nullable(),
         verdict: z.enum(["playable", "no-goal", "no-flow", "empty"]).nullable(),
@@ -92,7 +103,7 @@ const runNavGenerate = defineTool({
     mkdirSync(mapsDir, { recursive: true });
 
     if (!existsSync(backup)) copyFileSync(cfgPath, backup);
-    writeFileSync(cfgPath, navGenerateConfig(), "utf8");
+    writeFileSync(cfgPath, navGenerateConfig(args.navSlopeLimit), "utf8");
 
     const hidden: Array<{ path: string; off: string }> = [];
     for (const addon of args.addonsToHide ?? []) {
@@ -108,6 +119,7 @@ const runNavGenerate = defineTool({
       generated: boolean;
       reason: "matched" | "exited" | "timeout";
       nav: string | null;
+      bsp: string | null;
       navBytes: number | null;
       dump: string | null;
       verdict: "playable" | "no-goal" | "no-flow" | "empty" | null;
@@ -157,7 +169,15 @@ const runNavGenerate = defineTool({
         mkdirSync(outDir, { recursive: true });
         const outNav = join(outDir, `${name}.nav`);
         const outDump = join(outDir, `${name}_nav.txt`);
-        if (generated) copyFileSync(engineNav, outNav);
+        const outBsp = join(outDir, `${name}.bsp`);
+        if (generated) {
+          copyFileSync(engineNav, outNav);
+          // The engine rewrites the BSP's stringtable dictionary before it writes the nav
+          // mesh. The nav's savedBspSize is the size of *that* file, so the exact BSP the
+          // engine used is staged beside the nav. Do not hand the caller a nav and a
+          // pre-generation BSP: the pair reads as stale and the game says "unplayable".
+          copyFileSync(loose, outBsp);
+        }
         if (existsSync(engineDump)) copyFileSync(engineDump, outDump);
 
         const log = readLog(consoleLog);
@@ -178,6 +198,7 @@ const runNavGenerate = defineTool({
           generated,
           reason,
           nav: generated ? outNav : null,
+          bsp: generated ? outBsp : null,
           navBytes: generated ? statSync(outNav).size : null,
           dump: existsSync(outDump) ? outDump : null,
           verdict,

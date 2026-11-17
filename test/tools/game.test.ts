@@ -26,6 +26,17 @@ describe("navGenerateConfig", () => {
     const lines = navGenerateConfig().trim().split("\n");
     expect(lines).toEqual(["sv_cheats 1", "nav_edit 1", "nav_mark_walkable", "nav_generate"]);
   });
+
+  it("passes a slope limit before generation when one is given", () => {
+    const lines = navGenerateConfig(0.5).trim().split("\n");
+    expect(lines).toEqual([
+      "sv_cheats 1",
+      "nav_edit 1",
+      "nav_slope_limit 0.5",
+      "nav_mark_walkable",
+      "nav_generate",
+    ]);
+  });
 });
 
 describe("flowWarnings", () => {

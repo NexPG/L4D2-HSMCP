@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.77-alpha — 2026-11-18
+
+- **Nav generation now stages the BSP and nav mesh it actually produced.** The engine
+  rewrites the BSP stringtable before writing the nav; the old tool returned only the nav,
+  so a build paired a fresh mesh with a pre-generation BSP and the game reported
+  "Map is unplayable". `run_nav_generate` now returns `bsp`, and the nav docs say to stage
+  the pair and check `read_nav` for `fresh`.
+- **`navSlopeLimit` is a tool argument.** L4D2's default rejects steep stairs and
+  escalators; `navSlopeLimit: 0.5` allowed the 23-degree Moscow escalator to generate nav.
+- Full findings from the first wish-to-campaign build are in
+  `docs/reports/2026-11-18-wish-build-findings.md`.
+
 ## 0.0.76-alpha — 2026-11-17
 
 - **The three new Hammer++ helpers were proven end to end.** A sealed probe map was built

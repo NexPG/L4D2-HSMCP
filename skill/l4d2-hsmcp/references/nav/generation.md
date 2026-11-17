@@ -26,6 +26,17 @@ run_nav_generate(
 )
 ```
 
+`navSlopeLimit` is the engine's `nav_slope_limit`: the ground normal's Z must be **greater**
+than it. The default rejects steep ramps and escalators; `navSlopeLimit: 0.5` allows a
+60-degree slope. If the map has stairs or a ramp and the flow is broken, lower it before
+changing geometry.
+
+The result also returns `bsp`: the engine rewrites the BSP's stringtable dictionary before
+it writes the `.nav`, so that file and the mesh are a pair. Stage the returned `bsp` with
+the returned `.nav`; a pre-generation BSP beside the new mesh reads as stale and the game
+says "Map is unplayable" even though both files exist. `read_nav` must say `fresh` before
+the pair is packed.
+
 It copies each map into `left4dead2/maps`, moves the named add-on archives aside, writes the
 config, launches the game, waits for the `.nav`, copies the mesh and the engine's
 `<map>_nav.txt` beside the source `.bsp`, removes the loose copies and the engine's rotating

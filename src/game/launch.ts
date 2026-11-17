@@ -91,8 +91,11 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /** The listen-server config that makes `nav_generate` actually run. */
-export function navGenerateConfig(): string {
-  return ["sv_cheats 1", "nav_edit 1", "nav_mark_walkable", "nav_generate"].join("\n") + "\n";
+export function navGenerateConfig(slopeLimit?: number): string {
+  const lines = ["sv_cheats 1", "nav_edit 1"];
+  if (slopeLimit !== undefined) lines.push(`nav_slope_limit ${slopeLimit}`);
+  lines.push("nav_mark_walkable", "nav_generate");
+  return lines.join("\n") + "\n";
 }
 
 /** Lines a nav generation log uses to complain about the result. */
