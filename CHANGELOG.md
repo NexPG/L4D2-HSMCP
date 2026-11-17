@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.32-alpha — 2026-11-17
+
+- **`write_instance`** (82nd tool): places a `func_instance` from an instance `.vmf`, with
+  origin, angles and fixup style. The file is resolved next to the target map and read first —
+  a missing instance is an error, not an empty object — and nested instances are reported.
+  Tested on the fixture: one solid, one entity, the entity appears in `read_vmf` with
+  `fixup_style "1"`; a missing file is refused.
+- Instances leave the Hammer gap list: reading (`collapseInstances`) and writing both exist.
+  The remaining gaps are 3D skybox, engine cubemap building, arch/torus and model authoring.
+
 ## 0.0.31-alpha — 2026-11-17
 
 - **`write_overlay`** (81st tool): puts an `info_overlay` decal on a brush face from a side id,

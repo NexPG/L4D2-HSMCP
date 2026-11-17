@@ -85,7 +85,7 @@ no way to do it yet.
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
 | Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
 | 3D skybox | — | **gap** (2D sky is `skyname`) |
-| Instances | `read_vmf` `collapseInstances` only | **gap** (no writer) |
+| Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
 | Prefabs | — | **gap** |
 | Model authoring (HLMV, studiomdl) | `run_model_info` read-only | **gap** |
 
@@ -108,10 +108,9 @@ no way to do it yet.
 
 Ordered by how often a mapper needs it:
 
-1. **Instances and prefabs** — writing them, not just reading.
-2. **3D skybox** — `sky_camera` and the scaled copy of the geometry.
-3. **Cubemap building** — the engine step, not just the HDR conversion.
-4. **Arch/torus geometry** — the two primitive tools `write_vmf_solid` lacks.
-5. **Model authoring** — HLMV/studiomdl, a separate pipeline.
+1. **3D skybox** — `sky_camera` and the scaled copy of the geometry.
+2. **Cubemap building** — the engine step, not just the HDR conversion.
+3. **Arch/torus geometry** — the two primitive tools `write_vmf_solid` lacks.
+4. **Model authoring** — HLMV/studiomdl, a separate pipeline.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

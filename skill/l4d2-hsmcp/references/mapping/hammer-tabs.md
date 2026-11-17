@@ -14,7 +14,7 @@ This page is the map from one to the other, and the recipes for browsing a city'
 | Visgroups / Groups | `read_map_organisation`, `set_visgroup`, `group_solids` |
 | Cordon | `set_cordon` |
 | Displacements | `read_displacements`, `write_displacement`, `sew_displacements`, `sculpt_displacement`, `paint_displacement` |
-| Instances | `read_vmf` with `collapseInstances: true` expands them for reading; there is no instance writer |
+| Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances: true` expands it for reading |
 | Compile / Run | `run_compile`, `read_compile_log`, `run_map_test` |
 | Map properties | `set_map_properties` (sky, detail sprites, prop fade) |
 | Options → Game Data Files | `health` reports the FGD the tools use |

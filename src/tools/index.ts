@@ -13,6 +13,7 @@ import { faceTools } from "./face.js";
 import { gameTools } from "./games.js";
 import { healthTools } from "./health.js";
 import { hollowTools } from "./hollow.js";
+import { instanceTools } from "./instance.js";
 import { lightmapTools } from "./lightmap.js";
 import { materialsTools } from "./materials.js";
 import { measureTools } from "./measure.js";
@@ -79,4 +80,5 @@ export const allTools: AnyToolDef[] = [
   ...runtimeTools,
   ...vscriptTools,
   ...overlayTools,
+  ...instanceTools,
 ];
