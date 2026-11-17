@@ -32,6 +32,11 @@ in the campaign list.
 parses it, preserving unknown keys and nested blocks. `check_campaign` reports on the files it
 references without refusing.
 
+The spec's `keyvalues` field writes any key it does not model, at mission, mode or chapter
+level: `"Version"`, `"VersusCompletionScore"`, a mod's own field. Structural keys (`Name`,
+`modes`, `Map`, `convar`) keep their dedicated fields and are refused there, so the writer
+cannot produce two conflicting copies. Nothing in the mission format is closed to the agent.
+
 ## Rules that decide whether the game sees it
 
 | Rule | Failure it prevents |

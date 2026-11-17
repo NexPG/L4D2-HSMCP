@@ -31,7 +31,7 @@ of that path, but deleting it must not remove the capability.
 | `set_map_properties` | `set_worldspawn` |
 | `group_solids`, `set_visgroup`, `set_cordon` | `edit_vmf` plus the VMF `editor` blocks |
 | `write_displacement`, `sculpt_displacement`, `paint_displacement` | Direct `dispinfo` editing, which is its own format |
-| `write_campaign` | The mission KeyValues format; arbitrary top-level keys are a known gap |
+| `write_campaign` | The mission KeyValues format; `keyvalues` at mission, mode and chapter level covers anything the spec does not model |
 
 ## Rules for new tools
 
@@ -49,5 +49,4 @@ These are not menus; they are capabilities that do not exist yet:
 - engine `buildcubemaps` (the running-game step);
 - writing the compiled entity lump of a `.bsp`;
 - model authoring (HLMV/studiomdl);
-- copying one face's exact alignment onto another (`align_faces` can approximate, not copy);
-- arbitrary mission-file keys beyond `write_campaign`'s structured fields.
+- copying one face's exact alignment onto another (`align_faces` can approximate, not copy).

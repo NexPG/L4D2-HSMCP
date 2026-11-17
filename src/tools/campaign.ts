@@ -155,10 +155,20 @@ export const writeCampaignTool = defineTool({
     description: z.string().optional(),
     image: z.string().optional().describe('Campaign image, e.g. "maps/c1".'),
     author: z.string().optional(),
-    modes: z
+    keyvalues: z
+      .record(z.string())
+      .optional()
+      .describe(
+        "Any extra mission-level keyvalue (Version, Custom, a mod key). The fields above " +
+          "cover Name/DisplayTitle/Description/Image/Author; `modes` is structural.",
+      ),    modes: z
       .array(
         z.object({
           name: z.string().describe("coop, versus, survival, scavenge."),
+          keyvalues: z
+            .record(z.string())
+            .optional()
+            .describe("Any extra key on the mode block. Numbered keys are chapter blocks."),
           chapters: z
             .array(
               z.object({
@@ -171,6 +181,12 @@ export const writeCampaignTool = defineTool({
                   .describe(
                     "Per-chapter launch convars, e.g. z_finale_spawn_mob_safety_range for a " +
                       "compact finale map.",
+                  ),
+                keyvalues: z
+                  .record(z.string())
+                  .optional()
+                  .describe(
+                    "Any extra chapter key. Map and the convar block have dedicated fields.",
                   ),
               }),
             )

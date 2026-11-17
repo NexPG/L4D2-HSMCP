@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.39-alpha — 2026-11-17
+
+- **`write_campaign` accepts arbitrary keyvalues at mission, mode and chapter level.** Its
+  structured fields covered `Name`, the title, the author and the convar block, and nothing
+  else: another menu. The `keyvalues` fields now write `Version`, `VersusCompletionScore`, a
+  mod's own keys, anything the format allows. Structural keys keep their dedicated fields and
+  are refused there, so the writer cannot emit two conflicting copies.
+- The mission format is no longer listed as a gap in `primitives.md`; the remaining real
+  gaps are the engine cubemap step, writing a compiled BSP's entity lump, model authoring and
+  exact face-alignment copying.
+
 ## 0.0.38-alpha — 2026-11-17
 
 - **The project rule is now written down: hands untied, not a menu.** An agent must be able

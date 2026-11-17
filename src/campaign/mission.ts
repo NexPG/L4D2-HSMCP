@@ -162,14 +162,23 @@ export interface CampaignSpec {
   description?: string;
   image?: string;
   author?: string;
+  /**
+   * Any extra mission-level keyvalue. Structural blocks (`modes`) and the fields above
+   * cannot be replaced this way; the fields cover those.
+   */
+  keyvalues?: Record<string, string>;
   modes: Array<{
     name: string;
+    /** Any extra key on the mode block. Numeric keys would collide with chapters. */
+    keyvalues?: Record<string, string>;
     chapters: Array<{
       map: string;
       displayName: string;
       image?: string;
       /** Launch convars for this chapter, e.g. z_finale_spawn_mob_safety_range. */
       convars?: Record<string, string>;
+      /** Any extra chapter key except `Map` and the `convar` block. */
+      keyvalues?: Record<string, string>;
     }>;
   }>;
 }
@@ -182,6 +191,13 @@ function block(name: string, entries: KvNode[]): KvBlock {
   return { kind: "block", name, entries, start: 0, end: 0, bodyStart: 0, bodyEnd: 0 };
 }
 
+/** Replaces a pair in place, or appends it. Used for caller-supplied extra keys. */
+function upsert(entries: KvNode[], key: string, valueText: string): void {
+  const index = entries.findIndex((e) => e.kind === "pair" && e.key === key);
+  if (index >= 0) entries[index] = pair(key, valueText);
+  else entries.push(pair(key, valueText));
+}
+
 /** Builds a mission tree from the small shape a caller can reasonably provide. */
 export function missionFromSpec(spec: CampaignSpec): Mission {
   const rootEntries: KvNode[] = [
@@ -192,6 +208,14 @@ export function missionFromSpec(spec: CampaignSpec): Mission {
   if (spec.displayTitle) rootEntries.push(pair("DisplayTitle", spec.displayTitle));
   if (spec.description) rootEntries.push(pair("Description", spec.description));
   if (spec.image) rootEntries.push(pair("Image", spec.image));
+  for (const [key, valueText] of Object.entries(spec.keyvalues ?? {})) {
+    if (["Name", "DisplayTitle", "Description", "Image", "Author", "modes"].includes(key)) {
+      throw new CampaignFormatError(
+        `"${key}" has its own field; keyvalues are for keys this spec does not model`,
+      );
+    }
+    upsert(rootEntries, key, valueText);
+  }
 
   const modeBlocks: KvNode[] = spec.modes.map((mode) => {
     const chapterBlocks: KvNode[] = mode.chapters.map((chapter, i) => {
@@ -208,9 +232,27 @@ export function missionFromSpec(spec: CampaignSpec): Mission {
           ),
         );
       }
+      for (const [key, valueText] of Object.entries(chapter.keyvalues ?? {})) {
+        if (["Map", "DisplayName", "Image", "convar"].includes(key)) {
+          throw new CampaignFormatError(
+            `chapter keyvalues cannot use "${key}": it has its own field`,
+          );
+        }
+        upsert(entries, key, valueText);
+      }
       return block(String(i + 1), entries);
     });
-    return block(mode.name, chapterBlocks);
+
+    const modeEntries: KvNode[] = [...chapterBlocks];
+    for (const [key, valueText] of Object.entries(mode.keyvalues ?? {})) {
+      if (/^\d+$/.test(key)) {
+        throw new CampaignFormatError(
+          `mode keyvalues cannot use "${key}": numbered keys are chapter blocks`,
+        );
+      }
+      upsert(modeEntries, key, valueText);
+    }
+    return block(mode.name, modeEntries);
   });
   rootEntries.push(block("modes", modeBlocks));
 
