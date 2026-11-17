@@ -26,7 +26,7 @@ when it has all four:
 | Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | class list read from the FGD (37 classes); placement documented, play test not yet |
 | Crescendo / panic events | trigger areas, Director, outputs | **verified** in game: `PanicEvent` ran `STAGE_INITIAL_DELAY → STAGE_MEGA_MOB → STAGE_WAIT_FOR_COMBAT_TO_END → STAGE_DONE` (51 s). `OnPanicEventFinished` did not fire on this map, so the stage transition is the evidence |
 | Scavenge finale | gas cans, `type 4`, scavenge items | not yet |
-| Survival mode | mission mode, nav, timers | not yet |
+| Survival mode | mission mode, nav, timers | **verified load**: `+mp_gamemode survival` runs the map and shows the Survival timer; wave progression not timed yet |
 | Versus mode | mission mode, nav, infected spawns | mission parsing only |
 | Mutations / ScriptedMode | VScript mode framework | not yet |
 | Weather, fog, sky | `func_precipitation`, `env_fog_controller`, `skyname` | tool + static checks; rain verified visually on an open-sky test map; fog not separately judged |

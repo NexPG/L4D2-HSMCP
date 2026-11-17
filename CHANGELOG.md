@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.59-alpha — 2026-11-17
+
+- **Survival mode is verified.** The mission file now lists `hsmcp_test_m1` under a
+  `survival` mode, and `run_map_test` with `extraArgs: ["+mp_gamemode", "survival"]` loaded
+  the map and showed the Survival HUD with the timer at `00:00.00` in 33 s. No special
+  entity was needed beyond nav and a spawn; a full survival wave was not timed.
+- New reference `mechanics/survival.md`: mission block, the launch argument, the HUD proof,
+  and the pitfalls (`NAV ERRORS`, mission fallback, harmless `survival_record`).
+
 ## 0.0.58-alpha — 2026-11-17
 
 - **Tanks and witches are verified.** Test timers at 12 s and 22 s issued
