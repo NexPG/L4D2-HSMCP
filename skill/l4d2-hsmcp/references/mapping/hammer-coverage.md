@@ -111,6 +111,6 @@ no way to do it yet.
 Ordered by how often a mapper needs it:
 
 1. **3D-skybox design** - `write_skybox_copy` makes the scaled copy and `write_sky_camera` places the camera; choosing what to copy, sealing the area and matching the view remain design work.
-2. **HLMV preview** - model source and `studiomdl` compile are covered; launching HLMV to look at the result is not.
+2. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. The operation is covered; rendering it is the environment's limit.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

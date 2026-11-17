@@ -5,6 +5,13 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.67-alpha — 2026-11-17
+
+- **Coverage docs stopped claiming HLMV launch is missing.** `run_hlmv` launches the editor
+  and `capture_window` returns its UI; only the 3D canvas needs an interactive desktop. The
+  "genuinely missing" list now names that environment limit instead of an absent operation,
+  and the mechanics table says the same.
+
 ## 0.0.66-alpha — 2026-11-17
 
 - **`insert_prefab` validates what it appended.** A fragment pasted into a file without a
