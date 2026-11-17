@@ -13,6 +13,7 @@ of that path, but deleting it must not remove the capability.
 | Copy one face's alignment | `copy_face_alignment` | Exact uaxis/vaxis, optional material and lightmap scale; `align_faces` is the computed alternative |
 | Copy / paste | `clone_solids` | Fresh ids, byte-for-byte materials and alignment |
 | Any entity, keyvalue or output | `edit_vmf` | `add`, `update`, `remove`, `addOutput`, `removeOutput` |
+| Any compiled-map entity | `edit_bsp_entities` | add/update/remove in lump 0; append-only, no other lump moves |
 | Any worldspawn key | `set_worldspawn` | `worldspawn` is not an `entity` block, so `edit_vmf` cannot reach it |
 | Any VScript | `write_vscript` | The Squirrel source is yours; `logic_script` wiring is a convenience |
 | Any VMF-side check | `read_vmf`, `read_vmf_solids`, `read_vmf_lint`, `read_entity_report` | |
@@ -48,5 +49,4 @@ of that path, but deleting it must not remove the capability.
 These are not menus; they are capabilities that do not exist yet:
 
 - engine `buildcubemaps` (the running-game step);
-- writing the compiled entity lump of a `.bsp`;
 - model authoring (HLMV/studiomdl).

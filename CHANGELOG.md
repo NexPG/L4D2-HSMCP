@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.42-alpha — 2026-11-17
+
+- **`edit_bsp_entities`** (89th tool): adds, updates or removes entities in a compiled
+  `.bsp`. The new entity text is appended and only lump 0's directory entry moves, so the
+  pakfile, brush data and lighting stay where they were. Compiled outputs are ordinary
+  keyvalues. This is the primitive `buildcubemaps` needs: `point_servercommand` plus
+  `logic_auto` in a copy of the map, without recompiling it. Refuses a compressed entity
+  lump, an empty op list, and a result with no worldspawn; verified on the fixture BSP that
+  the header points at the appended lump and the map still reads back.
+- The compiled entity lump leaves `primitives.md`'s gap list. The remaining real gaps are
+  the engine cubemap step and model authoring.
+
 ## 0.0.41-alpha — 2026-11-17
 
 - **`subdivide_displacements`** (88th tool): Hammer's Subdivide. Raises a displacement's
