@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -15,6 +16,33 @@ const ROOT = join(import.meta.dirname, "..", "..");
 const TEST = join(ROOT, "test");
 const DOCS = join(ROOT, "docs");
 const SKILL = join(ROOT, "skill");
+
+/**
+ * Every tracked file allowed at the repository root, and nothing else.
+ *
+ * The root had accrued a pile of one-off files once already. A whitelist is blunt on
+ * purpose: adding a root file is a decision, and the decision is this table plus the one in
+ * README.md. Generated and machine-specific files are ignored by `.gitignore`, not listed
+ * here because they are not tracked.
+ */
+const ROOT_FILES = new Set([
+  ".gitattributes",
+  ".gitignore",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "LICENSE",
+  "LICENSE-MIT",
+  "NOTICE",
+  "README.md",
+  "config.example.json",
+  "opencode.json",
+  "package.json",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "tsconfig.json",
+  "tsconfig.test.json",
+  "vitest.config.ts",
+]);
 
 function entries(dir: string): string[] {
   return readdirSync(dir).sort();
@@ -45,6 +73,16 @@ function files(dir: string, extensions: string[]): string[] {
 }
 
 describe("test layout", () => {
+  it("keeps the repository root to the documented files", () => {
+    const tracked = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
+      .split(/\r?\n/)
+      .filter((file) => file.length > 0 && !file.includes("/"));
+    const unexpected = tracked.filter((file) => !ROOT_FILES.has(file));
+    const missing = [...ROOT_FILES].filter((file) => !tracked.includes(file));
+    expect(unexpected, `root files with no documented job: ${unexpected.join(", ")}`).toEqual([]);
+    expect(missing, `documented root files that are not tracked: ${missing.join(", ")}`).toEqual([]);
+  });
+
   it("keeps the test root free of loose suites", () => {
     const loose = entries(TEST).filter((f) => f.endsWith(".test.ts"));
     expect(loose, "a .test.ts at the test root belongs in the directory it mirrors").toEqual([]);

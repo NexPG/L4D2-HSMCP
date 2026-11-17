@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.44-alpha — 2026-11-17
+
+- **The repository root is now a documented, tested set.** README lists the job of every
+  tracked root file, and `test/support/structure.test.ts` fails when a new tracked file
+  appears at the root without being added to the allowlist and the table. Machine-specific
+  files (`.mcp.json`, `config.json`) and generated trees (`dist/`, `node_modules/`,
+  `campaigns/`, `.develop-diary/`, `.hammer-mcp/`) are ignored by design, not clutter.
+- Audit result: no redundant tracked root files. The config, tsconfig, lockfile, licence and
+  history files all have a job; nothing was deleted.
+
 ## 0.0.43-alpha — 2026-11-17
 
 - **Every experiment now has to leave a document for the agent.** The diary records the

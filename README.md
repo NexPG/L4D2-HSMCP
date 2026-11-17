@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.43--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.44--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -179,6 +179,24 @@ skill/            the agent skill: SKILL.md, references, workflows, troubleshoot
 test/             the oracle-heavy suite, mirroring src/
 docs/             campaign guide, map reference and project reference
 ```
+
+Root files are not a dumping ground. Each one has exactly one job:
+
+| File | Why it is at the root |
+|---|---|
+| `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` | the package, its locked dependency graph, and pnpm's build approvals |
+| `tsconfig.json`, `tsconfig.test.json`, `vitest.config.ts` | build config, test typecheck config, and the shared test setup |
+| `config.example.json` | the template copied to `.hammer-mcp/config.json`; the real config is local |
+| `opencode.json` | registers this repository's skill with OpenCode |
+| `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md` | the front page, the rules, and the version history |
+| `LICENSE`, `LICENSE-MIT`, `NOTICE` | GPL-3.0-only, the upstream MIT notice, and provenance |
+| `.gitattributes`, `.gitignore` | line-ending policy and what is local/generated |
+
+Machine-specific files are intentionally absent from git: `.mcp.json` is written by the
+MCP entry and `config.json` is your local game configuration; both are in `.gitignore`.
+`dist/`, `node_modules/`, `campaigns/`, `.develop-diary/` and `.hammer-mcp/` are local by
+the same rule. If a new root file appears, `test/support/structure.test.ts` fails until it
+is added to the allowlist and this table, so the root cannot quietly fill up again.
 
 ## Documentation
 
