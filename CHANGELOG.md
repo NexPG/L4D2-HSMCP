@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.38-alpha — 2026-11-17
+
+- **The project rule is now written down: hands untied, not a menu.** An agent must be able
+  to do everything Hammer++ can and more through general operations, not choose from
+  prepared answers. `CONTRIBUTING.md` (rule 4), the README design rules and
+  `skill/.../references/tools/primitives.md` state it: every shortcut must sit on a
+  reachable primitive, an enum may only mirror the engine's complete list, and a missing
+  capability is a named gap rather than a canned subset.
+- **`set_worldspawn`** (86th tool): sets or removes any key on `worldspawn`, not the four
+  `set_map_properties` knows. `worldspawn` is not an `entity` block, so `edit_vmf` could not
+  reach it; that made the four-key tool a menu. `id` and `classname` stay protected, every
+  change is reported, and the brush count is checked before writing.
+- `set_map_properties` is now explicitly a shortcut over `set_worldspawn`, not the limit of
+  what can be set.
+
 ## 0.0.37-alpha — 2026-11-17
 
 - **`clone_solids`** (85th tool): Hammer's copy/paste. Copies selected brushes with fresh

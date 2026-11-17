@@ -27,7 +27,7 @@ import type { SolidSpec } from "./build.js";
 import { maxId } from "./edit.js";
 import { parse } from "../kv/parse.js";
 import type { KvBlock } from "../kv/parse.js";
-import { lineRange } from "./select.js";
+import { lineRange, pairRange } from "./select.js";
 import { checkVmfSolids } from "./solid.js";
 import { applySplices } from "./splice.js";
 import type { Splice } from "./splice.js";
@@ -227,14 +227,62 @@ function applyToWorld(
   source: string,
   entries: ReadonlyArray<[string, string]>,
 ): { text: string; changed: Record<string, { from: string | null; to: string }>; unchanged: boolean } {
+  return editWorldspawn(source, Object.fromEntries(entries));
+}
+
+export interface WorldspawnEdit {
+  text: string;
+  changed: Record<string, { from: string | null; to: string }>;
+  removed: string[];
+  warnings: string[];
+  unchanged: boolean;
+}
+
+/**
+ * Arbitrary keyvalues on `worldspawn`: the primitive under `set_map_properties`.
+ *
+ * `worldspawn` is not a root `entity` block, so `edit_vmf` cannot reach it. That made
+ * `set_map_properties`'s four keys a menu, and the rule this project now writes down is
+ * that a menu is not a capability: a mapper can set any key worldspawn accepts, so the
+ * agent must be able to as well. This sets and removes any key, with `id` and `classname`
+ * protected because they are the block's identity rather than map properties.
+ */
+export function editWorldspawn(
+  source: string,
+  set: Readonly<Record<string, string>> = {},
+  remove: readonly string[] = [],
+): WorldspawnEdit {
+  const names = [...Object.keys(set), ...remove];
+  if (names.length === 0) {
+    throw new VmfPortalError("no worldspawn keyvalues were given to set or remove");
+  }
+  if ("id" in set || remove.includes("id")) {
+    throw new VmfPortalError("worldspawn's id is its identity; this tool cannot change it");
+  }
+  if (remove.includes("classname")) {
+    throw new VmfPortalError(
+      "removing worldspawn's classname makes the block not a worldspawn; refusing",
+    );
+  }
+  if (set["classname"] !== undefined && set["classname"] !== "worldspawn") {
+    throw new VmfPortalError(
+      `worldspawn's classname is "worldspawn", not "${set["classname"]}"`,
+    );
+  }
+  for (const key of remove) {
+    if (key in set) throw new VmfPortalError(`"${key}" is both set and removed`);
+  }
+
   const roots = parse(source).filter((n): n is KvBlock => n.kind === "block");
   const world = roots.find((b) => b.name === "world");
   if (!world) throw new VmfPortalError("this file has no world block");
 
-  const changed: Record<string, { from: string | null; to: string }> = {};
+  const changed: WorldspawnEdit["changed"] = {};
+  const removed: string[] = [];
+  const warnings: string[] = [];
   const splices: Splice[] = [];
 
-  for (const [key, value] of entries) {
+  for (const [key, value] of Object.entries(set)) {
     const existing = world.entries.find(
       (n): n is Extract<typeof n, { kind: "pair" }> => n.kind === "pair" && n.key === key,
     );
@@ -254,10 +302,21 @@ function applyToWorld(
     splices.push({ start: at, end: at, text: `\n\t"${key}" "${value}"` });
   }
 
-  // applySplices, not a fifth copy of the last-first loop. This file had one for about ten
-  // minutes, which is how long it takes to write the thing bloc 0 existed to delete.
+  for (const key of remove) {
+    const existing = world.entries.find(
+      (n): n is Extract<typeof n, { kind: "pair" }> => n.kind === "pair" && n.key === key,
+    );
+    if (!existing) {
+      warnings.push(`"${key}" was not on worldspawn, so there was nothing to remove`);
+      continue;
+    }
+    const { start, end } = pairRange(source, existing);
+    splices.push({ start, end, text: "" });
+    removed.push(key);
+  }
+
   const text = applySplices(source, splices);
-  return { text, changed, unchanged: text === source };
+  return { text, changed, removed, warnings, unchanged: text === source };
 }
 
 export { checkVmfSolids };

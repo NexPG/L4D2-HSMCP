@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.37--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.38--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **An agent toolkit for building Left 4 Dead 2 content.** Maps, campaigns, VScripts, models
@@ -54,6 +54,11 @@ The design rules come from the project this fork grew out of, and they still hol
 - **No number without a source.** Limits and measurements carry a file and a date.
 - **No tool without an oracle.** If the answer cannot be checked independently, it does
   not ship.
+- **Primitives first; shortcuts never replace them.** Every capability is reachable through a
+  general operation (`write_vmf_solid` with arbitrary convex faces, `edit_vmf`, `set_worldspawn`,
+  `transform_solids`, `clone_solids`, `write_vscript`). A convenience tool may sit on top of
+  that path, but it may not be the only way, and no hardcoded menu may stand in for what the
+  engine accepts.
 
 ## Requirements
 
@@ -140,7 +145,7 @@ practical rules are in [`docs/campaign/overview.md`](docs/campaign/overview.md).
 
 ## Tools
 
-85 tools, grouped by what they answer:
+86 tools, grouped by what they answer:
 
 - **Inspect** — `health`, `read_source_games`, `read_bsp_info`, `read_bsp_entities`,
   `read_nav_dump`, `read_map_geometry`, `read_map_report`, `read_vmf`, `read_vmf_lint`.
@@ -148,7 +153,8 @@ practical rules are in [`docs/campaign/overview.md`](docs/campaign/overview.md).
 - **Ask offline** — `read_vmf_leak`, `read_vmf_rooms`, `measure_vmf_clearance`,
   `read_vmf_visibility`, `read_vmf_trace`, `render_vmf_view`, `render_vmf_plan`.
 - **Build and edit** - solids, fittings, clips, hollows, vertices, faces, lights, hints,
-  portals, visgroups, displacements, overlays, instances, weather, fog, cloning.
+  portals, visgroups, displacements, overlays, instances, weather, fog, cloning, any
+  worldspawn key.
 - **Compile and ship** — `run_compile`, `read_compile_log`, `read_leak`,
   `read_map_dependencies`, `run_pack`, `run_vpk_pack`, `run_nav_generate`, `run_map_test`.
 - **Campaigns** — `read_campaign`, `write_campaign`, `check_campaign`.

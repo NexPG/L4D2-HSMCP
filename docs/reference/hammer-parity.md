@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **85 tools**.
+Last checked against the tool list on 17/11/2026: **86 tools**.
 
 ## The file itself
 
@@ -103,6 +103,7 @@ getting `ENOENT` on the first call.
 | Areaportals | `write_portal` | |
 | Occluders | `write_portal` | |
 | Map Properties | `set_map_properties` | worldspawn only. Says when `detailvbsp` and `detailmaterial` are set apart |
+| Any map property | `set_worldspawn` | Any worldspawn key, including mod keys; `id` and `classname` protected |
 | Fog | `edit_vmf` | Source reads it from an `env_fog_controller`, not from worldspawn — `set_map_properties` offered fog keys for one commit and produced none in game |
 
 ## Organisation

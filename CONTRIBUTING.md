@@ -1,7 +1,7 @@
 # Contributing
 
 This is a standalone fork of `hammer-mcp`, developed on its own terms and aimed at Left 4 Dead 2.
-The process is deliberately light; the three rules below are not.
+The process is deliberately light; the four rules below are not.
 
 ## 1. A passing test proves nothing until it has been shown it can fail
 
@@ -63,6 +63,26 @@ that does not exist is a bug, not a delay: somebody reads it and relies on it.
 There is a corollary for tools: **no tool without an oracle.** If you cannot build an independent
 way to check what the tool returns, it does not ship. Several gaps in this repository are documented
 rather than filled for exactly that reason.
+
+## 4. Hands untied, not a menu
+
+The agent is the user of this toolkit. The goal is every Hammer++ capability **and more**, available
+as operations the agent can combine freely — not a catalogue of prepared answers it has to choose
+from. A canned option that is the only way to do something is a defect, however convenient it looks.
+
+- **Every shortcut sits on a primitive, and the primitive stays reachable.** If deleting a helper
+  would remove a capability, the primitive is missing. `write_vmf_fitting` is allowed because
+  `write_vmf_solid` with an arbitrary convex face list still builds any shape; `set_map_properties`
+  is allowed because `set_worldspawn` still reaches every worldspawn key.
+- **Enums must be complete for the engine, not for us.** `preciptype` is a closed FGD list, so it
+  can be an enum. A keyvalue the engine accepts as an arbitrary string or number gets an arbitrary
+  string or number, not the subset somebody thought of.
+- **No hardcoded dimensions, names or flows as the only option.** Measured defaults are fine when
+  they are labelled as defaults and can be overridden. A single baked-in variant is not.
+- **A gap is named, not papered over.** If the engine step or the format is not implemented, it
+  belongs in the coverage table and the backlog. Do not ship a menu and call it completeness.
+- **Review question for every new tool:** "How would the agent do this without this tool?" If the
+  answer is "it could not", write the primitive first. Then the helper is a shortcut, not a cage.
 
 ## Before committing
 

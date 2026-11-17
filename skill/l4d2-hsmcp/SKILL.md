@@ -12,6 +12,11 @@ The toolkit is early: maps and campaigns are proven, VScript is proven to load, 
 wider addon formats are not built yet. Read [What is not supported](#what-is-not-supported)
 before promising anything.
 
+**Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
+`edit_vmf`, `set_worldspawn`, `transform_solids`, `clone_solids`, `write_vscript`); the
+named helpers are shortcuts, not the limit of what is possible. If a helper cannot express
+what you need, the primitive can. See `references/tools/primitives.md`.
+
 ## Route the task first
 
 | Task | Read |
@@ -51,6 +56,7 @@ before promising anything.
 | `references/mechanics/weather.md` | `func_precipitation`, `env_fog_controller`, and what a static check can prove |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
+| `references/tools/primitives.md` | which tool is the general operation, and which is only a shortcut |
 
 ## The pipeline
 

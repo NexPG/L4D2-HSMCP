@@ -41,6 +41,7 @@ import { vmfEditTools } from "./vmfedit.js";
 import { vscriptTools } from "./vscript.js";
 import { wiringTools } from "./wiring.js";
 import { weatherTools } from "./weather.js";
+import { worldspawnTools } from "./worldspawn.js";
 
 export const allTools: AnyToolDef[] = [
   ...healthTools,
@@ -85,4 +86,5 @@ export const allTools: AnyToolDef[] = [
   ...instanceTools,
   ...skyboxTools,
   ...weatherTools,
+  ...worldspawnTools,
 ];
