@@ -241,6 +241,7 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
         "material": ("materials/", ".vmt"),
         "model": ("models/", ".mdl"),
         "particle": ("particles/", ".pcf"),
+        "sound": ("sound/", ".wav"),
     }.get(kind, ("materials/", ".vmt"))
     match = _matcher(pattern)
     hits: list[str] = []

@@ -26,9 +26,9 @@ export const readGameContentTool = defineTool({
       .string()
       .describe("Name to look for. 'brick' matches anything containing it; 'brick*' is a glob."),
     kind: z
-      .enum(["material", "model", "particle"])
+      .enum(["material", "model", "particle", "sound"])
       .default("material")
-      .describe("Materials (.vmt), models (.mdl) or particle systems (.pcf)."),
+      .describe("Materials (.vmt), models (.mdl), particle systems (.pcf) or sounds (.wav)."),
     details: z
       .boolean()
       .optional()

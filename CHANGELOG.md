@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.30-alpha — 2026-11-17
+
+- The project goal is recorded in the charter and the diary: the agent must have **all** of
+  Hammer++ and more. `references/mapping/hammer-coverage.md` is the scorecard: every feature,
+  its tool, and an honest `verified` / `tool` / `gap` status.
+- `read_game_content` gains `kind: "sound"` — the sound browser (635 `ambient` files on this
+  install), alongside materials, models with sizes, and particles.
+- The coverage page names the real gaps: overlays/decals, instances/prefabs writing, 3D
+  skybox, building cubemaps in the engine, arch/torus primitives, and model authoring.
+
 ## 0.0.29-alpha — 2026-11-17
 
 - The skill gains `references/mechanics/crescendo-and-panic.md`: the `func_button` /
