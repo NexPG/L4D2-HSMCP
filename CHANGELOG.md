@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.75-alpha — 2026-11-17
+
+- **`references/mapping/level-design.md`.** Room and doorway sizes against the standing
+  hull, one decision per room, cover heights, sightlines, verticality, lighting/weather and
+  a first-chapter recipe that matches the campaign already proven in game. It is the layer
+  between a wish and geometry: the tools measure, this page decides.
+- The wish workflow and `SKILL.md` route a new build through it.
+
 ## 0.0.74-alpha — 2026-11-17
 
 - **A wish-first campaign workflow.** `workflows/from-a-wish.md` turns a user's description

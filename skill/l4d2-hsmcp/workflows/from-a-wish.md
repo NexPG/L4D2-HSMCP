@@ -37,6 +37,10 @@ A name from memory is a purple checkerboard or a silent entity.
 5. Budget: every chapter should be small enough to compile and play in one sitting. A first
    build of two short chapters proves the pipeline; a city can come after.
 
+Room sizes, cover, sightlines and lighting are in
+`references/mapping/level-design.md`. The tools check the numbers; the wish decides the
+place.
+
 Check the spec against `references/mapping/hammer-coverage.md`. If a wish needs an editor
 preview or a two-team round, say what will be verified and what will not.
 

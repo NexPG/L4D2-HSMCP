@@ -50,6 +50,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
+| `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |
 | `references/mapping/hammer-coverage.md` | every Hammer++ feature, its tool, and what is still a gap |
