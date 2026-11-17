@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.76-alpha — 2026-11-17
+
+- **The three new Hammer++ helpers were proven end to end.** A sealed probe map was built
+  with `merge_solids` (two adjacent brushes to one), `move_to_surface` (a floating brush to
+  the floor) and `create_instance_from_selection` (a brush extracted to a file, leaving
+  `func_instance`). Stock vbsp then compiled it with exit 0; the only warning was the
+  deliberately absent test material. The coverage table marks all three verified.
+
 ## 0.0.75-alpha — 2026-11-17
 
 - **`references/mapping/level-design.md`.** Room and doorway sizes against the standing
