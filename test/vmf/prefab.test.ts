@@ -33,6 +33,15 @@ describe("insertPrefab", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("separates an appended entity from a target without a trailing newline", () => {
+    const target = insertSolids(EMPTY, [{ shape: "box", mins: [0, 0, 0], maxs: [16, 16, 16] }], {
+      material: "BRICK/BRICKWALL001A",
+    }).text.trimEnd();
+    const result = insertPrefab(target, prefab());
+    expect(result.text).toMatch(/\}\s*\nentity\s*\{/);
+    expect(result.entities).toBe(1);
+  });
+
   it("refuses a fragment without solids or entities", () => {
     expect(() => insertPrefab(EMPTY, 'world\n{\n\t"id" "1"\n}\n')).toThrow(/no world solids/);
   });

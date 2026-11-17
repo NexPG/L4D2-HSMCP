@@ -100,11 +100,16 @@ export function insertPrefab(
   }
 
   const entitySplices: Splice[] = [];
-  for (const entity of entities) {
+  for (const [index, entity] of entities.entries()) {
     const { start, end } = lineRange(prefab, entity);
     const remapped = remap(moveOrigin(prefab.slice(start, end), move), nextId);
     nextId += remapped.count;
-    entitySplices.push({ start: target.length, end: target.length, text: remapped.text });
+    const separator = index === 0 && target.length > 0 && !target.endsWith("\n") ? "\n" : "";
+    entitySplices.push({
+      start: target.length,
+      end: target.length,
+      text: separator + remapped.text,
+    });
   }
 
   let text = applySplices(target, [...solidSplices, ...entitySplices]);
@@ -118,6 +123,15 @@ export function insertPrefab(
 
   const before = checkVmfSolids("(memory)", target);
   const after = checkVmfSolids("(memory)", text);
+  const targetEntities = targetRoots.filter((b) => b.name === "entity").length;
+  const afterRoots = parse(text).filter((n): n is KvBlock => n.kind === "block");
+  const afterEntities = afterRoots.filter((b) => b.name === "entity").length;
+  if (afterEntities !== targetEntities + entities.length) {
+    throw new VmfPrefabError(
+      `refusing to write: ${targetEntities} entities in, ${entities.length} prefab entities, ` +
+        `${afterEntities} out`,
+    );
+  }
   if (after.solidCount !== before.solidCount + allSolids.length) {
     throw new VmfPrefabError(
       `refusing to write: ${before.solidCount} solids in, ${allSolids.length} prefab solids, ` +

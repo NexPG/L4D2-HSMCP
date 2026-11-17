@@ -5,6 +5,12 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.66-alpha — 2026-11-17
+
+- **`insert_prefab` validates what it appended.** A fragment pasted into a file without a
+  trailing newline now starts on its own line, and the write is refused unless the target
+  ends up with exactly the old entity count plus the prefab's root entities.
+
 ## 0.0.65-alpha — 2026-11-17
 
 - **`insert_prefab`: paste a saved Hammer prefab into a map.** A prefab is a `.vmf`
