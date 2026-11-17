@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.58-alpha — 2026-11-17
+
+- **Tanks and witches are verified.** Test timers at 12 s and 22 s issued
+  `sv_cheats 1; z_spawn tank` / `z_spawn witch` from a `point_servercommand`.
+  `run_map_test` matched `Damage Taken from "Tank"` in **59 s**, the log contains the
+  calm-witch line, and the screenshot shows the death screen with the tank.
+- The spawn and panic timers are now gated behind `HSMCP_SELFTEST`; a normal campaign build
+  deploys them disabled, so the map does not spawn a tank on every load.
+- New reference `mechanics/tanks-and-witches.md`: commands, the log lines that prove each
+  entity, and the small-arena warning.
+
 ## 0.0.57-alpha — 2026-11-17
 
 - **Crescendo/panic is verified in game.** The test map starts a panic event ten seconds

@@ -22,7 +22,7 @@ when it has all four:
 | VScript: finale waves, Director hooks | ScriptedMode/DirectorScript API | not yet |
 | Common infected, hordes | spawn areas, population, nav | not yet |
 | Special infected | Director spawn set, nav | not yet |
-| Tanks, witches | Director, nav, spawn rules | not yet |
+| Tanks, witches | Director, nav, spawn rules | **verified** via `z_spawn` with `sv_cheats`: `Damage Taken from "Tank"` and `calm witch` in the log, 59 s; the tank killed the test player |
 | Weapons, ammo, items | weapon_* spawns, item placement, saferoom stock | class list read from the FGD (37 classes); placement documented, play test not yet |
 | Crescendo / panic events | trigger areas, Director, outputs | **verified** in game: `PanicEvent` ran `STAGE_INITIAL_DELAY → STAGE_MEGA_MOB → STAGE_WAIT_FOR_COMBAT_TO_END → STAGE_DONE` (51 s). `OnPanicEventFinished` did not fire on this map, so the stage transition is the evidence |
 | Scavenge finale | gas cans, `type 4`, scavenge items | not yet |
