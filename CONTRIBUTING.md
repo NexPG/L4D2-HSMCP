@@ -60,6 +60,17 @@ Why this change exists, what it makes true, and what it makes false.
 Documentation the change makes false is fixed **in the same commit**. A README describing a tool
 that does not exist is a bug, not a delay: somebody reads it and relies on it.
 
+Findings are not finished in the diary. Every experiment that produced a fact, a limit or an error
+goes into `skill/l4d2-hsmcp/troubleshooting/` or `references/` as **symptom → cause → check → fix**,
+including what the error means and what it affects. The diary records the process; the skill is what
+the agent reads while working. If an agent has to ask "why is this happening?", the documentation is
+incomplete.
+
+**Leave the game install as you found it.** A test that copies a map, injects entities or creates
+`materials/maps/<map>/` removes those files and restores any modified original in a `finally`, even
+when the run fails. The game directory belongs to the user, not to the test suite. The checklist is
+[`skill/l4d2-hsmcp/references/testing/game-environment-cleanup.md`](skill/l4d2-hsmcp/references/testing/game-environment-cleanup.md).
+
 There is a corollary for tools: **no tool without an oracle.** If you cannot build an independent
 way to check what the tool returns, it does not ship. Several gaps in this repository are documented
 rather than filled for exactly that reason.

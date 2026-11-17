@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.43-alpha — 2026-11-17
+
+- **Every experiment now has to leave a document for the agent.** The diary records the
+  process; `skill/l4d2-hsmcp/troubleshooting/` and `references/` are what the agent reads
+  while working: symptom → cause → check → fix, what each error means, what it affects, and
+  what is verified in game versus static-only. Rule 14 in the diary and CONTRIBUTING.
+- **The game install is cleaned after every run.** Test maps, `materials/maps/<test>/`,
+  `.nav`, VPKs and backups are removed; modified originals are restored and checked. Rule 15
+  and `references/testing/game-environment-cleanup.md`, with the checklist.
+- **Cubemap findings documented.** `env_cubemap` is an internal, compile-time entity: Valve
+  L4D2 maps have none in the entity lump but do have a non-empty CUBEMAPS lump, and injecting
+  one into a compiled BSP logs `Attempted to create unknown entity type env_cubemap`. The
+  `buildcubemaps` checklist, the meaning of the default-cubemap lines, the
+  `is not writable!!!` errors and the add-on shadowing case are in
+  `troubleshooting/cubemaps-do-not-build.md`. A complete `.vtf` build is still **not
+  verified**; no test artefact was left in the game.
+
 ## 0.0.42-alpha — 2026-11-17
 
 - **`edit_bsp_entities`** (89th tool): adds, updates or removes entities in a compiled

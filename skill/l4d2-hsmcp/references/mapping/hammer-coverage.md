@@ -62,8 +62,8 @@ no way to do it yet.
 | Lightmap scale | `set_lightmap_scale` | tool |
 | Light entities | `edit_vmf` | verified |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |
-| Cubemap placement | `edit_vmf` (`env_cubemap`) | tool |
-| Build cubemaps in engine | — | **gap** (engine `buildcubemaps` is a manual step) |
+| Cubemap placement | `edit_vmf` (`env_cubemap`) | tool: the entity is internal and must be in the VMF before compile |
+| Build cubemaps in engine | - | **gap** (engine `buildcubemaps` is a manual step; see `troubleshooting/cubemaps-do-not-build.md`) |
 
 ## Detail, hints, portals
 
