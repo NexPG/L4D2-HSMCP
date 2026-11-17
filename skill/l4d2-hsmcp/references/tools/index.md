@@ -94,7 +94,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_instance` | place a `func_instance` from an instance VMF, with origin, angles and fixup |
 | `write_sky_camera` | place the single `sky_camera` a 3D skybox needs |
 | `write_skybox_copy` | copy brushes at 1/16 scale and move them to the skybox origin |
-| `insert_prefab` | paste a saved `.vmf` fragment with fresh ids and an optional offset |
+| `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation |
 | `write_weather` | add rain/snow/ash as `func_precipitation` and distance fog as `env_fog_controller` |
 | `clone_solids` | copy selected brushes with fresh ids, optionally move/rotate/scale/mirror the copy |
 

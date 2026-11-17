@@ -23,7 +23,7 @@ function files(): { target: string; prefab: string } {
   const prefab = join(scratch, "prefab.vmf");
   writeFileSync(
     prefab,
-    `${box}entity\n{\n\t"id" "7"\n\t"classname" "info_target"\n\t"targetname" "prefab_entity"\n}\n`,
+    `${box}entity\n{\n\t"id" "7"\n\t"classname" "info_target"\n\t"targetname" "prefab_entity"\n\t"origin" "0 0 0"\n\t"angles" "0 0 0"\n}\n`,
     "utf8",
   );
   return { target, prefab };
@@ -34,7 +34,7 @@ describe("insert_prefab", () => {
     const { target, prefab } = files();
     const before = checkVmfSolids(target, readFileSync(target, "utf8")).solidCount;
     const out = (await insertPrefabTool.handler(
-      { path: target, prefab, move: [0, 0, 32], backup: false, dryRun: false, confirm: true },
+      { path: target, prefab, move: [0, 0, 32], rotate: 90, pivot: [0, 0, 0], backup: false, dryRun: false, confirm: true },
       ctx,
     )) as { written: boolean; solids: number; entities: number; solidsAfter: number };
 
@@ -44,6 +44,8 @@ describe("insert_prefab", () => {
     expect(out.solidsAfter).toBe(before + 1);
     const text = readFileSync(target, "utf8");
     expect(text).toContain('"targetname" "prefab_entity"');
+    expect(text).toContain('"origin" "0 0 32"');
+    expect(text).toContain('"angles" "0 90 0"');
     expect(checkVmfSolids(target, text).validCount).toBeGreaterThan(0);
   });
 

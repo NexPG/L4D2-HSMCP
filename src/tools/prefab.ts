@@ -11,11 +11,13 @@ const Vec3 = z.tuple([z.number(), z.number(), z.number()]);
 export const insertPrefabTool = defineTool({
   name: "insert_prefab",
   description:
-    "Pastes a saved Hammer prefab -- a `.vmf` fragment -- into a map. World brushes and " +
-    "root entities are inserted, every solid/entity id is remapped to a free one, and the " +
-    "fragment can be moved by an offset. A prefab is a one-time paste, unlike func_instance; " +
-    "brush-entity solids are inserted but the move is not applied inside them, and the tool " +
-    "says so. Every inserted world brush is checked as a solid before the write. Guarded.",
+    "Pastes a saved Hammer prefab -- a `.vmf` fragment -- into a map. Every world brush and " +
+    "brush-entity solid plus every root entity is inserted, all ids are remapped to free " +
+    "ones, and the whole fragment can be moved and yaw-rotated about a pivot. Point " +
+    "entities have their origin and yaw turned with the geometry, not left behind. A prefab " +
+    "is a one-time paste, unlike func_instance; a nested func_instance is inserted but not " +
+    "expanded, and the tool says so. Every inserted brush is checked as a solid before the " +
+    "write. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -23,6 +25,11 @@ export const insertPrefabTool = defineTool({
     path: z.string().describe("Target .vmf."),
     prefab: z.string().describe("Prefab .vmf to paste."),
     move: Vec3.optional().describe("Offset for the pasted fragment. Default 0 0 0."),
+    rotate: z
+      .number()
+      .optional()
+      .describe("Yaw rotation in degrees about Z through `pivot`. Default 0."),
+    pivot: Vec3.optional().describe("Point the rotation turns around. Default 0 0 0."),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -49,6 +56,10 @@ export const insertPrefabTool = defineTool({
       before,
       readFileSync(prefabPath, "utf8"),
       (args.move ?? [0, 0, 0]) as [number, number, number],
+      {
+        ...(args.rotate !== undefined ? { rotate: args.rotate } : {}),
+        ...(args.pivot !== undefined ? { pivot: args.pivot as [number, number, number] } : {}),
+      },
     );
 
     const write = writeGuarded(path, result.text, ctx.config, {

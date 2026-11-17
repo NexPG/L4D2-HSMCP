@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.70-alpha — 2026-11-17
+
+- **`insert_prefab` now turns as well as moves.** It takes `rotate` (yaw degrees) and
+  `pivot`; the whole fragment is transformed, including solids owned by brush entities.
+  Point entities have their `origin`, `angles` and `angle` turned with the geometry, so a
+  rotated prefab no longer leaves its entities facing the old way. Hidden solids and a
+  nested `func_instance` still return warnings.
+- The previous warning about brush-entity geometry not moving is gone because it now moves.
+
 ## 0.0.69-alpha — 2026-11-17
 
 - **`insert_prefab` and `set_face_uv` were proven end to end.** A prefab brush plus an

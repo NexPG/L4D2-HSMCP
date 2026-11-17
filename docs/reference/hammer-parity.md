@@ -103,7 +103,7 @@ getting `ENOENT` on the first call.
 | Preview a model | `run_hlmv` | Launches HLMV, optionally captures the window; the screenshot comes back as a real image block |
 | See a GUI | `capture_window` | Captures any window by process id or name; PrintWindow works while occluded, screen mode is the 3D fallback |
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
-| Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, optional offset, brush-entity geometry is not moved |
+| Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Areaportals | `write_portal` | |
 | Occluders | `write_portal` | |

@@ -88,7 +88,7 @@ no way to do it yet.
 | Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
 | 3D skybox | `write_sky_camera` + `write_skybox_copy`; sealing and design manual | partial (copy and camera tools, sealing/design gap) |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
-| Prefabs | `insert_prefab` | verified: the inserted fragment compiles with vbsp and the map loads; ids, move and entity append tested |
+| Prefabs | `insert_prefab` | verified: paste a saved `.vmf` fragment; ids remapped, move and yaw about a pivot; brush entities and entity angles turn with it |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
 | Visual capture | `capture_window`, `run_map_test` screenshot, `run_hlmv` screenshot | tool: real MCP image; `screen` captures a 3D game canvas, `window` captures occluded UI/dialogs |
 
