@@ -540,6 +540,123 @@ const fmtNum = (n: number): string =>
   Number.isInteger(n) ? String(n) : Number(n.toFixed(6)).toString();
 const fmtVec = (v: Vec3): string => `${fmtNum(v[0])} ${fmtNum(v[1])} ${fmtNum(v[2])}`;
 
+export interface UvOptions {
+  /** Explicit texture axis, in world space. */
+  uaxis?: Vec3;
+  vaxis?: Vec3;
+  uShift?: number;
+  vShift?: number;
+  uScale?: number;
+  vScale?: number;
+  /** The VMF's `rotation` key, in degrees. */
+  rotation?: number;
+}
+
+export interface UvResult {
+  text: string;
+  matched: number;
+  changed: Array<{
+    solidId: number;
+    sideId: number | null;
+    uaxis: string;
+    vaxis: string;
+    rotation: number | null;
+  }>;
+  warnings: string[];
+  unchanged: boolean;
+}
+
+/**
+ * Sets the texture axes directly, including a skewed pair.
+ *
+ * Hammer's face sheet exposes the U and V vectors as numbers; `align_faces` derives them
+ * from a mode, which cannot express an axis pair that is deliberately not square to the
+ * face. Everything is written through `setSidePair`, so formatting and indentation are the
+ * same as every other face edit. An omitted vector keeps the face's current one; an
+ * omitted shift or scale keeps its current value. The caller must change something.
+ */
+export function setFaceUv(
+  source: string,
+  selector: FaceSelector,
+  options: UvOptions,
+): UvResult {
+  const touched = (["uaxis", "vaxis", "uShift", "vShift", "uScale", "vScale", "rotation"] as const)
+    .some((key) => options[key] !== undefined);
+  if (!touched) {
+    throw new VmfFaceError("nothing to change: give a uaxis/vaxis vector, a shift, a scale or a rotation");
+  }
+  const vector = (value: Vec3 | undefined, name: string): Vec3 | undefined => {
+    if (value === undefined) return undefined;
+    if (value.length !== 3 || value.some((v) => !Number.isFinite(v))) {
+      throw new VmfFaceError(`${name} must be three finite numbers`);
+    }
+    if (value.every((v) => v === 0)) {
+      throw new VmfFaceError(`${name} cannot be the zero vector`);
+    }
+    return value;
+  };
+  const scale = (value: number | undefined, name: string): number | undefined => {
+    if (value === undefined) return undefined;
+    if (!Number.isFinite(value) || value === 0) {
+      throw new VmfFaceError(`${name} must be a non-zero, finite number`);
+    }
+    return value;
+  };
+  const u = vector(options.uaxis, "uaxis");
+  const v = vector(options.vaxis, "vaxis");
+  const uScaleWanted = scale(options.uScale, "uScale");
+  const vScaleWanted = scale(options.vScale, "vScale");
+  if (options.rotation !== undefined && !Number.isFinite(options.rotation)) {
+    throw new VmfFaceError("rotation must be a finite number of degrees");
+  }
+
+  const faces = resolveFaces(source, selector);
+  const splices: Splice[] = [];
+  const changed: UvResult["changed"] = [];
+  const warnings: string[] = [];
+  for (const face of faces) {
+    const currentU = face.side.uaxis;
+    const currentV = face.side.vaxis;
+    const uAxis = u ?? currentU?.axis;
+    const vAxis = v ?? currentV?.axis;
+    if (!uAxis || !vAxis) {
+      warnings.push(
+        `solid ${face.solidId} side ${face.side.id ?? "?"} has no readable axis pair; ` +
+          `give both uaxis and vaxis to replace it`,
+      );
+      continue;
+    }
+    const uOffset = options.uShift ?? currentU?.offset ?? 0;
+    const vOffset = options.vShift ?? currentV?.offset ?? 0;
+    const uScale = uScaleWanted ?? currentU?.scale ?? 0.25;
+    const vScale = vScaleWanted ?? currentV?.scale ?? 0.25;
+    if (!Number.isFinite(uOffset) || !Number.isFinite(vOffset)) {
+      throw new VmfFaceError(`side ${face.side.id ?? "?"} has a non-finite texture offset`);
+    }
+    const uText = `[${fmtVec(uAxis)} ${fmtNum(uOffset)}] ${fmtNum(uScale)}`;
+    const vText = `[${fmtVec(vAxis)} ${fmtNum(vOffset)}] ${fmtNum(vScale)}`;
+    const a = setSidePair(source, face.block, "uaxis", uText, splices);
+    const b = setSidePair(source, face.block, "vaxis", vText, splices);
+    let c = false;
+    if (options.rotation !== undefined) {
+      c = setSidePair(source, face.block, "rotation", fmtNum(options.rotation), splices);
+    }
+    if (a || b || c) {
+      changed.push({
+        solidId: face.solidId,
+        sideId: face.side.id,
+        uaxis: uText,
+        vaxis: vText,
+        rotation: options.rotation ?? null,
+      });
+    }
+  }
+  if (faces.length === 0) warnings.push("nothing matched the selector, so nothing changed");
+  const text = applySplices(source, splices);
+  return { text, matched: faces.length, changed, warnings, unchanged: text === source };
+}
+
+
 export interface SmoothingResult extends AlignResult {
   groups: number;
 }

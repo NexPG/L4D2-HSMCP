@@ -6,6 +6,7 @@ import {
   normaliseMaterial,
   resolveFaces,
   setFaceMaterial,
+  setFaceUv,
   setSmoothingGroups,
   VmfFaceError,
 } from "../../src/vmf/face.js";
@@ -94,6 +95,52 @@ describe("setFaceMaterial", () => {
 
   it("refuses an empty name", () => {
     expect(() => setFaceMaterial(probe(), {}, "   ")).toThrow(VmfFaceError);
+  });
+});
+
+describe("setFaceUv", () => {
+  const box = (): string =>
+    insertSolids(
+      'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n',
+      [{ shape: "box", mins: [-64, -64, 0], maxs: [64, 64, 32] }],
+      { material: "BRICK/BRICKWALL001A" },
+    ).text;
+
+  it("writes a skewed pair and keeps the brush a valid solid", () => {
+    const source = box();
+    const id = read(source)[0]!.id!;
+    const result = setFaceUv(
+      source,
+      { solidIds: [id], facing: "up" },
+      { uaxis: [0.6, 0.8, 0], vaxis: [-0.8, 0.6, 0], uScale: 0.2, vScale: 0.3, rotation: 15 },
+    );
+    expect(result.changed).toHaveLength(1);
+    expect(result.text).toContain('"uaxis" "[0.6 0.8 0 0] 0.2"');
+    expect(result.text).toContain('"vaxis" "[-0.8 0.6 0 0] 0.3"');
+    expect(result.text).toContain('"rotation" "15"');
+    const after = read(result.text).find((s) => s.id === id)!;
+    expect(after.valid, after.findings.map((f) => f.message).join(" | ")).toBe(true);
+  });
+
+  it("keeps an omitted vector and changes only the shift", () => {
+    const source = box();
+    const id = read(source)[0]!.id!;
+    const before = setFaceUv(source, { solidIds: [id], facing: "up" }, { uaxis: [0, 1, 0] });
+    const after = setFaceUv(before.text, { solidIds: [id], facing: "up" }, { uShift: 32 });
+    expect(after.changed[0]!.uaxis).toMatch(/^\[0 1 0 32\] /);
+    expect(after.changed[0]!.vaxis).toBe(before.changed[0]!.vaxis);
+  });
+
+  it("refuses a zero scale, a zero vector and an empty edit", () => {
+    const source = box();
+    const id = read(source)[0]!.id!;
+    expect(() => setFaceUv(source, { solidIds: [id], facing: "up" }, { uScale: 0 })).toThrow(
+      /non-zero/,
+    );
+    expect(() => setFaceUv(source, { solidIds: [id], facing: "up" }, { uaxis: [0, 0, 0] })).toThrow(
+      /zero vector/,
+    );
+    expect(() => setFaceUv(source, { solidIds: [id], facing: "up" }, {})).toThrow(/nothing to change/);
   });
 });
 

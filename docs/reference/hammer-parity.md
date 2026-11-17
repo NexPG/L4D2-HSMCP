@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **98 tools**.
+Last checked against the tool list on 17/11/2026: **99 tools**.
 
 ## The file itself
 
@@ -68,6 +68,7 @@ getting `ENOENT` on the first call.
 | Align to Face | `align_faces` (`face`) | Axes kept perpendicular by orthogonalisation, not by a cross product — vbsp's table is not consistently handed |
 | Fit | `align_faces` (`fit`) | Assumes a 512-texel texture and says so |
 | Scale / shift / rotate U,V | `align_faces` | |
+| U/V vectors by hand (skew) | `set_face_uv` | Writes the axis vectors, offsets, scales and `rotation`; refuses illegal axes |
 | Justify (top/left/…) | `align_faces` (`shift`) | Expressed as a shift rather than as nine buttons |
 | Lightmap scale | `set_lightmap_scale` | Projects the luxel bill before writing |
 | Smoothing groups | `set_smoothing_groups` | Takes Hammer's 1–32 and does the bit shifting |
@@ -153,8 +154,10 @@ Everything a mapper *builds* is reachable. Everything a mapper *checks* is reach
 few things Hammer never checked are too — the wiring, the seams, the packing list.
 
 No row says "not covered" any more. The remaining limitations are tracked in the skill
-coverage: HLMV preview, 3D-skybox layout and the visual checks that need a person at the
-screen. Naming them is the point of the table.
+coverage: HLMV's 3D canvas without an interactive desktop, 3D-skybox layout, and the
+visual checks that need a person at the screen. Hammer++'s editor-only layer (previews,
+gizmos, app settings) is translated to file-level operations in
+`references/mapping/hammer-coverage.md`; it is not a gap in what a map can contain.
 
 It is worth saying what this document got wrong, because it bears on how much the rest of it
 is worth. Until 13/08/2026 there was no `File` section at all, so the table claimed near-total

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { writeGuarded } from "../fs/write.js";
 import { defineTool } from "../mcp/registry.js";
-import { alignFaces, copyFaceAlignment, setFaceMaterial, setSmoothingGroups } from "../vmf/face.js";
+import { alignFaces, copyFaceAlignment, setFaceMaterial, setFaceUv, setSmoothingGroups } from "../vmf/face.js";
 import type { AlignMode } from "../vmf/face.js";
 import type { FaceSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
@@ -277,6 +277,85 @@ export const alignFacesTool = defineTool({
   },
 });
 
+export const setFaceUvTool = defineTool({
+  name: "set_face_uv",
+  description:
+    "Writes a face's texture axes directly: the U and V vectors, their offsets and scales, " +
+    "and the `rotation` key. Hammer's face sheet exposes the same numbers; align_faces " +
+    "derives them from a mode, which cannot make a deliberately skewed pair. An omitted " +
+    "vector keeps the face's current one, so changing only the shift or scale is one call. " +
+    "The result is checked as a face before the write: an axis along the normal, a zero " +
+    "scale or a degenerate pair is refused. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    uaxis: z.tuple([z.number(), z.number(), z.number()]).optional().describe("Texture U vector."),
+    vaxis: z.tuple([z.number(), z.number(), z.number()]).optional().describe("Texture V vector."),
+    uShift: z.number().optional().describe("U offset in texels."),
+    vShift: z.number().optional().describe("V offset in texels."),
+    uScale: z.number().optional().describe("U scale; zero is refused."),
+    vScale: z.number().optional().describe("V scale; zero is refused."),
+    rotation: z.number().optional().describe("The side's `rotation` key, in degrees."),
+    ...SELECTOR,
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    unchanged: z.boolean(),
+    matched: z.number(),
+    changed: z.array(
+      z.object({
+        solidId: z.number(),
+        sideId: z.number().nullable(),
+        uaxis: z.string(),
+        vaxis: z.string(),
+        rotation: z.number().nullable(),
+      }),
+    ),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    const result = setFaceUv(before, selectorFrom(args), {
+      ...(args.uaxis !== undefined ? { uaxis: args.uaxis as [number, number, number] } : {}),
+      ...(args.vaxis !== undefined ? { vaxis: args.vaxis as [number, number, number] } : {}),
+      ...(args.uShift !== undefined ? { uShift: args.uShift } : {}),
+      ...(args.vShift !== undefined ? { vShift: args.vShift } : {}),
+      ...(args.uScale !== undefined ? { uScale: args.uScale } : {}),
+      ...(args.vScale !== undefined ? { vScale: args.vScale } : {}),
+      ...(args.rotation !== undefined ? { rotation: args.rotation } : {}),
+    });
+    assertGeometryUntouched(path, before, result.text);
+    assertAxesAccepted(path, result.text);
+
+    const write = writeGuarded(path, result.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: result.unchanged,
+    });
+    return {
+      path,
+      written: write.written,
+      backupPath: write.backupPath,
+      unchanged: result.unchanged,
+      matched: result.matched,
+      changed: result.changed,
+      warnings: result.warnings,
+      nextStep:
+        "Compile and look at the surface. The axes are legal and the geometry did not move; " +
+        "whether the skew reads as intended is for the eye.",
+    };
+  },
+});
+
 export const copyFaceAlignmentTool = defineTool({
   name: "copy_face_alignment",
   description:
@@ -437,6 +516,7 @@ export const setSmoothingGroupsTool = defineTool({
 export const faceTools = [
   setFaceMaterialTool,
   alignFacesTool,
+  setFaceUvTool,
   copyFaceAlignmentTool,
   setSmoothingGroupsTool,
 ];

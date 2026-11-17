@@ -58,7 +58,7 @@ no way to do it yet.
 |---|---|---|
 | Texture browser | `read_game_content(kind: "material")` | verified |
 | Material assign | `set_face_material` | verified |
-| Texture alignment | `align_faces`, `copy_face_alignment` | tool |
+| Texture alignment | `align_faces`, `copy_face_alignment`, `set_face_uv` | tool |
 | Smoothing groups | `set_smoothing_groups` | tool |
 | Lightmap scale | `set_lightmap_scale` | tool |
 | Light entities | `edit_vmf` | verified |
@@ -105,6 +105,34 @@ no way to do it yet.
 | Mission files | `read_campaign`, `write_campaign`, `check_campaign` | verified |
 | Addon VPK | `run_vpk_pack` | verified |
 | VScript | `write_vscript` | verified |
+
+## Hammer++ editor-only features
+
+Hammer++ adds a second layer on top of Hammer: viewport previews, gizmos and app-level
+comforts. They change what the editor shows or how a mouse drag is interpreted, not what a
+compiled map contains. There is no editor session here, so each one is either translated to
+its file-level result or named as view-only.
+
+| Hammer++ feature | What the toolkit does |
+|---|---|
+| Lighting, fog, 2D/3D skybox, particle, rope, material-proxy, render-effect previews | No editor viewport. `render_vmf_view` / `render_vmf_plan` / `render_vmf_tour` render the file offline, `read_lightmap_budget` reports luxels, and `run_map_test` with `method: "screen"` shows the real game |
+| Selection glow, toggle editor objects, 3D grid, gizmo, pivot, drag select | View and mouse UI. Selectors name solids/faces/entities exactly; `transform_solids` and `move_vertices` take numbers |
+| Microgrid / custom grid size | Coordinates are already arbitrary; `transform_solids` accepts any `grid`, including 0.125 |
+| Polygon tool | `write_vmf_solid` shape `convex`, from explicit faces |
+| Sprinkle tool | No preset menu by design (D64). Place each object with an explicit `write_vmf_solid` / `edit_vmf` call |
+| Merge tool | The result is one convex brush: `write_vmf_solid` shape `convex` after computing the hull, then `delete_solids` for the originals. Not one call |
+| Move objects to floor / ceiling | Ray or nearest-surface read (`read_vmf_trace`, `read_vmf_nearest_surface`), then `transform_solids` |
+| Face sheet U/V vectors | `set_face_uv` writes the vectors, offsets, scales and `rotation`; `align_faces` is the mode-based path |
+| Physics tool | Posing is editor simulation; what a map stores is an entity's `origin` and `angles`, set with `edit_vmf` or `transform_solids`. Brushes have no saved pose |
+| Overlay face preservation after clip | `clip_solids` edits geometry; re-check or re-create overlays with `write_overlay` after a clip |
+| Create Instance from Selection | Reachable through primitives: `read_vmf`, `write_text_file` for the fragment, `write_instance` to place it, `delete_solids` to remove the originals. Not one call |
+| `editor_text` | `edit_vmf` can write the entity. It is Hammer++-only and has no in-game effect |
+| Compile window | `run_compile` plus `read_compile_log`; no CMD window, but the log is parsed |
+| Color picker | `edit_vmf` sets `rendercolor`; the palette is editor state |
+| Keybind editor, Discord RPC, MP3 playback, model hotload, crash recovery, autosave | Application features with no file-level operation. Guarded writers take backups and support `dryRun`; there is no live session to recover |
+
+These are not gaps in what a map can contain. They are the editor application's own surface,
+and the table above says which primitive stands in for each one.
 
 ## What is genuinely missing
 

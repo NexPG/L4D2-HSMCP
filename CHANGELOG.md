@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.68-alpha — 2026-11-17
+
+- **`set_face_uv`: the face sheet's U/V vectors by hand.** `align_faces` derives axes from a
+  mode, so it cannot make a deliberately skewed pair. The new tool writes the U and V
+  vectors, their offsets and scales, and the side's `rotation`; an omitted vector keeps the
+  face's current one. Geometry is checked untouched and the axes are checked against the
+  same reader rules (no axis along the normal, no zero scale, no degenerate pair) before
+  the write.
+
 ## 0.0.67-alpha — 2026-11-17
 
 - **Coverage docs stopped claiming HLMV launch is missing.** `run_hlmv` launches the editor
