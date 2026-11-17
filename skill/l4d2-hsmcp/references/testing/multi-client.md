@@ -20,6 +20,29 @@ ways to get more than one client on one PC, and what each actually allows.
 One Steam account cannot authenticate two clients. `-insecure` disables VAC, not Steam
 identity.
 
+## Split-screen
+
+The PC build has an unsupported split-screen mode. Community guides use:
+
+```
+ss_enable 1
+ss_splitmode 2
+```
+
+usually through a `split-screen.txt` config, `exec split-screen.txt`, a controller for the
+second player, and menu add-ons that expose the mode. Related commands seen in guides:
+`connect_splitscreen <ip> 2`, `cmd2 jointeam 2`, and per-player `cmd1`/`cmd2` binds.
+
+**Tested here:** launching the map with `+ss_enable 1 +ss_splitmode 2` did **not** split the
+viewport; the frame stayed single-player. The commands likely need to run after the map is
+loaded, with a controller/add-on, or through the community config. Treat split-screen as
+unverified until a frame shows two viewports.
+
+Split-screen stays inside **one client and one Steam account**, so it bypasses the
+`No Steam logon` problem. In co-op/Survival it can add a second local survivor. Whether the
+second local player can join the Infected team in Versus/Scavenge is not verified; a
+two-team round still needs the dedicated-server route or a second account.
+
 ## Solo options that do work
 
 | Option | What it gives | Cost |

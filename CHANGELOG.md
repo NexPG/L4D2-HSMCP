@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.64-alpha — 2026-11-17
+
+- **Split-screen was researched and tested.** The PC build has an unsupported
+  `ss_enable 1` / `ss_splitmode 2` mode, usually driven by a community `split-screen.txt`,
+  a controller and menu add-ons. Launching the map with `+ss_enable 1 +ss_splitmode 2` did
+  not split the viewport here; the frame stayed single-player.
+- `testing/multi-client.md` now separates the three paths: split-screen (one account, one
+  client, unverified for two teams), a dedicated server with survivor bots and one client on
+  Infected, and a second Steam account. Split-screen bypasses `No Steam logon` but does not
+  by itself prove a Versus/Scavenge two-team round.
+
 ## 0.0.63-alpha — 2026-11-17
 
 - **Multi-client testing was attempted and its limit documented.** Two clients start with
