@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.61-alpha — 2026-11-17
+
+- **Versus is verified to load.** The mission lists `hsmcp_test_m1` under `versus`, and
+  `run_map_test` with `extraArgs: ["+mp_gamemode", "versus"]` loaded it in 33 s and ran
+  `VSCRIPT: Running anv_versus.nut`. The map is playable with the same nav as coop. A
+  single-player listen server does not populate both teams, so the full Versus HUD/round was
+  not observed.
+- New reference `mechanics/versus.md`: mission block, launch argument, the mode-script
+  evidence, and the pitfall that Scavenge gas cans are map entities and show in Versus too.
+
 ## 0.0.60-alpha — 2026-11-17
 
 - **Scavenge is verified.** The mission lists `hsmcp_test_m1` under `scavenge`, and the map

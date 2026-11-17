@@ -1,0 +1,52 @@
+# Versus
+
+Versus is a mission mode; the map supplies the arena and nav, the mode supplies the teams,
+the infected spawn screen and the scoring.
+
+## Mission entry
+
+```
+"modes"
+{
+    "versus"
+    {
+        "1"
+        {
+            "Map"         "my_map"
+            "DisplayName" "Versus"
+        }
+    }
+}
+```
+
+`write_campaign` writes this with `modes: [{ name: "versus", chapters: [...] }]`.
+
+## Running it
+
+```
+run_map_test({
+  map: "my_map",
+  waitFor: "Loading: [0-9]",
+  extraArgs: ["+mp_gamemode", "versus"]
+})
+```
+
+## What proves it
+
+- the map loads, not the main menu;
+- `console.log` contains `VSCRIPT: Running anv_versus.nut` (the mode's own script);
+- a survivor/Infected spawn screen or the Versus HUD appears when the teams are populated;
+- the map is playable with the same nav as coop.
+
+The test map loaded in 33 s and ran `anv_versus.nut`. A single-player listen server does not
+populate both teams, so the full Versus HUD/round was not observed; that is expected, not a
+map defect.
+
+## Pitfalls
+
+- Versus needs a nav mesh; without it the map is unplayable in every mode.
+- A map that also carries Scavenge gas-can entities shows them in Versus; they are map
+  entities, not mode-gated. Remove them from a map that is not meant to be Scavenge.
+- One player is not a Versus round: test the mode script line and map load, then use a
+  populated server for the round.
+- `+mp_gamemode` must come before `+map`; `run_map_test` places `extraArgs` there.
