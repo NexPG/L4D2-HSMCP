@@ -10,7 +10,8 @@ answers "where is the test for this file" without a search.
 | [`space/`](space/) | offline measurement: traces, rooms, clearance, visibility, dimensions |
 | [`render/`](render/) | offline views, plans, tours |
 | [`compile/`](compile/) | compilers, logs, leaks, toolchains, rename |
-| [`campaign/`](campaign/) | mission files, convars, addons |
+| [`campaign/`](campaign/) | mission files, convars, addons, finale contract |
+| [`game/`](game/) | game-directory staging: hide/restore archives, install a BSP/nav pair |
 | [`kv/`](kv/) | KeyValues parse/serialise |
 | [`tools/`](tools/) | tool contracts and their own suites: output schemas, parity, overlays, instances, skybox, VScript, game runtime |
 | [`support/`](support/) | shared env, `global-setup`, helpers, and the layout checks that enforce these rules |

@@ -77,6 +77,11 @@ addons/<campaign>.vpk
 - The Director builds flow **backwards from the end goal**. `nav_analyze` computes flow;
   `z_debug 1` shows it; `nav_trouble_report` lists orphans, missing checkpoints/finales,
   overlaps and tiny areas. A file with a nav mesh is not a playable map.
+- L4D2's `nav_trouble_report` is 18 checks (orphan, missing attributes, overlap,
+  corner-to-corner, non-walkable connections, ladders, tiny areas). It selects the offending
+  areas; `nav_save_selected` writes that selection to `maps/<map>_selected_####.txt` with
+  four corners, attributes and connections per area. `nav_dump_selected_set_positions` is a
+  Source SDK 2013 command and is **not** in L4D2.
 - `func_nav_attribute_region` applies flags during nav generation. The ones that matter:
   CHECKPOINT (2048), FINALE (64), MISSION START (128), BATTLEFIELD (256), BATTLESTATION (32),
   NO MOBS (8192), RESCUE VEHICLE (32768), RESCUE CLOSET (65536), EMPTY (2), NOT CLEARABLE
@@ -179,9 +184,9 @@ The exact keyvalues are in `left4dead2.fgd`; `read_fgd_class` is the authority.
 | FGD | stock + Tools++ | `read_fgd_class` reads stock | mount Tools++ FGD, tolerate `logic_script` (done) |
 | Brush/entity editing | Hammer tools | `write_vmf_solid`, `edit_vmf`, `write_vmf_fitting` | good |
 | Instances/visgroups/cordon | native concepts | `read_vmf`/instance tools | report active cordon; expand instances by default for counts? |
-| Nav flow | goal, `nav_trouble_report` | `read_nav_dump` offline, `run_nav_generate` | add a tool that runs `nav_trouble_report` and returns structured findings |
-| Checkpoint/finale | names, goals, trigger over FINALE | lint rules added | good; add finale stage validator |
-| Finale script | `<map>_finale.nut`, DirectorOptions | `write_vscript` | add a finale template/validator and a campaign-menu test |
+| Nav flow | goal, `nav_trouble_report` | `read_nav_dump` offline, `run_nav_generate`, `nav_trouble_report` live | done: the engine's checks are structured findings; `nav_save_selected` gives coordinates (L4D2 has no `nav_dump_selected_set_positions`) |
+| Checkpoint/finale | names, goals, trigger over FINALE | lint rules, `check_finale` | done for the static contract; the campaign-menu start test is still manual |
+| Finale script | `<map>_finale.nut`, DirectorOptions | `write_vscript`, `check_finale` | done for script presence and stage count; a live force-start test is the next step |
 | Doors | hinge, jamb, swing | `placeDoor`, lint | expose a `place_door` tool; door assembly helper |
 | Static props | solidity/.phy | `read_static_props`, `hasPhysics`, lint | good; clip-brush helper |
 | Terrain | displacements | `write_vmf_terrain` | add paint/water convenience + height-aware prop placement |
@@ -194,12 +199,16 @@ The exact keyvalues are in `left4dead2.fgd`; `read_fgd_class` is the authority.
 
 ## 10. Priority backlog
 
-1. **Campaign gate** — lint, compile, nav fresh, static prop collision, `nav_trouble_report`,
-   `run_map_test` with the exact pair, screenshots. This is the single highest-value tool.
-2. **Nav trouble-report tool** — run `nav_trouble_report` and parse orphan/missing
-   goal/tiny/overlap, not just the dump.
-3. **Finale validator + campaign-menu test** — type, script, trigger over FINALE, escape
-   outputs; test from the menu, not `+map`.
+1. **Campaign gate** - done as `run_campaign_gate`: mission, lint, compile, nav fresh,
+   static-prop collision (decorative models excluded), `check_finale`,
+   `nav_trouble_report`, `run_map_test` with the exact pair, screenshots. This was the
+   single highest-value tool.
+2. **Nav trouble-report tool** - done as `nav_trouble_report`: orphan/missing
+   goal/overlap/non-walkable checks are structured, and the selected areas' corners and
+   centres come back from `nav_save_selected`.
+3. **Finale validator + campaign-menu test** - `check_finale` covers type, script, stage
+   list, the FINALE area, the arrival marker and the escape outputs; the campaign-menu
+   start test remains manual, and a live `ForceFinaleStart` test is the next step.
 4. **Hammer++ health** — x86 build, FGD, I/O delimiter, gameinfo, VPK compressor.
 5. **Asset eyes** — preview-map fallback for models; contact sheet for a category; full
    material index with previews.

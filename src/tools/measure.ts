@@ -10,7 +10,7 @@ import {
 } from "../bsp/trace.js";
 import { defineTool } from "../mcp/registry.js";
 import { callSidecar } from "../sidecar/client.js";
-import { resolveInput } from "./paths.js";
+import { resolveInput, resolveVmfInput } from "./paths.js";
 
 const VEC3 = z.array(z.number()).length(3);
 
@@ -572,6 +572,14 @@ export const readStaticProps = defineTool({
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
+    vmf: z
+      .string()
+      .optional()
+      .describe(
+        "The source .vmf. When given, every model is marked `decorative` if all of its " +
+          "instances carry `spawnflags 2`: a grass or tree prop with no .phy is scenery, " +
+          "not a walk-through wall, and the two must not read as the same failure.",
+      ),
     limit: z.number().int().min(1).max(2000).default(200),
   },
   outputSchema: {
@@ -582,12 +590,15 @@ export const readStaticProps = defineTool({
     totalInstances: z.number().optional(),
     uniqueModels: z.number().optional(),
     missingPhysicsCount: z.number().optional(),
+    /** Missing .phy on a model the source does not mark as decoration. */
+    missingPhysicsSolidCount: z.number().optional(),
     missingPhysics: z
       .array(
         z.object({
           model: z.string(),
           hasPhysics: z.boolean().nullable(),
           instances: z.number(),
+          decorative: z.boolean().optional(),
         }),
       )
       .optional(),
@@ -597,6 +608,7 @@ export const readStaticProps = defineTool({
           model: z.string(),
           hasPhysics: z.boolean().nullable(),
           instances: z.number(),
+          decorative: z.boolean().optional(),
         }),
       )
       .optional(),
@@ -604,13 +616,61 @@ export const readStaticProps = defineTool({
     error: z.string().optional(),
   },
   handler: async (args, ctx) => {
+    // Check the source first: a compiled map passed as `vmf` must get the standard refusal
+    // even when the caller omitted `path`.
+    if (args.vmf) resolveVmfInput(args.vmf, ctx.config);
+    if (!args.path) throw new Error("`path` is required: the compiled .bsp to audit");
     const path = resolveInput(args.path, ctx.config);
-    const r = await callSidecar(
+    const r = (await callSidecar(
       "static_props",
       { path, gameDir: ctx.config.gameDir, limit: args.limit },
       ctx.config,
       180_000,
-    );
+    )) as {
+      models?: Array<{ model: string; hasPhysics: boolean | null; instances: number }>;
+      missingPhysics?: Array<{ model: string; hasPhysics: boolean | null; instances: number }>;
+      [key: string]: unknown;
+    };
+
+    // The compiled lump does not carry the VMF's `spawnflags`, and srctools' full prop
+    // reader fails on a culled map (surfedge index), so the source is the authority on
+    // which models are decoration. A model is decorative only when every instance says so.
+    if (args.vmf) {
+      // A `.bsp` handed to this key is a compiled map, and the standard refusal names the
+      // readers that can answer instead of letting the sidecar fail on binary input.
+      const vmf = resolveVmfInput(args.vmf, ctx.config);
+      const reply = (await callSidecar(
+        "vmf_read",
+        { path: vmf, classname: "prop_static", limit: 20_000 },
+        ctx.config,
+        300_000,
+      )) as {
+        entities?: Array<{ keyvalues?: Record<string, string> }>;
+      };
+      const byModel = new Map<string, { total: number; decorative: number }>();
+      for (const entity of reply.entities ?? []) {
+        const model = (entity.keyvalues?.["model"] ?? "").replace(/\\/g, "/").toLowerCase();
+        if (!model) continue;
+        const flags = Number.parseInt(entity.keyvalues?.["spawnflags"] ?? "0", 10);
+        const entry = byModel.get(model) ?? { total: 0, decorative: 0 };
+        entry.total += 1;
+        if ((flags & 2) !== 0) entry.decorative += 1;
+        byModel.set(model, entry);
+      }
+      const decorate = (row: { model: string }): boolean => {
+        const entry = byModel.get(row.model.toLowerCase());
+        return entry !== undefined && entry.total > 0 && entry.decorative === entry.total;
+      };
+      const models = (r.models ?? []).map((row) => ({ ...row, decorative: decorate(row) }));
+      const missing = (r.missingPhysics ?? []).map((row) => ({
+        ...row,
+        decorative: decorate(row),
+      }));
+      r.models = models;
+      r.missingPhysics = missing;
+      r.missingPhysicsSolidCount = missing.filter((row) => row.decorative !== true).length;
+    }
+
     return r as Record<string, unknown>;
   },
 });

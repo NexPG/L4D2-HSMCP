@@ -381,6 +381,14 @@ def _vmf_read(req: dict[str, Any]) -> dict[str, Any]:
         classname = ent["classname", ""]
         if wanted and classname != wanted:
             continue
+        bounds = []
+        for solid in ent.solids:
+            try:
+                lo, hi = solid.get_bbox()
+                bounds.append({"lo": [float(lo.x), float(lo.y), float(lo.z)],
+                               "hi": [float(hi.x), float(hi.y), float(hi.z)]})
+            except Exception:  # noqa: BLE001
+                continue
         entities.append(
             {
                 "id": int(ent.id),
@@ -388,6 +396,7 @@ def _vmf_read(req: dict[str, Any]) -> dict[str, Any]:
                 "targetname": ent["targetname", ""] or None,
                 "origin": [float(v) for v in ent.get_origin()] if ent.is_brush() is False else None,
                 "solidCount": len(list(ent.solids)),
+                "solidBounds": bounds,
                 "keyvalues": {k: str(v) for k, v in ent.items()},
                 "outputs": [
                     {

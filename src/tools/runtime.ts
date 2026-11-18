@@ -11,7 +11,8 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join } from "node:path";import { parseNavDump } from "../bsp/navdump.js";
+import { basename, dirname, join } from "node:path";
+import { parseNavDump } from "../bsp/navdump.js";
 import { checkNavFreshness } from "../bsp/nav.js";
 import {
   flowWarnings,
@@ -23,9 +24,15 @@ import {
   waitForFile,
   waitForLog,
 } from "../game/launch.js";
+import {
+  findShadowingVpks,
+  hideFiles,
+  resolveAddonPath,
+  restoreFiles,
+  stageMapPair,
+} from "../game/stage.js";
 import { defineTool } from "../mcp/registry.js";
 import { captureWindow } from "../screenshot/window.js";
-import { callSidecar } from "../sidecar/client.js";
 import { resolveInput } from "./paths.js";
 
 const VEC3 = z.array(z.number()).length(3);
@@ -60,59 +67,6 @@ async function stopGame(): Promise<void> {
     // Not running. That is the normal case.
   }
   await sleep(1200);
-}
-
-/**
- * Resolves an archive to hide.
- *
- * Callers naturally say `"my_campaign.vpk"`, and resolving that against the repository root
- * found nothing, so the archive stayed mounted and the engine generated nav for the map
- * inside it while the tool shipped the fresh loose BSP beside the mesh. This checks the
- * game's `addons/` directory as well, which is where a bare name means it.
- */
-function resolveAddon(pathOrName: string, config: Parameters<typeof resolveInput>[1], gameDir: string): string {
-  const direct = resolveInput(pathOrName, config);
-  if (existsSync(direct)) return direct;
-  const inAddons = join(gameDir, "addons", basename(pathOrName));
-  if (existsSync(inAddons)) return inAddons;
-  return direct;
-}
-
-/**
- * Installed VPKs whose index contains `maps/<name>.bsp`.
- *
- * A mounted add-on archive wins over the loose map in this engine. Generating nav with one
- * present produced a mesh for the archive's map while the build shipped the new loose BSP
- * beside it -- a stale pair that reads as "Map is unplayable". The caller can name an
- * archive, but it should not have to: the map in front of the engine is the loose one, so
- * any archive carrying the same path is a shadow and is moved aside.
- */
-async function findShadowingVpks(
-  name: string,
-  gameDir: string,
-  config: Parameters<typeof resolveInput>[1],
-): Promise<string[]> {
-  const addons = join(gameDir, "addons");
-  if (!existsSync(addons)) return [];
-  const found: string[] = [];
-  for (const entry of readdirSync(addons)) {
-    if (!entry.toLowerCase().endsWith(".vpk")) continue;
-    const path = join(addons, entry);
-    try {
-      const listed = (await callSidecar(
-        "vpk_list",
-        { path, prefix: `maps/${name}.bsp`, limit: 10 },
-        config,
-        60_000,
-      )) as { entries?: string[] };
-      if ((listed.entries ?? []).some((p) => p.toLowerCase() === `maps/${name}.bsp`)) {
-        found.push(path);
-      }
-    } catch {
-      // A malformed or unreadable archive is not evidence of a shadow; leave it mounted.
-    }
-  }
-  return found;
 }
 
 /**
@@ -163,7 +117,7 @@ async function bakeStringtableDictionary(
 }
 
 
-const runNavGenerate = defineTool({
+export const runNavGenerate = defineTool({
   name: "run_nav_generate",
   description:
     "Generates nav meshes the only way Left 4 Dead 2 can: it launches the game client as a " +
@@ -261,7 +215,7 @@ const runNavGenerate = defineTool({
     writeFileSync(cfgPath, navGenerateConfig(args.navSlopeLimit), "utf8");
 
     const named = (args.addonsToHide ?? []).map((addon) =>
-      resolveAddon(addon, ctx.config, gameDir),
+      resolveAddonPath(addon, (p) => resolveInput(p, ctx.config), gameDir),
     );
     const shadowingArchives: string[] = [];
     if (args.autoHideShadowing !== false) {
@@ -270,13 +224,7 @@ const runNavGenerate = defineTool({
         shadowingArchives.push(...(await findShadowingVpks(name, gameDir, ctx.config)));
       }
     }
-    const hidden: Array<{ path: string; off: string }> = [];
-    for (const path of [...new Set([...named, ...shadowingArchives])]) {
-      if (!existsSync(path)) continue;
-      const off = `${path}.off`;
-      renameSync(path, off);
-      hidden.push({ path, off });
-    }
+    const hidden = hideFiles([...new Set([...named, ...shadowingArchives])]);
 
     const maps: Array<{
       map: string;
@@ -431,16 +379,14 @@ const runNavGenerate = defineTool({
         copyFileSync(backup, cfgPath);
         rmSync(backup, { force: true });
       }
-      for (const entry of hidden) {
-        if (existsSync(entry.off)) renameSync(entry.off, entry.path);
-      }
+      restoreFiles(hidden);
     }
 
     return { ok: maps.every((m) => m.generated && m.fresh), maps, restored: true, shadowingArchives };
   },
 });
 
-const runMapTest = defineTool({
+export const runMapTest = defineTool({
   name: "run_map_test",
   description:
     "Launches an installed map and watches the engine's console log for a pattern, then " +
@@ -482,6 +428,23 @@ const runMapTest = defineTool({
           "wins over a loose copy in some mount orders, so a build test can otherwise load " +
           "last week's map. Restored afterwards.",
       ),
+    scriptsDir: z
+      .string()
+      .optional()
+      .describe(
+        "A `scripts/vscripts` directory to install into the game for this run, with existing " +
+          "files backed up and restored. Needed when the campaign VPK is hidden for a loose " +
+          "map test but the map's `logic_script` or `_finale.nut` lives in that VPK.",
+      ),
+    commands: z
+      .array(z.string())
+      .default([])
+      .describe(
+        "Console commands to run after the map loads, written to `cfg/listenserver.cfg` with " +
+          "the previous file restored afterwards. This is how a test forces a finale " +
+          "(`ent_fire finale ForceFinaleStart`) or fires a named entity without a player " +
+          "walking there. `sv_cheats 1` is prepended.",
+      ),
     screenshot: z
       .boolean()
       .optional()
@@ -521,6 +484,8 @@ const runMapTest = defineTool({
     screenshotHeight: z.number().nullable(),
     navInstalled: z.boolean(),
     bspInstalled: z.boolean(),
+    scriptsInstalled: z.number(),
+    commandsRun: z.array(z.string()),
     logTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
@@ -533,43 +498,55 @@ const runMapTest = defineTool({
     // "Mission credits" in the file and a wait-for match returns immediately.
     writeFileSync(consoleLog, "", "utf8");
 
-    const targetNav = join(gameDir, "maps", `${args.map}.nav`);
-    const navBackup = `${targetNav}.hsmcp-backup`;
-    const targetBsp = join(gameDir, "maps", `${args.map}.bsp`);
-    const bspBackup = `${targetBsp}.hsmcp-backup`;
-    const hidden: Array<{ path: string; off: string }> = [];
-    for (const addon of args.addonsToHide ?? []) {
-      const path = resolveAddon(addon, ctx.config, gameDir);
-      if (!existsSync(path)) continue;
-      const off = `${path}.off`;
-      renameSync(path, off);
-      hidden.push({ path, off });
-    }
-    let navInstalled = false;
-    let bspInstalled = false;
-    let hadNav = false;
-    let hadBsp = false;
-    if (args.bsp) {
-      const sourceBsp = resolveInput(args.bsp, ctx.config);
-      if (!existsSync(sourceBsp)) throw new Error(`${sourceBsp} does not exist`);
-      mkdirSync(dirname(targetBsp), { recursive: true });
-      if (existsSync(targetBsp)) {
-        copyFileSync(targetBsp, bspBackup);
-        hadBsp = true;
+    const hidden = hideFiles(
+      (args.addonsToHide ?? []).map((addon) =>
+        resolveAddonPath(addon, (p) => resolveInput(p, ctx.config), gameDir),
+      ),
+    );
+    const staged = stageMapPair({
+      gameDir,
+      map: args.map,
+      ...(args.bsp ? { bsp: resolveInput(args.bsp, ctx.config) } : {}),
+      ...(args.nav ? { nav: resolveInput(args.nav, ctx.config) } : {}),
+    });
+
+    // A hidden campaign VPK takes its scripts with it. A loose-map test of a VScript map
+    // then reports `Entity <name> encountered an error in RunScript()` and the map looks
+    // broken; installing the scripts beside the map is what makes the test test the map.
+    const scriptBackups: Array<{ path: string; had: boolean }> = [];
+    if (args.scriptsDir) {
+      const source = resolveInput(args.scriptsDir, ctx.config);
+      if (!existsSync(source)) throw new Error(`${source} does not exist`);
+      const target = join(gameDir, "scripts", "vscripts");
+      mkdirSync(target, { recursive: true });
+      for (const entry of readdirSync(source)) {
+        const from = join(source, entry);
+        if (!statSync(from).isFile()) continue;
+        const to = join(target, entry);
+        const had = existsSync(to);
+        if (had) {
+          rmSync(`${to}.hsmcp-backup`, { force: true });
+          copyFileSync(to, `${to}.hsmcp-backup`);
+        }
+        copyFileSync(from, to);
+        scriptBackups.push({ path: to, had });
       }
-      copyFileSync(sourceBsp, targetBsp);
-      bspInstalled = true;
     }
-    if (args.nav) {
-      const sourceNav = resolveInput(args.nav, ctx.config);
-      if (!existsSync(sourceNav)) throw new Error(`${sourceNav} does not exist`);
-      mkdirSync(dirname(targetNav), { recursive: true });
-      if (existsSync(targetNav)) {
-        copyFileSync(targetNav, navBackup);
-        hadNav = true;
+
+    // `listenserver.cfg` is how commands run after the map rather than before it. The
+    // previous file is restored, because this is a test harness, not a server config.
+    const cfgPath = join(gameDir, "cfg", "listenserver.cfg");
+    const cfgBackup = `${cfgPath}.hsmcp-backup`;
+    const commands = args.commands ?? [];
+    let cfgWritten = false;
+    if (commands.length > 0) {
+      mkdirSync(dirname(cfgPath), { recursive: true });
+      if (existsSync(cfgPath)) {
+        rmSync(cfgBackup, { force: true });
+        copyFileSync(cfgPath, cfgBackup);
       }
-      copyFileSync(sourceNav, targetNav);
-      navInstalled = true;
+      writeFileSync(cfgPath, ["sv_cheats 1", ...commands, ""].join("\n"), "utf8");
+      cfgWritten = true;
     }
 
     const started = Date.now();
@@ -620,16 +597,17 @@ const runMapTest = defineTool({
     } finally {
       handle.stop();
       await sleep(1000);
-      if (navInstalled) {
-        rmSync(targetNav, { force: true });
-        if (hadNav && existsSync(navBackup)) renameSync(navBackup, targetNav);
+      staged.restore();
+      restoreFiles(hidden);
+      if (cfgWritten) {
+        rmSync(cfgPath, { force: true });
+        if (existsSync(cfgBackup)) renameSync(cfgBackup, cfgPath);
       }
-      if (bspInstalled) {
-        rmSync(targetBsp, { force: true });
-        if (hadBsp && existsSync(bspBackup)) renameSync(bspBackup, targetBsp);
-      }
-      for (const entry of hidden) {
-        if (existsSync(entry.off)) renameSync(entry.off, entry.path);
+      for (const entry of scriptBackups) {
+        rmSync(entry.path, { force: true });
+        if (entry.had && existsSync(`${entry.path}.hsmcp-backup`)) {
+          renameSync(`${entry.path}.hsmcp-backup`, entry.path);
+        }
       }
     }
 
@@ -643,8 +621,10 @@ const runMapTest = defineTool({
       screenshotPath,
       screenshotWidth,
       screenshotHeight,
-      navInstalled,
-      bspInstalled,
+      navInstalled: staged.navInstalled,
+      bspInstalled: staged.bspInstalled,
+      scriptsInstalled: scriptBackups.length,
+      commandsRun: commands,
       logTail: log
         .split(/\r?\n/)
         .map((line) => line.trim())

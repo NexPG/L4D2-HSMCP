@@ -5,6 +5,35 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.83-alpha — 2026-11-18
+
+- **`run_campaign_gate`.** One guarded tool runs the campaign through mission check, VMF
+  lint, compile, nav generation with the dictionary baked, static-prop collision, the
+  finale contract, the engine's `nav_trouble_report`, and a map test that installs the exact
+  BSP/nav pair it just produced. It stops at the first hard failure by default and reports
+  `stoppedAt`; the shipping BSP is the nav-generated one, not the compile output.
+- **`nav_trouble_report`.** Runs the engine's own checks and parses them into passes,
+  failures and coordinates. L4D2 has no `nav_dump_selected_set_positions` (that command is
+  Source SDK 2013); the selected set is saved with `nav_save_selected`, whose four corners
+  and attributes are read back and cleaned up. Offline mode summarises a `_nav.txt` dump
+  and refuses to claim the checks it cannot see.
+- **`check_finale`.** Reads a VMF or BSP and checks the finale as a contract: type, custom
+  script, `DirectorOptions` stage count against the defined stages, gauntlet
+  `nav_flow_target`, outtro stats, the disabled arrival changelevel, the FINALE nav area
+  under the trigger, `FinaleEscapeStarted` wiring, and a trigger that starts disabled with
+  nothing to enable it. A type-2 trigger no longer returns early and skips the rest.
+- **Static props know decoration.** `read_static_props` takes the source `vmf` and marks a
+  model `decorative` when every instance carries `spawnflags 2`; `missingPhysicsSolidCount`
+  is the number that matters, so grass and tree canopies stop reading as walk-through walls.
+- **The engine found two geometry bugs the static checks could not.** m2's FINALE region
+  stopped at y=3300 while the nav mesh's last row was at y=3225 (`Missing Finale check
+  found 3 areas`), and a 32-unit hall floor step made four connections non-walkable. m1's
+  32-unit swamp bank generated 40 sloped areas the engine called non-walkable. Both maps
+  now pass every `nav_trouble_report` check.
+- **Staging is one module.** `src/game/stage.ts` owns hide/restore and BSP/nav installation
+  for the map test, nav generation and the trouble report, instead of three copies that
+  could disagree about what they had installed.
+
 ## 0.0.82-alpha — 2026-11-18
 
 - **Deep research pass.** `docs/reference/l4d2-modding-research-2026.md` collects Hammer/

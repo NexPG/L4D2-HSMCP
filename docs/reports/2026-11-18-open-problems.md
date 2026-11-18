@@ -1,35 +1,44 @@
-# Open problems — 2026-11-18
+# Open problems — 2026-11-18 (post-gate list)
 
-**Version:** 0.0.81-alpha
+**Version:** 0.0.83-alpha
 **Campaign:** `campaigns/002-night-moscow/` (local, gitignored)
 **Meaning:** only problems that are still open. The fixes already landed are listed at the
 end; they are not repeated as open work.
 
+## Verified state
+
+`run_campaign_gate` with `campaign`, `lint`, `props`, `finale`, `trouble` and `test` returns
+`ok: true` for both maps. `nav_trouble_report` passes every engine check on m1 and m2;
+`check_finale` passes m2; the mission check is clean; each map loads with its exact nav
+pair and no `NAV ERRORS`.
+
 ## P1 — blocks a "finished" campaign
 
-### 1. Type-2 finale does not start
+### 1. Type-2 finale start is still a manual test
 
 **When:** last map `night_moscow_m2`, `trigger_finale` with `type 2`; tested with `+map`
-standalone and after a `+map` chapter transition, with and without `director_stop`, with
-`Enable` + `ForceFinaleStart` fired by `ent_fire`, a logic_timer, and entity I/O.
-**Symptom:** no `Finale started`, no `night_moscow_m2_finale.nut` load, no
-`[night_moscow] finale stage` lines, no `FinaleEscapeStarted`. The BTR escape trigger still
-ends the map.
-**Ruled out:** missing model (now `radio_box.mdl`), missing FINALE nav (81 areas), script
-absent from the VPK (also tested loose), wrong `type` key (FGD says `type`), missing arrival
-`info_changelevel` (present, disabled).
-**Likely cause:** the campaign/mission context and the +use contract. `+map` loads a single
-map; stock finales enable a button and a player +uses it. `ForceFinaleStart` may not be
-enough for a type-2 finale outside a campaign mission.
-**Next fix:** test from the campaign menu, compare entity/outputs with `c2m5_concert`, and
-use a real `+use` button. Do not call it fixed until the stage logs and
-`FinaleEscapeStarted` are present.
+and a forced start (`ent_fire finale ForceFinaleStart`, with `Enable`, `director_start`,
+and `wait`), with the campaign scripts installed loose.
+**Symptom:** the script loads (`[night_moscow] no-mob script loaded`), but no
+`[night_moscow] finale stage` and no `HSMCP_FINALE_STARTED` echo. The BTR escape trigger
+still ends the map.
+**Ruled out:** missing model, missing FINALE nav (88 areas), script absent (installed
+loose and packed), wrong `type` key, missing arrival `info_changelevel`, missing toolbar
+`+use` object (the `finale_start` trigger exists).
+**Likely cause:** the `+map` harness never gives the map a spawned player (the log shows
+`[INTROS] Team is frozen` and `New player ... joining team 2 as character Unknown` only
+after the config ran). `ForceFinaleStart` with no player activator is not the player-facing
+path. The real start is a player walking into `finale_start` or +using the trigger.
+**Next fix:** test from the campaign menu, not `+map`; add a player-driven test harness (a
+real `+use` button the survivor can reach) and compare outputs with `c2m5_concert`. Do not
+call it fixed until the stage logs and `FinaleEscapeStarted` are present.
 
 ### 2. Downloadable string-table dictionary is incomplete
 
 **When:** a map baked with `-stringtables`; normal client.
 **Symptom:** `String Table dictionary for downloadables should be rebuilt, only found 45 of
-92 strings in dictionary`. The map loads, but the client may spend time rebuilding it.
+89 strings in dictionary` (the count moves with the map). The map loads, but the client may
+spend time rebuilding it.
 **Likely cause:** the bake runs with the shadowing campaign VPK hidden, so strings that only
 the archive contributes are missing.
 **Next fix:** bake on a copy with the archive mounted and the loose map winning, or merge the
@@ -183,3 +192,23 @@ tools that trust the FGD may not.
 - `write_vmf_terrain` (grid + displacement + noise + sew); ten-guide authoring reference.
 - Campaign details: stock facades, storefronts, dumpsters, trash, lamps, 120 grass props,
   deeper swamp, tree lines, cliff band, `mall_escalator` with positive roll.
+- `run_campaign_gate` (one gate across mission, lint, compile, nav, props, finale, trouble
+  and map test) and `check_finale` (type, script, stage list, FINALE area, arrival marker,
+  escape outputs, start path).
+- `nav_trouble_report`: the engine's own checks are structured findings; L4D2's
+  `nav_save_selected` gives the selected areas' four corners, attributes and connections
+  because `nav_dump_selected_set_positions` does not exist in this game. `nav_save_selected`
+  files are removed after reading.
+- `run_map_test` can install a `scripts/vscripts` directory and run post-load console
+  commands, restoring both. This is what let the loose-map test load the no-mob script
+  instead of reporting `Entity nomobs encountered an error in RunScript()`.
+- m2 `Missing Finale` (3 areas): the FINALE region stopped at y=3300 while the nav's last
+  row was at y=3225; extended to y=3200. m2 non-walkable connections: the hall floor was a
+  32-unit step above the corridor; lowered to -160.
+- m1 non-walkable connections (40 areas): the swamp bed was 32 units below the forest,
+  which produced a ring of 52-degree nav areas; the bed is now 16 below (inside StepHeight)
+  and the pool is 12 deep. The engine's check passes.
+- `read_static_props(vmf:)` marks a model `decorative` when every instance carries
+  `spawnflags 2`; `missingPhysicsSolidCount` is the number the gate fails on.
+- `src/game/stage.ts` owns hide/restore and BSP/nav installation for the map test, nav
+  generation and the nav trouble report.

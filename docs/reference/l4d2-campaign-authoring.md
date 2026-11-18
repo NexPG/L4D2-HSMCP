@@ -52,7 +52,9 @@ campaign. Sources are listed at the end; this page turns them into contracts the
   the start cannot reach, reports `GetGoalArea: Cannot find end area` or
   `NAV ERRORS - Map is unplayable`.
 - `z_debug 1` and `nav_trouble_report` are the diagnosis; never declare a mesh playable from
-  the file existing. `read_nav_dump` is the offline check; the engine report is the oracle.
+  the file existing. `read_nav_dump` is the offline check; `nav_trouble_report` runs the
+  engine's 18 checks and returns the selected areas' coordinates. `run_campaign_gate` is the
+  one call that runs both plus lint, compile, props, `check_finale` and a map test.
 - A finale map needs `trigger_finale` **over** the FINALE area. If it is not, the escape
   route is chosen from the centre of the FINALE areas and the trigger disagrees with it.
 - `trigger_finale` type 2 loads `scripts/vscripts/<map>_finale.nut`. `type 0` has no stage

@@ -14,7 +14,9 @@ import { depsTools } from "./deps.js";
 import { displacementTools } from "./displacement.js";
 import { exportMapTools } from "./exportmap.js";
 import { faceTools } from "./face.js";
+import { finaleTools } from "./finale.js";
 import { gameTools } from "./games.js";
+import { gateTools } from "./gate.js";
 import { healthTools } from "./health.js";
 import { hlmvTools } from "./hlmv.js";
 import { hollowTools } from "./hollow.js";
@@ -26,6 +28,7 @@ import { measureTools } from "./measure.js";
 import { measureTools2 } from "./measurespace.js";
 import { mergeTools } from "./merge.js";
 import { modifyTools } from "./modify.js";
+import { navTroubleTools } from "./navtrouble.js";
 import { optimiseTools } from "./optimise.js";
 import { organiseTools } from "./organise.js";
 import { overlayTools } from "./overlay.js";
@@ -62,6 +65,7 @@ export const allTools: AnyToolDef[] = [
   ...hlmvTools,
   ...gameTools,
   ...campaignTools,
+  ...gateTools,
   ...addonTools,
   ...bspTools,
   ...bspEditTools,
@@ -85,6 +89,8 @@ export const allTools: AnyToolDef[] = [
   ...previewTools,
   ...displacementTools,
   ...exportMapTools,
+  ...finaleTools,
+  ...navTroubleTools,
   ...buildTools,
   ...modifyTools,
   ...mergeTools,

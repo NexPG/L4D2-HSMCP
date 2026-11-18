@@ -52,9 +52,20 @@ contracts the tools enforce.
 
 ## 6. Gate
 
-- [ ] `read_vmf_lint` 0 errors.
 - [ ] `run_compile` clean; `read_map_geometry` under limits.
 - [ ] `run_nav_generate` `fresh: true`, dictionary true, dump `playable`.
-- [ ] `nav_trouble_report` no orphan / missing goal.
-- [ ] `run_map_test` with the exact BSP/nav pair; screenshot per requested mechanic.
+- [ ] `nav_trouble_report` returns `pass`: orphan, missing Finale/Checkpoint/Battlefield,
+      overlap, corner-to-corner, non-walkable connections. A failure comes with the selected
+      areas' coordinates; fix the geometry rather than deleting nav areas.
+- [ ] `check_finale`: type, script, DirectorOptions stage count, FINALE area, arrival
+      changelevel and `FinaleEscapeStarted` wiring.
+- [ ] `read_static_props` with the `vmf`: a missing `.phy` on a decorative model is not a
+      failure; on a solid prop it is.
+- [ ] `run_map_test` with the exact nav-generated BSP/nav pair; screenshot per requested
+      mechanic. `NAV ERRORS` or `Map is unplayable` in the log fails the run.
 - [ ] `check_campaign(vpk: ...)` reads the installed archive.
+- [ ] Or run all of the above as `run_campaign_gate` and require `ok: true`.
+
+The gate's shipping BSP is the **nav-generated** one. The engine appends its string-table
+dictionary at nav time; shipping the compile output beside a nav made from the baked copy
+is the stale pair that reads in game as `Map is unplayable`.

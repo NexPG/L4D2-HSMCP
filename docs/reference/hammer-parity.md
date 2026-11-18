@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **107 tools**.
+Last checked against the tool list on 18/11/2026: **110 tools**.
 
 ## The file itself
 
@@ -189,7 +189,10 @@ map and looking, or by not happening at all.
 | `read_text_file` | nothing: Hammer does not open QC, SMD or VMT as text |
 | `write_text_file` | nothing: source formats are edited in a text editor |
 | `read_nav_dump` | nothing: the engine's own nav dump is not readable from Hammer |
+| `nav_trouble_report` | `nav_trouble_report` in the console, read by eye; this selects the same areas and returns their coordinates |
 | `run_nav_generate` | the engine's nav generator, driven without a person at the console |
+| `check_finale` | nothing: no editor checks the finale contract — type, script, stage list, nav area, escape outputs |
+| `run_campaign_gate` | nothing: lint, compile, nav, collision, finale, trouble report and map test are separate manual acts |
 | `run_map_test` | nothing: loading a map and watching the console is a manual act |
 | `write_vscript` | nothing: Hammer cannot author or attach a Squirrel script |
 | `write_overlay` | the overlay tool, driven by a side id and a point instead of a drag |
