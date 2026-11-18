@@ -34,6 +34,21 @@ Confirmed stock paths (L4D2, 2026 install):
 | Doors | `models/props_doors/checkpoint_door_02.mdl` (58.3 x 105.8); `checkpoint_door_01.mdl` (68.4 x 105); `checkpoint_door_-02.mdl` (58.3) |
 | Vehicles | `models/props_vehicles/apc001.mdl` (closest stock BTR stand-in); `train003.mdl` |
 
+## Doors: the origin is the hinge
+
+A rotating door model's origin sits on its **hinge**, not in the middle of the leaf. For
+`checkpoint_door_02` the hull is `-2.6..+55.7` on the model's local Y: the leaf extends
+58.3 units one way from the origin. Put that origin in the middle of a 64-unit opening and
+half the doorway stays open while the other half goes through the wall.
+
+- Use the jamb, about **2 units inside the opening**, as the entity origin.
+- With `angles "0 90 0"` the leaf's local +Y turns to world **-X**, so the hinge belongs on
+  the **+X** jamb (x = opening.max - 2). Yaw 270 puts it on the -X jamb.
+- `placeDoor` in `src/vmf/door.ts` does this from `read_model_info` bounds and an opening;
+  the build uses it for both checkpoint doors.
+- `read_vmf_lint` reports `l4d2-door-hinge-at-center` when the origin is more than 8 units
+  from both jambs, and `l4d2-door-opening-too-wide` / `-too-narrow` for the fit.
+
 ## Geometry that nav can cross
 
 - Ramp/wedge: **<= 45 degrees**. `write_vmf_solid` refuses a steeper `wedge` unless

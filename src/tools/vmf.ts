@@ -311,7 +311,8 @@ export const readVmfLint = defineTool({
     "the door model's width, info_landmark entities inside a solid, and counts that approach " +
     "the compiler limits. " +
     "Knows the entities the installed FGD declares, so a class the game has is not reported " +
-    "as unknown. L4D2 campaign rules are included: a non-L4D2 changelevel, a missing " +
+    "as unknown; `logic_script`, which the stock FGD omits, is tolerated for VScript maps. " +
+    "L4D2 campaign rules are included: a non-L4D2 changelevel, a missing " +
     "landmark or checkpoint door, and a Standard finale are reported. " +
     "Needs the Python sidecar and the Left 4 Dead 2 install; see health.",
   realm: "map",

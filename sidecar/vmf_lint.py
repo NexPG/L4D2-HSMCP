@@ -109,7 +109,17 @@ def _point_in_solid(vmf: Any, point: Any) -> int | None:
     entities too, but they have no collision. Counting them made a landmark in the middle
     of a safe room "embedded in solid", which is exactly the false positive that sends a
     builder moving a correct entity.
+
+    `Solid.point_inside` takes a `Vec`, not a list. Passing a list raised, the loop caught it
+    and returned None for every probe -- which made the door check and the landmark check
+    silently pass on geometry they were written to catch.
     """
+    try:
+        from srctools.math import Vec
+
+        probe = Vec(float(point[0]), float(point[1]), float(point[2]))
+    except Exception:  # noqa: BLE001
+        return None
     non_solid = (
         "trigger_",
         "func_nav_",
@@ -122,7 +132,7 @@ def _point_in_solid(vmf: Any, point: Any) -> int | None:
     )
     for solid in vmf.brushes:
         try:
-            if solid.point_inside(point):
+            if solid.point_inside(probe):
                 return int(solid.id)
         except Exception:  # noqa: BLE001
             continue
@@ -131,7 +141,7 @@ def _point_in_solid(vmf: Any, point: Any) -> int | None:
             continue
         for solid in ent.solids:
             try:
-                if solid.point_inside(point):
+                if solid.point_inside(probe):
                     return int(solid.id)
             except Exception:  # noqa: BLE001
                 continue
@@ -226,8 +236,8 @@ def _lint_landmarks_and_doors(
             axis = 1
         else:
             continue
-        gap = 0.0
-        for sign in (1.0, -1.0):
+        distances: dict[str, float] = {}
+        for sign, label in ((1.0, "plus"), (-1.0, "minus")):
             travelled = 0.0
             while travelled < 512.0:
                 travelled += 2.0
@@ -237,9 +247,27 @@ def _lint_landmarks_and_doors(
                     break
             else:
                 travelled = 512.0
-            gap += travelled
+            distances[label] = travelled
+        gap = distances["plus"] + distances["minus"]
         if gap >= 1024.0:
             continue
+        nearest_jamb = min(distances["plus"], distances["minus"])
+        if nearest_jamb > 8.0:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-door-hinge-at-center",
+                    f"the door origin is the hinge, but it sits {nearest_jamb:.0f} units from "
+                    f"the nearest jamb: the leaf is centred in a {gap:.0f}-unit opening and "
+                    f"half of it runs through the wall. Put the origin at a jamb (about 2 "
+                    f"units inside it), not in the middle of the opening",
+                    entity_id=int(ent.id),
+                    classname=classname,
+                    opening=round(gap, 1),
+                    hingeOffset=round(nearest_jamb, 1),
+                    modelWidth=round(model_width, 1),
+                )
+            )
         if gap - model_width > 16.0:
             findings.append(
                 _finding(
@@ -300,6 +328,24 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
     for ent in entities:
         classname = ent["classname", ""]
         ent_id = int(ent.id)
+        # L4D2 ships `logic_script`, but the stock FGD does not declare it. It is the
+        # supported way to attach a VScript and has `RunScriptCode`/`RunScriptFile` inputs.
+        # Reporting the whole class as unknown made every VScript map look invalid.
+        if classname == "logic_script":
+            allowed = {"classname", "id", "hammerid", "targetname", "origin", "angles", "vscripts", "group", "spawnflags"}
+            for key in ent.keys:
+                if key.lower() not in allowed:
+                    findings.append(
+                        _finding(
+                            "warning",
+                            "unknown-keyvalue",
+                            f'"logic_script" has no keyvalue "{key}"',
+                            entity_id=ent_id,
+                            classname=classname,
+                            key=key,
+                        )
+                    )
+            continue
         cls = fgd.entities.get(classname)
 
         if cls is None:

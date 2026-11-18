@@ -58,7 +58,11 @@ Verified for this project:
 
 - `printl`, `Msg` — console output.
 - `DirectorOptions` is the table the Director reads for tuning; do not set it without a
-  reason and without checking the result.
+  reason and without checking the result. It is the non-cheat way to suppress infected:
+  `CommonLimit`, `MaxSpecials`, `TankLimit`, `WitchLimit` and `MobSpawnSize` set to 0.
+  `director_stop` is a **cheat command** and is ignored in a normal client.
+- The stock FGD does not declare `logic_script`; `read_vmf_lint` tolerates it and its
+  `vscripts` key. The engine still creates it and runs the script.
 - Finale victory is an entity input (`trigger_finale.FinaleEscapeFinished`), not a script
   call. See `references/campaign/finale.md`.
 

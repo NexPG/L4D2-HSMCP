@@ -14,13 +14,21 @@
   CHECKPOINT to FINALE. The safe-room door is open in the capture and the metro is visible.
 - The chapter transition `m1 -> m2` was exercised with the self-test warp and
   `Host_Changelevel` reached `night_moscow_m2`.
-- `director_stop` runs at spawn in both maps (`HSMCP_DIRECTOR_STOPPED`) and no infected were
-  seen in the captures.
+- The no-mob `logic_script` loads on both maps (`[night_moscow] no-mob script loaded`) and
+  no infected were seen in the captures.
 - Sky: the engine no longer logs `material "skybox/..." not found`; a sky is drawn through
   the cabin doorway. It is `urbannightburning_hdr`, the closest dual-mode night stock sky.
 - A normal Steam launch with the deployed VPK reaches the main menu; a direct
   `left4dead2.exe` launch does not (Steam auth), which is a test-harness fault, not an
   add-on fault.
+- The checkpoint door now hangs on the jamb: the 64-unit opening is clear when it is open,
+  and the leaf covers it when closed. Both doors use `placeDoor` and `read_model_info`, not
+  a hard-coded centre origin.
+- `director_stop` turned out to be cheat-only (`Can't use cheat command ... unless sv_cheats`),
+  so the first normal-client m2 run had commons in the metro. Both maps now load a
+  `logic_script` that sets `DirectorOptions.CommonLimit/MaxSpecials/TankLimit/WitchLimit`
+  to zero; the normal-client m2 run shows no infected and logs
+  `[night_moscow] no-mob script loaded`.
 
 ## Root fixes in the repository
 
@@ -31,6 +39,8 @@
 | No sky / flat void / "laggy sky" | worldspawn held `sky_l4d_night02`/`urbannightburning`; L4D2 asks for `skybox/<skyname><side>.vmt`, and stock maps store `..._hdr` | `checkSkybox` groups by full suffixed name, returns `suggested`; `write_vmf` stores it; `run_compile` refuses a sky without faces for the mode; default is `sky_l4d_rural02_hdr` |
 | Sky-only-one-mode | HDR-only skies (`sky_l4d_night02`) draw nothing in LDR | A dual-mode sky is required for `-both`; `read_asset_catalog` lists `ldrComplete`/`hdrComplete` |
 | Door opening twice the door | Walls were cut 128/256 wide around a 58-unit `checkpoint_door_02` | Openings are 64 x 112 (or 72 x 112 for the 68-unit door); lint `l4d2-door-opening-too-wide` / `-too-narrow` compares the gap to the model's horizontal width |
+| Door stuck in the middle of the opening | The door model's origin is its **hinge**, not the leaf centre; both doors were at x = 0 in a 64-unit opening, so half the leaf went through the wall and half the doorway stayed open | `placeDoor` computes the hinge two units inside the jamb from `read_model_info` bounds; both campaign doors are at x = 30; lint `l4d2-door-hinge-at-center` catches the mistake |
+| Zombies in a normal client | `director_stop` is a cheat command and is ignored without `sv_cheats`; the marker was an echo, not proof | Both maps attach a `logic_script` that sets `DirectorOptions` limits to 0 and re-applies them on a timer; the stock FGD's missing `logic_script` is tolerated by the lint |
 | Slippery block / bots will not climb | A 51-degree `wedge` is a wall; a 20-unit stair rise is above the 18-unit step height | `write_vmf_solid` refuses a >45-degree wedge and a >18-unit step unless `steep: true`; campaign uses eight 16x16 steps |
 | `landmark embedded in solid` | `info_landmark` inside a trigger/region brush was counted as solid | `l4d2-landmark-in-solid` checks world solids and solid brush entities, ignoring triggers, nav regions and `info_changelevel` |
 | Escape unreachable | The end region was CHECKPOINT, not FINALE, so the Director had two checkpoints and the flow was rejected | `nav_finale` spawnflags changed from 2048 to 64; dump now shows FINALE areas |

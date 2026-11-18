@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.79-alpha — 2026-11-18
+
+- **A rotating door's origin is its hinge.** `placeDoor` (`src/vmf/door.ts`) turns
+  `read_model_info` bounds plus an opening into the hinge origin and floor height. Both
+  campaign checkpoint doors were at the centre of a 64-unit opening, so half the leaf went
+  through the wall and half the doorway stayed open; they now hang two units inside the jamb.
+  `read_vmf_lint` reports `l4d2-door-hinge-at-center`.
+- **No-infected mode works without cheats.** `director_stop` is cheat-only and was ignored in
+  a normal client, which put commons in the metro. Both maps attach a `logic_script` that
+  sets `DirectorOptions.CommonLimit`, `MaxSpecials`, `TankLimit`, `WitchLimit` and
+  `MobSpawnSize` to zero and re-applies them on a timer. The stock FGD does not declare
+  `logic_script`; the lint now tolerates the class and its `vscripts` key.
+- The `trigger_finale` model is a real stock asset (`models/props_placeable/radio_box.mdl`),
+  not the FGD's absent `german_radio` default. The finale still needs a campaign-context test;
+  the BTR escape remains the deterministic end.
+- `read_vmf_lint`'s solid probe converts points to `srctools.math.Vec`; a list made every
+  probe raise and return `None`, which is why the door/landmark rules silently passed.
+
 ## 0.0.78-alpha — 2026-11-18
 
 - **Nav is generated on a dictionary-bearing BSP.** `run_nav_generate` now bakes the
@@ -28,7 +46,17 @@ with a line here.
   over 18 units now fail unless `steep: true`; the message names the run/steps to use.
 - **Lint catches door and landmark mistakes.** `l4d2-door-opening-too-wide` /
   `-too-narrow` compares the opening to the model's horizontal width;
-  `l4d2-landmark-in-solid` ignores trigger/region volumes so it does not cry wolf.
+  `l4d2-door-hinge-at-center` catches the door whose origin is in the middle of the opening
+  (the origin is the hinge, so half the leaf goes through the wall); `l4d2-landmark-in-solid`
+  ignores trigger/region volumes so it does not cry wolf.
+- **Door placement is computed, not guessed.** `src/vmf/door.ts` (`placeDoor`) turns
+  `read_model_info` bounds plus the opening into the hinge origin and the floor height; the
+  campaign uses it for both checkpoint doors. `read_vmf_lint` tolerates `logic_script`
+  (the stock FGD does not declare it) so a VScript map is not reported as unknown.
+- **No-infected mode works in a normal client.** `director_stop` is a cheat command and is
+  ignored without `sv_cheats`; the maps now attach a `logic_script` that sets
+  `DirectorOptions.CommonLimit/MaxSpecials/TankLimit/WitchLimit = 0` and re-applies it on a
+  timer. The old `director_stop` output is gone.
 - **Tool readout fixes.** `read_nav_dump` parses CRLF dumps (it returned zero areas on every
   real dump), and `read_bsp_entities` / `read_nav_dump` no longer treat an unparsed default
   `limit` as zero.
