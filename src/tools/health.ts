@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { externalToolPresent } from "../compile/external.js";
@@ -80,6 +80,24 @@ export const health = defineTool({
       ]),
     );
 
+    // Hammer++ reads L4D2's comma I/O only. `Use special I/O delimiter (ESC)` (the ini's
+    // IOParamNewDelimiter) is the setting behind "my outputs do nothing"; it is not visible
+    // in a compile and not in a VMF until the entity fires. Report it before a map is built.
+    const hpExe = binDir !== null ? join(binDir, "hammerplusplus.exe") : null;
+    const hpSettings = binDir !== null ? join(binDir, "hammerplusplus", "hammerplusplus_settings.ini") : null;
+    let ioDelimiter: string | null = null;
+    let ioEsc: boolean | null = null;
+    if (hpSettings !== null && existsSync(hpSettings)) {
+      try {
+        const text = readFileSync(hpSettings, "utf8");
+        const m = /IOParamNewDelimiter\s*=\s*(\d+)/i.exec(text);
+        ioDelimiter = m?.[1] ?? null;
+        ioEsc = ioDelimiter === "1";
+      } catch {
+        ioEsc = null;
+      }
+    }
+
     return {
       version: VERSION,
       // How many tools this server is actually serving, and whether the build it is
@@ -143,6 +161,20 @@ export const health = defineTool({
           "substituting in silence. So absent is workable, not broken: it costs a much " +
           "slower vvis and the culling flags. From tools++_windows.zip (ficool2/misc_tools); " +
           "since October 2026 they are standalone and go wherever plusPlusBinDir points.",
+      },
+      hammerPlusPlus: {
+        editor: hpExe,
+        editorPresent: hpExe !== null && existsSync(hpExe),
+        settings: hpSettings,
+        settingsPresent: hpSettings !== null && existsSync(hpSettings),
+        /** 0 is commas (L4D2), 1 is ESC (not L4D2). Null when the ini could not be read. */
+        ioDelimiter,
+        ioEsc,
+        note:
+          "Hammer++ must use comma I/O for L4D2: set `Use special I/O delimiter (ESC)` off " +
+          "(IOParamNewDelimiter=0). The current Hammer++ builds are x64; a plain L4D2 " +
+          "install is 32-bit, so use the last x86 build or the x86-64 beta. Instances are " +
+          "fullbright in the lighting preview and cast no shadows -- preview only.",
       },
       // Standalone tools that belong to no game install, so nothing can discover them.
       // Absent is the normal state and the tools that need them say where to get them;

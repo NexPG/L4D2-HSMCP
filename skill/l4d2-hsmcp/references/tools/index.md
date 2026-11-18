@@ -1,6 +1,6 @@
 # Tool catalogue
 
-106 tools. This page groups them by the job you are doing; each tool's own description is the
+107 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -48,6 +48,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_vmf` | entities, outputs and brush counts, without judgement |
 | `read_vmf_solids` | rebuild brushes from planes and check they are closed |
 | `read_vmf_lint` | check against the installed FGD and compiler rules |
+| `normalize_vmf_io` | rewrite Hammer++ ESC I/O values to L4D2 commas |
 | `read_vmf_leak` | sealed or not, without compiling |
 | `read_vmf_rooms` | rooms, openings and how they connect |
 | `read_vmf_surfaces` | faces sorted into floor, wall, ceiling, slope |

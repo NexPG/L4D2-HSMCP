@@ -533,6 +533,20 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                 )
 
         for out in ent.outputs:
+            value = str(getattr(out, "value", ""))
+            if "\x1b" in value:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "io-esc-delimiter",
+                        "this output uses the ESC delimiter. L4D2/Hammer++ reads the comma "
+                        "form; turn off `Use special I/O delimiter (ESC)` in Hammer++ or "
+                        "replace the ESC bytes with commas",
+                        entity_id=ent_id,
+                        classname=classname,
+                        output=out.output,
+                    )
+                )
             if out.output.lower() not in {o.lower() for o in cls.out}:
                 findings.append(
                     _finding(

@@ -3,6 +3,32 @@
 A synthesis of the ten public references that matter most for an agent building a Left 4 Dead 2
 campaign. Sources are listed at the end; this page turns them into contracts the tools check.
 
+## Hammer++: the settings that decide whether the map works
+
+- L4D2 is **32-bit** (or the `x86-64` beta branch). The current Hammer++ builds are x64;
+  for a plain L4D2 install use the last x86 build. A x64 Hammer++ can open the map and write
+  a VMF the 32-bit game tolerates, but its compilers and VPK tools may not match.
+- **I/O delimiter must be commas.** In `hammerplusplus_settings.ini` set
+  `IOParamNewDelimiter=0` (the "Use special I/O delimiter (ESC)" option off). ESC-separated
+  outputs are the classic "entity I/O does nothing" bug; Hammer++ and Hammer write the
+  commas L4D2 expects. The project's VMF writer also uses commas; `read_vmf_lint` reports
+  `io-esc-delimiter` if a file has the ESC form.
+- **FGD**: use the game's `left4dead2.fgd` and, for Hammer++, its bundled Tools++ FGD.
+  Missing classes are a FGD-mount problem, not a nonexistent entity.
+- **Game configuration**: copy the stock Hammer game/build settings; point Game Directory
+  at `left4dead2`, Game Executable at `left4dead2.exe`, and the compile tools at
+  `bin/vbsp.exe`, `bin/vvis.exe`, `bin/vrad.exe` (or the Tools++ builds).
+- **Assets for Hammer++**: Hammer++ reads L4D2 VPKs; a custom asset VPK must be packed with
+  L4D2's `vpk.exe` and mounted with a `gameinfo.txt` search path. Loose `materials/` and
+  `models/` are simpler and work in both editor and game.
+- **Instances are fullbright in the lighting preview and do not cast shadows**; that is a
+  preview limitation, not a lighting error. Collapse instances before counting entities.
+- **VisGroups, groups and cordon** are editor organization; they do not affect the compiled
+  map. A VMF can carry a cordon that leaves geometry out, so `read_vmf` should say when one
+  is active.
+- **I/O is not a string**: an output is `target,input,parameter,delay,times`. A quote or a
+  newline in a parameter breaks the VMF; the writer must refuse it.
+
 ## The campaign is a folder, then a VPK
 
 - `addons/<name>.vpk` contains `addoninfo.txt`, `missions/<name>.txt`, `maps/<map>.bsp` +
@@ -119,6 +145,26 @@ campaign. Sources are listed at the end; this page turns them into contracts the
     <https://steamcommunity.com/app/550/discussions/3/598517032946829432/>
 12. Left 4 Dead Wiki, *Custom Campaigns* — installation and VPK placement.
     <https://left4dead.fandom.com/wiki/Custom_Campaigns>
+13. Ceno, *Setting up Hammer++ for the original game* — x86 build, Game/Build Programs,
+    `IOParamNewDelimiter=0`, VPK split, asset mount.
+    <https://steamcommunity.com/sharedfiles/filedetails/?id=3320444257>
+14. Valve Developer Community, *Hammer++* and the compatibility template — the ESC
+    delimiter setting must be off; instances are fullbright; x86-64 beta caveat.
+    <https://developer.valvesoftware.com/wiki/Hammer%2B%2B>
+15. Mrfunreal, *L4D2-FGD-Edits* — Tools++/Hammer++ FGD additions for L4D2.
+    <https://github.com/Mrfunreal/L4D2-FGD-Edits>
+16. Valve Developer Community, *Common L4D Mapping Problems* — compile setup, leaks,
+    invalid solids, the failures that look like a broken editor.
+    <https://developer.valvesoftware.com/w?oldid=164160&title=Common_L4D_Mapping_Problems>
+17. Valve Developer Community, *List of L4D Series Nav Mesh Attributes* — CHECKPOINT,
+    FINALE, NO_MOBS, RESCUE_VEHICLE and the rest.
+    <https://developer.valvesoftware.com/wiki/List_of_L4D_Series_Nav_Mesh_Attributes>
+18. Valve Developer Community, *Left 4 Dead Infected Populations* — Director populations
+    and spawn tuning.
+    <https://developer.valvesoftware.com/wiki/Left_4_Dead_Infected_Populations>
+19. Source SDK 2013, `src/public/bspfile.h` — the compiler ceilings used by
+    `read_map_geometry`.
+    <https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/public/bspfile.h>
 
 The tool contracts behind this page are in `docs/reference/engine-limits-l4d2.md`,
 `references/nav/generation.md`, `references/campaign/safe-room-and-transition.md`,

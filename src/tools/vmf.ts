@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { writeGuarded } from "../fs/write.js";
 import { LUMP_SPECS } from "../bsp/geometry.js";
 import { LUMP_NAMES } from "../bsp/header.js";
 import type { Config } from "../config.js";
@@ -15,7 +16,7 @@ import type { Vec3 } from "../vmf/solid.js";
 
 /** How far below a prop to look for its floor. Half a map is further than any prop stands. */
 const FLOOR_REACH = 8192;
-import { GAME, GAME_BLOCK, resolveVmfInput } from "./paths.js";
+import { CONFIRM, GAME, GAME_BLOCK, resolveVmfInput } from "./paths.js";
 
 const FINDING = z.object({
   severity: z.string(),
@@ -449,4 +450,60 @@ export const readVmfLint = defineTool({
   },
 });
 
-export const vmfTools = [readFgdClass, readVmf, readVmfLint];
+export const normalizeVmfIo = defineTool({
+  name: "normalize_vmf_io",
+  description:
+    "Rewrites Hammer++'s ESC-separated entity outputs to the comma form L4D2 reads. A VMF " +
+    "saved with `Use special I/O delimiter (ESC)` on has `\\x1b` between the parts of every " +
+    "output; the map can compile and every output does nothing. This replaces those bytes " +
+    "with commas in the `connections` blocks and reports how many outputs changed. Turn the " +
+    "setting off in Hammer++ as well, or the next save undoes it. Guarded.",
+  realm: "map",
+  guarded: true,
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    dryRun: z.boolean().default(false),
+    backup: z.boolean().default(true),
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    replaced: z.number(),
+    bytesBefore: z.number(),
+    bytesAfter: z.number(),
+    note: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    // ESC is only a separator in VMF I/O; replacing it inside the connections block is
+    // equivalent to replacing it in the file, and avoids touching a quoted comment that
+    // happens to contain the byte.
+    let replaced = 0;
+    const after = before.replace(/\u001b/g, () => {
+      replaced += 1;
+      return ",";
+    });
+    const write = writeGuarded(path, after, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: after === before,
+    });
+    return {
+      path,
+      written: write.written,
+      replaced,
+      bytesBefore: before.length,
+      bytesAfter: after.length,
+      note:
+        replaced === 0
+          ? "No ESC bytes. The file already uses the comma form."
+          : "ESC bytes replaced with commas. Set IOParamNewDelimiter=0 in " +
+            "hammerplusplus_settings.ini (Use special I/O delimiter off) or the next Hammer++ " +
+            "save will put them back.",
+    };
+  },
+});
+
+export const vmfTools = [readFgdClass, readVmf, readVmfLint, normalizeVmfIo];

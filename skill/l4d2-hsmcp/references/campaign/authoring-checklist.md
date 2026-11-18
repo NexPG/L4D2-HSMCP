@@ -1,7 +1,9 @@
 # Campaign authoring checklist
 
-The ten-guide synthesis is `docs/reference/l4d2-campaign-authoring.md`. This is the order to
-work in and the contracts the tools enforce.
+The ten-guide synthesis is `docs/reference/l4d2-campaign-authoring.md`. The deeper research
+pass with the Hammer/Hammer++ traps and the MCP gap table is
+`docs/reference/l4d2-modding-research-2026.md`. This is the order to work in and the
+contracts the tools enforce.
 
 ## 1. Skeleton
 

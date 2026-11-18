@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.82-alpha — 2026-11-18
+
+- **Deep research pass.** `docs/reference/l4d2-modding-research-2026.md` collects Hammer/
+  Hammer++ setup, campaign/mission contracts, checkpoint/nav/finale rules, Director and
+  game modes, entity classes, optimization and limits, the asset pipeline, and a gap table
+  against this MCP. `docs/reference/l4d2-campaign-authoring.md` is the shorter synthesis.
+- **Hammer++ I/O delimiter is a real failure mode.** Hammer++'s
+  `Use special I/O delimiter (ESC)` (`IOParamNewDelimiter=1`) writes ESC-separated outputs;
+  L4D2 expects commas and every output silently does nothing. This install had it set to 1
+  and is now 0. `health` reports the setting; `read_vmf_lint` reports `io-esc-delimiter`;
+  `normalize_vmf_io` rewrites an affected VMF and says why the next save will undo it.
+- **Hammer++ health.** `health` reports `hammerplusplus.exe`, the settings file, the I/O
+  delimiter and the x86/x64 caveat (L4D2 is 32-bit; current Hammer++ builds are x64, use the
+  x86 build or the x86-64 beta).
+- **FGD note.** The stock FGD omits `logic_script`; the lint tolerates it. The Tools++ FGD
+  (`toolsplusplus.fgd` / `L4D2-FGD-Edits`) is the source for its extra entries.
+
 ## 0.0.81-alpha — 2026-11-18
 
 - **Checkpoint doors use the names the engine looks up.** `checkpoint_exit` on the safe room
