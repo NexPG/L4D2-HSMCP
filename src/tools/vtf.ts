@@ -152,4 +152,35 @@ export const runVtfConvert = defineTool({
   },
 });
 
-export const vtfTools = [runVtfConvert];
+export const readVtfTool = defineTool({
+  name: "read_vtf",
+  description:
+    "Reads a `.vtf` header: version, dimensions, flags, frames, format name and whether it " +
+    "is a cubemap. This is the texture-side answer Hammer's texture browser does not give " +
+    "as data: it tells an agent whether a texture is DXT1 or DXT5, six faces or one, and " +
+    "whether the size is what the material expects. It reads 80 bytes, not the image.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .vtf, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    bytes: z.number(),
+    version: z.string(),
+    width: z.number(),
+    height: z.number(),
+    flags: z.number(),
+    cubemap: z.boolean(),
+    format: z.string(),
+    frames: z.number(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    const bytes = readFileSync(path);
+    const header = readVtfHeader(bytes);
+    if (!header) throw new Error(`${path} is not a VTF (no VTF\\0 signature)`);
+    return { path, bytes: bytes.length, ...header };
+  },
+});
+
+export const vtfTools = [runVtfConvert, readVtfTool];

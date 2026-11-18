@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/mcp/registry.js";
-import { runVtfConvert } from "../../src/tools/vtf.js";
+import { readVtfTool, runVtfConvert } from "../../src/tools/vtf.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -85,4 +85,35 @@ describe("run_vtf_convert", () => {
     expect(r.ok).toBe(true);
     expect(r.header.format).toBe("DXT1");
   }, 120_000);
+});
+
+describe("read_vtf", () => {
+  it("reads a DXT1 cubemap header without decoding the image", async () => {
+    const header = Buffer.alloc(80);
+    header.write("VTF\0", 0, "latin1");
+    header.writeUInt32LE(7, 4);
+    header.writeUInt32LE(4, 8);
+    header.writeUInt32LE(80, 12);
+    header.writeUInt16LE(512, 16);
+    header.writeUInt16LE(512, 18);
+    header.writeUInt32LE(0x4000, 20);
+    header.writeUInt16LE(1, 24);
+    header.writeInt32LE(13, 52);
+    const path = join(scratch, "sky.vtf");
+    writeFileSync(path, header);
+    const r = (await readVtfTool.handler({ path }, ctx)) as {
+      width: number;
+      height: number;
+      cubemap: boolean;
+      format: string;
+      version: string;
+    };
+    expect(r).toMatchObject({
+      width: 512,
+      height: 512,
+      cubemap: true,
+      format: "DXT1",
+      version: "7.4",
+    });
+  });
 });
