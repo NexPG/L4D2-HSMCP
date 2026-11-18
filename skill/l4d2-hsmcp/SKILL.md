@@ -26,6 +26,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | Build a campaign from nothing | `workflows/new-campaign.md` |
 | Rebuild, pack and deploy | `workflows/build-and-deploy.md` |
 | Check a build in game | `workflows/playtest.md` |
+| Make a prop/model without a DCC | `workflows/make-a-prop.md` |
 | Campaign missing from the menu | `troubleshooting/campaign-not-in-menu.md` |
 | Chapter does not change | `troubleshooting/chapter-does-not-change.md` |
 | Bots wander instead of advancing | `troubleshooting/bots-wander.md` |
