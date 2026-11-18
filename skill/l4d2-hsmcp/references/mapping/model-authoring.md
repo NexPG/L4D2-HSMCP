@@ -29,12 +29,9 @@ $collisionmodel "myprop_phys.smd" { $mass 10 $concave }
 ## L4D2 specifics
 
 - **Viewmodels** need `$attachment "primary"` / `"melee"`, the right `$weaponmodel`/hands
-  setup, and the `CharacterViewmodelAddon` block in the weapon script. The QC prefab
-  collections from the community are useful references, but this project does not bundle
-  them (no licence).
+  setup, and the `CharacterViewmodelAddon` block in the weapon script.
 - **Player models** use `declaresequence` files and `includemodels`; a proportion/anim-swap
-  setup is a set of QCI includes, not one QC. The `L4D2_Player_Extra_Files` repository is a
-  reference for the file set, not bundled here.
+  setup is a set of QCI includes, not one QC.
 - **Attachments** are positioned with `.smd`/`.dmx` helper meshes and `$attachment`; the
   weapon attachment helper is a separate mesh.
 - **Physics** is `$collisionmodel`; a model with no `.phy` cannot be a solid `prop_static`.
@@ -67,5 +64,5 @@ the weights or the animations. Those come from the DCC.
 
 The community QC prefabs and player-model helper packs have **no licence file** in the
 repositories reviewed here, so none of their files are copied into this project. They are
-listed as references only in `third-party/NOTICES.md`. A model or texture taken from another
+listed as references only in `third_party/NOTICES.md`. A model or texture taken from another
 project needs the same licence check as code.

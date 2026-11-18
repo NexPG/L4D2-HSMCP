@@ -38,7 +38,7 @@ export const ConfigFile = z.object({
    */
   gameProfiles: z.record(GameProfileOverride).default({}),
   /**
-   * Interpreter for the Python sidecar. Defaults to the venv `src/core/python/setup.ps1` builds
+   * Interpreter for the Python sidecar. Defaults to the venv `sidecar/setup.ps1` builds
    * under the state directory. Set it only to point at an interpreter you manage.
    */
   sidecarPython: z.string().optional(),

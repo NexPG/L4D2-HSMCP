@@ -334,7 +334,7 @@ describe("buildBvh", () => {
 });
 
 describe("the oracle stays independent", () => {
-  it("never lets the spatial module import the BSP oracle", () => {
+  it("never lets src/space import src/bsp", () => {
     // The BSP tracer is what proves this engine right. The moment one calls the other the
     // cross-check becomes decoration, and nothing about the test output would say so.
     const dir = join(FIXTURES, "..", "..", "src", "maps", "typescript", "space");

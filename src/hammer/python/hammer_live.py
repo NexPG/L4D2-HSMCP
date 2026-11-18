@@ -2,7 +2,7 @@
 
 Portions ported from Hammer-MCP (https://github.com/EpicMorg/Hammer-MCP),
 MIT License, Copyright (c) 2026 EpicMorg. Adapted to Python/ctypes for this project.
-The full notice is in third-party/NOTICES.md.
+The full notice is in THIRD-PARTY-NOTICES.md.
 
 Hammer has a hidden window named ``Worldcraft_ShellMessageWnd``. Sending it a
 ``WM_COPYDATA`` message with an ANSI text command creates/deletes point entities and sets

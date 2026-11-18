@@ -1,19 +1,32 @@
 # Architecture
 
-```
-src/<module>/typescript/…          see src/README.md for the module map
-src/formats/typescript/kv/         KeyValues, source offsets preserved
-src/maps/typescript/bsp/           offset readers, never the whole file
-src/maps/typescript/entity/        the entity model shared by all three formats
-src/maps/typescript/vmf/           the VMF read and write paths
-src/core/typescript/games/         discovering and resolving game profiles
-src/core/typescript/fs/guard.ts    assertWritable -- the single chokepoint
-src/core/typescript/mcp/           MCP plumbing
-```
+Modules are **semantic**, not by language: `hammer/` is everything that drives the editor,
+`maps/` is everything that reads or writes a map, `models/` is everything about a model. A
+module that contains more than one language splits by language underneath — `typescript/` and
+`python/` — and those directories hold source files only: no assets, no licences, no
+third-party trees. The paperwork lives in `third_party/`.
 
-A module owns its tools in `<module>/typescript/tools/`; there is no shared `tools/` pile
-any more. Language is a subdirectory, not a separation: `src/hammer/python/` and
-`src/hammer/typescript/` are the same module.
+```
+src/core/typescript/        config, version, logging, MCP plumbing, the sidecar client
+src/core/python/            the sidecar entry point, its requirements and setup script
+src/formats/typescript/kv/  Valve KeyValues, source offsets preserved
+src/formats/typescript/     .vpk, .vmt, .qc: readers and writers for the file formats
+src/maps/typescript/bsp/    offset readers, never the whole file
+src/maps/typescript/vmf/    the VMF write path
+src/maps/typescript/space/  spatial queries (trace, rooms, measurements)
+src/maps/typescript/render/ PNG and SVG views of a map
+src/maps/typescript/{compile,entity,game,report,rules,screenshot}/  the rest of the map side
+src/maps/typescript/tools/  the map-facing tool definitions
+src/hammer/typescript/      the live editor channel, settings and autosaves
+src/hammer/python/          the WM_COPYDATA / WM_COMMAND bridge it calls
+src/models/typescript/      QC, studiomdl, HLMV
+src/textures/typescript/    VTF and VMT
+src/nav/typescript/         navigation mesh
+src/scripts/typescript/     VScript
+src/campaigns/typescript/   mission files and finales
+src/assets/typescript/      content search and material preview
+src/packages/typescript/    addon packaging
+```
 
 ## Splicing
 
@@ -92,7 +105,7 @@ The only write targets are the state directory, the patch output directory, and 
 passes explicitly. Two trees are refused outright.
 
 ⚠️ **Those tree names are the ones this server was built for, and they are currently hard-coded**
-(`src/core/typescript/fs/guard.ts`). On any other repository they name nothing: the guard then
+(`src/core/typescript/fs/guard.ts`, `src/maps/typescript/tools/lmp.ts`). On any other repository they name nothing: the guard then
 refuses nothing, and lump patches land in a directory that did not exist. Making them configurable
 is identified work, not finished work — said here rather than discovered.
 

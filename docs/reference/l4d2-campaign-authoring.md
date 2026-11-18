@@ -153,9 +153,7 @@ campaign. Sources are listed at the end; this page turns them into contracts the
 14. Valve Developer Community, *Hammer++* and the compatibility template — the ESC
     delimiter setting must be off; instances are fullbright; x86-64 beta caveat.
     <https://developer.valvesoftware.com/wiki/Hammer%2B%2B>
-15. Mrfunreal, *L4D2-FGD-Edits* — Tools++/Hammer++ FGD additions for L4D2.
-    <https://github.com/Mrfunreal/L4D2-FGD-Edits>
-16. Valve Developer Community, *Common L4D Mapping Problems* — compile setup, leaks,
+15. Valve Developer Community, *Common L4D Mapping Problems* — compile setup, leaks,
     invalid solids, the failures that look like a broken editor.
     <https://developer.valvesoftware.com/w?oldid=164160&title=Common_L4D_Mapping_Problems>
 17. Valve Developer Community, *List of L4D Series Nav Mesh Attributes* — CHECKPOINT,

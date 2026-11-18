@@ -1,7 +1,6 @@
-import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { installProject as coreInstall, installReport } from "@projectsociety/mcp-core";
 import type { Config } from "./config.js";
-import { packageRoot } from "./repo.js";
 
 /**
  * Absolute path to this server's entry point (dist/index.js), next to this module.
@@ -11,7 +10,7 @@ import { packageRoot } from "./repo.js";
  * wrong thing.
  */
 function serverEntry(): string {
-  return join(packageRoot(), "dist", "index.js");
+  return fileURLToPath(new URL("./index.js", import.meta.url));
 }
 
 function spec(config: Config) {

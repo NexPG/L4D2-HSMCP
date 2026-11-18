@@ -7,24 +7,26 @@ with a line here.
 
 ## 0.0.87-alpha — 2026-11-18
 
-- **One project, split by module.** `src/` is now a set of semantic modules — `hammer`,
-  `maps`, `nav`, `models`, `textures`, `packages`, `campaigns`, `scripts`, `assets`,
-  `formats`, `core` — and a module holds everything its job needs. Language is a
-  subdirectory, not a boundary: `src/hammer/typescript/` and `src/hammer/python/` are the
-  same module, and `src/formats/cpp/sourcepp` sits beside the TypeScript that ports it.
-  There is no `vendor/` and no shared `src/tools/` pile any more.
-- **All paperwork in `third-party/`.** `NOTICE`, `NOTICES.md` and a verbatim licence file per
-  borrowed work in `third-party/licenses/`, linked from the README credits. `LICENSE-MIT` is
-  gone: one MIT text per project is more honest than one file with five copyright lines.
-- **The Python sidecar moved into its modules.** `sidecar/` is gone; `main.py` and the venv
-  script live in `src/core/python/`, the editor bridge in `src/hammer/python/`, the asset
-  verbs in `src/assets/python/`, and the VMF/FGD/displacement verbs in `src/maps/python/`.
-  `main.py` puts every `src/*/python` on `sys.path`, so the imports stay plain.
-- **Path lookups no longer count directory levels.** `version.ts`, the sidecar client,
-  `health` and `install` all find the package root by walking up to `package.json`. Moving a
-  file into a module used to break all four at once, silently.
-  artwork, language bindings and CI configuration were removed — 20.5 MB down to
-  6.3 MB. GitHub counts C++ in the language stats on purpose.
+- **One project, modules by meaning.** `src/` is now eleven semantic modules — `hammer/`,
+  `maps/`, `models/`, `textures/`, `nav/`, `scripts/`, `campaigns/`, `assets/`, `packages/`,
+  `formats/`, `core/` — and a module that holds more than one language splits by language
+  underneath (`typescript/`, `python/`). Those directories carry source only: no assets, no
+  licences, no upstream trees.
+  Everything used from them is ported into the module it serves and credited in
+  `third_party/NOTICES.md` with the upstream file name; the trees could not be built here and
+  nothing imported them.
+- **`third_party/` is the paperwork.** `NOTICES.md`, `NOTICE` and `licenses/` — one verbatim
+  licence file per borrowed work, linked from the notices. No code, no build files, no READMEs
+  from upstream.
+- **Credits live in the notices.** The README's credits table is a single link to
+  `third_party/NOTICES.md`; the notices list only projects whose code or data is actually
+  used, and say exactly what was taken.
+- **The sidecar moved with its modules.** `src/core/python/main.py` is the entry point and
+  puts every `src/*/python/` on `sys.path`, so each module keeps its own Python files. The
+  client resolves the script through the repository root instead of a `sidecar/` sibling.
+- **A refactor that had lost code was rebuilt, not patched.** The previous attempt dropped
+  exports from `space/rooms.ts` and left 295 type errors; the tree now compiles with none and
+  the full suite passes (120 files, 1 263 tests).
 
 ## 0.0.86-alpha — 2026-11-18
 
@@ -157,7 +159,7 @@ with a line here.
   found 3 areas`), and a 32-unit hall floor step made four connections non-walkable. m1's
   32-unit swamp bank generated 40 sloped areas the engine called non-walkable. Both maps
   now pass every `nav_trouble_report` check.
-- **Staging is one module.** `src/game/stage.ts` owns hide/restore and BSP/nav installation
+- **Staging is one module.** `src/maps/typescript/game/stage.ts` owns hide/restore and BSP/nav installation
   for the map test, nav generation and the trouble report, instead of three copies that
   could disagree about what they had installed.
 
@@ -224,7 +226,7 @@ with a line here.
 
 ## 0.0.79-alpha — 2026-11-18
 
-- **A rotating door's origin is its hinge.** `placeDoor` (`src/vmf/door.ts`) turns
+- **A rotating door's origin is its hinge.** `placeDoor` (`src/maps/typescript/vmf/door.ts`) turns
   `read_model_info` bounds plus an opening into the hinge origin and floor height. Both
   campaign checkpoint doors were at the centre of a 64-unit opening, so half the leaf went
   through the wall and half the doorway stayed open; they now hang two units inside the jamb.
@@ -266,7 +268,7 @@ with a line here.
   `l4d2-door-hinge-at-center` catches the door whose origin is in the middle of the opening
   (the origin is the hinge, so half the leaf goes through the wall); `l4d2-landmark-in-solid`
   ignores trigger/region volumes so it does not cry wolf.
-- **Door placement is computed, not guessed.** `src/vmf/door.ts` (`placeDoor`) turns
+- **Door placement is computed, not guessed.** `src/maps/typescript/vmf/door.ts` (`placeDoor`) turns
   `read_model_info` bounds plus the opening into the hinge origin and the floor height; the
   campaign uses it for both checkpoint doors. `read_vmf_lint` tolerates `logic_script`
   (the stock FGD does not declare it) so a VScript map is not reported as unknown.

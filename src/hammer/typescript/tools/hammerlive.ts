@@ -3,7 +3,7 @@
  *
  * Portions ported from Hammer-MCP (https://github.com/EpicMorg/Hammer-MCP),
  * MIT License, Copyright (c) 2026 EpicMorg. The shell-channel command and menu ids are
- * adapted to this project's tool contracts. The full notice is in third-party/NOTICES.md.
+ * adapted to this project's tool contracts. The full notice is in THIRD-PARTY-NOTICES.md.
  */
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";

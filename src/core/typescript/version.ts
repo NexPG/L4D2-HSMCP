@@ -8,11 +8,12 @@ import { packageRoot } from "./repo.js";
  *
  * One source, because a version written twice is a version that disagrees with itself:
  * `health` would print one number and the package another. The file is found by walking up
- * to it rather than by counting directory levels, which a move would invalidate.
+ * to the `package.json` marker rather than by counting `../`, so moving this module into
+ * another directory cannot silently make the version disappear.
  */
-const PACKAGE = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf8")) as {
-  version?: string;
-};
+const PACKAGE = JSON.parse(
+  readFileSync(join(packageRoot(), "package.json"), "utf8"),
+) as { version?: string };
 
 export const VERSION = PACKAGE.version ?? "0.0.0-unknown";
 

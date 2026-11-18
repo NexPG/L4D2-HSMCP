@@ -23,13 +23,15 @@ import traceback
 from pathlib import Path
 from typing import Any, Callable
 
-# The Python half of a module lives in src/<module>/python/, and the verbs import each other
-# by bare name (`content`, `vmf_lint`, `hammer_live`). Putting those directories on the path
-# here means the sidecar starts the same way from any working directory -- the launcher used
-# to rely on `sidecar/` being flat, which is the assumption the module layout removed.
-for _python_dir in sorted(Path(__file__).resolve().parents[2].glob("*/python")):
-    if str(_python_dir) not in sys.path:
-        sys.path.insert(0, str(_python_dir))
+# The Python half of the toolkit is split by module, one `python/` directory per module
+# (`src/assets/python`, `src/hammer/python`, `src/maps/python`, ...). This entry point is the
+# only file that has to know that: every later import is by plain module name, which is how
+# the modules were written before they were split. Adding the directories rather than
+# rewriting a hundred imports keeps each module in charge of its own files.
+_SRC = Path(__file__).resolve().parents[2]
+for _directory in sorted(_SRC.glob("*/python")):
+    if str(_directory) not in sys.path:
+        sys.path.insert(0, str(_directory))
 
 VERBS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {}
 

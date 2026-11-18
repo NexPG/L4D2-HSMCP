@@ -8,17 +8,7 @@
 $ErrorActionPreference = "Stop"
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repo = if ($env:HAMMER_MCP_REPO) { $env:HAMMER_MCP_REPO } else {
-  # Walk up to the package root instead of counting levels: this script lives under
-  # src/core/python, and where it sits is a fact about the layout, not about the venv.
-  $dir = $here
-  while ($dir -and -not (Test-Path (Join-Path $dir "package.json"))) {
-    $parent = Split-Path -Parent $dir
-    if ($parent -eq $dir) { break }
-    $dir = $parent
-  }
-  $dir
-}
+$repo = if ($env:HAMMER_MCP_REPO) { $env:HAMMER_MCP_REPO } else { Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $here)) }
 $venv = Join-Path $repo ".hammer-mcp\sidecar-venv"
 $python = Join-Path $venv "Scripts\python.exe"
 

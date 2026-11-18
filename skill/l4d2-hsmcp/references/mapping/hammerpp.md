@@ -13,9 +13,9 @@ read before touching the editor's settings or trusting a VMF that came out of Ha
 2. **The right build.** Plain L4D2 is 32-bit; current Hammer++ builds are x64. Use the last
    **x86** build or the `x86-64` beta. A 64-bit editor can save the VMF, but its bundled
    tools may not match the game.
-3. **The right FGD.** `left4dead2.fgd` + `toolsplusplus.fgd` (or `L4D2-FGD-Edits`). The
-   loaded FGD has 446 classes. `logic_script` is missing from the stock FGD but the engine
-   runs it; `read_fgd_class` is the authority, not a class list from memory.
+3. **The right FGD.** `left4dead2.fgd` + `toolsplusplus.fgd`. The loaded FGD has 446
+   classes. `logic_script` is missing from the stock FGD but the engine runs it;
+   `read_fgd_class` is the authority, not a class list from memory.
 
 ## Tools++ in one table
 
@@ -53,7 +53,7 @@ Hammer and Hammer++ have a hidden `Worldcraft_ShellMessageWnd`. The toolkit can 
 
 This is **write-only and entity-level**: it addresses entities by class + origin, cannot
 create brushes, move entities or read the selection. Use the VMF writers for geometry. The
-port is from Hammer-MCP (MIT); see `third-party/NOTICES.md`.
+port is from Hammer-MCP (MIT); see `third_party/NOTICES.md`.
 
 ## The editor-only layer
 

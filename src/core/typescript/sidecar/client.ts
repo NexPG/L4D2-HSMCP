@@ -16,16 +16,17 @@ export class SidecarError extends Error {
 }
 
 /**
- * `src/core/python/main.py`, next to the package rather than inside `dist/`.
+ * `src/core/python/main.py`, anchored to the repository rather than to the compiled file.
  *
- * The path is found from `package.json` rather than counted in directory levels: the
- * sidecar moved into a module once, and a level count would have broken silently.
+ * The Python modules are split by module (`src/<module>/python/`), so the entry point is no
+ * longer a `sidecar/` folder next to `dist/`. The package root is found by walking up to
+ * `package.json`, so `tsx` and `dist/` resolve to the same file.
  */
 function scriptPath(): string {
   return join(packageRoot(), "src", "core", "python", "main.py");
 }
 
-/** The interpreter of the venv `src/core/python/setup.ps1` builds, unless configured otherwise. */
+/** The interpreter of the venv `sidecar/setup.ps1` builds, unless configured otherwise. */
 export function pythonPath(config: Config): string {
   // Windows only: a venv keeps its interpreter in Scripts\python.exe.
   return config.sidecarPython ?? join(config.stateDir, "sidecar-venv", "Scripts", "python.exe");
@@ -53,7 +54,7 @@ export async function callSidecar<T>(
   if (!existsSync(python)) {
     throw new SidecarError(
       `Python sidecar not installed: ${python} does not exist. ` +
-        `Run ./src/core/python/setup.ps1 to create it.`,
+        `Run src/core/python/setup.ps1 to create it.`,
       "not_installed",
     );
   }

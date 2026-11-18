@@ -1,78 +1,57 @@
-# `src/` — the project, by module
+# `src/` — modules by meaning
 
-Each directory here is a **semantic module**: one job, everything that job needs. Modules are
-not divided by language and not divided by which repository a file came from. A module may
-hold TypeScript, Python and C++ at once; inside it, the languages sit in their own
-directories so nothing is mixed:
+A directory here is a **piece of the toolkit**, not a language and not an upstream project.
+`hammer/` is everything that drives the editor; `maps/` is everything that reads or writes a
+map; `models/` is everything about a model. Finding the code for a job means asking what the
+job is, not what it was written in.
+
+## The language rule
+
+A module that needs more than one language splits by language underneath:
 
 ```
-src/<module>/
-  typescript/    the server's implementation of this module
-  python/        the sidecar's part of it, when it has one
-  cpp/           native code adopted from upstream, when the module needs it
+src/hammer/
+  typescript/     the tools, settings, autosave matching
+  python/         the WM_COPYDATA / WM_COMMAND bridge
 ```
 
-The directory name says what the module **does**, the language directory says what it is
-written in. That is the whole rule.
+Those directories hold **source files only**. No assets, no licence texts, no build output,
+no third-party trees, no module of their own inside them. Everything that is not source has
+a home of its own:
+
+| Not source | Where it goes |
+|---|---|
+| Licences and notices | `third_party/` |
+| Test fixtures | `test/fixtures/` |
+| Rendered output, screenshots | the caller's directory, or the state directory |
+| Upstream repositories | nowhere: the part we use is ported here and credited |
+
+A single-language module keeps its files at the module root — `src/textures/typescript/` is
+the only exception in today's tree because that module also has to be able to grow a second
+language without moving every file again.
 
 ## The modules
 
-| Module | What it does |
+| Module | What it owns |
 |---|---|
-| `assets/` | What the game already ships: searching content, previewing a model or material |
-| `campaigns/` | Mission files, campaign checks, finale stages |
-| `core/` | The server itself: configuration, MCP transport, process and filesystem access, the sidecar client |
-| `formats/` | Source file formats: VPK, VMT, QC, KeyValues — plus `cpp/sourcepp`, the library that documents them |
-| `hammer/` | The open editor: shell channel, menu commands, settings, HLMV, window capture |
-| `maps/` | VMF and BSP: geometry, entities, compile, validation, rendering, measuring |
-| `nav/` | Navigation meshes: read, generate, diagnose |
-| `scripts/` | VScript, runtime commands, scene setup, weather |
-| `textures/` | VTF, VMT, materials, cubemaps, skybox |
+| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences |
+| `maps/` | VMF and BSP reading and writing, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
+| `models/` | QC parsing and building, studiomdl, HLMV |
+| `textures/` | VTF and VMT |
+| `nav/` | the navigation mesh: reading, generation, trouble reports |
+| `scripts/` | VScript |
+| `campaigns/` | mission files, finales, campaign gates |
+| `assets/` | content search, material preview |
+| `packages/` | addon packaging (VPK) |
+| `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC |
+| `core/` | config, version, logging, MCP plumbing, the sidecar client |
 
-`index.ts` is the entry point and `registry.ts` composes the tool list. Neither is a module.
+## Rules
 
-## The `cpp/` half
-
-They hold the upstream implementation of that module, kept because a claim like "the
-attachment struct is 92 bytes" is worth nothing without the file that says so. They are not a
-dependency of the build and are never imported by the server; the server talks TypeScript
-and Python.
-
-GPL-3.0-only, the same licence as this repository. If a module is better served by changing
-that code than by porting it, change it — with a header naming the upstream project and the
-change, and an entry in [`../third-party/NOTICES.md`](../third-party/NOTICES.md).
-
-## Building the native halves (not done here)
-
-This machine has no `cmake`, `cl`, `msbuild` or `ninja`, so none of these
-trees has been built in this repository. `health` reports the binaries as missing and every
-adapter refuses honestly. Do not commit build output. `tsconfig.json` excludes these
-directories, so they cannot reach `dist/`.
-
-### `formats/cpp/sourcepp`
-
-```bash
-cmake -S src/formats/cpp/sourcepp -B build/sourcepp \
-  -DSOURCEPP_BUILD_TESTS=OFF -DSOURCEPP_BUILD_WITH_TBB=OFF
-cmake --build build/sourcepp --config Release
-```
-
-Interest is in `vpkpp`, `bsppp`, `vtfpp`, `mdlpp`; the rest can be turned off with
-`-DSOURCEPP_USE_<LIB>=OFF`. Optional Python bindings exist but the sidecar does not use them.
-
-
-
-something this project ships.
-
-```bash
-```
-
-`src/cli/_cli.cmake` links `argparse`, `indicators`, `sourcepp::bsppp` and `sourcepp::vpkpp`
-Submodules are fetched by CMake at configure time (all MIT); they are
-not vendored.
-
-
-```bash
-```
-
-The build manifest declares a licence compatible with this repository.
+1. **A module owns its tools.** `src/<module>/typescript/tools/` holds the tool definitions
+   that belong to it; the aggregate list is `src/registry.ts` and nowhere else.
+2. **`core/` holds no domain knowledge.** If it knows what a BSP is, it belongs in `maps/`.
+3. **No cycles between modules.** `maps/` may use `formats/` and `core/`; `core/` uses
+   neither.
+4. **Every file says why it exists.** The header comment is the design note: what the file
+   is for, what it refuses, and what it was measured against.

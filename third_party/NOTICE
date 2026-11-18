@@ -2,16 +2,16 @@
 
 > ## **LICENCE COMPLIANCE IS MANDATORY.**
 >
-> Read [`NOTICES.md`](NOTICES.md) before taking code from another project. Every borrowed
-> work needs a compatible licence, its copyright/permission notice, a source header and a
-> record in that file. **No licence means no copied code.** If the licence is unclear, stop
-> and ask.
+> Read [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) before taking code from another
+> project. Every borrowed work needs a compatible licence, its copyright/permission notice,
+> a source header and a record in that file. **No licence means no copied code.** If the
+> licence is unclear, stop and ask.
 
 This repository began from code published as **hammer-mcp** by **Project Society Studio**
 at <https://github.com/Sycatle/hammer-mcp>, and also includes code from the projects listed
-in [`NOTICES.md`](NOTICES.md). It is an independent project now,
+in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). It is an independent project now,
 distributed as a whole under the **GNU General Public License, version 3 only**
-(`GPL-3.0-only`). The full licence text is in [`../LICENSE`](../LICENSE).
+(`GPL-3.0-only`). The full licence text is in [`LICENSE`](LICENSE).
 
 ## The upstream licence is kept
 
@@ -23,7 +23,7 @@ The original work, and the parts of it that survive here, are MIT-licensed:
 
 MIT requires its copyright notice and permission notice to travel with every copy of the software,
 and relicensing does not remove that requirement. Both are reproduced verbatim in
-[`licenses/hammer-mcp-sycatle-MIT.txt`](licenses/hammer-mcp-sycatle-MIT.txt), and they continue to govern the upstream portions of this tree.
+[`LICENSE-MIT`](LICENSE-MIT), and they continue to govern the upstream portions of this tree.
 MIT is GPL-compatible (<https://www.gnu.org/licenses/license-list.html#Expat>), which is what makes
 the relicensing lawful in the first place: the combined work may be distributed under the GPL, and a
 recipient may still exercise the MIT permissions on the MIT code.
@@ -43,7 +43,7 @@ Copyright in this fork's changes:
 
 - Ship the complete corresponding source, including the build and install scripts, to everyone you
   distribute a binary to.
-- Keep this file, `../LICENSE` and the notices in `licenses/` intact, and do not strip the notices from the source.
+- Keep this file, `LICENSE` and `LICENSE-MIT` intact, and do not strip the notices from the source.
 - Licence anything you add to this tree under GPL-3.0 as well — it cannot be closed off or
   sublicensed under other terms.
 - If you modify it, say so and give the date, as this file does for the fork.
@@ -55,6 +55,6 @@ Dependencies installed from npm are not vendored here; each remains under its ow
 its package. They are used as separate works and do not alter the licence of this repository's code.
 
 Code and data borrowed from other projects are listed in
-[`NOTICES.md`](NOTICES.md), with the copyright holder, licence, what
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md), with the copyright holder, licence, what
 was taken and any modification. **A component missing from that file is a compliance
 defect.** No code is taken from a project without a compatible licence.

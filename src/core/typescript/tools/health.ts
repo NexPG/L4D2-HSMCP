@@ -1,11 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { externalToolPresent } from "../../../maps/typescript/compile/external.js";
 import { toolchainDir } from "../../../maps/typescript/compile/toolchain.js";
 import { allGames, gameFor } from "../games/resolve.js";
 import { defineTool } from "../mcp/registry.js";
 import { probeSidecar } from "../sidecar/client.js";
-import { packageRoot } from "../repo.js";
 import { externalTools } from "../../../maps/typescript/tools/rename.js";
 import { buildFreshness, VERSION } from "../version.js";
 
@@ -17,8 +17,9 @@ import { buildFreshness, VERSION } from "../version.js";
  * that does not exist, and `buildFreshness` reports that nothing was compared -- which is
  * the honest answer for a tree with no build to be stale.
  */
-const BUILD_DIR = join(packageRoot(), "dist");
-const SRC_DIR = join(packageRoot(), "src");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const BUILD_DIR = join(HERE, "..");
+const SRC_DIR = join(BUILD_DIR, "..", "src");
 
 /** The Source tools this server drives, all of them Windows binaries. */
 const BINARIES = ["vbsp.exe", "vvis.exe", "vrad.exe", "bspzip.exe", "vbspinfo.exe"];

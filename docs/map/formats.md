@@ -35,8 +35,8 @@ The Source formats are already written, in Python. [`srctools`](https://github.c
 reads and writes VMF, BSP, VPK, VTF, VMT and FGD, it is maintained, and **no mature TypeScript
 library exists for BSP**. Rewriting it would have been months of work on solved problems.
 
-So the Python half is a pinned venv (`srctools==2.7.0`) behind a single entry point, `src/core/python/main.py`: a verb in
-`argv[1]`, JSON on stdin, JSON on stdout, diagnostics on stderr. `src/core/python/setup.ps1` builds it;
+So `src/core/python/` is a pinned venv (`srctools==2.7.0`) behind a single entry point: a verb in
+`argv[1]`, JSON on stdin, JSON on stdout, diagnostics on stderr. `./src/core/python/setup.ps1` builds it;
 the venv lives under `<stateDir>/sidecar-venv`, outside the repository, because it is
 machine-specific build output.
 

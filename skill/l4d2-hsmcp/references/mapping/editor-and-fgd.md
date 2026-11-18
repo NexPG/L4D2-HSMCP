@@ -35,37 +35,27 @@ VVIS++ in this chain deliberately keeps `blocklight`/`blockLOS` tool textures fr
 faces out of `func_detail`, because L4D2 maps rely on that behaviour. Do not "fix" a map that
 depends on it.
 
-## L4D2-FGD-Edits
+## Helper FGDs
 
-A community FGD collection (Mrfunreal/L4D2-FGD-Edits) that makes Hammer friendlier:
-
-- helper models for weapon spawns, cubemaps, survivor positions, player scale;
-- nav attributes listed in the `NavAttributeRegion` dropdown;
-- damage types documented and completed;
-- areaportal distance pickers, spheres for fade distances and radii;
-- more visgroups and tool textures;
-- improved `prop_door_rotating` / `prop_door_rotating_checkpoint` defaults;
-- `trigger_finale` defaults to the hamradio model.
-
-Install it into `<game>/bin/L4D2-FGD-Edits/`, add `hammer_vpk` to `gameinfo.txt`, and select
-**only** `left4dead2_ADDON.fgd` as the game data file in Hammer.
+A community FGD can make Hammer friendlier: helper models for weapon spawns, cubemaps and
+survivor positions, nav attributes in a dropdown, completed damage types, more visgroups and
+tool textures. It is an editor convenience, and Hammer loads it as game data.
 
 ### The rule that matters
 
-**Never lint or ship against the helper FGD.** Its `hlp_*` entities, helper models and
+**Never lint or ship against a helper FGD.** Its `hlp_*` entities, helper models and
 dropdown-only classes exist in Hammer, not in the engine. A map that uses them compiles into
 entities the game does not have, and a lint that accepts them approves a broken map.
 
 - `read_fgd_class` and `read_vmf_lint` are pointed at the game's own
   `bin/left4dead2.fgd`. That is the shipping authority.
-- Use the FGD edits for comfort in the editor, then check the result with the tools here.
-- Change Hammer's default new entity from `info_survivor_position` to `info_player_start` if
-  the FGD edits change it — the edits' own readme warns that swapping a model entity for one
-  that newly gained a helper model can crash Hammer.
+- Use an FGD pack for comfort in the editor, then check the result with the tools here.
+- If an FGD pack changes Hammer's default new entity, set it back: swapping a model entity
+  for one that newly gained a helper model can crash the editor.
 
 ## Practical workflow
 
-1. Edit in Hammer++ with the FGD edits installed.
+1. Edit in Hammer++ with whatever FGD you work comfortably with.
 2. Save the `.vmf`.
 3. Run `read_vmf_lint` and `read_vmf_leak` here — against the stock FGD.
 4. Compile with the chain `run_compile` reports, then generate nav and test.

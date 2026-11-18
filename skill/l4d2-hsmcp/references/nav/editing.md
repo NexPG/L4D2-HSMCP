@@ -2,9 +2,7 @@
 
 `run_nav_generate` is the automated path: the engine generates a mesh from the world. This
 page is for the cases where a generated mesh needs repair, and for understanding what the
-console commands do. The command names and behaviour are L4D2's own; the curated set was
-informed by the community `L4D2_Navmesh_CFG` (no licence file, so none of its files are
-bundled).
+console commands do. The command names and behaviour are L4D2's own.
 
 ## Start a session
 

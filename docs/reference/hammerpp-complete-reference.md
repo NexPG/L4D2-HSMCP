@@ -13,8 +13,6 @@ feature to a tool or names the reason it is view-only.
   <https://developer.valvesoftware.com/wiki/Hammer%2B%2B>.
 - Ceno, *Setting up Hammer++ for the original game*:
   <https://steamcommunity.com/sharedfiles/filedetails/?id=3320444257>.
-- Mrfunreal, *L4D2-FGD-Edits* and the Tools++ FGD:
-  <https://github.com/Mrfunreal/L4D2-FGD-Edits>.
 - The installed `left4dead2.fgd` + `base.fgd` on this machine (446 classes) — the authority
   on keys, inputs and outputs.
 - The installed `hammerplusplus_settings.ini`, `hammerplusplus_gameconfig.txt` and

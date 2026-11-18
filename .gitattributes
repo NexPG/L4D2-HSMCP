@@ -4,19 +4,3 @@
 # Fixtures are compared byte for byte — line endings are part of what the tests assert,
 # and a Windows checkout must not rewrite them.
 test/fixtures/** -text
-
-# The C++ half of a module is part of the project, not a hidden vendor bucket.
-# They are counted in the language breakdown on purpose: this is a multi-language toolkit.
-# `linguist-vendored=false` overrides GitHub's automatic rule that hides vendor-like paths.
-src/**/cpp/** linguist-vendored=false
-
-# A `.ts` file inside a native tree is XML, not TypeScript. Counting
-# them as TypeScript would inflate the language bar with something nobody wrote.
-src/**/cpp/**/res/i18n/*.ts linguist-documentation
-
-# The artwork inside those trees is binary; keep git from trying to diff it.
-src/**/cpp/**/*.png -diff
-src/**/cpp/**/*.ico -diff
-src/**/cpp/**/*.xcf -diff
-src/**/cpp/**/*.blend -diff
-src/**/cpp/**/*.pdn -diff
