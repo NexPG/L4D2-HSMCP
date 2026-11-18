@@ -5,16 +5,14 @@
 # and a Windows checkout must not rewrite them.
 test/fixtures/** -text
 
-# Third-party source trees kept for reference (see vendor/README.md). GitHub's linguist
-# already treats a `vendor/` directory as vendored, which keeps it out of the language
-# statistics -- but that is a path heuristic, and the project's whole language bar depends on
-# the language bar match what was actually written. Stating the rule makes
-# the result independent of a heuristic that can change.
-vendor/** linguist-vendored
+# Third-party source trees live in modules/<area>/native/ and are part of the build's reference
+# set, not a hidden vendor bucket. They are counted in the language breakdown on purpose: this
+# is a multi-language toolkit, and the C++ is part of what it is.
+modules/** linguist-vendored=false
 
 # The artwork inside those trees is binary; keep git from trying to diff it.
-vendor/**/*.png -diff
-vendor/**/*.ico -diff
-vendor/**/*.xcf -diff
-vendor/**/*.blend -diff
-vendor/**/*.pdn -diff
+modules/**/*.png -diff
+modules/**/*.ico -diff
+modules/**/*.xcf -diff
+modules/**/*.blend -diff
+modules/**/*.pdn -diff

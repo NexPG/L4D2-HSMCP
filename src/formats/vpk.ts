@@ -9,7 +9,7 @@
  * against the first.
  *
  * The layout is taken from sourcepp's `vpkpp/format/VPK.cpp` (MIT, Copyright (c) 2023 Laura
- * Lewis) and cross-checked against real archives; see `THIRD-PARTY-NOTICES.md`. Four details
+ * Lewis) and cross-checked against real archives; see `third-party/NOTICES.md`. Four details
  * are easy to get wrong and are the reason this file is longer than the format:
  *
  * * the tree is grouped **extension, then directory, then file name**, and each group ends

@@ -67,5 +67,5 @@ the weights or the animations. Those come from the DCC.
 
 The community QC prefabs and player-model helper packs have **no licence file** in the
 repositories reviewed here, so none of their files are copied into this project. They are
-listed as references only in `THIRD-PARTY-NOTICES.md`. A model or texture taken from another
+listed as references only in `third-party/NOTICES.md`. A model or texture taken from another
 project needs the same licence check as code.

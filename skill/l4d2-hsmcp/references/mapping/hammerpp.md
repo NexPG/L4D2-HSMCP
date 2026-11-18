@@ -53,7 +53,7 @@ Hammer and Hammer++ have a hidden `Worldcraft_ShellMessageWnd`. The toolkit can 
 
 This is **write-only and entity-level**: it addresses entities by class + origin, cannot
 create brushes, move entities or read the selection. Use the VMF writers for geometry. The
-port is from Hammer-MCP (MIT); see `THIRD-PARTY-NOTICES.md`.
+port is from Hammer-MCP (MIT); see `third-party/NOTICES.md`.
 
 ## The editor-only layer
 

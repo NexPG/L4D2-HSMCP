@@ -19,43 +19,26 @@ those notices.
 
 | Project | Licence | What this project uses |
 |---|---|---|
-| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | MIT | The live Hammer shell-channel protocol: `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` text commands, `WM_COMMAND` menu ids, session/version handling, process and window discovery. Ported and adapted to `sidecar/hammer_live.py` and `src/tools/hammerlive.ts`. |
-| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | MIT | The original project this repository grew out of; the parts of that tree that survive here. See `NOTICE`. |
-| [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | MIT (excluding `libsquish/`, which has its own licence) | The Python sidecar's BSP, VPK, VTF, FGD and VMF readers. Installed as a dependency, not vendored as source. |
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | MIT | Source format libraries vendored in `vendor/sourcepp/`. The VTF image-format table in `src/bsp/vtf.ts` is taken from `vtfpp/ImageFormats.h`; VPK, BSP and MDL structure come from `vpkpp`, `bsppp` and `mdlpp`. |
+| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | The live Hammer shell-channel protocol: `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` text commands, `WM_COMMAND` menu ids, session/version handling, process and window discovery. Ported and adapted to `sidecar/hammer_live.py` and `src/tools/hammerlive.ts`. |
+| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | [MIT](licenses/hammer-mcp-sycatle-MIT.txt) | The original project this repository grew out of; the parts of that tree that survive here. See `NOTICE`. |
+| [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | [MIT](licenses/srctools-MIT.txt) (excluding `libsquish/`, which has its own) | The Python sidecar's BSP, VPK, VTF, FGD and VMF readers. Installed as a dependency, not vendored as source. |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | Source format libraries vendored in `modules/formats/native/sourcepp/`. The VTF image-format table in `src/bsp/vtf.ts` is taken from `vtfpp/ImageFormats.h`; VPK, BSP and MDL structure come from `vpkpp`, `bsppp` and `mdlpp`. |
 
-### MIT licence text
+### Licence texts
 
-The following notice applies to the MIT-licensed components above. The copyright lines are
-kept separately because they are different works.
+The full text of each licence travels here, one file per project, under `licenses/`:
 
-```
-MIT License
+| File | Work |
+|---|---|
+| `licenses/hammer-mcp-epicmorg-MIT.txt` | EpicMorg/Hammer-MCP, © 2026 EpicMorg |
+| `licenses/hammer-mcp-sycatle-MIT.txt` | Sycatle/hammer-mcp, © 2026 Project Society Studio |
+| `licenses/sourcepp-MIT.txt` | craftablescience/sourcepp, © 2023 Laura Lewis |
+| `licenses/srctools-MIT.txt` | TeamSpen210/srctools, © 2021 Spencer Brown |
 
-Copyright (c) 2026 EpicMorg
-Copyright (c) 2026 Project Society Studio
-Copyright (c) 2023 Laura Lewis
-Copyright (c) 2022 Laura Lewis
-Copyright (c) 2021 Spencer Brown
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+MIT requires the copyright line **and** the permission notice to travel with every copy of
+the software, so each MIT file contains both, verbatim. Nothing is relicensed by the GPL:
+the GPL applies to the combined work, and a recipient may still exercise the MIT permissions
+on the MIT portions.
 
 `srctools` also contains `libsquish/` under its own licence; this project does not copy or
 modify that directory and uses the installed package as a whole.
@@ -69,7 +52,7 @@ table is updated in the same commit.
 ### Vendored trees that are not built
 
 compiled by this project's build and are not included in the published npm package, which
-ships `dist/` alone. `vendor/README.md` records the exact commands for building them and
+ships `dist/` alone. `../modules/README.md` records the exact commands for building them and
 the submodules CMake fetches at configure time.
 
 ## Projects reviewed but not copied
@@ -98,8 +81,9 @@ the implementation from the observed behaviour and cite the project as a referen
 1. **Licence first.** Identify the licence and the exact copyright holder. Check that it is
    compatible with GPL-3.0-only (MIT, BSD, Apache-2.0 and GPL-3.0 are; GPL-2.0-only and
    "all rights reserved" are not).
-2. **Permission notice.** Copy the full licence text or keep the upstream `LICENSE` file, and
-   add the copyright line to this document.
+2. **Permission notice.** Add `licenses/<work>-<SPDX>.txt` with the verbatim licence text and
+   the copyright line, keep the upstream `LICENSE` next to the source, and link both from
+   `README.md` and from this file.
 3. **Source header.** Any ported file starts with a comment naming the upstream project, the
    licence and the fact that it was modified for this repository.
 4. **Commit message.** Say what was taken, from which repository and commit, and that the

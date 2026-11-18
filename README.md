@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.85--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.86--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -12,8 +12,9 @@ actually works.
 > change between `0.0.x` releases. Windows only. Left 4 Dead 2 only.
 >
 > **Licence compliance is mandatory.** Every borrowed code, FGD, model or data file must
-> have a compatible licence and keep its copyright/permission notice. See
-> [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) before importing anything.
+> have a compatible licence and keep its copyright/permission notice. All borrowed code,
+> licences and obligations live in [`third-party/`](third-party/README.md) — read
+> [`third-party/NOTICES.md`](third-party/NOTICES.md) before importing anything.
 
 ## What it is
 
@@ -154,20 +155,26 @@ and anything may change between releases. Use it, test it and expect rough edges
 
 ## Credits
 
+Only projects whose code or reference work this repository actually uses are listed. The
+licence column links to the verbatim text in [`third-party/licenses/`](third-party/licenses).
+
 | Project | Licence | What we use |
 |---|---|---|
-| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | MIT | Live Hammer shell channel: `WM_COPYDATA` commands, `WM_COMMAND` menu ids, session and window discovery |
-| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | MIT | The original project this repository grew out of |
-| [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | MIT | Python sidecar BSP/VPK/VTF/FGD readers |
+| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](third-party/licenses/hammer-mcp-epicmorg-MIT.txt) | Live Hammer shell channel: `WM_COPYDATA` commands, `WM_COMMAND` menu ids, session and window discovery, autosave locations, `Run Map` sequences, VMT parsing |
+| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | [MIT](third-party/licenses/hammer-mcp-sycatle-MIT.txt) | The original project this repository grew out of; the parts of it that survive here |
+| [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | [MIT](third-party/licenses/srctools-MIT.txt) | Python sidecar BSP/VPK/VTF/FGD readers |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](third-party/licenses/sourcepp-MIT.txt) | VPK, BSP, VTF and MDL structure: the VTF format table, the attachment and hitbox layout, the VPK writer |
 
-Every borrowed work and its licence notice is recorded in
-[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). Other projects reviewed during the
-upstream audit are listed there as reference-only; no code was taken from them.
-**Licence compliance is mandatory:** no code is copied from a project without a compatible
-licence, and no notice is removed.
+Every borrowed work, its licence and every project we deliberately did **not** copy are
+recorded in [`third-party/NOTICES.md`](third-party/NOTICES.md). **Licence compliance is
+mandatory:** no code is copied from a project without a compatible licence, and no notice is
+removed.
 
 ## License
 
 **GPL-3.0-only.** Copyright (C) 2026 **NexPG**.
+
+Provenance, the modification notice and the obligations the GPL places on anyone
+redistributing this work are in [`third-party/NOTICE`](third-party/NOTICE).
 
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.

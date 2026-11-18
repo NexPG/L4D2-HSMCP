@@ -99,7 +99,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 
 - **Licence first.** Any borrowed code, FGD, model or data file must have a licence
   compatible with GPL-3.0-only, keep its copyright/permission notice, and be recorded in
-  `THIRD-PARTY-NOTICES.md`. No licence means no copied code; use it as a reference and
+  `third-party/NOTICES.md`. No licence means no copied code; use it as a reference and
   implement our own.
 - **L4D2 only.** Do not apply GMod, CS:S or HL2 conventions. Every game-specific fact here
   was read from L4D2's own files, its FGD or its engine.

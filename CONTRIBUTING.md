@@ -17,7 +17,7 @@ Before taking code, data or an asset from another repository:
 2. **Check compatibility with GPL-3.0-only.** MIT, BSD, Apache-2.0 and GPL-3.0 are compatible;
    GPL-2.0-only, proprietary and unlicensed code are not. If you are unsure, stop and ask.
 3. **Keep the notice.** Put the upstream copyright and permission notice in
-   [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md), and keep the upstream `LICENSE` text
+   [`third-party/NOTICES.md`](third-party/NOTICES.md) and the verbatim licence in [`third-party/licenses/`](third-party/licenses), and keep the upstream `LICENSE` text
    or a verbatim copy of it.
 4. **Mark the source.** Every ported file starts with a comment naming the upstream project,
    its licence, and the fact that it was modified here.
@@ -29,7 +29,7 @@ Before taking code, data or an asset from another repository:
 7. **No licence, no code.** Learn from the behaviour, write our own implementation, and cite
    the project as a reference. Do not copy the expression.
 
-A component missing from `THIRD-PARTY-NOTICES.md` is a compliance defect even if the code is
+A component missing from `third-party/NOTICES.md` is a compliance defect even if the code is
 correct. A missing feature is recoverable; a licence violation is not.
 
 ## 1. A passing test proves nothing until it has been shown it can fail
@@ -141,7 +141,7 @@ in a directory.
 | `config.example.json` | template for the local `.hammer-mcp/config.json` |
 | `opencode.json` | registers the repository skill with OpenCode |
 | `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md` | front page, rules, version history |
-| `LICENSE`, `LICENSE-MIT`, `NOTICE` | GPL-3.0-only, upstream MIT notice, provenance |
+| `LICENSE` | GPL-3.0-only, the licence of the combined work |
 | `.gitattributes`, `.gitignore` | line endings and local/generated files |
 
 `.mcp.json`, `config.json`, `dist/`, `node_modules/`, `campaigns/`, `.develop-diary/` and
@@ -189,10 +189,13 @@ still being measured and the campaign pipeline does not exist yet, releases stay
 
 ## Licence
 
-The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT notice it
-was forked from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in [`NOTICE`](NOTICE). By
-contributing you agree that your contribution is licensed under the same terms, and that it carries
-no notice, dependency or vendored file that would add a restriction on top of the GPL.
+The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)). The work it grew out of,
+and everything else it borrows, is recorded in [`third-party/`](third-party/README.md): the
+provenance in [`third-party/NOTICE`](third-party/NOTICE), the record in
+[`third-party/NOTICES.md`](third-party/NOTICES.md), and the verbatim licence of each work in
+[`third-party/licenses/`](third-party/licenses). By contributing you agree that your
+contribution is licensed under the same terms, and that it carries no notice, dependency or
+vendored file that would add a restriction on top of the GPL.
 
 A file copied from somewhere else is the one thing to say out loud in the commit or PR: a
 GPL-compatible licence with its notice intact is fine, anything else is not.
