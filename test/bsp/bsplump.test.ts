@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readBspLumpTool, writeBspLumpTool } from "../../src/maps/typescript/tools/bsplump.js";
-import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
+import { ctx as sharedCtx, FIXTURES, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-lump-"));
@@ -31,7 +31,9 @@ function syntheticBsp(entities: string): Buffer {
   return bsp;
 }
 
-describe("read_bsp_lump", () => {
+const installed = has.sidecar;
+
+describe.skipIf(!installed)("read_bsp_lump", () => {
   it("returns the entity lump as text and the rest as bytes", async () => {
     const path = join(scratch, "plain.bsp");
     writeFileSync(path, syntheticBsp('{\n"classname" "worldspawn"\n}\n'));
@@ -67,7 +69,7 @@ describe("read_bsp_lump", () => {
   });
 });
 
-describe("write_bsp_lump", () => {
+describe.skipIf(!installed)("write_bsp_lump", () => {
   it("compresses, appends and proves the round-trip", async () => {
     const path = join(scratch, "write.bsp");
     writeFileSync(path, syntheticBsp("original"));
