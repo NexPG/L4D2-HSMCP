@@ -31,7 +31,7 @@ export const dmxToSmdTool = defineTool({
     flipV: z
       .boolean()
       .optional()
-      .describe("Override flipVCoordinates. Omit to use the value in the DMX."),
+      .describe("Force a V flip. Omit to keep the UVs as written; the BlenderSourceTools fixture proves that is what its SMD export does."),
     overwrite: z.boolean().default(false),
     confirm: CONFIRM,
   },
@@ -46,6 +46,8 @@ export const dmxToSmdTool = defineTool({
     mins: z.array(z.number()),
     maxs: z.array(z.number()),
     appliedTransforms: z.number(),
+    boneCount: z.number(),
+    skinned: z.boolean(),
     warnings: z.array(z.string()),
     diagnostics: z.array(
       z.object({

@@ -6,7 +6,7 @@
  * the material stripping and the UV flip in one pass. The negative case — a DMX with no
  * mesh — must say so rather than write an empty SMD.
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -85,6 +85,7 @@ function scene(mesh: boolean) {
 }
 
 interface SmdRead {
+  nodes: { id: number; name: string; parent: number }[];
   triangleCount: number;
   materials: { name: string; triangles: number }[];
   triangles?: {
@@ -128,6 +129,122 @@ describe.skipIf(!installed)("dmx_to_smd", () => {
     const second = read.triangles![0]!.vertices[1]!;
     // scale 2 applies after the transform.
     expect(second.position[0]).toBe(128);
+  });
+
+  it("writes a skeleton and weights, with the Euler convention the oracle proved", async () => {
+    // (0.6830127, 0.1830127, 0.1830127, 0.6830127) -> (1.570796, 0, 0.523599).
+    const rootQuat = [0.6830127, 0.1830127, 0.1830127, 0.6830127];
+    const transform = (position: number[], orientation: number[]) => ({
+      type: "element",
+      value: {
+        name: "transform",
+        type: "DmeTransform",
+        attributes: {
+          position: { type: "vector3", value: position },
+          orientation: { type: "quaternion", value: orientation },
+        },
+      },
+    });
+    const spine = {
+      name: "spine",
+      type: "DmeJoint",
+      attributes: {
+        name: { type: "string", value: "spine" },
+        transform: transform([0, 10, 0], [0, 0, 0, 1]),
+      },
+    };
+    const rootJoint = {
+      name: "root",
+      type: "DmeJoint",
+      attributes: {
+        name: { type: "string", value: "root" },
+        transform: transform([0, 0, 0], rootQuat),
+        children: { type: "element", array: true, values: [spine] },
+      },
+    };
+    const vertexData = {
+      name: "bind",
+      type: "DmeVertexData",
+      attributes: {
+        positions: { type: "vector3", array: true, values: [[0, 0, 0], [64, 0, 0], [0, 64, 0]] },
+        positionsIndices: { type: "int", array: true, values: [0, 1, 2] },
+        normals: { type: "vector3", array: true, values: [[0, 0, 1], [0, 0, 1], [0, 0, 1]] },
+        normalsIndices: { type: "int", array: true, values: [0, 1, 2] },
+        textureCoordinates: { type: "vector2", array: true, values: [[0, 0], [1, 0], [0, 1]] },
+        textureCoordinatesIndices: { type: "int", array: true, values: [0, 1, 2] },
+        jointCount: { type: "int", value: 2 },
+        jointWeights: { type: "float", array: true, values: [0.25, 0.75, 1, 0, 0.5, 0.5] },
+        jointIndices: { type: "int", array: true, values: [0, 1, 1, 0, 0, 1] },
+      },
+    };
+    const faceSet = {
+      name: "mat_a",
+      type: "DmeFaceSet",
+      attributes: {
+        faces: { type: "int", array: true, values: [0, 1, 2, -1] },
+        material: { type: "element", value: MATERIAL },
+      },
+    };
+    const mesh = {
+      name: "body",
+      type: "DmeMesh",
+      attributes: {
+        name: { type: "string", value: "body" },
+        visible: { type: "bool", value: true },
+        currentState: { type: "element", value: vertexData },
+        bindState: { type: "element", value: vertexData },
+        faceSets: { type: "element", array: true, values: [faceSet] },
+      },
+    };
+    const tree = {
+      name: "root",
+      type: "DmElement",
+      attributes: {
+        model: {
+          type: "element",
+          value: {
+            name: "scene",
+            type: "DmeModel",
+            attributes: {
+              name: { type: "string", value: "scene" },
+              jointList: { type: "element", array: true, values: [rootJoint, spine] },
+              children: { type: "element", array: true, values: [rootJoint, mesh] },
+            },
+          },
+        },
+      },
+    };
+
+    const dmx = join(scratch, "rig.dmx");
+    const smd = join(scratch, "rig.smd");
+    await callSidecar("dmx_write", { path: dmx, tree }, config);
+    const converted = await callSidecar<{ boneCount: number; skinned: boolean; verified: boolean }>(
+      "dmx_to_smd",
+      { path: dmx, out: smd },
+      config,
+    );
+    expect(converted.boneCount).toBe(2);
+    expect(converted.skinned).toBe(true);
+    expect(converted.verified).toBe(true);
+
+    const read = await callSidecar<SmdRead>("smd_read", { path: smd, includeTriangles: true }, config);
+    expect(read.nodes).toEqual([
+      { id: 0, name: "root", parent: -1 },
+      { id: 1, name: "spine", parent: 0 },
+    ]);
+    const links = read.triangles![0]!.vertices.map((v) => v.links);
+    expect(links[0]).toEqual([{ bone: 0, weight: 0.25 }, { bone: 1, weight: 0.75 }]);
+    expect(links[1]).toEqual([{ bone: 1, weight: 1 }]);
+    expect(links[2]).toEqual([{ bone: 0, weight: 0.5 }, { bone: 1, weight: 0.5 }]);
+
+    const lines = readFileSync(smd, "utf8").split(/\r?\n/);
+    const start = lines.indexOf("skeleton");
+    const end = lines.indexOf("end", start);
+    const boneLines = lines.slice(start + 1, end).filter((line) => line.trim() && !line.startsWith("time"));
+    expect(boneLines).toEqual([
+      "0 0.000000 0.000000 0.000000 1.570796 0.000000 0.523599",
+      "1 0.000000 10.000000 0.000000 0.000000 0.000000 0.000000",
+    ]);
   });
 
   it("refuses a datamodel with no mesh instead of writing an empty SMD", async () => {

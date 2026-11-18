@@ -23,10 +23,11 @@ with a line here.
     events (type, cycle, options) and bounds; hitbox geometry on the bone each box
     follows; the model name inside each body part; per-skin material tables; `$cdmaterials`,
     surfaceprop, mass, eye/illumination positions, view bounds and `$includemodel`. These
-    are mdlpp's structs, not a label list. `dmx_to_smd` converts a static DMX mesh export to
-    SMD, applying the DAG transform and `flipVCoordinates` and naming the joined mesh data;
-    it takes one root bone and says how many joints it ignored rather than pretending to
-    skin.
+    are mdlpp's structs, not a label list. `dmx_to_smd` converts a DMX model export to
+    SMD with its skeleton: node hierarchy, local bone transforms as XYZ Euler angles and
+    per-vertex joint weights. The convention is verified against BlenderSourceTools' own
+    cube export — node names, parents, all four rotations, twelve triangles, UVs and
+    weights match. A file without a joint list falls back to one root bone and says so.
   - **Soundscripts.** `read_soundscript` reads one file or the whole game through
     `scripts/game_sounds_manifest.txt`, follows `#base`/`#include`, reports first-definition
     duplicates, strips sound characters and says whether each wave exists (13k names in the

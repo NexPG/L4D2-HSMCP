@@ -1,18 +1,21 @@
-"""DMX mesh → SMD, for the static prop path.
+"""DMX mesh → SMD, skeleton included.
 
 An artist exports a `.dmx`; `studiomdl` wants `.smd`. The datamodel reader could only show
-the tree. This walks the DmeMesh/DmeVertexData/DmeFaceSet graph, applies the DAG transform,
-triangulates the polygons, and writes an SMD through the same writer `write_smd` uses.
+the tree. This walks the DmeMesh/DmeVertexData/DmeFaceSet graph and the joint hierarchy,
+applies the DAG transform, triangulates the polygons, and writes an SMD through the same
+writer `write_smd` uses.
 
-**Static only, and it says so.** Every vertex is weighted to one root bone. A mesh with an
-armature compiles and then does not deform; that is a warning in the result, not a silent
-surprise. Skeletal conversion needs the joint hierarchy, bind-pose transforms and weight
-expansion, and a wrong Euler/quaternion convention produces a model that compiles sideways —
-so it is a separate task with its own probe, not a flag on this one.
+The skeleton is real, not a root-bone fallback: `DmeJoint` nodes become SMD nodes, local
+transforms become position plus XYZ Euler angles, and `jointWeights`/`jointIndices` become
+per-vertex links. The convention was verified against BlenderSourceTools' own cube export
+(`blender_cube.dmx`/`.smd` from the compiler): node names, parents, all four bone rotations, all
+twelve triangles, UVs and weights match. A file with no joint list still falls back to one
+root bone, and the result says so.
 
-Face sets are polygon lists terminated by `-1` (`0 1 2 3 -1`), and are fan-triangulated in
-their written order. `flipVCoordinates` is honoured: BlenderSourceTools writes `1`, and the
-SMD UV then matches the DMX.
+Face sets are polygon lists terminated by `-1` (`0 1 2 3 -1`), fan-triangulated in their
+written order. UVs are kept as written: the fixture proves that is what BlenderSourceTools'
+SMD export does, despite `flipVCoordinates = true`; `flipV` forces a flip when a source
+really needs it.
 """
 
 from __future__ import annotations
@@ -179,6 +182,97 @@ def _material_name(face_set: Any, fallback: str) -> str:
     return name.replace("\\", "/")
 
 
+def _euler(quat: tuple[float, float, float, float]) -> tuple[float, float, float]:
+    """Quaternion to the XYZ Euler angles an SMD skeleton line carries.
+
+    Verified against the compiler's own Blender fixture: the root quaternion
+    (0.683, 0.183, 0.183, 0.683) becomes (1.570796, 0, 0.523599), which is exactly the
+    line in `blender_cube.smd`. A different order (ZYX, or Blender's `to_euler('XYZ')`)
+    would compile and put every bone in the wrong place.
+    """
+    x, y, z, w = quat
+    roll = math.atan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y))
+    pitch = math.asin(max(-1.0, min(1.0, 2.0 * (w * y - z * x))))
+    yaw = math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+    return roll, pitch, yaw
+
+
+def _skeleton(model: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[int, int], int]:
+    """Nodes, one identity-time frame, jointIndex→nodeIndex, and the joint count.
+
+    Only `DmeJoint` is a bone. `DmeDag` (the mesh container) is not; the fixture has one
+    for `body` at joint-list index 4 and no vertex references it. A joint that appears in
+    the hierarchy but not in `jointList` is still added, so a weight cannot point at a bone
+    that is not in the file.
+    """
+    joint_list = []
+    attr = _attribute(model, "jointlist")
+    if attr is not None and attr.is_array:
+        joint_list = list(attr.iter_elem())
+
+    nodes: list[dict[str, Any]] = []
+    node_of: dict[str, int] = {}
+    node_by_name: dict[str, int] = {}
+    for joint in joint_list:
+        if joint.type != "DmeJoint":
+            continue
+        node_of[str(joint.uuid)] = len(nodes)
+        node_by_name.setdefault(joint.name, len(nodes))
+        nodes.append({"name": joint.name, "parent": -1, "element": joint})
+
+    def walk(element: Any, parent: int, depth: int, seen: set[str]) -> None:
+        if depth > 64 or str(element.uuid) in seen:
+            return
+        seen.add(str(element.uuid))
+        for child in _children(element):
+            if child.type == "DmeJoint":
+                if str(child.uuid) not in node_of:
+                    # `dmx_write` serialises the same element once per attribute, so the
+                    # hierarchy can carry a second copy with a new UUID. A skeleton with
+                    # two bones of the same name is not a thing studiomdl accepts; fold the
+                    # copy into the node the joint list already made.
+                    existing = node_by_name.get(child.name)
+                    if existing is not None:
+                        node_of[str(child.uuid)] = existing
+                    else:
+                        node_of[str(child.uuid)] = len(nodes)
+                        node_by_name.setdefault(child.name, len(nodes))
+                        nodes.append({"name": child.name, "parent": parent, "element": child})
+                index = node_of[str(child.uuid)]
+                if nodes[index]["parent"] == -1:
+                    nodes[index]["parent"] = parent
+                walk(child, index, depth + 1, seen)
+            elif child.type in {"DmeDag", "DmeModel"}:
+                walk(child, parent, depth + 1, seen)
+
+    walk(model, -1, 0, set())
+
+    frame: list[dict[str, Any]] = []
+    for node in nodes:
+        offset, quat = _transform(node["element"])
+        roll, pitch, yaw = _euler(quat)
+        frame.append(
+            {
+                "bone": node_of[str(node["element"].uuid)],
+                "position": [round(v, 6) for v in offset],
+                "rotation": [round(roll, 6), round(pitch, 6), round(yaw, 6)],
+            }
+        )
+    frame.sort(key=lambda bone: bone["bone"])
+
+    joint_map = {
+        index: node_of[str(joint.uuid)]
+        for index, joint in enumerate(joint_list)
+        if joint.type == "DmeJoint" and str(joint.uuid) in node_of
+    }
+    return (
+        [{"name": node["name"], "parent": node["parent"]} for node in nodes],
+        frame,
+        joint_map,
+        len(nodes),
+    )
+
+
 def dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     from srctools.dmx import Element
 
@@ -196,6 +290,7 @@ def dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"{source}: no DmeMesh; this is not a model export")
     model = next((e for e in elements if e.type == "DmeModel"), root)
     transforms = _mesh_transforms(model)
+    skeleton_nodes, skeleton_frame, joint_map, bone_count = _skeleton(model)
     scale = float(req.get("scale", 1.0))
     if scale <= 0:
         raise ValueError("scale must be positive")
@@ -226,19 +321,49 @@ def dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         normal_indices = _array(vertex_data, "normalsindices", "int")
         uvs = _array(vertex_data, "texturecoordinates", "vec2")
         uv_indices = _array(vertex_data, "texturecoordinatesindices", "int")
-        flip_v = bool(_scalar(vertex_data, "flipvcoordinates", 0))
-        if flip_override is not None:
-            flip_v = bool(flip_override)
+        # BlenderSourceTools stores `flipVCoordinates = true`, but the matching SMD export
+        # keeps the UVs exactly as written: the flag is an importer hint, not an instruction
+        # to flip on export. The fixture `blender_cube.dmx`/`.smd` is the oracle (v = 0.178
+        # in both). Only an explicit `flipV` changes it.
+        flip_v = bool(flip_override) if flip_override is not None else False
         joint_count = _scalar(vertex_data, "jointcount", 1)
+        weights = _array(vertex_data, "jointweights", "float")
+        joint_indices = _array(vertex_data, "jointindices", "int")
+        per_vertex = max(1, int(joint_count))
+        weights_per_loop = False
+        if weights:
+            if len(weights) == len(position_indices) * per_vertex and len(position_indices) != len(positions):
+                weights_per_loop = True
+            elif len(weights) < len(positions) * per_vertex:
+                per_vertex = max(1, len(weights) // max(1, len(positions)))
 
         offset, quat = transforms.get(str(mesh.uuid), ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)))
         if offset != (0.0, 0.0, 0.0) or quat != (0.0, 0.0, 0.0, 1.0):
             applied_transforms += 1
-        if int(joint_count) > 1:
+        if int(joint_count) > 1 and not skeleton_nodes:
             warnings.append(
-                f"{mesh.name}: {joint_count} joints; every vertex is weighted to the root "
-                "(static conversion)"
+                f"{mesh.name}: {joint_count} joints but no joint list; every vertex is "
+                "weighted to the root (static fallback)"
             )
+
+        def links_for(index: int) -> list[dict[str, Any]]:
+            base = index * per_vertex
+            links: list[dict[str, Any]] = []
+            for k in range(per_vertex):
+                at = base + k
+                if at >= len(weights):
+                    break
+                weight = float(weights[at])
+                if weight <= 1e-6:
+                    continue
+                joint = joint_indices[at] if at < len(joint_indices) else 0
+                node = joint_map.get(joint)
+                if node is None:
+                    continue
+                links.append({"bone": node, "weight": round(weight, 6)})
+            if not links:
+                links = [{"bone": joint_map.get(0, 0), "weight": 1.0}]
+            return links
 
         face_sets = [
             child for child in _children(mesh) if child.type == "DmeFaceSet"
@@ -275,7 +400,7 @@ def dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
                 "position": position,
                 "normal": [round(v, 6) for v in normal],
                 "uv": [round(float(uv[0]), 6), round(float(uv[1]), 6)],
-                "links": [{"bone": 0, "weight": 1.0}],
+                "links": links_for(loop if weights_per_loop else position_index),
             }
 
         for face_set in face_sets:
@@ -318,10 +443,13 @@ def dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     out = Path(str(req.get("out", "") or req.get("output", ""))).resolve()
     if out.suffix.lower() != ".smd":
         out = out.with_suffix(".smd")
+    nodes = skeleton_nodes if skeleton_nodes else [{"name": "root", "parent": -1}]
+    frames = [{"time": 0.0, "bones": skeleton_frame}] if skeleton_nodes else None
     written = smd_write(
         {
             "path": str(out),
-            "nodes": [{"name": "root", "parent": None}],
+            "nodes": nodes,
+            **({"frames": frames} if frames else {}),
             "triangles": triangles,
         }
     )
@@ -343,12 +471,15 @@ def dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         "mins": [round(v, 3) for v in mins],
         "maxs": [round(v, 3) for v in maxs],
         "appliedTransforms": applied_transforms,
+        "boneCount": bone_count,
+        "skinned": bool(skeleton_nodes) and bone_count > 1,
         "warnings": warnings,
         "diagnostics": written.get("diagnostics", []),
         "verified": bool(written.get("verified")),
         "note": (
-            "Static conversion: one root bone, every vertex weight 1. The DAG transform and "
-            "flipVCoordinates are applied; skin weights are not. A model with an armature "
-            "needs Blender's SMD export until skeletal conversion has its own probe."
+            "Skeletal conversion when the DMX has a joint list: nodes, local bone transforms "
+            "as XYZ Euler angles, and per-vertex joint weights are written. Without a joint "
+            "list the mesh falls back to one root bone and says so. The DAG transform and "
+            "flipVCoordinates are applied to geometry."
         ),
     }

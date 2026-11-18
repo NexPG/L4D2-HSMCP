@@ -293,6 +293,25 @@ def _build_attribute(name: str, spec: Any) -> Any:
 
     if is_array:
         return Attribute.array(name, value_type, list(values or []))
+    # srctools stores a scalar vector as a named tuple, not a list; export_binary unpacks
+    # it and raises "argument after * must be iterable" on a plain list.
+    from srctools.dmx import Color, Quaternion, Vec2, Vec4
+    from srctools.math import FrozenAngle, FrozenMatrix, FrozenVec
+
+    if value_type is ValueType.VEC2:
+        values = Vec2(*values)
+    elif value_type is ValueType.VEC3:
+        values = FrozenVec(values)
+    elif value_type is ValueType.VEC4:
+        values = Vec4(*values)
+    elif value_type is ValueType.QUATERNION:
+        values = Quaternion(*values)
+    elif value_type is ValueType.ANGLE:
+        values = FrozenAngle(values)
+    elif value_type is ValueType.COLOR:
+        values = Color(*values)
+    elif value_type is ValueType.MATRIX:
+        values = FrozenMatrix(values)
     return Attribute(name, value_type, values)
 
 

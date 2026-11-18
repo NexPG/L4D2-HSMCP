@@ -54,9 +54,10 @@ the absence instead of hiding it.
   graph is cyclic, and expanding it fully never terminates. Raise `maxDepth` for one level.
 - `write_dmx` — the reverse, for a generated datamodel. `encoding: "kv2"` is diffable text;
   binary v4 / format 15 is what L4D2-era tools expect.
-- `dmx_to_smd` — a static mesh export (no armature) into SMD: DAG transform, UV flip,
-  material names and polygons. **Static only:** one root bone, every weight 1. Use Blender's
-  SMD export for a skinned model until skeletal conversion is verified.
+- `dmx_to_smd` — a mesh export into SMD: DAG transform, UVs, materials, polygons, **and the
+  skeleton**: node hierarchy, local bone rotations and per-vertex weights. Verified against
+  BlenderSourceTools' own cube export. A datamodel without a joint list falls back to one
+  root bone and says so.
 
 ## L4D2 specifics
 
