@@ -46,7 +46,10 @@
 | Escape unreachable | The end region was CHECKPOINT, not FINALE, so the Director had two checkpoints and the flow was rejected | `nav_finale` spawnflags changed from 2048 to 64; dump now shows FINALE areas |
 | Map2 "does not load / crashes" | Stale nav/BSP pair and wrong end-goal type | Both fixed above; map2 loads cleanly |
 | Normal-client add-on worry | Direct `left4dead2.exe` without Steam gives `No Steam logon`; canonical addoninfo keys and the dictionary were also missing | Manifest keys fixed; dictionary baked; tested via `steam.exe -applaunch 550` |
-| Agent did not see the escalator | `read_game_content` refused an empty pattern, so an asset had to be named before it could be found | Empty pattern browses; `read_asset_catalog` groups escalators/stairs/doors/etc. with bounds |
+| Agent did not see the escalator / houses / grass | `read_game_content` and the old catalog needed a name; no material preview existed | `read_asset_catalog` groups building, roof, window, vehicle, foliage, street, interior, prop, fence, light, sign, terrain, escalator and stairs, plus material categories; `preview_asset` returns the actual texture or HLMV viewport |
+| Flat ground everywhere | The displacement tools existed but no recipe told the agent they are the terrain path | `references/mapping/terrain-water-boundaries.md` gives the grid -> displace -> sculpt -> sew -> paint order; the campaign uses grass, a deeper water basin and a tree line |
+| Water bodies unclear | `func_water_analog` was used but not documented as the water contract | The same reference covers the brush, `water_lod_control`, the no-nav rule and the boardwalk |
+| Map edges visible | Ground and sky met at the shell with nothing in front | Tree line on both forest edges, stock facades along the street, fog and distant trees |
 | `read_nav_dump` returned 0 areas | Split regex `NAV AREA\s*\n-+` consumed the CRLF and required a second newline | `NAV AREA[^\S\r\n]*\r?\n-+`; CRLF regression test |
 | `read_bsp_entities` classname filter returned nothing | `handler` used `slice(offset, offset + limit)`; a direct call does not apply the Zod default, so `limit` was `undefined` | Defaults are applied in the handler for `limit`/`offset` |
 | Unknown `FinaleType` key | The FGD key is `type`, displayed as "Finale Type" | Campaign and skill docs use `type` |
@@ -92,6 +95,41 @@ no LDR faces, so it is black whenever the engine falls back to LDR.
 **Fix:** with the current rule (stock assets only) this is the closest correct choice. A
 true moonlit sky requires a custom skybox (six LDR + six HDR faces), which the brief excludes.
 Document it as a content limit, not a tool bug.
+
+### P1 — model shape preview is still HLMV-only
+
+**When:** `preview_asset(kind: "model")` on this desktop.
+**Symptom:** HLMV opens and loads the stock model, but its OpenGL viewport captures black;
+the material preview works. The tool accepts VPK models now, but the picture of the shape
+is not trustworthy here.
+**Next fix:** a generated preview map (sealed room, `prop_dynamic`, `mat_fullbright`) run
+through `run_map_test`, used when the HLMV canvas is blank. Until then, `preview_asset` on
+the model's materials and `read_model_info` bounds are the reliable half.
+
+### P1 — the campaign still uses a flat forest floor
+
+**When:** the forest is the place for hills and the tools are displacement-based.
+**Symptom:** the ground is a large flat brush; grass and trees were added, but there is no
+terrain relief.
+**Next fix:** replace the forest floor with a grid, `write_displacement(power: 4, facing:
+"up")`, `sculpt_displacement(noise)` and sew; keep the cabin, boardwalk and stairs on flat
+floor. The recipe is in `references/mapping/terrain-water-boundaries.md`.
+
+### P2 — boundaries are covered, not authored
+
+**When:** the forest edge is the skybox shell.
+**Symptom:** a tree line and fog hide it, but there is no 3D skybox or cliff; the street ends
+at the facades.
+**Next fix:** a 3D skybox ring or a cliff/hill band beyond the tree line; `write_sky_camera`
+and a scaled copy are the native path.
+
+### P2 — bulk asset inspection is one call per asset
+
+**When:** choosing among dozens of houses or facades.
+**Symptom:** `read_asset_catalog` gives names and bounds, but each picture is a separate
+`preview_asset` call.
+**Next fix:** an optional contact-sheet mode that returns a grid of the first N previews of
+a category; keep it opt-in, because each material is a VTF decode.
 
 ### P2 — `read_vmf_view` cannot frame an interior
 

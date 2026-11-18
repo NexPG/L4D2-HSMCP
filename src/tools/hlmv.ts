@@ -65,6 +65,8 @@ export const runHlmvTool = defineTool({
   },
   outputSchema: {
     model: z.string(),
+    /** True when the file is loose on disk; false when HLMV must resolve it from a VPK. */
+    loose: z.boolean(),
     exe: z.string(),
     launched: z.boolean(),
     processId: z.number().nullable(),
@@ -90,15 +92,14 @@ export const runHlmvTool = defineTool({
     const path = isAbsolute(model)
       ? model
       : join(gameDir, "models", model.replace(/^\/+/, ""));
-    if (!existsSync(path)) {
-      throw new Error(
-        `${path} does not exist. Compile the QC with run_studiomdl first, or check the ` +
-          `model name with read_game_content(kind: "model").`,
-      );
-    }
 
     const relative = `models/${model.replace(/^\/+/, "")}`;
-    const child = spawn(exe, [relative], {
+    // Stock models live in the game's VPKs, not on disk. HLMV resolves them through
+    // VPROJECT; refusing every non-loose path made the model preview unusable for exactly
+    // the assets a mapper wants to look at. A genuinely missing custom model still shows
+    // as HLMV's error window, which the capture preserves.
+    const loose = existsSync(path);
+    const child = spawn(exe, [loose ? path : relative], {
       cwd: gameDir,
       env: { ...process.env, VPROJECT: gameDir },
       detached: true,
@@ -150,7 +151,8 @@ export const runHlmvTool = defineTool({
     }
 
     return {
-      model: path,
+      model: loose ? path : relative,
+      loose,
       exe,
       launched: processId !== null,
       processId,

@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.80-alpha — 2026-11-18
+
+- **`preview_asset`: the eye.** A material is read through its VMT to the `$basetexture`
+  VTF, decoded by the sidecar and returned as a real PNG over a checkerboard (no Pillow).
+  A model is opened in HLMV and its viewport captured; stock VPK models are now accepted
+  (HLMV previously refused every non-loose path). Use it before choosing a texture or a
+  prop; a name is not a look.
+- **`read_asset_catalog` sees the whole kit.** Categories now include building, roof,
+  window, vehicle, foliage, street, interior, prop, fence, light, sign, terrain, escalator
+  and stairs, and the reply carries material categories (brick, concrete, plaster, wood,
+  metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign, building) with
+  VMF-ready names. Bounds are returned for structural categories.
+- **Terrain/water/boundary recipe.** `references/mapping/terrain-water-boundaries.md` gives
+  the displacement order (`write_displacement` -> `sculpt_displacement` -> sew -> paint),
+  the `func_water_analog` + `water_lod_control` contract, and the tree-line/facade/fog
+  boundary rule.
+- Campaign 002 gained stock building facades, storefront windows and doors, dumpsters,
+  trash cans, street lamps, grass, a deeper swamp basin and a tree line at both map edges;
+  the escalator is the stock `mall_escalator` on the 23-degree shaft, not four flat panels.
+
 ## 0.0.79-alpha — 2026-11-18
 
 - **A rotating door's origin is its hinge.** `placeDoor` (`src/vmf/door.ts`) turns

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-103 tools. This page groups them by the job you are doing; each tool's own description is the
+104 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -62,7 +62,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `validate_io` | entity wiring against the FGD |
 | `read_fgd_class` | keyvalues, inputs, outputs of one entity class from the game's FGD |
 | `read_game_content` | find installed materials and models by name; an empty pattern browses a kind, paged with `offset` |
-| `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, vehicles, foliage, street, interiors, lights, signs) plus every sky's LDR/HDR completeness |
+| `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |
+| `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
 | `read_model_info` | bounds, skins, sequences, materials of one `.mdl` |
 
 ## Build and edit

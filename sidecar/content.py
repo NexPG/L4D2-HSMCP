@@ -283,12 +283,38 @@ MODEL_CATEGORIES: dict[str, tuple[str, ...]] = {
     "escalator": ("escalator",),
     "stairs": ("stair", "stairs", "step", "steps", "tread", "ladder"),
     "door": ("door", "doorway", "gate"),
+    "building": ("building", "house", "home", "apartment", "store", "shop", "shopfront", "facade", "warehouse", "cabin"),
+    "roof": ("roof", "shingle", "eave"),
+    "window": ("window", "bay_window", "storefront"),
     "vehicle": ("vehicle", "car", "truck", "bus", "van", "apc", "btr", "train"),
-    "foliage": ("tree", "foliage", "plant", "bush", "fern", "grass"),
-    "street": ("street", "bench", "fountain", "statue", "lamp", "hydrant", "trash"),
-    "interior": ("interior", "chair", "table", "shelf", "cabinet", "desk", "bed"),
-    "light": ("light", "lamp", "fluorescent", "neon", "fixture"),
-    "sign": ("sign", "poster", "billboard", "graffiti"),
+    "foliage": ("tree", "foliage", "plant", "bush", "fern", "grass", "flower", "vine"),
+    "street": ("street", "bench", "fountain", "statue", "lamp", "hydrant", "trash", "dumpster", "mailbox"),
+    "interior": ("interior", "chair", "table", "shelf", "cabinet", "desk", "bed", "couch", "sofa"),
+    "prop": ("crate", "barrel", "box", "pallet", "cart", "trolley", "bucket", "bottle", "can"),
+    "fence": ("fence", "railing", "barrier", "guardrail", "wall"),
+    "light": ("light", "lamp", "fluorescent", "neon", "fixture", "lantern"),
+    "sign": ("sign", "poster", "billboard", "graffiti", "traffic"),
+    "terrain": ("rock", "cliff", "boulder", "stump", "log"),
+}
+
+# Material categories are by the VMT's own path and name, not by its shader. A mapper
+# choosing a facade thinks "brick/plaster/concrete", not "LightmappedGeneric".
+MATERIAL_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "brick": ("brick",),
+    "concrete": ("concrete", "cinder", "cement", "stucco"),
+    "plaster": ("plaster", "wallpaper", "paint"),
+    "wood": ("wood", "plank", "timber", "board"),
+    "metal": ("metal", "steel", "iron", "rust", "corrugated"),
+    "roof": ("roof", "shingle", "tile_roof"),
+    "tile": ("tile", "terracotta", "ceramic"),
+    "ground": ("ground", "dirt", "mud", "gravel", "sand", "soil"),
+    "grass": ("grass", "turf", "moss", "foliage", "leaf"),
+    "asphalt": ("asphalt", "blacktop", "road", "pavement", "sidewalk", "concrete_road"),
+    "water": ("water", "swamp", "river", "lake", "puddle"),
+    "glass": ("glass", "window", "transparent"),
+    "fabric": ("fabric", "cloth", "canvas", "carpet", "rug"),
+    "sign": ("sign", "poster", "graffiti", "decal"),
+    "building": ("building", "facade", "storefront", "apartment", "shop"),
 }
 
 
@@ -333,11 +359,25 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
 
     paths = _walk(fsys)
     models = sorted(p for p in paths if p.lower().startswith("models/") and p.lower().endswith(".mdl"))
-    materials = sorted(
-        p for p in paths if p.lower().startswith("materials/skybox/") and p.lower().endswith(".vmt")
+    all_materials = sorted(
+        p for p in paths if p.lower().startswith("materials/") and p.lower().endswith(".vmt")
     )
+    materials = [p for p in all_materials if p.lower().startswith("materials/skybox/")]
 
-    details_for = {"escalator", "stairs", "door", "vehicle"}
+    details_for = {
+        "escalator",
+        "stairs",
+        "door",
+        "building",
+        "roof",
+        "window",
+        "vehicle",
+        "foliage",
+        "street",
+        "prop",
+        "fence",
+        "terrain",
+    }
     categories: list[dict[str, Any]] = []
     for name, needles in MODEL_CATEGORIES.items():
         hits = [
@@ -389,21 +429,43 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
+    material_categories: list[dict[str, Any]] = []
+    for name, needles in MATERIAL_CATEGORIES.items():
+        hits = [
+            p
+            for p in all_materials
+            if _category_hit(p.rsplit("/", 1)[-1].lower().removesuffix(".vmt"), needles)
+        ]
+        rows = [
+            {"path": rel, "name": _vmf_name(rel)}
+            for rel in hits[:per_category]
+        ]
+        material_categories.append(
+            {
+                "name": name,
+                "total": len(hits),
+                "shown": len(rows),
+                "results": rows,
+            }
+        )
+
     return {
         "gameDir": game_dir,
         "mounted": True,
         "mountError": None,
         "kind": kind,
         "modelCount": len(models),
-        "materialCount": len(paths) - len(models),
+        "materialCount": len(all_materials),
         "categories": categories,
+        "materialCategories": material_categories,
         "skyboxes": skies,
         "note": (
             "One walk of the mounted VPK-and-loose chain. Categories are by path name; "
             "`total` is the real count and `shown` is capped by perCategory. Bounds are the "
             "hull Hammer's model viewer reports, so `mins.z` is how far below the origin the "
             "model reaches. `strictComplete` is the only sky value safe to compile in both "
-            "LDR and HDR."
+            "LDR and HDR. Call preview_asset on a candidate before choosing it: a name is "
+            "not a look."
         ),
     }
 

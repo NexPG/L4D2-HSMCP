@@ -303,6 +303,14 @@ def _asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
     return asset_catalog(req)
 
 
+@verb("material_preview")
+def _material_preview(req: dict[str, Any]) -> dict[str, Any]:
+    """The base texture of one material as a PNG the agent can look at."""
+    from preview import material_preview
+
+    return material_preview(req)
+
+
 @verb("vmf_displacements")
 def _vmf_displacements(req: dict[str, Any]) -> dict[str, Any]:
     """Displacements as srctools reads them -- the oracle for our own reader."""

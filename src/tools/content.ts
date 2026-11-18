@@ -215,6 +215,15 @@ export const readAssetCatalogTool = defineTool({
         ),
       }),
     ),
+    /** Materials grouped by what a mapper chooses by: brick, concrete, roof, ground ... */
+    materialCategories: z.array(
+      z.object({
+        name: z.string(),
+        total: z.number(),
+        shown: z.number(),
+        results: z.array(z.object({ path: z.string(), name: z.string() })),
+      }),
+    ),
     skyboxes: z.array(
       z.object({
         name: z.string(),
