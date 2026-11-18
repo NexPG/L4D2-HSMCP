@@ -1,7 +1,7 @@
 # Contributing
 
-This is a standalone fork of `hammer-mcp`, developed on its own terms and aimed at Left 4 Dead 2.
-The process is deliberately light; the four rules below are not.
+This is a standalone project that began from `hammer-mcp`, developed on its own terms and
+aimed at Left 4 Dead 2. The process is deliberately light; the four rules below are not.
 
 ## 1. A passing test proves nothing until it has been shown it can fail
 
@@ -62,9 +62,9 @@ that does not exist is a bug, not a delay: somebody reads it and relies on it.
 
 Findings are not finished in the diary. Every experiment that produced a fact, a limit or an error
 goes into `skill/l4d2-hsmcp/troubleshooting/` or `references/` as **symptom → cause → check → fix**,
-including what the error means and what it affects. The diary records the process; the skill is what
-the agent reads while working. If an agent has to ask "why is this happening?", the documentation is
-incomplete.
+including what the error means and what it affects. Research **reports** belong in
+`.develop-diary/04-log/`; the skill and `docs/reference/` get the distilled contracts. If an agent
+has to ask "why is this happening?", the documentation is incomplete.
 
 **Leave the game install as you found it.** A test that copies a map, injects entities or creates
 `materials/maps/<map>/` removes those files and restores any modified original in a `finally`, even
@@ -155,10 +155,14 @@ still being measured and the campaign pipeline does not exist yet, releases stay
 
 ## Licence
 
-The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT notice it
-was forked from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in [`NOTICE`](NOTICE). By
-contributing you agree that your contribution is licensed under the same terms, and that it carries
-no notice, dependency or vendored file that would add a restriction on top of the GPL.
+The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT
+notice it began from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in
+[`NOTICE`](NOTICE). By contributing you agree that your contribution is licensed under the
+same terms, and that it carries no notice, dependency or vendored file that would add a
+restriction on top of the GPL.
 
 A file copied from somewhere else is the one thing to say out loud in the commit or PR: a
-GPL-compatible licence with its notice intact is fine, anything else is not.
+GPL-compatible licence with its notice intact is fine, anything else is not. Partial imports
+keep the original author and use `cherry-pick -x` or `filter-repo --path`; do not merge a
+whole upstream history for one file, because that credits authors for code we did not take.
+No-licence projects are reference only.

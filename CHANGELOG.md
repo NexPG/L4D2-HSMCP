@@ -34,6 +34,12 @@ with a line here.
   (0x100000); the L4D2 `func_nav_attribute_region` list is in the references.
 - **Honest gaps recorded.** Propper++ (brush → model), hotspot `.rect` lookup, 4-way blend
   verification and the preview-map fallback for HLMV remain open.
+- **Research logs live in the development diary.** `docs/` keeps the distilled manuals;
+  the two research logs were moved to `.develop-diary/04-log/` per the project rule.
+- **Upstream and prior art.** `README.md` and `NOTICE` now list the reviewed repositories,
+  their licences and what came from each. Only code actually carried is credited; partial
+  imports use `cherry-pick -x` / `filter-repo`, never a whole-history merge that would credit
+  authors for code we did not take. No-licence repositories are reference-only.
 
 ## 0.0.83-alpha — 2026-11-18
 
@@ -66,10 +72,10 @@ with a line here.
 
 ## 0.0.82-alpha — 2026-11-18
 
-- **Deep research pass.** `docs/reference/l4d2-modding-research-2026.md` collects Hammer/
-  Hammer++ setup, campaign/mission contracts, checkpoint/nav/finale rules, Director and
-  game modes, entity classes, optimization and limits, the asset pipeline, and a gap table
-  against this MCP. `docs/reference/l4d2-campaign-authoring.md` is the shorter synthesis.
+- **Deep research pass.** The research log is in the development diary (`04-log/`); the
+  distilled references are `docs/reference/l4d2-campaign-authoring.md` and, in the later
+  0.0.84 pass, `docs/reference/l4d2-complete-reference.md` and
+  `docs/reference/hammerpp-complete-reference.md`.
 - **Hammer++ I/O delimiter is a real failure mode.** Hammer++'s
   `Use special I/O delimiter (ESC)` (`IOParamNewDelimiter=1`) writes ESC-separated outputs;
   L4D2 expects commas and every output silently does nothing. This install had it set to 1

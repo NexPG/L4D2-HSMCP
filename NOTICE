@@ -1,13 +1,15 @@
 # Licensing and provenance
 
-This repository is a fork of **hammer-mcp**, published by **Project Society Studio** at
-<https://github.com/Sycatle/hammer-mcp>. It is now distributed as a whole under the
-**GNU General Public License, version 3 only** (`GPL-3.0-only`). The full licence text is in
-[`LICENSE`](LICENSE).
+This repository **began from** **hammer-mcp**, published by **Project Society Studio** at
+<https://github.com/Sycatle/hammer-mcp>. It is no longer a fork that tracks that project:
+the L4D2 toolchain, the skill and most of the code have been rewritten. The parts that
+survive are MIT-licensed and are reproduced in [`LICENSE-MIT`](LICENSE-MIT). The combined
+work is distributed under the **GNU General Public License, version 3 only**
+(`GPL-3.0-only`). The full licence text is in [`LICENSE`](LICENSE).
 
 ## The upstream licence is kept
 
-The original work, and the parts of it that survive in this fork, are MIT-licensed:
+The original work, and the parts of it that survive in this tree, are MIT-licensed:
 
     MIT License
 
@@ -22,12 +24,12 @@ recipient may still exercise the MIT permissions on the MIT code.
 
 ## Modification notice — GPL-3.0 § 5(a)
 
-This is a modified version of the original program. The fork was taken in 2026 and first modified on
-16 November 2026, when the licence of the combined work was changed to GPL-3.0-only and the
-project metadata was pointed at this repository. Further changes are recorded in the git history,
-which is the authoritative account of what was modified and when.
+This is a modified version of the original program. The original tree was taken in 2026 and
+first modified on 16 November 2026, when the licence of the combined work was changed to
+GPL-3.0-only and the project metadata was pointed at this repository. Further changes are
+recorded in the git history, which is the authoritative account of what was modified and when.
 
-Copyright in this fork's changes:
+Copyright in this project's changes:
 
     Copyright (C) 2026 NexPG
 
@@ -38,10 +40,40 @@ Copyright in this fork's changes:
 - Keep this file, `LICENSE` and `LICENSE-MIT` intact, and do not strip the notices from the source.
 - Licence anything you add to this tree under GPL-3.0 as well — it cannot be closed off or
   sublicensed under other terms.
-- If you modify it, say so and give the date, as this file does for the fork.
+- If you modify it, say so and give the date, as this file does for this project.
 - No additional restrictions may be placed on top of the GPL.
+
+## How third-party code is attributed
+
+A partial import is never a whole-history merge. If we need one file or one commit, we take
+that commit (`git cherry-pick -x`, or `git filter-repo --path` on a clone) so the original
+`Author:` travels with the code and the message names the original SHA. Moving files changes
+the commit hash; that is expected and is why the provenance is written down as well as
+carried in git.
+
+Only the people whose code is actually in this tree are attributed. Merging an upstream
+branch wholesale would make every author in that project a contributor for code we did not
+take, which is not honest. GitHub's contributor graph is a derived view: it counts commits
+reachable from the default branch whose author email is linked to an account. We keep the
+author email, but cannot force GitHub to link it. For a port or a rewrite, the original
+author is credited in the file header and here, and the commit says what it is based on.
 
 ## Third-party components
 
-Dependencies installed from npm are not vendored here; each remains under its own licence, listed in
-its package. They are used as separate works and do not alter the licence of this repository's code.
+Dependencies installed from npm and PyPI are not vendored here; each remains under its own
+licence, listed in its package. They are used as separate works and do not alter the licence
+of this repository's code.
+
+The deep research also reviewed these repositories. No code from them is vendored unless
+the row says so:
+
+| Repository | Licence | Status |
+|---|---|---|
+| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | MIT | Original base; surviving MIT code is covered by `LICENSE-MIT`. |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | MIT | Reviewed; not vendored. |
+| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | MIT | Reviewed; not vendored. |
+| [Mrfunreal/L4D2-FGD-Edits](https://github.com/Mrfunreal/L4D2-FGD-Edits) | None declared | Reference only; no files copied. |
+| [Mrfunreal/L4D2_Navmesh_CFG](https://github.com/Mrfunreal/L4D2_Navmesh_CFG) | None declared | Reference only; no files copied. |
+| [Mrfunreal/Various_Scripts](https://github.com/Mrfunreal/Various_Scripts) | None declared | Reference only; no files copied. |
+| [Mrfunreal/-L4D2_Weapon_Viewmodel_QC_Prefabs](https://github.com/Mrfunreal/-L4D2_Weapon_Viewmodel_QC_Prefabs) | None declared | Reference only; no files copied. |
+| [Mrfunreal/L4D2_Player_Extra_Files](https://github.com/Mrfunreal/L4D2_Player_Extra_Files) | None declared | Reference only; no files copied. |

@@ -14,8 +14,9 @@
 - [`l4d2-campaign-authoring.md`](l4d2-campaign-authoring.md) — the ten-guide synthesis:
   addon/mission contracts, map goals, safe-room door names, finale types, boundaries,
   terrain, water and optimization.
-- [`l4d2-modding-research-2026.md`](l4d2-modding-research-2026.md) — the deep research pass:
-  Hammer/Hammer++ setup and traps, campaign flow, finales, Director, entities, limits,
-  optimization, asset pipeline, and a gap/backlog table for the skill and MCP.
 - [`gates.md`](gates.md) — the inherited gate history from the upstream project, kept as
   provenance.
+
+Research **logs** are kept in the development diary (`04-log/`), not in this published
+reference. This directory holds the reference manuals distilled from them: the two complete
+references above, the parity table, the limits and the campaign-authoring synthesis.
