@@ -15,6 +15,12 @@ with a line here.
 - **`read_vtf`.** A `.vtf` header as data — version, size, flags, frames, format and whether
   it is a cubemap — from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
   sourcepp/vtfpp, not the six entries that turn up in map content.
+- **`read_model_info` gains the parts of a model that placement depends on.** Attachments
+  with the bone each follows, body parts and hitbox sets, read from the header the way
+  `mdlpp` documents it. `mstudioattachment_t` is 92 bytes in L4D2 — not the 60 of the older
+  SDK — and the name index is relative to the entry itself; verified against
+  `v_models/v_rifle.mdl`, which reports 7 attachments over 65 bones with the muzzle 35 units
+  forward of the origin.
 - **`read_qc` / `write_qc`.** The model source file, the gap between `run_studiomdl` and
   `read_model_info`. The reader follows `$include` with cycle detection and scriplib's
   16-deep limit, and reports the faults that stop a compile: no `$modelname`, no `$body`, a

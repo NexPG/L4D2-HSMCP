@@ -155,6 +155,24 @@ export const readModelInfoTool = defineTool({
     /** A `.phy` exists. A prop_static from a model without one has nothing to collide with. */
     hasPhysics: z.boolean().optional(),
     physicsPath: z.string().optional(),
+    /** Bones in the skeleton. */
+    boneCount: z.number().optional(),
+    /**
+     * `$attachment`-equivalent points in the model's own space, with the bone each follows.
+     * 92 bytes per record in L4D2 (the SDK's older struct is 60).
+     */
+    attachments: z
+      .array(
+        z.object({
+          name: z.string(),
+          bone: z.number(),
+          boneName: z.string().nullable(),
+          position: z.array(z.number()),
+        }),
+      )
+      .optional(),
+    bodyParts: z.array(z.object({ name: z.string(), models: z.number() })).optional(),
+    hitboxSets: z.array(z.object({ name: z.string(), hitboxes: z.number() })).optional(),
     note: z.string().optional(),
     /** A model that exists and could not be read. Not `error`: that is the fault envelope. */
     readError: z.string().optional(),

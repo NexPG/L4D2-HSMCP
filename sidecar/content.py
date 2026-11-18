@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import fnmatch
 import re
+import struct
 from typing import Any
 
 # A search that returns everything is not a search, and serialising 40 000 names through
@@ -470,6 +471,93 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# --- what srctools does not read -------------------------------------------------------
+#
+# `srctools.mdl.Model` stops at the header, sequences, skins and materials. Attachments, body
+# parts, hitbox sets and bone names are not exposed, and an agent placing a weapon or a
+# player model needs the attachments by name: `$attachment` in a QC is how a muzzle flash and
+# a viewmodel hand are positioned, and "at 0 0 0" is not an answer.
+#
+# The layouts are Valve's `studio.h` and sourcepp's `mdlpp` (MIT, Copyright (c) 2023 Laura
+# Lewis), which carries the one detail that is easy to get wrong: `mstudioattachment_t` is 92
+# bytes, not the 60 of the older SDK, because L4D2's models append 8 unused int32. Verified
+# against `models/v_models/v_rifle.mdl`: 7 attachments, names and bones resolving.
+#
+# Every parser bounds its own offsets. A truncated `.mdl` from a broken addon must produce
+# "nothing here", not an IndexError that reaches the caller as "unknown error".
+
+BONE_BYTES = 216
+ATTACHMENT_BYTES = 92
+
+
+def _mdl_string(data: bytes, at: int) -> str:
+    if not 0 <= at < len(data):
+        return ""
+    end = data.find(b"\0", at, min(at + 256, len(data)))
+    if end < 0:
+        return ""
+    return data[at:end].decode("latin1", "replace")
+
+
+def _mdl_bones(data: bytes, count: int, offset: int) -> list[str]:
+    out: list[str] = []
+    for i in range(max(0, min(count, 4096))):
+        base = offset + i * BONE_BYTES
+        if base + 8 > len(data):
+            break
+        name_index = struct.unpack_from("<i", data, base)[0]
+        out.append(_mdl_string(data, base + name_index))
+    return out
+
+
+def _mdl_attachments(
+    data: bytes, count: int, offset: int, bones: list[str]
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for i in range(max(0, min(count, 1024))):
+        base = offset + i * ATTACHMENT_BYTES
+        if base + ATTACHMENT_BYTES > len(data):
+            break
+        name_index, _flags, bone = struct.unpack_from("<iii", data, base)
+        matrix = struct.unpack_from("<12f", data, base + 12)
+        out.append(
+            {
+                "name": _mdl_string(data, base + name_index),
+                "bone": bone,
+                "boneName": bones[bone] if 0 <= bone < len(bones) else None,
+                # matrix3x4 stores the translation in its fourth column.
+                "position": [
+                    round(matrix[3], 3),
+                    round(matrix[7], 3),
+                    round(matrix[11], 3),
+                ],
+            }
+        )
+    return out
+
+
+def _mdl_body_parts(data: bytes, count: int, offset: int) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for i in range(max(0, min(count, 64))):
+        base = offset + i * 16
+        if base + 16 > len(data):
+            break
+        name_index, num_models = struct.unpack_from("<ii", data, base)
+        out.append({"name": _mdl_string(data, base + name_index), "models": num_models})
+    return out
+
+
+def _mdl_hitbox_sets(data: bytes, count: int, offset: int) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for i in range(max(0, min(count, 64))):
+        base = offset + i * 12
+        if base + 12 > len(data):
+            break
+        name_index, num_hitboxes, _index = struct.unpack_from("<iii", data, base)
+        out.append({"name": _mdl_string(data, base + name_index), "hitboxes": num_hitboxes})
+    return out
+
+
 def model_info(req: dict[str, Any]) -> dict[str, Any]:
     """Bounds, skins, sequences and materials of one .mdl.
 
@@ -554,6 +642,27 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
     )
 
     phy = f"{rel[:-4]}.phy" if rel.lower().endswith(".mdl") else f"{rel}.phy"
+
+    try:
+        with fsys[rel].open_bin() as handle:
+            raw = handle.read()
+    except Exception:  # noqa: BLE001
+        raw = b""
+
+    bones: list[str] = []
+    attachments: list[dict[str, Any]] = []
+    body_parts: list[dict[str, Any]] = []
+    hitbox_sets: list[dict[str, Any]] = []
+    if len(raw) >= 248:
+        bone_count, bone_index = struct.unpack_from("<ii", raw, 156)
+        hitbox_count, hitbox_index = struct.unpack_from("<ii", raw, 172)
+        body_count, body_index = struct.unpack_from("<ii", raw, 232)
+        attach_count, attach_index = struct.unpack_from("<ii", raw, 240)
+        bones = _mdl_bones(raw, bone_count, bone_index)
+        attachments = _mdl_attachments(raw, attach_count, attach_index, bones)
+        body_parts = _mdl_body_parts(raw, body_count, body_index)
+        hitbox_sets = _mdl_hitbox_sets(raw, hitbox_count, hitbox_index)
+
     return {
         "model": rel,
         "mounted": True,
@@ -569,10 +678,16 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         "materials": textures,
         "hasPhysics": _present(fsys, phy),
         "physicsPath": phy,
+        "boneCount": len(bones),
+        "attachments": attachments,
+        "bodyParts": body_parts,
+        "hitboxSets": hitbox_sets,
         "note": (
             "bounds are the model's own hull, around its origin. A prop placed at a floor's "
             "height sinks by however far its origin sits above its lowest point. "
             "hasPhysics false means a prop_static from this model has nothing to collide "
-            "with; add a clip brush or use a model that ships a .phy."
+            "with; add a clip brush or use a model that ships a .phy. "
+            "attachments are in the model's own space and follow the bone named in boneName; "
+            "a $attachment in a QC is what puts a muzzle flash there."
         ),
     }

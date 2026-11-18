@@ -76,7 +76,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_game_content` | find installed materials and models by name; an empty pattern browses a kind, paged with `offset` |
 | `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |
 | `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
-| `read_model_info` | bounds, skins, sequences, materials of one `.mdl` |
+| `read_model_info` | bounds, skins, sequences, materials, attachments, body parts and hitbox sets of one `.mdl` |
 
 ## Build and edit
 

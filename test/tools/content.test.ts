@@ -44,6 +44,10 @@ interface ModelReply {
   sequences?: string[];
   materials?: string[];
   model: string;
+  boneCount?: number;
+  attachments?: Array<{ name: string; bone: number; boneName: string | null; position: number[] }>;
+  bodyParts?: Array<{ name: string; models: number }>;
+  hitboxSets?: Array<{ name: string; hitboxes: number }>;
 }
 
 const search = (args: Record<string, unknown>): Promise<SearchReply> =>
@@ -179,6 +183,29 @@ describe("read_model_info", () => {
     const r = await info("props_junk/gascan001a");
     expect(r.sequences).toContain("idle");
     expect(r.sequences!.every((s) => typeof s === "string" && !s.includes("Sequence("))).toBe(true);
+  }, VPK_SEARCH_TIMEOUT);
+
+  it.skipIf(!ready)("reads the attachments a weapon model positions its effects with", async () => {
+    // Measured 18/11/2026 against this install's v_rifle: 7 attachments over 65 bones.
+    // The struct is 92 bytes here, not the 60 the older SDK documents, and the name index
+    // is relative to the attachment itself -- reading it relative to the array puts every
+    // name but the first two bytes out of place.
+    const r = await info("v_models/v_rifle.mdl");
+    expect(r.found).toBe(true);
+    expect(r.boneCount).toBeGreaterThan(10);
+    const names = (r.attachments ?? []).map((a) => a.name);
+    expect(names).toContain("muzzlesmoke");
+    expect(names).toContain("attach_muzzle");
+
+    const muzzle = (r.attachments ?? []).find((a) => a.name === "attach_muzzle")!;
+    expect(muzzle.boneName).toMatch(/ValveBiped\./);
+    expect(muzzle.position).toHaveLength(3);
+    // The muzzle sits forward of the origin, not at it: a model with every attachment at
+    // 0 0 0 is the failure this catches.
+    expect(Math.abs(muzzle.position[2]!)).toBeGreaterThan(1);
+
+    expect(r.bodyParts?.length).toBeGreaterThan(0);
+    expect(r.hitboxSets?.length).toBeGreaterThan(0);
   }, VPK_SEARCH_TIMEOUT);
 
   it.skipIf(!ready)("says a model is absent instead of failing", async () => {
