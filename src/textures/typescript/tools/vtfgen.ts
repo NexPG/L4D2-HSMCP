@@ -3,8 +3,8 @@
  *
  * `run_vtf_convert` is still the right tool for a TGA or a DDS, but it needs VTFEdit++
  * installed. This one is native: our PNG reader decodes the pixels, srctools writes the
- * header and mip chain, and the result is read back and compared with the source. An
- * uncompressed VTF is valid for L4D2; DXT compression is what `vtex` is for.
+ * header and mip chain, and our own range-fit encoder supplies DXT1/DXT5. Every result is
+ * read back — exactly for lossless formats, by measured error for DXT.
  */
 import { existsSync, statSync } from "node:fs";
 import { z } from "zod";
@@ -30,12 +30,12 @@ export const writeVtfTool = defineTool({
       .string()
       .describe("Where to write the .vtf. The .vtf suffix is added if missing."),
     format: z
-      .enum(["BGRA8888", "RGBA8888", "BGRX8888"])
+      .enum(["BGRA8888", "RGBA8888", "BGRX8888", "DXT1", "DXT5"])
       .default("BGRA8888")
       .describe(
-        "Uncompressed VTF format. BGRX keeps RGB and forces alpha to 255. DXT and " +
-          "quantised formats are left to vtex/VTFCmd, because writing them needs a " +
-          "compressor and verifying them exactly would be a false claim.",
+        "BGRA8888/RGBA8888 are lossless; BGRX keeps RGB and forces alpha to 255; " +
+          "DXT1/DXT5 use this server's own range-fit encoder and are verified by measured " +
+          "error, not byte equality. DXT is 4-8x smaller, which matters for a 2048² texture.",
       ),
     version: z.string().default("7.4").describe("VTF version, 7.2 through 7.5. L4D2 uses 7.4."),
     clampS: z.boolean().default(false).describe("Set CLAMP_S: no horizontal wrapping."),
@@ -66,6 +66,10 @@ export const writeVtfTool = defineTool({
     clampS: z.boolean(),
     clampT: z.boolean(),
     verified: z.boolean(),
+    /** Mean absolute channel error after the round-trip; 0 for lossless formats. */
+    meanError: z.number(),
+    maxError: z.number(),
+    alphaPreserved: z.boolean(),
     note: z.string(),
   },
   handler: async (args, ctx) => {

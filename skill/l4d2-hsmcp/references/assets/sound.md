@@ -46,7 +46,14 @@ soundscript name (`MyAddon.Tone`) or, for a simple one-shot, by the wave path wi
 |---|---|
 | Is this WAV safe for L4D2? | `read_wav` — format, channels, rate, duration, loop, `gameReady` |
 | Make it safe | `convert_wav` — resample, mix to mono/stereo, write 16-bit PCM, read it back |
+| Register it | `write_soundscript` — one block, appended to an existing script |
+| Check a name or the whole game | `read_soundscript` — channel, waves, `#base`, and whether each wave exists |
 | Ship it | `run_vpk_build` / `run_vpk_pack` with the `sound/` and `scripts/` trees staged |
+
+`read_soundscript` resolves the manifest and every `#base`, so a name the game already
+defines is found before an addon shadows it. It reports the first definition that wins and
+the later ones ignored, and checks each `wave` under `sound/`. The writer appends rather
+than re-exporting, so comments and other entries survive.
 
 `read_wav` reports a `smpl` loop chunk when one exists, but `convert_wav` does not write one:
 looping in L4D2 is a property of the soundscript or of the entity playing it, not of the

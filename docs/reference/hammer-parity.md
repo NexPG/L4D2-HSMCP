@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **139 tools**.
+Last checked against the tool list on 19/11/2026: **146 tools**.
 
 ## The file itself
 
@@ -200,6 +200,8 @@ map and looking, or by not happening at all.
 | `read_bsp_info` | nothing: a compiled map is opaque to the editor |
 | `read_bsp_entities` | nothing |
 | `edit_bsp_entities` | nothing: Hammer edits the VMF, and the compiled entity lump is opaque |
+| `read_bsp_lump` | nothing: a compiled map's 64 lumps are opaque, and a compressed one could not even be opened |
+| `write_bsp_lump` | nothing: Hammer cannot write a lump |
 | `read_text_file` | nothing: Hammer does not open QC, SMD or VMT as text |
 | `write_text_file` | nothing: source formats are edited in a text editor |
 | `read_nav_dump` | nothing: the engine's own nav dump is not readable from Hammer |
@@ -226,6 +228,10 @@ map and looking, or by not happening at all.
 | `run_cubemap2hdr` | nothing offline. The engine builds cubemaps in whichever mode it is running |
 | `run_tga2skybox` | nothing offline: six TGAs into LDR and HDR cubemap `.vtf` files |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |
+| `convert_vtf` | nothing: reformat or resize a shipped .vtf, without VTFCmd |
+| `extract_vtf` | the texture browser shows the image, but not at a size or as a file the agent can keep |
+| `read_soundscript` | nothing: Hammer has no sound browser |
+| `write_soundscript` | nothing: sound scripts are edited by hand |
 | `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames or whether it is a cubemap |
 | `read_autosaves` | nothing: the editor knows where it put them and will not say |
 | `restore_autosave` | opening the autosave by hand and saving it under a new name |
@@ -236,6 +242,7 @@ map and looking, or by not happening at all.
 | `write_smd` | nothing: Hammer has no model-source writer |
 | `read_dmx` | nothing: the datamodel an artist exports is invisible to Hammer |
 | `write_dmx` | nothing |
+| `dmx_to_smd` | nothing: no editor converts a model datamodel to a compiler source |
 | `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
 | `read_wav` | nothing: the editor never opens a sound |
 | `convert_wav` | nothing: sound conversion is a separate editor |

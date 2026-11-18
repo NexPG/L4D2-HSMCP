@@ -1,7 +1,9 @@
 import type { AnyToolDef } from "./core/typescript/mcp/registry.js";
+import { soundscriptTools } from "./audio/typescript/tools/soundscripts.js";
 import { wavTools } from "./audio/typescript/tools/wav.js";
 import { bspTools } from "./maps/typescript/tools/bsp.js";
 import { bspEditTools } from "./maps/typescript/tools/bspedit.js";
+import { bspLumpTools } from "./maps/typescript/tools/bsplump.js";
 import { buildCubemapTools } from "./textures/typescript/tools/buildcubemaps.js";
 import { buildTools } from "./maps/typescript/tools/build.js";
 import { captureTools } from "./hammer/typescript/tools/capture.js";
@@ -14,6 +16,7 @@ import { contentTools } from "./assets/typescript/tools/content.js";
 import { cubemapTools } from "./textures/typescript/tools/cubemap.js";
 import { depsTools } from "./maps/typescript/tools/deps.js";
 import { dmxTools } from "./formats/typescript/tools/dmx.js";
+import { dmxSmdTools } from "./models/typescript/tools/dmxsmd.js";
 import { displacementTools } from "./maps/typescript/tools/displacement.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
 import { exportMapTools } from "./maps/typescript/tools/exportmap.js";
@@ -64,6 +67,7 @@ import { textTools } from "./core/typescript/tools/text.js";
 import { terrainTools } from "./maps/typescript/tools/terrain.js";
 import { vertexTools } from "./maps/typescript/tools/vertex.js";
 import { visleafTools } from "./maps/typescript/tools/visleaf.js";
+import { vtfConvertTools } from "./textures/typescript/tools/vtfconvert.js";
 import { vtfGenTools } from "./textures/typescript/tools/vtfgen.js";
 import { vtfTools } from "./textures/typescript/tools/vtf.js";
 import { vpkTools } from "./packages/typescript/tools/vpk.js";
@@ -99,6 +103,7 @@ export const allTools: AnyToolDef[] = [
   ...vmfTools,
   ...contentTools,
   ...wavTools,
+  ...soundscriptTools,
   ...solidTools,
   ...spaceTools,
   ...sceneTools,
@@ -107,8 +112,10 @@ export const allTools: AnyToolDef[] = [
   ...renderTools,
   ...planTools,
   ...prefabTools,
+  ...bspLumpTools,
   ...qcTools,
   ...smdTools,
+  ...dmxSmdTools,
   ...sequencesTools,
   ...previewTools,
   ...displacementTools,
@@ -137,6 +144,7 @@ export const allTools: AnyToolDef[] = [
   ...pakfileAddTools,
   ...vtfTools,
   ...vtfGenTools,
+  ...vtfConvertTools,
   ...dmxTools,
   ...vpkTools,
   ...vmtTools,

@@ -358,12 +358,36 @@ def _smd_write(req: dict[str, Any]) -> dict[str, Any]:
     return smd_write(req)
 
 
+@verb("dmx_to_smd")
+def _dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
+    """Converts a static DMX mesh export to SMD geometry."""
+    from dmxsmd import dmx_to_smd
+
+    return dmx_to_smd(req)
+
+
 @verb("vtf_write")
 def _vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     """PNG to VTF without VTFCmd: header, mip chain and a pixel round-trip."""
     from vtfgen import vtf_write
 
     return vtf_write(req)
+
+
+@verb("vtf_convert")
+def _vtf_convert(req: dict[str, Any]) -> dict[str, Any]:
+    """Rebuilds an existing VTF in another format or size, then verifies it."""
+    from vtfgen import vtf_convert
+
+    return vtf_convert(req)
+
+
+@verb("vtf_extract")
+def _vtf_extract(req: dict[str, Any]) -> dict[str, Any]:
+    """Decodes a VTF's first mip to a PNG the agent can look at."""
+    from vtfgen import vtf_extract
+
+    return vtf_extract(req)
 
 
 @verb("wav_read")
@@ -380,6 +404,38 @@ def _wav_convert(req: dict[str, Any]) -> dict[str, Any]:
     from wav import convert_wav
 
     return convert_wav(req)
+
+
+@verb("soundscript_read")
+def _soundscript_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Named sounds, their channels and the wave each one resolves to."""
+    from soundscripts import soundscript_read
+
+    return soundscript_read(req)
+
+
+@verb("soundscript_write")
+def _soundscript_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Adds one sound block, appending to an existing script rather than rewriting it."""
+    from soundscripts import soundscript_write
+
+    return soundscript_write(req)
+
+
+@verb("lzma_decompress")
+def _lzma_decompress(req: dict[str, Any]) -> dict[str, Any]:
+    """Decodes a Source-framed LZMA block (BSP lump compression)."""
+    from lzma_codec import lzma_decompress
+
+    return lzma_decompress(req)
+
+
+@verb("lzma_compress")
+def _lzma_compress(req: dict[str, Any]) -> dict[str, Any]:
+    """Encodes bytes in the framing a Source BSP lump uses."""
+    from lzma_codec import lzma_compress
+
+    return lzma_compress(req)
 
 
 @verb("asset_catalog")

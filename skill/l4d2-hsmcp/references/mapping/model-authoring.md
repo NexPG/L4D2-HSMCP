@@ -54,6 +54,9 @@ the absence instead of hiding it.
   graph is cyclic, and expanding it fully never terminates. Raise `maxDepth` for one level.
 - `write_dmx` — the reverse, for a generated datamodel. `encoding: "kv2"` is diffable text;
   binary v4 / format 15 is what L4D2-era tools expect.
+- `dmx_to_smd` — a static mesh export (no armature) into SMD: DAG transform, UV flip,
+  material names and polygons. **Static only:** one root bone, every weight 1. Use Blender's
+  SMD export for a skinned model until skeletal conversion is verified.
 
 ## L4D2 specifics
 
@@ -77,7 +80,9 @@ the absence instead of hiding it.
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
 | Open in HLMV | `run_hlmv`; capture the window with `capture_window` |
-| Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain); `run_vtf_convert` for TGA/DDS through VTFCmd |
+| Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
+| Reformat or resize a shipped VTF | `convert_vtf` — decode, resize, re-encode, verify |
+| Look at a texture directly | `extract_vtf` — any VTF to a PNG, no VMT needed |
 | Look at a material | `preview_asset` (VTF → PNG) |
 | Find a stock model or material | `read_game_content`, `read_asset_catalog` |
 | Place the model | `edit_vmf` (`prop_static` / `prop_dynamic`) |

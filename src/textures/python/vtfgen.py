@@ -20,12 +20,12 @@ from array import array
 from pathlib import Path
 from typing import Any
 
-from png import ImageError, decode_png
+import dxt
+from png import ImageError, decode_png, encode_png
 
-# Formats that store the source RGBA exactly; BGRX keeps RGB and forces alpha to 255.
-# Quantising formats are left to vtex/VTFCmd: a pixel comparison that silently tolerates
-# error would turn "verified" into a word that means nothing.
-_WRITABLE = {"RGBA8888", "BGRA8888", "BGRX8888"}
+# Lossless formats keep RGBA exactly; BGRX keeps RGB and forces alpha to 255. DXT1/DXT5
+# are lossy and are verified with a measured error, not a false claim of equality.
+_WRITABLE = {"RGBA8888", "BGRA8888", "BGRX8888", "DXT1", "DXT5"}
 
 
 def _is_pot(value: int) -> bool:
@@ -116,9 +116,10 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     fmt_name = str(req.get("format", "BGRA8888")).upper()
     if fmt_name not in _WRITABLE:
         raise ValueError(
-            f"format {fmt_name!r} cannot be written without a compressor. Choose one of "
+            f"format {fmt_name!r} is not one this writer supports. Choose one of "
             + ", ".join(sorted(_WRITABLE))
-            + ". DXT is left to vtex/VTFCmd; an uncompressed VTF is exact and valid."
+            + ". Lossless formats are exact; DXT1/DXT5 are measured; other quantisers are "
+            "left to vtex/VTFCmd."
         )
 
     version_text = str(req.get("version", "7.4"))
@@ -135,6 +136,8 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     if bool(req.get("clampT", False)):
         flags |= VTFFlags.CLAMP_T
 
+    if fmt_name in {"DXT1", "DXT5"}:
+        dxt.install()
     vtf = VTF(
         width,
         height,
@@ -172,7 +175,57 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         opaque = bytearray(rgba)
         opaque[3::4] = b"\xff" * (len(rgba) // 4)
         expected = bytes(opaque)
-    verified = written_rgba == expected
+
+    if fmt_name in {"DXT1", "DXT5"}:
+        # A DXT block is lossy by definition. Comparing bytes would report every correct
+        # write as a failure; comparing nothing would make `verified` meaningless. Measure
+        # the error and state it. DXT1 stores one bit of alpha, so a pixel the source marks
+        # transparent has no meaningful RGB — comparing it would measure the colour of
+        # "transparent", not the encoder.
+        total = 0
+        peak = 0
+        samples = 0
+        alpha_bits_kept = True
+        for at in range(0, len(expected), 4):
+            source_alpha = expected[at + 3]
+            if fmt_name == "DXT1":
+                if source_alpha < 128:
+                    if written_rgba[at + 3] >= 128:
+                        alpha_bits_kept = False
+                    continue
+                if written_rgba[at + 3] < 128:
+                    alpha_bits_kept = False
+            channels = 3 if fmt_name == "DXT1" else 4
+            for channel in range(channels):
+                delta = abs(expected[at + channel] - written_rgba[at + channel])
+                total += delta
+                peak = max(peak, delta)
+                samples += 1
+        mean_error = round(total / samples, 3) if samples else 0.0
+        max_error = peak
+        verified = mean_error <= 48 and alpha_bits_kept
+        alpha_preserved = alpha_bits_kept
+    else:
+        mean_error = 0.0
+        max_error = 0
+        verified = written_rgba == expected
+        alpha_preserved = True
+
+    note = (
+        "Pixels were compared with the source after a round-trip through the VTF reader. "
+        "A BGRX8888 copy is opaque: alpha was forced to 255 before comparing."
+        if fmt_name == "BGRX8888"
+        else (
+            "DXT is lossy, so `verified` means the measured mean error is at most 48/255 "
+            f"({mean_error}); `maxError` is the worst single channel. DXT1 keeps at most "
+            "one bit of alpha. vtex or VTFCmd produce a higher-quality DXT from the same "
+            "source if quality matters more than independence."
+            if fmt_name in {"DXT1", "DXT5"}
+            else "Pixels were compared with the source after a round-trip through the VTF "
+            "reader. An uncompressed VTF is larger than DXT1/DXT5; vtex or VTFCmd can "
+            "compress the same image if the addon's size matters."
+        )
+    )
 
     return {
         "path": str(path),
@@ -191,13 +244,158 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         "clampS": bool(back.flags & VTFFlags.CLAMP_S),
         "clampT": bool(back.flags & VTFFlags.CLAMP_T),
         "verified": verified,
+        "meanError": mean_error,
+        "maxError": max_error,
+        "alphaPreserved": alpha_preserved,
+        "note": note,
+    }
+
+def _read_vtf_frame(path: Path):
+    from srctools.vtf import VTF
+    data = path.read_bytes()
+    import io
+    stream = io.BytesIO(data)
+    vtf = VTF.read(stream)
+    frame = vtf.get()
+    frame.load()
+    return vtf, frame, bytes(frame._data)
+
+
+def _compare_rgba(source: bytes, decoded: bytes, lossy: bool) -> tuple[bool, float, int]:
+    if not lossy:
+        return source == decoded, 0.0, 0
+    total = 0
+    peak = 0
+    samples = 0
+    for at in range(0, len(source), 4):
+        for channel in range(3):
+            delta = abs(source[at + channel] - decoded[at + channel])
+            total += delta
+            peak = max(peak, delta)
+            samples += 1
+    mean = round(total / samples, 3) if samples else 0.0
+    return mean <= 48, mean, peak
+
+
+def vtf_convert(req: dict[str, Any]) -> dict[str, Any]:
+    from array import array
+    from srctools.vtf import ImageFormats, VTF, VTFFlags
+
+    source = Path(str(req.get("path", ""))).resolve()
+    if not source.is_file():
+        raise ValueError(f"{source} does not exist")
+    vtf, frame, rgba = _read_vtf_frame(source)
+    if vtf.frame_count > 1 or vtf.depth > 1 or (int(vtf.flags.value) & VTFFlags.ENVMAP.value):
+        raise ValueError(
+            "this is a cubemap or an animated texture; convert_vtf handles 2D single-frame "
+            "textures. run_cubemap2hdr, run_tga2skybox and VTFCmd cover the rest."
+        )
+
+    width, height = vtf.width, vtf.height
+    target_width = int(req.get("width", width))
+    target_height = int(req.get("height", height))
+    if not (_is_pot(target_width) and _is_pot(target_height)):
+        raise ValueError("width and height must be powers of two")
+    if (target_width, target_height) != (width, height):
+        rgba = _resize(rgba, width, height, target_width, target_height, str(req.get("resize", "bilinear")))
+
+    fmt_name = str(req.get("format", vtf.format.name)).upper()
+    if fmt_name not in _WRITABLE:
+        raise ValueError(
+            f"format {fmt_name!r} is not writable. Choose one of " + ", ".join(sorted(_WRITABLE))
+        )
+    if fmt_name in {"DXT1", "DXT5"}:
+        dxt.install()
+    version_text = str(req.get("version", f"{vtf.version[0]}.{vtf.version[1]}"))
+    major, minor = (int(part) for part in version_text.split(".", 1))
+    flags = VTFFlags(int(vtf.flags.value) & ~VTFFlags.ENVMAP.value)
+    new = VTF(
+        target_width,
+        target_height,
+        version=(major, minor),
+        flags=flags,
+        fmt=ImageFormats[fmt_name],
+        thumb_fmt=ImageFormats.NONE,
+    )
+    new.get()._data = array("B", rgba)  # noqa: SLF001
+    new.mipmap_count = max(key[2] for key in new._frames) + 1
+
+    path = Path(str(req.get("out", "") or req.get("output", ""))).resolve()
+    if path.suffix.lower() != ".vtf":
+        path = path.with_suffix(".vtf")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("wb") as fh:
+        new.save(fh, version=(major, minor))
+
+    back, back_frame, back_rgba = _read_vtf_frame(path)
+    lossy = fmt_name in {"DXT1", "DXT5"}
+    verified, mean_error, max_error = _compare_rgba(rgba, back_rgba, lossy)
+    return {
+        "path": str(path),
+        "written": True,
+        "bytes": path.stat().st_size,
+        "source": str(source),
+        "sourceFormat": vtf.format.name,
+        "format": back.format.name,
+        "version": f"{back.version[0]}.{back.version[1]}",
+        "width": back.width,
+        "height": back.height,
+        "mipCount": back.mipmap_count,
+        "meanError": mean_error,
+        "maxError": max_error,
+        "verified": verified,
         "note": (
-            "Pixels were compared with the source after a round-trip through the VTF "
-            "reader. A BGRX8888 copy is opaque: alpha was forced to 255 before comparing."
-            if fmt_name == "BGRX8888"
-            else
-            "Pixels were compared with the source after a round-trip through the VTF "
-            "reader. An uncompressed VTF is larger than DXT1/DXT5; vtex or VTFCmd can "
-            "compress the same image if the addon's size matters."
+            "The image was decoded to RGBA and rebuilt in the target format; the mip chain "
+            "is regenerated. Lossless formats are compared byte for byte, DXT by measured "
+            "error (<= 48/255). Animation, cubemaps and volume textures are refused: this "
+            "is the 2D material path."
         ),
     }
+
+
+def vtf_extract(req: dict[str, Any]) -> dict[str, Any]:
+    source = Path(str(req.get("path", ""))).resolve()
+    if not source.is_file():
+        raise ValueError(f"{source} does not exist")
+    vtf, frame, rgba = _read_vtf_frame(source)
+    if int(vtf.flags.value) & 0x4000:  # TEXTUREFLAGS_ENVMAP
+        raise ValueError("this is a cubemap; use run_cubemap2hdr or VTFCmd to extract a face")
+
+    max_size = max(32, min(int(req.get("maxSize", 512)), 4096))
+    width, height = frame.width, frame.height
+    step = max(1, (max(width, height) + max_size - 1) // max_size)
+    out_w, out_h = max(1, width // step), max(1, height // step)
+    if step > 1:
+        small = bytearray(out_w * out_h * 4)
+        for y in range(out_h):
+            sy = min(height - 1, y * step)
+            for x in range(out_w):
+                sx = min(width - 1, x * step)
+                src = (sy * width + sx) * 4
+                dst = (y * out_w + x) * 4
+                small[dst : dst + 4] = rgba[src : src + 4]
+        png = encode_png(out_w, out_h, bytes(small))
+    else:
+        png = encode_png(width, height, rgba)
+
+    out = req.get("out")
+    result: dict[str, Any] = {
+        "path": str(source),
+        "format": vtf.format.name,
+        "width": width,
+        "height": height,
+        "previewWidth": out_w,
+        "previewHeight": out_h,
+        "mipCount": vtf.mipmap_count,
+        "pngBytes": len(png),
+    }
+    if out:
+        target = Path(str(out)).resolve()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(png)
+        result["out"] = str(target)
+    else:
+        import base64 as _b64
+
+        result["pngBase64"] = _b64.b64encode(png).decode("ascii")
+    return result

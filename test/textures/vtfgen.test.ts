@@ -157,12 +157,38 @@ describe.skipIf(!installed)("write_vtf", () => {
     expect(result.verified).toBe(true);
   });
 
-  it("refuses DXT instead of writing an uncompressed file under a compressed name", async () => {
-    const image = join(scratch, "opaque.png");
-    writeFileSync(image, png(4, 4, gradient(4, 4)));
-    await expect(
-      callSidecar("vtf_write", { path: join(scratch, "opaque.vtf"), image, format: "DXT1" }, config),
-    ).rejects.toThrow(/compressor/);
+  it("compresses to DXT1 and DXT5 and measures the loss instead of hiding it", async () => {
+    const image = join(scratch, "dxt.png");
+    writeFileSync(image, png(64, 64, gradient(64, 64)));
+
+    const dxt1 = await callSidecar<WriteResult & { meanError: number; maxError: number; alphaPreserved: boolean }>(
+      "vtf_write",
+      { path: join(scratch, "dxt1.vtf"), image, format: "DXT1", resize: "none" },
+      config,
+    );
+    expect(dxt1.format).toBe("DXT1");
+    expect(dxt1.verified).toBe(true);
+    expect(dxt1.meanError).toBeLessThan(48);
+    expect(dxt1.alphaPreserved).toBe(true); // one bit of alpha, which this source preserves
+    expect(dxt1.mipCount).toBe(7);
+
+    const dxt5 = await callSidecar<WriteResult & { meanError: number }>(
+      "vtf_write",
+      { path: join(scratch, "dxt5.vtf"), image, format: "DXT5", resize: "none" },
+      config,
+    );
+    expect(dxt5.format).toBe("DXT5");
+    expect(dxt5.verified).toBe(true);
+    expect(dxt5.meanError).toBeLessThan(48);
+
+    const raw = await callSidecar<WriteResult>(
+      "vtf_write",
+      { path: join(scratch, "raw.vtf"), image, format: "BGRA8888", resize: "none" },
+      config,
+    );
+    // The point of DXT: the same image is several times smaller.
+    expect(dxt1.bytes * 4).toBeLessThan(raw.bytes);
+    expect(dxt5.bytes * 2).toBeLessThan(raw.bytes);
   });
 
   it("refuses a version L4D2 does not read", async () => {

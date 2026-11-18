@@ -5,15 +5,15 @@ answers "where is the test for this file" without a search.
 
 | Directory | Covers |
 |---|---|
-| [`audio/`](audio/) | sound: WAV format reading and conversion to L4D2 PCM |
-| [`bsp/`](bsp/) | compiled-map readers: header, lumps, geometry, entities, nav, limits, materials, pakfile |
+| [`audio/`](audio/) | sound: WAV format reading/conversion and soundscripts |
+| [`bsp/`](bsp/) | compiled-map readers: header, lumps (including LZMA), geometry, entities, nav, limits, materials, pakfile |
 | [`vmf/`](vmf/) | source maps: create, edit, splice, brushes, faces, displacements, fittings, wiring, lint |
 | [`space/`](space/) | offline measurement: traces, rooms, clearance, visibility, dimensions |
 | [`render/`](render/) | offline views, plans, tours |
 | [`compile/`](compile/) | compilers, logs, leaks, toolchains, rename |
 | [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching |
 | [`formats/`](formats/) | shared formats: DMX datamodels read/write |
-| [`textures/`](textures/) | textures: PNG decode, VTF writing and header reading |
+| [`textures/`](textures/) | textures: PNG decode, VTF write/convert/extract, DXT |
 | [`hammer/`](hammer/) | editor data: the Hammer build registry and its hash lookup |
 | [`campaign/`](campaign/) | mission files, convars, addons, finale contract |
 | [`game/`](game/) | game-directory staging: hide/restore archives, install a BSP/nav pair |

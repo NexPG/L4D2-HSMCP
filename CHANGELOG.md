@@ -5,6 +5,39 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.93-alpha — 2026-11-19
+
+- **A second pass over the upstream projects, this time module by module, not
+  tool by tool.** The first pass removed the trees and kept the tool surface. This pass
+  took the mechanisms the libraries had that the tools did not expose:
+  - **BSP lumps, including LZMA.** `read_bsp_lump` / `write_bsp_lump` address all 64 lumps
+    by name or index and decode Source's `LZMA` framing (`signature, size, packed size,
+    properties`), which the old reader could only detect and refuse. A compressed entity
+    lump is now readable and writable, and the write preserves the L4D2 field order.
+  - **VTF compression and conversion.** Our own DXT1/DXT5 range-fit encoder fills the gap
+    srctools leaves (`Saving DXT1 not implemented`); `write_vtf` now takes DXT, and
+    `convert_vtf` rebuilds an existing texture in another format or size, verified by
+    measured error. `extract_vtf` turns any `.vtf` into a PNG — including a texture no VMT
+    names — which the material preview could not do.
+  - **Deep model data.** `read_model_info` now returns per-sequence activities, flags,
+    events (type, cycle, options) and bounds; hitbox geometry on the bone each box
+    follows; the model name inside each body part; per-skin material tables; `$cdmaterials`,
+    surfaceprop, mass, eye/illumination positions, view bounds and `$includemodel`. These
+    are mdlpp's structs, not a label list. `dmx_to_smd` converts a static DMX mesh export to
+    SMD, applying the DAG transform and `flipVCoordinates` and naming the joined mesh data;
+    it takes one root bone and says how many joints it ignored rather than pretending to
+    skin.
+  - **Soundscripts.** `read_soundscript` reads one file or the whole game through
+    `scripts/game_sounds_manifest.txt`, follows `#base`/`#include`, reports first-definition
+    duplicates, strips sound characters and says whether each wave exists (13k names in the
+    stock game). `write_soundscript` appends one block without rewriting the file, and
+    refuses a name already defined.
+- **The licence record is unchanged and still honest.** No new upstream tree was copied;
+  these are implementations in TypeScript and Python. sourcepp and EpicMorg remain credited
+  for the translations that predate this pass.
+- **Tool count: 146.** Parity, the skill catalogue and the test layout are updated in the
+  same commit.
+
 ## 0.0.92-alpha — 2026-11-19
 
 - **The project is TypeScript, Python and PowerShell only.** The four vendored source trees

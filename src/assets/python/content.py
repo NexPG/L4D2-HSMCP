@@ -32,6 +32,7 @@ DEFAULT_LIMIT = 100
 # Animation labels returned per model. A prop has one; a character can have hundreds, and
 # a caller asking about a prop should not pay for those.
 SEQUENCE_LIMIT = 64
+SEQUENCE_DETAIL_LIMIT = 32
 MAX_LIMIT = 1000
 
 
@@ -488,6 +489,9 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
 
 BONE_BYTES = 216
 ATTACHMENT_BYTES = 92
+HITBOX_BYTES = 68
+BODY_PART_BYTES = 16
+MODEL_BYTES = 148
 
 
 def _mdl_string(data: bytes, at: int) -> str:
@@ -539,22 +543,75 @@ def _mdl_attachments(
 def _mdl_body_parts(data: bytes, count: int, offset: int) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for i in range(max(0, min(count, 64))):
-        base = offset + i * 16
-        if base + 16 > len(data):
+        base = offset + i * BODY_PART_BYTES
+        if base + BODY_PART_BYTES > len(data):
             break
-        name_index, num_models = struct.unpack_from("<ii", data, base)
-        out.append({"name": _mdl_string(data, base + name_index), "models": num_models})
+        name_index, num_models, _base, model_index = struct.unpack_from("<iiii", data, base)
+        models: list[dict[str, Any]] = []
+        # `modelindex` is relative to the body part, not the file.
+        first_model = base + model_index
+        for j in range(max(0, min(num_models, 64))):
+            model = first_model + j * MODEL_BYTES
+            if model + MODEL_BYTES > len(data):
+                break
+            name = data[model : model + 64].split(b"\0", 1)[0].decode("latin1", "replace")
+            num_meshes, _mesh_index, num_vertices = struct.unpack_from("<iii", data, model + 72)
+            models.append(
+                {
+                    "name": name,
+                    "meshes": max(0, num_meshes),
+                    "vertices": max(0, num_vertices),
+                }
+            )
+        out.append(
+            {
+                "name": _mdl_string(data, base + name_index),
+                "models": num_models,
+                "modelList": models,
+            }
+        )
     return out
 
 
-def _mdl_hitbox_sets(data: bytes, count: int, offset: int) -> list[dict[str, Any]]:
+def _mdl_hitbox_sets(
+    data: bytes, count: int, offset: int, bones: list[str]
+) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for i in range(max(0, min(count, 64))):
         base = offset + i * 12
         if base + 12 > len(data):
             break
-        name_index, num_hitboxes, _index = struct.unpack_from("<iii", data, base)
-        out.append({"name": _mdl_string(data, base + name_index), "hitboxes": num_hitboxes})
+        name_index, num_hitboxes, hitbox_index = struct.unpack_from("<iii", data, base)
+        boxes: list[dict[str, Any]] = []
+        # L4D2's `mstudiohitbox_t` is 68 bytes: bone, group, mins, maxs, name index and
+        # eight unused int32. The 36-byte layout in older SDK headers reads the name from
+        # the wrong place on every box but the first.
+        first = base + hitbox_index
+        for j in range(max(0, min(num_hitboxes, 256))):
+            at = first + j * HITBOX_BYTES
+            if at + HITBOX_BYTES > len(data):
+                break
+            bone, group = struct.unpack_from("<ii", data, at)
+            mins = struct.unpack_from("<3f", data, at + 8)
+            maxs = struct.unpack_from("<3f", data, at + 20)
+            name_offset = struct.unpack_from("<i", data, at + 32)[0]
+            boxes.append(
+                {
+                    "name": _mdl_string(data, at + name_offset),
+                    "bone": bone,
+                    "boneName": bones[bone] if 0 <= bone < len(bones) else None,
+                    "group": group,
+                    "mins": [round(v, 3) for v in mins],
+                    "maxs": [round(v, 3) for v in maxs],
+                }
+            )
+        out.append(
+            {
+                "name": _mdl_string(data, base + name_index),
+                "hitboxes": num_hitboxes,
+                "boxes": boxes,
+            }
+        )
     return out
 
 
@@ -626,10 +683,33 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
     # model with 300 animations has exactly 64, with nothing to say the rest exist.
     sequences: list[str] = []
     sequence_total = 0
+    sequence_details: list[dict[str, Any]] = []
     try:
-        labels = [str(getattr(s, "label", s)) for s in getattr(mdl, "sequences", [])]
+        all_sequences = list(getattr(mdl, "sequences", []))
+        labels = [str(getattr(s, "label", s)) for s in all_sequences]
         sequence_total = len(labels)
         sequences = labels[:SEQUENCE_LIMIT]
+        for sequence in all_sequences[:SEQUENCE_DETAIL_LIMIT]:
+            events = list(getattr(sequence, "events", []) or [])
+            sequence_details.append(
+                {
+                    "label": str(getattr(sequence, "label", "")),
+                    "activity": str(getattr(sequence, "act_name", "") or ""),
+                    "actWeight": int(getattr(sequence, "act_weight", 0) or 0),
+                    "flags": int(getattr(sequence, "flags", 0) or 0),
+                    "eventCount": len(events),
+                    "events": [
+                        {
+                            "type": str(getattr(event, "type", event)),
+                            "cycle": round(float(getattr(event, "cycle", 0.0)), 4),
+                            "options": str(getattr(event, "options", "")),
+                        }
+                        for event in events[:16]
+                    ],
+                    "bboxMin": _vec(getattr(sequence, "bbox_min", None)),
+                    "bboxMax": _vec(getattr(sequence, "bbox_max", None)),
+                }
+            )
     except Exception:  # noqa: BLE001
         sequences = []
 
@@ -642,6 +722,27 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
     )
 
     phy = f"{rel[:-4]}.phy" if rel.lower().endswith(".mdl") else f"{rel}.phy"
+
+    skin_materials: list[list[str]] = []
+    try:
+        for skin in list(getattr(mdl, "skins", []) or [])[:8]:
+            skin_materials.append(
+                [str(texture).replace("\\", "/") for texture in list(skin)[:128]]
+            )
+    except Exception:  # noqa: BLE001
+        skin_materials = []
+
+    included_models: list[dict[str, str]] = []
+    try:
+        for included in list(getattr(mdl, "included_models", []) or []):
+            included_models.append(
+                {
+                    "label": str(getattr(included, "label", "")),
+                    "filename": str(getattr(included, "filename", "")),
+                }
+            )
+    except Exception:  # noqa: BLE001
+        included_models = []
 
     try:
         with fsys[rel].open_bin() as handle:
@@ -661,7 +762,7 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         bones = _mdl_bones(raw, bone_count, bone_index)
         attachments = _mdl_attachments(raw, attach_count, attach_index, bones)
         body_parts = _mdl_body_parts(raw, body_count, body_index)
-        hitbox_sets = _mdl_hitbox_sets(raw, hitbox_count, hitbox_index)
+        hitbox_sets = _mdl_hitbox_sets(raw, hitbox_count, hitbox_index, bones)
 
     return {
         "model": rel,
@@ -672,9 +773,25 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         "maxs": maxs,
         "size": size,
         "skinCount": len(skins),
+        "skins": skin_materials,
         "sequenceCount": sequence_total,
         "sequences": sequences,
+        "sequenceDetails": sequence_details,
         "sequencesTruncated": sequence_total > len(sequences),
+        "cdmaterials": [
+            str(material).replace("\\\\", "/")
+            for material in (getattr(mdl, "cdmaterials", []) or [])
+            if str(material)
+        ],
+        "surfaceprop": str(getattr(mdl, "surfaceprop", "") or ""),
+        "mass": round(float(getattr(mdl, "mass", 0.0) or 0.0), 3),
+        "eyePosition": _vec(getattr(mdl, "eye_pos", None)),
+        "illumPosition": _vec(getattr(mdl, "illum_pos", None)),
+        "viewBounds": {
+            "mins": _vec(getattr(mdl, "view_min", None)),
+            "maxs": _vec(getattr(mdl, "view_max", None)),
+        },
+        "includedModels": included_models,
         "materials": textures,
         "hasPhysics": _present(fsys, phy),
         "physicsPath": phy,

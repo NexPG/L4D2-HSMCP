@@ -48,14 +48,14 @@ directory beside its language directories.
 | Module | What it owns |
 |---|---|
 | `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences, and `data/` (the build registry) |
-| `maps/` | VMF and BSP reading and writing, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
-| `models/` | QC, SMD and DMX sources, studiomdl, HLMV |
-| `textures/` | VTF and VMT, PNG decoding and native VTF writing |
+| `maps/` | VMF and BSP reading and writing, every lump including LZMA-compressed ones, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
+| `models/` | QC and SMD sources, studiomdl, HLMV, and deep model reporting (sequences, events, hitboxes, skins) |
+| `textures/` | VTF and VMT, PNG decoding, native VTF writing/conversion and image extraction |
 | `nav/` | the navigation mesh: reading, generation, editing, trouble reports |
 | `scripts/` | VScript |
 | `campaigns/` | mission files, finales, campaign gates |
 | `assets/` | content search, material preview |
-| `audio/` | WAV reading and conversion to the 16-bit PCM L4D2 decodes |
+| `audio/` | WAV reading/conversion and soundscripts (names, waves, #base, wave existence) |
 | `packages/` | addon packaging (VPK), pakfile writing |
 | `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC, DMX |
 | `core/` | config, version, logging, MCP plumbing, the sidecar client |

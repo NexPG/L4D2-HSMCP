@@ -119,16 +119,35 @@ export const readGameContentTool = defineTool({
   },
 });
 
+const SEQUENCE_EVENT = z.object({
+  type: z.string(),
+  cycle: z.number(),
+  options: z.string(),
+});
+
+const SEQUENCE_DETAIL = z.object({
+  label: z.string(),
+  activity: z.string(),
+  actWeight: z.number(),
+  flags: z.number(),
+  eventCount: z.number(),
+  events: z.array(SEQUENCE_EVENT),
+  bboxMin: z.array(z.number()).nullable(),
+  bboxMax: z.array(z.number()).nullable(),
+});
+
 export const readModelInfoTool = defineTool({
   name: "read_model_info",
   description:
     "Bounds, skins, sequences and materials of one .mdl -- what Hammer's model viewer " +
-    "shows before you place a prop. The bounds are the reason this exists: a model's " +
-    "origin is wherever the artist put it, so a prop placed at floor height sinks by " +
-    "however far its origin sits above its lowest point, and nothing downstream reports " +
-    "that. A barrel measured here is 52 units tall with its origin at the centre, which " +
-    "means 26 units underground if it is placed on the floor's own z. Needs the Python " +
-    "sidecar; see health.",
+    "shows before you place a prop, plus what the viewer does not: per-sequence events and " +
+    "activities, per-skin material tables, hitbox geometry, body-part model names, " +
+    "$cdmaterials, surfaceprop, mass, eye/illumination positions and $includemodel. The " +
+    "bounds are the reason this exists: a model's origin is wherever the artist put it, so " +
+    "a prop placed at floor height sinks by however far its origin sits above its lowest " +
+    "point, and nothing downstream reports that. A barrel measured here is 52 units tall " +
+    "with its origin at the centre, which means 26 units underground if it is placed on " +
+    "the floor's own z. Needs the Python sidecar; see health.",
   realm: "map",
   inputSchema: {
     model: z
@@ -147,9 +166,24 @@ export const readModelInfoTool = defineTool({
     maxs: z.array(z.number()).nullable().optional(),
     size: z.array(z.number()).nullable().optional(),
     skinCount: z.number().optional(),
+    /** Material table per skin, capped at 8 skins. */
+    skins: z.array(z.array(z.string())).optional(),
     /** Every sequence the model has, even when only the first 64 labels are returned. */
     sequenceCount: z.number().optional(),
     sequences: z.array(z.string()).optional(),
+    /** Activity, flags, events and bounds for the first 32 sequences. */
+    sequenceDetails: z.array(SEQUENCE_DETAIL).optional(),
+    /** `$cdmaterials`: the material directories the model expects. */
+    cdmaterials: z.array(z.string()).optional(),
+    surfaceprop: z.string().optional(),
+    mass: z.number().optional(),
+    eyePosition: z.array(z.number()).nullable().optional(),
+    illumPosition: z.array(z.number()).nullable().optional(),
+    viewBounds: z
+      .object({ mins: z.array(z.number()).nullable(), maxs: z.array(z.number()).nullable() })
+      .optional(),
+    /** `$includemodel`: extra models compiled into this one. */
+    includedModels: z.array(z.object({ label: z.string(), filename: z.string() })).optional(),
     materials: z.array(z.string()).optional(),
     sequencesTruncated: z.boolean().optional(),
     /** A `.phy` exists. A prop_static from a model without one has nothing to collide with. */
@@ -171,8 +205,37 @@ export const readModelInfoTool = defineTool({
         }),
       )
       .optional(),
-    bodyParts: z.array(z.object({ name: z.string(), models: z.number() })).optional(),
-    hitboxSets: z.array(z.object({ name: z.string(), hitboxes: z.number() })).optional(),
+    bodyParts: z
+      .array(
+        z.object({
+          name: z.string(),
+          models: z.number(),
+          modelList: z
+            .array(z.object({ name: z.string(), meshes: z.number(), vertices: z.number() }))
+            .optional(),
+        }),
+      )
+      .optional(),
+    hitboxSets: z
+      .array(
+        z.object({
+          name: z.string(),
+          hitboxes: z.number(),
+          boxes: z
+            .array(
+              z.object({
+                name: z.string(),
+                bone: z.number(),
+                boneName: z.string().nullable(),
+                group: z.number(),
+                mins: z.array(z.number()),
+                maxs: z.array(z.number()),
+              }),
+            )
+            .optional(),
+        }),
+      )
+      .optional(),
     note: z.string().optional(),
     /** A model that exists and could not be read. Not `error`: that is the fault envelope. */
     readError: z.string().optional(),

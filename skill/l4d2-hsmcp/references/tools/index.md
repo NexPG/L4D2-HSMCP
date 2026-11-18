@@ -1,6 +1,6 @@
 # Tool catalogue
 
-139 tools. This page groups them by the job you are doing; each tool's own description is the
+146 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -143,6 +143,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |
 | `read_dmx` | a DMX datamodel as a JSON element tree, with types and values |
 | `write_dmx` | build a binary v4 or KeyValues2 DMX from a JSON tree, then read it back |
+| `dmx_to_smd` | convert a static DMX mesh export to SMD (transform + UV flip; one root bone) |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |
 | `run_hlmv` | launch HLMV on one model, optionally return a screenshot as a real image |
@@ -161,6 +162,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_pack` | bspzip assets into a compiled map |
 | `run_vpk_pack` | pack a staging directory into an addon VPK with the game's `vpk.exe`, then verify the entry list |
 | `run_vpk_build` | pack a staging directory into an addon VPK with this server's own writer: no `vpk.exe`, no game install |
+| `read_bsp_lump` | any BSP lump by name/index, LZMA-decoded |
+| `write_bsp_lump` | replace a lump, optionally compressed, verified by read-back |
 | `read_vpk` | list a `.vpk` (directory or numbered archive), optionally verifying every CRC |
 | `run_vpk_extract` | extract a `.vpk` into a directory, refusing names that escape it |
 | `run_nav_generate` | launch the game and generate `.nav` + `<map>_nav.txt` for loose maps, with the add-on archives moved aside |
@@ -174,6 +177,10 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_cubemap2hdr` | LDR cubemap to HDR `.vtf` |
 | `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |
 | `write_vtf` | PNG to `.vtf` natively, with mipmaps and a pixel round-trip; no VTFCmd needed |
+| `convert_vtf` | reformat/resize an existing `.vtf` (DXT included) and verify the result |
+| `extract_vtf` | decode any `.vtf` to a PNG the agent can look at |
+| `read_soundscript` | named sounds, channels and resolved wave paths from one file or the game |
+| `write_soundscript` | add one sound block, appending to the file |
 | `read_wav` | WAV format, duration, loop and whether it is L4D2-game-ready |
 | `convert_wav` | resample and mix a WAV to 16-bit PCM mono/stereo at 22050/44100 |
 | `read_vtf` | a `.vtf` header: version, size, flags, frames, format, cubemap |
