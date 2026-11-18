@@ -1,6 +1,6 @@
 # Tool catalogue
 
-117 tools. This page groups them by the job you are doing; each tool's own description is the
+121 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -146,7 +146,10 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_compile_log` | structured findings from a compiler log |
 | `read_leak` | turn a leak into a location |
 | `run_pack` | bspzip assets into a compiled map |
-| `run_vpk_pack` | pack a staging directory into an addon VPK, then verify the entry list |
+| `run_vpk_pack` | pack a staging directory into an addon VPK with the game's `vpk.exe`, then verify the entry list |
+| `run_vpk_build` | pack a staging directory into an addon VPK with this server's own writer: no `vpk.exe`, no game install |
+| `read_vpk` | list a `.vpk` (directory or numbered archive), optionally verifying every CRC |
+| `run_vpk_extract` | extract a `.vpk` into a directory, refusing names that escape it |
 | `run_nav_generate` | launch the game and generate `.nav` + `<map>_nav.txt` for loose maps, with the add-on archives moved aside |
 | `run_map_test` | launch an installed map, wait for a pattern in `console.log`, optionally install a bsp/nav and capture the window |
 | `run_build_cubemaps` | build a map's cubemaps with the engine's `-buildcubemaps` mode, and optionally pack them into a copy |
@@ -156,3 +159,4 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_tga2skybox` | six TGAs into LDR and HDR cubemaps |
 | `run_cubemap2hdr` | LDR cubemap to HDR `.vtf` |
 | `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |
+| `read_vtf` | a `.vtf` header: version, size, flags, frames, format, cubemap |

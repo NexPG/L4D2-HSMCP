@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **117 tools**.
+Last checked against the tool list on 18/11/2026: **121 tools**.
 
 ## The file itself
 
@@ -223,6 +223,7 @@ map and looking, or by not happening at all.
 | `run_cubemap2hdr` | nothing offline. The engine builds cubemaps in whichever mode it is running |
 | `run_tga2skybox` | nothing offline: six TGAs into LDR and HDR cubemap `.vtf` files |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |
+| `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames or whether it is a cubemap |
 | `read_sightlines` | the eye, standing in the map |
 | `read_vmf_rooms` | nothing: Hammer has no idea what a room is |
 | `read_vmf_surfaces` | nothing: no readout says which faces are buried between brushes |
@@ -248,6 +249,9 @@ map and looking, or by not happening at all.
 | `write_campaign` | nothing: a mission file is written by hand |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
 | `run_vpk_pack` | nothing: Hammer has no addon packaging |
+| `run_vpk_build` | nothing: Hammer has no addon packaging, and this one needs neither the game nor its `vpk.exe` |
+| `read_vpk` | nothing: Hammer cannot open an addon archive |
+| `run_vpk_extract` | nothing |
 
 The row that matters most is `read_vmf_solids`. Hammer draws an invalid solid in red and
 tells you nothing else; this says which face, which corner, and why — and it is the oracle

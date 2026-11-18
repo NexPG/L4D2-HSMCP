@@ -57,6 +57,7 @@ import { terrainTools } from "./terrain.js";
 import { vertexTools } from "./vertex.js";
 import { visleafTools } from "./visleaf.js";
 import { vtfTools } from "./vtf.js";
+import { vpkTools } from "./vpk.js";
 import { vmfTools } from "./vmf.js";
 import { vmfEditTools } from "./vmfedit.js";
 import { vscriptTools } from "./vscript.js";
@@ -118,6 +119,7 @@ export const allTools: AnyToolDef[] = [
   ...cubemapTools,
   ...pakfileTools,
   ...vtfTools,
+  ...vpkTools,
   ...runtimeTools,
   ...vscriptTools,
   ...overlayTools,

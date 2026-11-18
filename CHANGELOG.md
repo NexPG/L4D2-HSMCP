@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.86-alpha — 2026-11-18
+
+- **VPK without `vpk.exe`.** `read_vpk`, `run_vpk_extract` and `run_vpk_build` read and write
+  Valve Pak directly: version 1 is written, versions 1 and 2 are read, numbered archives
+  (`_000.vpk` …) are followed, and every entry's CRC is checked against the bytes on request.
+  Verified against the real `pak01_dir.vpk`: eight sampled entries read with matching CRCs.
+  `run_vpk_pack` still drives `vpk.exe` so the two writers can be compared.
+- **`read_vtf`.** A `.vtf` header as data — version, size, flags, frames, format and whether
+  it is a cubemap — from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
+  sourcepp/vtfpp, not the six entries that turn up in map content.
+  build commands, so the algorithm reference survives the removal of the temporary
+  `.3d-projects` folder. Nothing there is compiled or published. `THIRD-PARTY-NOTICES.md`
+  records the copyright lines and moves the three projects to the used table, and adds three
+  SourceMod navigation repositories as reference-only — including why `sourcepawn-navmesh`'s
+  GPL cannot cover the parser it credits to an unlicensed upstream.
+
 ## 0.0.85-alpha — 2026-11-18
 
 - **Live Hammer / Hammer++ editing.** The editor's built-in shell channel
