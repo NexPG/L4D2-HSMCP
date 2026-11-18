@@ -137,7 +137,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_text_file` | read UTF-8 source text (QC, SMD, VMT, mission) with a byte cap and line window |
 | `read_vmt` | material shader, parameters, `Proxies`/`patch` blocks, `%compile*` flags, textures |
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
-| `read_qc` | parse a `.qc` with its `$include` tree, sequences, materials and structural faults |
+| `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials and structural faults |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |

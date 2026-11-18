@@ -33,6 +33,11 @@ with a line here.
     duplicates, strips sound characters and says whether each wave exists (13k names in the
     stock game). `write_soundscript` appends one block without rewriting the file, and
     refuses a name already defined.
+  - **QC variables and macros.** `read_qc` expands `$definevariable` and `$definemacro` at
+    token level: bare tokens only, first definition wins (as studiomdl does), `\\` continues
+    a macro body, and definitions in an included `.qci` are visible to the file that included
+    it. A real QC that used to read as unknown `$Macro` now reads as the statements it
+    produces.
 - **The licence record is unchanged and still honest.** No new upstream tree was copied;
   these are implementations in TypeScript and Python. sourcepp and EpicMorg remain credited
   for the translations that predate this pass.

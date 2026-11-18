@@ -40,9 +40,11 @@ export const readQcTool = defineTool({
   name: "read_qc",
   description:
     "Parses a .qc and every file it $includes: model name, sequences (with fps and activity), " +
-    "$cdmaterials, attachments, body parts, the include tree, and structural faults — a " +
-    "missing $modelname or $body, a repeated sequence, a model path outside models/. Include " +
-    "cycles and missing .qci files are reported rather than followed, and the depth limit is " +
+    "$cdmaterials, attachments, body parts, the include tree, variables and macros, and " +
+    "structural faults - a missing $modelname or $body, a repeated sequence, a model path " +
+    "outside models/. $definevariable and $definemacro are expanded at token level (bare " +
+    "tokens only, first definition wins, `\\\\` continues a macro body). Include cycles and " +
+    "missing .qci files are reported rather than followed, and the depth limit is " +
     "scriplib's 16. Use it before run_studiomdl: studiomdl's own errors are terser and arrive " +
     "after a compile.",
   realm: "map",

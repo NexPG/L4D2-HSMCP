@@ -108,6 +108,240 @@ export function lexQc(source: string): Token[] {
   return tokens;
 }
 
+interface Macro {
+  params: string[];
+  body: Token[];
+}
+
+/**
+ * `$definemacro` / `$M args` at token level.
+ *
+ * scriplib's macro body is line-oriented: the header is `$definemacro Name Param... \\`,
+ * and body lines continue while they end with `\\`; the first line that does not end with
+ * it is the last body line. The marker itself is not part of the body. An invocation
+ * `$Name a b` replaces itself with the body, substituting `$Param$` tokens. This is the
+ * parameter substitution.
+ */
+function expandMacros(
+  tokens: readonly Token[],
+  macros: Map<string, Macro>,
+  path: string,
+  depth = 0,
+): { tokens: Token[]; diagnostics: QcDiagnostic[] } {
+  const diagnostics: QcDiagnostic[] = [];
+  if (depth > 32) {
+    diagnostics.push({
+      severity: "error",
+      rule: "qc-macro-recursion",
+      message: "macro expansion nested more than 32 levels; a macro probably calls itself",
+      file: path,
+      line: null,
+    });
+    return { tokens: [...tokens], diagnostics };
+  }
+
+  const out: Token[] = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const token = tokens[i]!;
+    if (token.text.toLowerCase() === "$definemacro") {
+      const name = tokens[i + 1];
+      if (!name || name.line !== token.line) {
+        diagnostics.push({
+          severity: "error",
+          rule: "qc-definemacro-incomplete",
+          message: "$definemacro needs a name and a closing \\\\ on the same line",
+          file: path,
+          line: token.line,
+        });
+        out.push(token);
+        i += 1;
+        continue;
+      }
+      const params: string[] = [];
+      let at = i + 2;
+      while (at < tokens.length && tokens[at]!.line === token.line && tokens[at]!.text !== "\\\\") {
+        params.push(tokens[at]!.text);
+        at += 1;
+      }
+      if (at >= tokens.length || tokens[at]!.text !== "\\\\") {
+        diagnostics.push({
+          severity: "error",
+          rule: "qc-definemacro-incomplete",
+          message: `$definemacro ${name.text} has no closing \\\\ before the line ends`,
+          file: path,
+          line: token.line,
+        });
+        i = at;
+        continue;
+      }
+      at += 1; // the header marker
+
+      const body: Token[] = [];
+      while (at < tokens.length) {
+        const line = tokens[at]!.line;
+        const lineTokens: Token[] = [];
+        while (at < tokens.length && tokens[at]!.line === line) {
+          lineTokens.push(tokens[at]!);
+          at += 1;
+        }
+        const continued = lineTokens.at(-1)?.text === "\\\\";
+        for (const item of lineTokens) {
+          if (item.text !== "\\\\") body.push(item);
+        }
+        if (!continued) break;
+      }
+      if (body.length === 0) {
+        diagnostics.push({
+          severity: "warning",
+          rule: "qc-definemacro-empty",
+          message: `$definemacro ${name.text} has an empty body`,
+          file: path,
+          line: token.line,
+        });
+      }
+      macros.set(name.text.replace(/^\$/, "").toLowerCase(), { params, body });
+      i = at;
+      continue;
+    }
+
+    if (!token.quoted && token.text.startsWith("$") && !token.text.includes("$", 1)) {
+      const macro = macros.get(token.text.slice(1).toLowerCase());
+      if (macro) {
+        const args: string[] = [];
+        let at = i + 1;
+        while (
+          at < tokens.length &&
+          tokens[at]!.line === token.line &&
+          tokens[at]!.text !== "{" &&
+          tokens[at]!.text !== "}"
+        ) {
+          args.push(tokens[at]!.text);
+          at += 1;
+        }
+        const values = new Map<string, string>();
+        macro.params.forEach((param, index) => values.set(param.toLowerCase(), args[index] ?? ""));
+        const replacement: Token[] = macro.body.map((item) => {
+          const text = item.text.replace(/\$([A-Za-z0-9_]+)\$/g, (whole, name: string) => {
+            const value = values.get(name.toLowerCase());
+            return value === undefined ? whole : value;
+          });
+          return { ...item, text, line: token.line };
+        });
+        const nested = expandMacros(replacement, macros, path, depth + 1);
+        out.push(...nested.tokens);
+        diagnostics.push(...nested.diagnostics);
+        i = at;
+        continue;
+      }
+    }
+
+    out.push(token);
+    i += 1;
+  }
+
+  return { tokens: out, diagnostics };
+}
+
+/**
+ * `$definevariable` and `$Name$` expansion, at token level, before statements are grouped.
+ *
+ * scriplib expands a variable only in a **bare** token: `$attachment "a" "$Bone$Hand"` keeps
+ * the literal text, while `$bonesaveframe $Bone$Pelvis position` becomes
+ * `ValveBiped.Bip01_Pelvis`. The closing `$` is part of the syntax. The first definition of
+ * `second` still produces `first.mdl` — so a redefinition is reported and ignored rather
+ * than silently replacing the first.
+ *
+ * Variables live across `$include`, which is why `loadQc` passes one map to every file.
+ */
+function expandVariables(
+  tokens: readonly Token[],
+  variables: Map<string, string>,
+  path: string,
+): { tokens: Token[]; diagnostics: QcDiagnostic[] } {
+  const out: Token[] = [];
+  const diagnostics: QcDiagnostic[] = [];
+  const unknown = new Set<string>();
+  let i = 0;
+
+  while (i < tokens.length) {
+    const token = tokens[i]!;
+    if (token.text.toLowerCase() === "$definevariable") {
+      const name = tokens[i + 1];
+      const value = tokens[i + 2];
+      if (
+        name === undefined ||
+        value === undefined ||
+        name.line !== token.line ||
+        value.line !== token.line ||
+        name.text === "{" ||
+        name.text === "}"
+      ) {
+        diagnostics.push({
+          severity: "error",
+          rule: "qc-definevariable-incomplete",
+          message: "$definevariable needs a name and a value on the same line",
+          file: path,
+          line: token.line,
+        });
+        out.push(token);
+        i += 1;
+        continue;
+      }
+      const key = name.text.toLowerCase();
+      if (variables.has(key)) {
+        diagnostics.push({
+          severity: "warning",
+          rule: "qc-variable-redefined",
+          message: `$definevariable ${name.text} is defined twice; studiomdl keeps the first value`,
+          file: path,
+          line: token.line,
+        });
+      } else {
+        variables.set(key, value.text);
+      }
+      i += 3;
+      continue;
+    }
+
+    if (!token.quoted && token.text.includes("$")) {
+      let text = token.text;
+      // A value may itself contain `$Other$`; expand to a fixed point, bounded so a cycle
+      // between two variables is a diagnostic rather than a hang.
+      for (let round = 0; round < 8; round += 1) {
+        let changed = false;
+        text = text.replace(/\$([A-Za-z0-9_]+)\$/g, (whole, name: string) => {
+          const value = variables.get(name.toLowerCase());
+          if (value === undefined) {
+            if (!unknown.has(name.toLowerCase())) {
+              unknown.add(name.toLowerCase());
+              diagnostics.push({
+                severity: "error",
+                rule: "qc-unknown-variable",
+                message: `$${name}$ is not defined; studiomdl would stop here`,
+                file: path,
+                line: token.line,
+              });
+            }
+            return whole;
+          }
+          changed = true;
+          return value;
+        });
+        if (!changed) break;
+      }
+      out.push({ ...token, text });
+      i += 1;
+      continue;
+    }
+
+    out.push(token);
+    i += 1;
+  }
+
+  return { tokens: out, diagnostics };
+}
+
 /**
  * Groups tokens into statements.
  *
@@ -115,8 +349,16 @@ export function lexQc(source: string): Token[] {
  * `{`. This is how every QC that ships with a Source game is written; a command that spans a
  * line break without a block is not something studiomdl accepts either.
  */
-export function parseQc(source: string, path = "<text>"): QcFile {
-  const tokens = lexQc(source);
+export function parseQc(
+  source: string,
+  path = "<text>",
+  variables: Map<string, string> = new Map(),
+  macros: Map<string, Macro> = new Map(),
+): QcFile {
+  const raw = lexQc(source);
+  const macroExpansion = expandMacros(raw, macros, path);
+  const expansion = expandVariables(macroExpansion.tokens, variables, path);
+  const tokens = expansion.tokens;
   let i = 0;
 
   const parseStatements = (untilBrace: boolean): QcStatement[] => {
@@ -160,6 +402,7 @@ export function parseQc(source: string, path = "<text>"): QcFile {
 
   const statements = parseStatements(false);
   const file: QcFile = { path, statements, includes: [], included: [], diagnostics: [] };
+  file.diagnostics.push(...macroExpansion.diagnostics, ...expansion.diagnostics);
   const local = validateStatements(statements, path);
   file.diagnostics.push(...local);
   return file;
@@ -281,6 +524,34 @@ export interface LoadQcOptions {
 }
 
 /**
+ * Seeds macro definitions from a whole include tree before the files are parsed.
+ *
+ * `scriplib` reads an `$include` at the point it appears, so a macro defined in a `.qci`
+ * is usable by the root file after the include. This reader parses a file before following
+ * its includes, so without a pre-pass the root would see `$Macro` as an unknown variable.
+ * The pre-pass is deliberately one-directional and bounded: it collects definitions in
+ * include order and does not try to reorder statements.
+ */
+function seedMacros(
+  path: string,
+  macros: Map<string, Macro>,
+  chain: string[],
+  depth: number,
+): void {
+  if (depth > 16 || chain.includes(path) || !existsSync(path)) return;
+  const tokens = lexQc(readFileSync(path, "utf8"));
+  expandMacros(tokens, macros, path);
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (tokens[i]!.text.toLowerCase() !== "$include") continue;
+    const line = tokens[i]!.line;
+    for (let at = i + 1; at < tokens.length && tokens[at]!.line === line; at += 1) {
+      const target = resolve(dirname(path), tokens[at]!.text.replace(/\\/g, "/"));
+      seedMacros(target, macros, [...chain, path], depth + 1);
+    }
+  }
+}
+
+/**
  * Reads a QC and every file it includes.
  *
  * A missing include is an error about the file that asked for it, not a crash: a QC with one
@@ -289,7 +560,10 @@ export interface LoadQcOptions {
 export function loadQc(path: string, options: LoadQcOptions = {}): QcFile {
   const maxDepth = options.maxDepth ?? 16;
   const absolute = resolve(path);
-  const root = parseQc(readFileSync(absolute, "utf8"), absolute);
+  const variables = new Map<string, string>();
+  const macros = new Map<string, Macro>();
+  seedMacros(absolute, macros, [], 0);
+  const root = parseQc(readFileSync(absolute, "utf8"), absolute, variables, macros);
 
   const loadIncludes = (file: QcFile, chain: string[], depth: number): void => {
     for (const statement of file.statements) {
@@ -326,7 +600,7 @@ export function loadQc(path: string, options: LoadQcOptions = {}): QcFile {
           });
           continue;
         }
-        const child = parseQc(readFileSync(target, "utf8"), target);
+        const child = parseQc(readFileSync(target, "utf8"), target, variables, macros);
         file.includes.push(target);
         file.included.push(child);
         loadIncludes(child, [...chain, target], depth + 1);

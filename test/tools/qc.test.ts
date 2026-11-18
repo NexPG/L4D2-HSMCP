@@ -108,6 +108,105 @@ $body a "b.smd"
     expect(rules).toContain("qc-modelname-without-mdl");
   });
 
+  it("expands $definemacro bodies, including the \\\\ continuation", () => {
+    const source = String.raw`$definemacro Wrap A \\
+$body $A$ x \\
+$tail
+$modelname "models/a.mdl"
+$Wrap val
+`;
+    const file = parseQc(source);
+    const body = file.statements.find((s) => s.command === "$body");
+    expect(body?.args).toEqual(["val", "x", "$tail"]);
+    expect(file.statements.map((s) => s.command)).not.toContain("$definemacro");
+  });
+
+  it("substitutes macro parameters inside quoted arguments too", () => {
+    const source = String.raw`$definemacro Att Name Bone \\
+$attachment "$Name$" "$Bone$"
+$modelname "models/a.mdl"
+$body "b" "a.smd"
+$Att "muzzle" "ValveBiped.Bip01_R_Hand"
+`;
+    const file = parseQc(source);
+    const attachment = file.statements.find((s) => s.command === "$attachment")!;
+    expect(attachment.args).toEqual(["muzzle", "ValveBiped.Bip01_R_Hand"]);
+  });
+
+  it("carries a macro across $include and stops a self-recursive one", () => {
+    const dir = join(scratch, "macros");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "defs.qci"),
+      String.raw`$definemacro MakeBody Name \\
+$body "$Name$" "$Name$.smd"
+`,
+    );
+    writeFileSync(
+      join(dir, "main.qc"),
+      '$include "defs.qci"\n$modelname "models/a.mdl"\n$MakeBody Crate\n',
+    );
+    const file = loadQc(join(dir, "main.qc"));
+    const body = flattenQc(file)
+      .flatMap((f) => walkQc(f.statements))
+      .find((s) => s.command === "$body")!;
+    expect(body.args).toEqual(["Crate", "Crate.smd"]);
+
+    const recursive = parseQc(
+      String.raw`$definemacro Loop \\
+$Loop
+$Loop
+`,
+    );
+    expect(recursive.diagnostics.map((d) => d.rule)).toContain("qc-macro-recursion");
+  });
+
+  it("expands $definevariable only in bare tokens, with the first definition winning", () => {
+    const file = parseQc(
+      [
+        '$definevariable Bone "ValveBiped.Bip01_"',
+        '$definevariable Name first',
+        '$definevariable Name second',
+        '$modelname "models/$Name$.mdl"',
+        '$body "b" x.smd',
+        '$attachment "quoted" "$Bone$Hand"',
+        '$attachment "bare" $Bone$Hand',
+        '$attachment "embedded" $Bone$Pelvis',
+      ].join("\n"),
+    );
+    const attachments = file.statements.filter((s) => s.command === "$attachment");
+    // Quoted strings are not expanded; `$Bone$Hand` stays literal.
+    expect(attachments[0]!.args[1]).toBe("$Bone$Hand");
+    expect(attachments[1]!.args[1]).toBe("ValveBiped.Bip01_Hand");
+    expect(attachments[2]!.args[1]).toBe("ValveBiped.Bip01_Pelvis");
+    expect(file.diagnostics.map((d) => d.rule)).toContain("qc-variable-redefined");
+    // A quoted model name keeps the literal too; the writer's arg is not a bare token.
+    expect(file.statements.find((s) => s.command === "$modelname")!.args[0]).toBe(
+      "models/$Name$.mdl",
+    );
+  });
+
+  it("reports an undefined variable instead of silently leaving it for studiomdl", () => {
+    const file = parseQc('$modelname "models/a.mdl"\n$body "b" $Nope$.smd\n');
+    expect(file.diagnostics.map((d) => d.rule)).toContain("qc-unknown-variable");
+    expect(file.statements.find((s) => s.command === "$body")!.args[1]).toBe("$Nope$.smd");
+  });
+
+  it("carries variables across $include, which is where a real QC uses them", () => {
+    const dir = join(scratch, "variables");
+    mkdirSync(join(dir, "parts"), { recursive: true });
+    writeFileSync(
+      join(dir, "main.qc"),
+      '$definevariable Name body\n$modelname "models/a.mdl"\n$include "parts/body.qci"\n',
+    );
+    writeFileSync(join(dir, "parts", "body.qci"), '$body "Body" $Name$.smd\n');
+    const file = loadQc(join(dir, "main.qc"));
+    const body = flattenQc(file)
+      .flatMap((f) => walkQc(f.statements))
+      .find((s) => s.command === "$body")!;
+    expect(body.args[1]).toBe("body.smd");
+  });
+
   it("follows includes, reports a missing one, and refuses to loop", () => {
     const dir = join(scratch, "includes");
     mkdirSync(dir, { recursive: true });
