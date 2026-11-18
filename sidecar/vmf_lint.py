@@ -268,6 +268,36 @@ def _lint_landmarks_and_doors(
                     modelWidth=round(model_width, 1),
                 )
             )
+        # A door needs its swing arc clear. The leaf is as long as the model is wide; a prop
+        # within that radius of the hinge is hit before the door is fully open, which is the
+        # "door opens through the bench" bug. Point entities and the door itself do not count.
+        for other in entities:
+            other_class = str(other["classname", ""])
+            if other_class == classname and int(other.id) == int(ent.id):
+                continue
+            if not other_class.startswith(("prop_static", "prop_dynamic", "prop_physics")):
+                continue
+            try:
+                op = other.get_origin()
+            except Exception:  # noqa: BLE001
+                continue
+            distance = math.hypot(float(op.x) - float(p[0]), float(op.y) - float(p[1]))
+            if 1.0 < distance < model_width + 16.0:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "l4d2-door-swing-blocked",
+                        f"a {other_class} sits {distance:.0f} units from the door hinge; "
+                        f"the {model_width:.0f}-unit leaf sweeps that space. Move it at least "
+                        f"{model_width + 16:.0f} units away, or the door will open through it",
+                        entity_id=int(ent.id),
+                        classname=classname,
+                        other=int(other.id),
+                        otherClass=other_class,
+                        distance=round(distance, 1),
+                        swingRadius=round(model_width + 16.0, 1),
+                    )
+                )
         if gap - model_width > 16.0:
             findings.append(
                 _finding(
@@ -293,6 +323,133 @@ def _lint_landmarks_and_doors(
                     classname=classname,
                     opening=round(gap, 1),
                     modelWidth=round(model_width, 1),
+                )
+            )
+    return findings
+
+
+def _lint_prop_physics(vmf: Any, entities: list[Any], game_dir: str | None) -> list[dict[str, Any]]:
+    """Props the player can walk through, named before a play test.
+
+    `prop_static` defaults to solidity 6, which means vbsp uses the model's `.phy`. A model
+    without one is drawn solid in Hammer and has nothing in play. `solid 0` is explicit and
+    is reported separately; `spawnflags 2` is the decorative marker this project uses for
+    grass and escalator overlays, so it is not reported as a bug.
+    """
+    if not game_dir:
+        return []
+    try:
+        from srctools.game import Game
+
+        fsys = Game(game_dir).get_filesystem()
+    except Exception:  # noqa: BLE001
+        return []
+
+    def present(path: str) -> bool:
+        try:
+            fsys[path]
+            return True
+        except Exception:  # noqa: BLE001
+            return False
+
+    findings: list[dict[str, Any]] = []
+    for ent in entities:
+        classname = ent["classname", ""]
+        if not classname.startswith("prop_static"):
+            continue
+        model = str(ent["model", ""]).replace("\\", "/").strip()
+        if not model.lower().endswith(".mdl"):
+            continue
+        try:
+            solid = int(str(ent["solid", "6"]).strip() or "6")
+            flags = int(str(ent["spawnflags", "0"]).strip() or "0")
+        except (TypeError, ValueError):
+            solid, flags = 6, 0
+        if solid == 0:
+            findings.append(
+                _finding(
+                    "warning",
+                    "prop-static-not-solid",
+                    "prop_static has solid 0: nothing collides with it. That is deliberate "
+                    "only for decoration; use a clip brush if the player should be stopped",
+                    entity_id=int(ent.id),
+                    classname=classname,
+                    model=model,
+                )
+            )
+            continue
+        if solid == 6 and (flags & 2) == 0:
+            phy = f"{model[:-4]}.phy"
+            if not present(phy):
+                findings.append(
+                    _finding(
+                        "warning",
+                        "prop-static-no-physics",
+                        f"{model} has no .phy in this install, so a prop_static from it is "
+                        f"non-solid even though Hammer draws it solid. Add a clip brush, "
+                        f"or use a model that ships physics",
+                        entity_id=int(ent.id),
+                        classname=classname,
+                        model=model,
+                        physics=phy,
+                    )
+                )
+    return findings
+
+
+def _lint_finale(vmf: Any, entities: list[Any]) -> list[dict[str, Any]]:
+    """A `trigger_finale` must sit over a FINALE nav area, not just somewhere on the map."""
+    findings: list[dict[str, Any]] = []
+    triggers = [e for e in entities if e["classname", ""] == "trigger_finale"]
+    if not triggers:
+        return findings
+    regions = [
+        e
+        for e in entities
+        if e["classname", ""] == "func_nav_attribute_region"
+        and (_flag_bits(e["spawnflags", "0"]) & 64) != 0
+    ]
+    if not regions:
+        for ent in triggers:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-finale-no-nav",
+                    "trigger_finale exists but no func_nav_attribute_region carries FINALE "
+                    "(64); the Director has no finale area and the escape route ends at the "
+                    "wrong place",
+                    entity_id=int(ent.id),
+                    classname="trigger_finale",
+                )
+            )
+        return findings
+
+    boxes: list[tuple[Any, Any]] = []
+    for region in regions:
+        for solid in region.solids:
+            try:
+                boxes.append(solid.get_bbox())
+            except Exception:  # noqa: BLE001
+                continue
+    for ent in triggers:
+        try:
+            p = ent.get_origin()
+        except Exception:  # noqa: BLE001
+            continue
+        over = any(
+            lo.x <= p.x <= hi.x and lo.y <= p.y <= hi.y and p.z >= lo.z - 8
+            for lo, hi in boxes
+        )
+        if not over:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-finale-trigger-outside-nav",
+                    "trigger_finale is not over a FINALE nav area (its XY is outside every "
+                    "FINALE region, or it is below it); the escape route is chosen from the "
+                    "FINALE areas, so the trigger and the route disagree",
+                    entity_id=int(ent.id),
+                    classname="trigger_finale",
                 )
             )
     return findings
@@ -435,6 +592,23 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
 
     landmarks = {ent["targetname", ""] for ent in by_class.get("info_landmark", [])}
     has_checkpoint_door = bool(by_class.get("prop_door_rotating_checkpoint"))
+    # The engine/Director looks these two doors up by name. `checkpoint_exit_door` is not
+    # `checkpoint_exit`; the safe room may load but the transition logic does not find the
+    # door it is supposed to close.
+    for ent in by_class.get("prop_door_rotating_checkpoint", []):
+        name = str(ent["targetname", ""]).strip()
+        if name not in {"checkpoint_exit", "checkpoint_entrance"}:
+            findings.append(
+                _finding(
+                    "warning",
+                    "l4d2-checkpoint-door-name",
+                    f'checkpoint door is named "{name or "(unnamed)"}"; the engine looks for '
+                    f'`checkpoint_exit` on the safe room being left and `checkpoint_entrance` '
+                    f'on the one being entered',
+                    entity_id=int(ent.id),
+                    classname="prop_door_rotating_checkpoint",
+                )
+            )
     checkpoint_regions = [
         ent
         for ent in by_class.get("func_nav_attribute_region", [])
@@ -612,6 +786,8 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                 )
 
     findings.extend(_lint_landmarks_and_doors(vmf, entities, game_dir))
+    findings.extend(_lint_prop_physics(vmf, entities, game_dir))
+    findings.extend(_lint_finale(vmf, entities))
 
     return findings
 

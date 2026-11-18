@@ -11,8 +11,11 @@ built map.
 
 1. **`info_changelevel`** — a *brush* (despite the `info_` name) over the safe room floor.
    Keyvalues: `map` (next `.bsp`, no path or extension) and `landmark`.
-2. **`prop_door_rotating_checkpoint`** — the checkpoint door. Without one, `info_changelevel`
-   does not spawn at all. A plain `prop_door_rotating` does not count.
+2. **`prop_door_rotating_checkpoint`** - the checkpoint door. Without one, `info_changelevel`
+   does not spawn at all. A plain `prop_door_rotating` does not count. The engine looks the
+   door up by name: **`checkpoint_exit`** on the safe room being left and
+   **`checkpoint_entrance`** on the one being entered. `checkpoint_exit_door` is not the
+   name it looks for.
 3. **Landmark pair** — `info_landmark` with the same `targetname` in both maps. On the map
    being left it sits in the exit safe room; on the map being entered it sits where survivors
    should appear. Store the position relative to the landmark; the engine uses it to place

@@ -308,7 +308,10 @@ export const readVmfLint = defineTool({
     "that become 'Bad surface extents', displacements on brush entities (with the real " +
     "brush id, which vbsp does not print), props standing below the floor they were placed " +
     "on because their model's origin is at its centre, doors whose opening does not match " +
-    "the door model's width, info_landmark entities inside a solid, and counts that approach " +
+    "the door model's width, a door hinge in the middle of the opening or a prop inside its " +
+    "swing, checkpoint doors not named `checkpoint_exit`/`checkpoint_entrance`, " +
+    "`prop_static` models without a `.phy`, `info_landmark` entities inside a solid, a " +
+    "`trigger_finale` outside its FINALE area, and counts that approach " +
     "the compiler limits. " +
     "Knows the entities the installed FGD declares, so a class the game has is not reported " +
     "as unknown; `logic_script`, which the stock FGD omits, is tolerated for VScript maps. " +

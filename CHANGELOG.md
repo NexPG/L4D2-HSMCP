@@ -5,6 +5,30 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.81-alpha — 2026-11-18
+
+- **Checkpoint doors use the names the engine looks up.** `checkpoint_exit` on the safe room
+  being left and `checkpoint_entrance` on the one being entered. `checkpoint_exit_door` was
+  close enough to look right and wrong enough that the transition logic could not find it.
+  `read_vmf_lint` reports `l4d2-checkpoint-door-name`.
+- **Door swing clearance.** `l4d2-door-swing-blocked` reports a prop within the leaf's width
+  + 16 units of the hinge, the "door opens through the bench" bug.
+- **Static prop collision audit.** `read_static_props` reads the compiled static-prop model
+  set and reports models with no `.phy`; `read_model_info` now returns `hasPhysics` and
+  `physicsPath`; `read_vmf_lint` reports `prop-static-no-physics` and
+  `prop-static-not-solid`. `spawnflags 2` marks deliberate decoration. The campaign's trees
+  and grass are decoration; buildings/props that must block are checked.
+- **`write_vmf_terrain`.** One call builds a floor grid, a displacement on every top face,
+  noise with a seed, and a sew. The underlying `write_displacement` / `sculpt_displacement` /
+  `sew_displacements` remain the native path.
+- **Boundary and detail pass.** Tree line plus a cliff band inside the skybox shell, 120
+  grass props in the forest, stock facades/storefronts/dumpsters/lamps, deeper swamp, and
+  the stock `mall_escalator` with **positive** roll (negative roll tilted it against the
+  23-degree ramp).
+- **Ten-guide research.** `docs/reference/l4d2-campaign-authoring.md` and
+  `references/campaign/authoring-checklist.md` distil the campaign/addon, checkpoint/nav,
+  finale, boundary, terrain, water and optimization advice, with the sources.
+
 ## 0.0.80-alpha — 2026-11-18
 
 - **`preview_asset`: the eye.** A material is read through its VMT to the `$basetexture`

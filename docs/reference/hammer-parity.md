@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **104 tools**.
+Last checked against the tool list on 18/11/2026: **106 tools**.
 
 ## The file itself
 
@@ -38,7 +38,8 @@ getting `ENOENT` on the first call.
 
 | Hammer | Here | Notes |
 |---|---|---|
-| Block tool — box | `write_vmf_solid` | |
+| Block tool - box | `write_vmf_solid` | |
+| Terrain patch | `write_vmf_terrain` | Grid -> displacement -> noise -> sew in one call |
 | Block tool — wedge | `write_vmf_solid` | Five faces, not a box with a collapsed edge |
 | Block tool — cylinder | `write_vmf_solid` | Half-step offset, so an even prism faces an axis |
 | Block tool — arch | `write_vmf_solid` | Refuses a segment past a quarter turn: beyond it, four corners describe the complement of the sector |
@@ -199,6 +200,7 @@ map and looking, or by not happening at all.
 | `read_map_extents` | nothing |
 | `read_map_geometry` | nothing — how full each lump is against vbsp's ceiling |
 | `read_prop_survey` | nothing |
+| `read_static_props` | nothing: Hammer shows a static prop as solid even when its model has no `.phy` |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
 | `run_cubemap2hdr` | nothing offline. The engine builds cubemaps in whichever mode it is running |

@@ -311,6 +311,14 @@ def _material_preview(req: dict[str, Any]) -> dict[str, Any]:
     return material_preview(req)
 
 
+@verb("static_props")
+def _static_props(req: dict[str, Any]) -> dict[str, Any]:
+    """Static prop collision modes and missing .phy files."""
+    from staticprops import static_props
+
+    return static_props(req)
+
+
 @verb("vmf_displacements")
 def _vmf_displacements(req: dict[str, Any]) -> dict[str, Any]:
     """Displacements as srctools reads them -- the oracle for our own reader."""

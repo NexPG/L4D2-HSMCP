@@ -1,6 +1,6 @@
 # Tool catalogue
 
-104 tools. This page groups them by the job you are doing; each tool's own description is the
+106 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -33,6 +33,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_nav_dump` | engine's `<map>_nav.txt`: areas, attributes, flow verdict |
 | `read_map_dependencies` | every asset the map references and where it will come from |
 | `read_prop_survey` | props by model and class, including unnamed `prop_dynamic` |
+| `read_static_props` | static-prop collision audit: missing `.phy`, models the player walks through |
 | `read_pakfile` | files embedded in the map (lump 40 is a ZIP) |
 | `read_materials` | material table and reuse |
 | `read_lightmap_budget` | where lightmap resolution went |
@@ -73,6 +74,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_vmf` | empty `.vmf`, Hammer's File > New |
 | `edit_vmf` | add/update/remove entities and outputs by splicing |
 | `write_vmf_solid` | brushes from box, wedge, cylinder, convex; also into a brush entity by id |
+| `write_vmf_terrain` | floor grid + displacement + noise + sew in one call |
 | `write_vmf_fitting` | door casing, counter, skirting, cornice |
 | `transform_solids` | move, turn, scale, mirror brushes |
 | `merge_solids` | merge convex brushes into the one brush around them |

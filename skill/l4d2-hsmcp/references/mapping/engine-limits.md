@@ -48,6 +48,27 @@ half the doorway stays open while the other half goes through the wall.
   the build uses it for both checkpoint doors.
 - `read_vmf_lint` reports `l4d2-door-hinge-at-center` when the origin is more than 8 units
   from both jambs, and `l4d2-door-opening-too-wide` / `-too-narrow` for the fit.
+- The engine looks up the checkpoint door by name: **`checkpoint_exit`** on the room being
+  left and **`checkpoint_entrance`** on the room being entered. `checkpoint_exit_door` is
+  not the name it looks for.
+- Keep the leaf's width + 16 units clear of props; `l4d2-door-swing-blocked` reports a bench
+  or crate inside the swing arc.
+
+## Props on a slope: roll, not pitch
+
+Source `angles` are **pitch yaw roll**. A model whose long axis is local **Y** (an escalator,
+a handrail, a ramp prop) is tilted along that axis by **roll** (the third number), not pitch.
+For a ramp climbing +Y, positive roll raises the +Y end: `angles "0 0 23"`. Negative roll
+sinks it into the floor. A model long on **X** uses pitch instead. Verify the sign in game:
+the old escalator used `-23`, which tilted it against the 23-degree ramp.
+
+## Props that look solid and are not
+
+`prop_static` defaults to solidity 6, which asks vbsp for the model's `.phy`. A model without
+one is drawn solid in Hammer and has no collision in play. `read_model_info.hasPhysics` and
+`read_static_props` name the models; `read_vmf_lint` reports `prop-static-no-physics`. Mark
+deliberate decoration (grass, tree canopies, an escalator overlay) with `spawnflags 2`; for
+anything the player should bump into, use a model that ships `.phy` or add a clip brush.
 
 ## Geometry that nav can cross
 

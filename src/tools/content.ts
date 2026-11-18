@@ -152,6 +152,9 @@ export const readModelInfoTool = defineTool({
     sequences: z.array(z.string()).optional(),
     materials: z.array(z.string()).optional(),
     sequencesTruncated: z.boolean().optional(),
+    /** A `.phy` exists. A prop_static from a model without one has nothing to collide with. */
+    hasPhysics: z.boolean().optional(),
+    physicsPath: z.string().optional(),
     note: z.string().optional(),
     /** A model that exists and could not be read. Not `error`: that is the fault envelope. */
     readError: z.string().optional(),

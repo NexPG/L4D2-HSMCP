@@ -560,10 +560,66 @@ export const readBrushVolumes = defineTool({
   },
 });
 
+export const readStaticProps = defineTool({
+  name: "read_static_props",
+  description:
+    "Collision audit of a compiled map's static props. Reads the BSP static-prop lump and " +
+    "reports each prop's solidity (0 none, 2 bounding box, 6 VPhysics) and whether its " +
+    "model has a .phy. A prop that looks solid in Hammer can be walked through when the " +
+    "model has no physics; this names the props instead of leaving it to a play test. " +
+    "Use it after a compile, before a map test, and add a clip brush where a model's " +
+    "physics is missing or wrong.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
+    limit: z.number().int().min(1).max(2000).default(200),
+  },
+  outputSchema: {
+    path: z.string(),
+    read: z.boolean(),
+    mounted: z.boolean().optional(),
+    mountError: z.string().nullable().optional(),
+    totalInstances: z.number().optional(),
+    uniqueModels: z.number().optional(),
+    missingPhysicsCount: z.number().optional(),
+    missingPhysics: z
+      .array(
+        z.object({
+          model: z.string(),
+          hasPhysics: z.boolean().nullable(),
+          instances: z.number(),
+        }),
+      )
+      .optional(),
+    models: z
+      .array(
+        z.object({
+          model: z.string(),
+          hasPhysics: z.boolean().nullable(),
+          instances: z.number(),
+        }),
+      )
+      .optional(),
+    note: z.string().optional(),
+    error: z.string().optional(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    const r = await callSidecar(
+      "static_props",
+      { path, gameDir: ctx.config.gameDir, limit: args.limit },
+      ctx.config,
+      180_000,
+    );
+    return r as Record<string, unknown>;
+  },
+});
+
 export const measureTools = [
   readMapExtents,
   readMapGeometry,
   readPropSurvey,
+  readStaticProps,
   readPakfile,
   readSightlines,
   readBrushVolumes,

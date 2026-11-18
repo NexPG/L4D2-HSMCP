@@ -553,6 +553,7 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         else None
     )
 
+    phy = f"{rel[:-4]}.phy" if rel.lower().endswith(".mdl") else f"{rel}.phy"
     return {
         "model": rel,
         "mounted": True,
@@ -566,8 +567,12 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         "sequences": sequences,
         "sequencesTruncated": sequence_total > len(sequences),
         "materials": textures,
+        "hasPhysics": _present(fsys, phy),
+        "physicsPath": phy,
         "note": (
             "bounds are the model's own hull, around its origin. A prop placed at a floor's "
-            "height sinks by however far its origin sits above its lowest point"
+            "height sinks by however far its origin sits above its lowest point. "
+            "hasPhysics false means a prop_static from this model has nothing to collide "
+            "with; add a clip brush or use a model that ships a .phy."
         ),
     }
