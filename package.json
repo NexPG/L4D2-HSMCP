@@ -1,6 +1,6 @@
 {
   "name": "hammer-mcp",
-  "version": "0.0.91-alpha",
+  "version": "0.0.92-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
   "license": "GPL-3.0-only",
   "author": "NexPG",
@@ -35,7 +35,6 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "start:src": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest"

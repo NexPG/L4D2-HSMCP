@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.91--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.92--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -98,12 +98,6 @@ node dist/index.js install
 
 `install` registers the server with your MCP client and writes `.mcp.json` with local paths.
 Start or reload your agent, then ask it:
-
-> **No separate compiler is needed.** The server is TypeScript and the sidecar is Python; the
-> C++ and C# trees in `src/` are source for the tools we ported from and for optional
-> adapters, and nothing imports them at runtime. `pnpm build` transpiles the TypeScript to
-> `dist/` in a few seconds. To skip that step entirely, run straight from source with
-> `pnpm start:src` (uses `tsx`) — required only when you want to work on the code itself.
 
 ```
 health

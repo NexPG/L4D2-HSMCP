@@ -8,33 +8,9 @@ a PNG (RGBA composited over a checkerboard) as base64. Pillow is not needed.
 from __future__ import annotations
 
 import base64
-import struct
-import zlib
 from typing import Any
 
-
-def _chunk(tag: bytes, data: bytes) -> bytes:
-    return (
-        struct.pack(">I", len(data))
-        + tag
-        + data
-        + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
-    )
-
-
-def encode_png(width: int, height: int, rgba: bytes) -> bytes:
-    """A PNG from RGBA bytes, no dependencies."""
-    rows = bytearray()
-    stride = width * 4
-    for y in range(height):
-        rows.append(0)  # filter: none
-        rows.extend(rgba[y * stride : (y + 1) * stride])
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + _chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
-        + _chunk(b"IDAT", zlib.compress(bytes(rows), 9))
-        + _chunk(b"IEND", b"")
-    )
+from png import encode_png
 
 
 def _mount(game_dir: str | None) -> tuple[Any, str | None]:
@@ -130,7 +106,7 @@ def material_preview(req: dict[str, Any]) -> dict[str, Any]:
             "mounted": True,
             "material": material,
             "vmt": vmt_path,
-            "error": error,
+            "previewError": error,
         }
 
     try:
@@ -150,7 +126,7 @@ def material_preview(req: dict[str, Any]) -> dict[str, Any]:
             "mounted": True,
             "material": material,
             "vtf": vtf_path,
-            "error": f"{type(exc).__name__}: {exc}",
+            "previewError": f"{type(exc).__name__}: {exc}",
         }
 
     return {

@@ -1,6 +1,6 @@
 ---
 name: L4D2-HSMCP
-description: Build and ship Left 4 Dead 2 campaigns, maps, nav meshes, chapter transitions, finales, VScripts and addon VPKs with the L4D2-HSMCP MCP server. Use for a L4D2 map or campaign, mission file, safe room, chapter change, nav mesh, finale, VScript, addon packaging — and when a campaign is missing from the menu, a chapter will not change, bots wander, a nav is stale or a script does not load.
+description: Build and ship Left 4 Dead 2 campaigns, maps, nav meshes, chapter transitions, finales, VScripts, models, textures and addon VPKs with the L4D2-HSMCP MCP server. Use for a L4D2 map or campaign, mission file, safe room, chapter change, nav mesh, finale, VScript, addon packaging — and when a campaign is missing from the menu, a chapter will not change, bots wander, a nav is stale or a script does not load.
 ---
 
 # L4D2-HSMCP
@@ -8,9 +8,10 @@ description: Build and ship Left 4 Dead 2 campaigns, maps, nav meshes, chapter t
 Left 4 Dead 2 content, built through the MCP server. The server does the file work; this
 skill says what "correct" looks like in L4D2 and in what order to do it.
 
-The toolkit is early, but maps, campaigns, finales, nav, model compilation and add-on VPKs
-are proven. Two-team rounds and a few visual checks still need a person or a second client.
-Read [What is not supported](#what-is-not-supported) before promising the rest.
+The toolkit is early, but maps, campaigns, finales, nav, model source authoring and
+compilation, native VTF writing and add-on VPKs are proven. Two-team rounds and a few visual
+checks still need a person or a second client. Read
+[What is not supported](#what-is-not-supported) before promising the rest.
 
 **Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
 `edit_vmf`, `set_worldspawn`, `transform_solids`, `clone_solids`, `write_vscript`); the
@@ -53,7 +54,8 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
-| `references/mapping/model-authoring.md` | QC/SMD, `studiomdl`, physics, viewmodels and player models |
+| `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
+| `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, and the sound tools |
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |
 | `docs/reference/l4d2-complete-reference.md` | L4D2 mechanics, Director defaults, finale stages, infected/weapon stats, entities, console, limits |

@@ -1,8 +1,9 @@
 # Model authoring for L4D2
 
 The toolkit compiles a model with the game's own `studiomdl` and inspects it with
-`read_model_info`, `run_hlmv` and `preview_asset`. It does not export from Blender, Maya or
-any DCC; that stays in the DCC.
+`read_model_info`, `run_hlmv` and `preview_asset`. It also reads and writes the source
+formats itself: an SMD or DMX can be inspected, and a simple mesh can be built from JSON
+without a DCC. Complex sculpting, UV painting and animation still belong in Blender.
 
 ## The source set
 
@@ -26,6 +27,34 @@ $collisionmodel "myprop_phys.smd" { $mass 10 $concave }
   it; without one the prop is non-solid in game.
 - `$staticprop` is for a static prop; `$mostlyopaque` for cutout transparency.
 
+## A simple prop without a DCC
+
+This is the whole path for a box-shaped prop. The numbers are the model's own space, in
+Source units (a player is 72 tall).
+
+1. `write_smd` — nodes (one root bone is enough for a static prop), one frame, and the
+   triangles. Each triangle is exactly three vertices with position, normal, UV and a bone
+   link; the tool refuses anything else and reads the file back.
+2. `write_qc` — `$modelname`, `$body` pointing at that SMD, `$cdmaterials`, `$surfaceprop`,
+   and `$staticprop: true`.
+3. `run_studiomdl` — compiles, then proves the `.mdl`, `.vvd` and `.dx90.vtx` exist.
+4. `write_vmt` + `write_vtf` — the material and its texture; both are native.
+5. `read_model_info` — bounds to place it, `hasPhysics` to know whether it is solid.
+
+**Physics is the trap.** `studiomdl` only writes a `.phy` from `$collisionmodel`, and this
+path does not build one. A `prop_static` without a `.phy` is non-solid: either add a
+`$collisionmodel` SMD in a DCC, or place a clip brush under the prop. The toolkit reports
+the absence instead of hiding it.
+
+## Reading what a DCC exported
+
+- `read_smd` — bones, frame times, materials, triangle count, bounds, per-vertex weights;
+  diagnostics name the faults a failed compile would otherwise only hint at.
+- `read_dmx` — the datamodel as a JSON tree. Element references stay references: a model
+  graph is cyclic, and expanding it fully never terminates. Raise `maxDepth` for one level.
+- `write_dmx` — the reverse, for a generated datamodel. `encoding: "kv2"` is diffable text;
+  binary v4 / format 15 is what L4D2-era tools expect.
+
 ## L4D2 specifics
 
 - **Viewmodels** need `$attachment "primary"` / `"melee"`, the right `$weaponmodel`/hands
@@ -40,29 +69,38 @@ $collisionmodel "myprop_phys.smd" { $mass 10 $concave }
 
 | Job | Tool |
 |---|---|
+| Read an SMD (bones, frames, materials, faults) | `read_smd` |
+| Build an SMD from JSON | `write_smd` |
+| Read a DMX datamodel | `read_dmx` |
+| Build a DMX from JSON | `write_dmx` |
+| Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
 | Open in HLMV | `run_hlmv`; capture the window with `capture_window` |
+| Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain); `run_vtf_convert` for TGA/DDS through VTFCmd |
 | Look at a material | `preview_asset` (VTF → PNG) |
 | Find a stock model or material | `read_game_content`, `read_asset_catalog` |
 | Place the model | `edit_vmf` (`prop_static` / `prop_dynamic`) |
 
-`run_studiomdl` is a compiler driver, not a modeller: it does not make the mesh, the UVs,
-the weights or the animations. Those come from the DCC.
+`run_studiomdl` is a compiler driver, not a modeller: it does not sculpt, paint UVs or
+animate. Those come from the DCC. What the toolkit can do is create or inspect the source
+files and prove the compiled result.
 
 ## Checking a model before it ships
 
-1. `read_model_info` — `found`, bounds, skins, sequences, materials, `hasPhysics`.
-2. `preview_asset` on each material — a missing VTF is a purple checkerboard in game.
+1. `read_smd` / `read_dmx` — the source is structurally valid before a compiler sees it.
+2. `read_qc` — `$modelname`, `$body`, materials and attachments resolve.
 3. `run_studiomdl` — the `.mdl` and its `.vvd`/`.dx90.vtx`/`.phy` companions exist.
-4. Place it in a test map and `run_map_test` with a screenshot; HLMV's 3D canvas is not
+4. `read_model_info` — `found`, bounds, skins, sequences, materials, `hasPhysics`.
+5. `preview_asset` on each material — a missing VTF is a purple checkerboard in game.
+6. Place it in a test map and `run_map_test` with a screenshot; HLMV's 3D canvas is not
    reliable on every desktop.
-5. `read_static_props` after the compile — a model without `.phy` is non-solid unless a clip
+7. `read_static_props` after the compile — a model without `.phy` is non-solid unless a clip
    brush replaces it.
 
 ## Licensing
 
 The community QC prefabs and player-model helper packs have **no licence file** in the
-repositories reviewed here, so none of their files are copied into this project. They are
-listed as references only in `third_party/NOTICES.md`. A model or texture taken from another
-project needs the same licence check as code.
+repositories reviewed here, so none of their files are copied into this project. A model or
+texture taken from another project needs the same licence check as code; a mesh is a
+copyrighted work too.

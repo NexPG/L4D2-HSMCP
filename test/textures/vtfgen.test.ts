@@ -1,0 +1,161 @@
+/**
+ * PNG → VTF without VTFCmd.
+ *
+ * The writer's own `verified` flag compares the pixels after a round-trip through the VTF
+ * reader, so these tests can assert something stronger than "the file exists": the image
+ * came back. The edge cases are the ones that produce a texture the engine refuses or
+ * renders wrong — a non-power-of-two size, a format that needs a compressor, a requested
+ * version outside what L4D2 reads.
+ */
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { deflateSync } from "node:zlib";
+import { afterAll, describe, expect, it } from "vitest";
+import { crc32 } from "../../src/formats/typescript/formats/vpk.js";
+import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
+import { readVtfTool } from "../../src/textures/typescript/tools/vtf.js";
+import { config, has } from "../support/env.js";
+import { ctx } from "../support/env.js";
+
+const scratch = mkdtempSync(join(tmpdir(), "hammer-vtf-"));
+afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+
+function chunk(tag: string, data: Buffer): Buffer {
+  const head = Buffer.alloc(4);
+  head.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(tag, "latin1"), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([head, body, crc]);
+}
+
+/** An RGBA PNG built here, so the decoder is not tested on its own encoder's quirks. */
+function png(width: number, height: number, rgba: Buffer): Buffer {
+  const rows: Buffer[] = [];
+  for (let y = 0; y < height; y += 1) {
+    rows.push(Buffer.from([0]), rgba.subarray(y * width * 4, (y + 1) * width * 4));
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", deflateSync(Buffer.concat(rows), { level: 9 })),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+function gradient(width: number, height: number): Buffer {
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const at = (y * width + x) * 4;
+      rgba[at] = (x * 37 + y * 3) & 0xff;
+      rgba[at + 1] = (y * 53 + x * 5) & 0xff;
+      rgba[at + 2] = (x * y * 11) & 0xff;
+      rgba[at + 3] = (x + y) % 4 === 0 ? 128 : 255;
+    }
+  }
+  return rgba;
+}
+
+interface WriteResult {
+  path: string;
+  written: boolean;
+  bytes: number;
+  version: string;
+  width: number;
+  height: number;
+  originalWidth: number;
+  originalHeight: number;
+  resized: boolean;
+  format: string;
+  mipCount: number;
+  flags: number;
+  clampS: boolean;
+  clampT: boolean;
+  verified: boolean;
+}
+
+const installed = has.sidecar;
+
+describe.skipIf(!installed)("write_vtf", () => {
+  it("writes L4D2's 7.4 with a full mip chain and verifies the pixels", async () => {
+    const image = join(scratch, "gradient.png");
+    writeFileSync(image, png(8, 8, gradient(8, 8)));
+    const path = join(scratch, "gradient.vtf");
+
+    const result = await callSidecar<WriteResult>(
+      "vtf_write",
+      { path, image, clampS: true, resize: "none" },
+      config,
+    );
+    expect(result.verified).toBe(true);
+    expect(result.version).toBe("7.4");
+    expect(result.format).toBe("BGRA8888");
+    expect(result.width).toBe(8);
+    expect(result.height).toBe(8);
+    // 8, 4, 2, 1: a square chain includes the 1x1 level.
+    expect(result.mipCount).toBe(4);
+    expect(result.resized).toBe(false);
+    expect(result.clampS).toBe(true);
+    expect(result.clampT).toBe(false);
+    expect(result.flags & 0x4).toBe(0x4);
+
+    // The header tool the agent uses must agree with what the writer reported.
+    const header = readVtfTool.handler({ path }, ctx as never) as {
+      version: string;
+      width: number;
+      height: number;
+      format: string;
+      bytes: number;
+    };
+    expect(header.version).toBe("7.4");
+    expect(header.width).toBe(8);
+    expect(header.height).toBe(8);
+    expect(header.format).toBe("BGRA8888");
+    expect(header.bytes).toBe(result.bytes);
+    expect(readFileSync(path).length).toBe(result.bytes);
+  });
+
+  it("refuses a non-power-of-two image unless scaling is allowed", async () => {
+    const image = join(scratch, "wide.png");
+    writeFileSync(image, png(5, 3, gradient(5, 3)));
+
+    await expect(
+      callSidecar("vtf_write", { path: join(scratch, "wide.vtf"), image, resize: "none" }, config),
+    ).rejects.toThrow(/power of two/);
+
+    const scaled = await callSidecar<WriteResult>(
+      "vtf_write",
+      { path: join(scratch, "wide.vtf"), image, resize: "bilinear" },
+      config,
+    );
+    expect(scaled.originalWidth).toBe(5);
+    expect(scaled.originalHeight).toBe(3);
+    expect(scaled.width).toBe(8);
+    expect(scaled.height).toBe(4);
+    expect(scaled.resized).toBe(true);
+    expect(scaled.verified).toBe(true);
+  });
+
+  it("refuses DXT instead of writing an uncompressed file under a compressed name", async () => {
+    const image = join(scratch, "opaque.png");
+    writeFileSync(image, png(4, 4, gradient(4, 4)));
+    await expect(
+      callSidecar("vtf_write", { path: join(scratch, "opaque.vtf"), image, format: "DXT1" }, config),
+    ).rejects.toThrow(/compressor/);
+  });
+
+  it("refuses a version L4D2 does not read", async () => {
+    const image = join(scratch, "small.png");
+    writeFileSync(image, png(4, 4, gradient(4, 4)));
+    await expect(
+      callSidecar("vtf_write", { path: join(scratch, "small.vtf"), image, version: "7.9" }, config),
+    ).rejects.toThrow(/7\.2 through 7\.5/);
+  });
+});

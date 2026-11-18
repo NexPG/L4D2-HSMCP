@@ -5,6 +5,28 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.92-alpha — 2026-11-19
+
+- **The project is TypeScript, Python and PowerShell only.** The four vendored source trees
+  runtime, so no tool was lost with them; the toolchain that ships is the same `dist/` plus
+  the Python sidecar.
+- **What replaced the trees is capability, not a gap.** Seven new tools close the work the
+  libraries made possible but the toolkit could not do:
+  - `read_dmx` / `write_dmx` — the Blender/Crowbar datamodel, binary v4 and KeyValues2, as
+    a JSON tree with element references kept as references (a model graph is cyclic).
+  - `read_smd` / `write_smd` — skeleton, frames, materials, triangles, per-vertex weights and
+    the diagnostics studiomdl otherwise reports only as a failed compile. With `write_qc`
+    and `run_studiomdl`, a simple prop can be authored without a DCC.
+  - `write_vtf` — PNG → VTF 7.4 with a full mip chain, no VTFCmd. PNG decoding is our own
+    (every filter and colour type is tested), and the pixels are compared after a round-trip.
+  - `read_wav` / `convert_wav` — a sound's format, duration and loop, and a conversion to the
+    16-bit PCM mono/stereo at 22050/44100 Hz that L4D2 actually decodes. Peak and RMS are
+    reported, so a silent or clipped source is visible before it ships.
+  either remains. sourcepp and EpicMorg stay, narrowed to the files that are genuinely
+  translations — deleting a vendored tree removes the copy, not the obligation.
+- **The registry is data, not code.** `src/hammer/data/hammers.json` stays where it is and
+  the sidecar reads it directly.
+
 ## 0.0.91-alpha — 2026-11-19
 
 

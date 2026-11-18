@@ -65,7 +65,7 @@ export const has = {
     [`vbsp++.exe`, `vbspplusplus.exe`].some((n) => existsSync(join(config.plusPlusBinDir as string, n))),
   /** The game's own addon packer. */
   vpk: config.binDir !== null && existsSync(join(config.binDir, "vpk.exe")),
-  /** The srctools venv built by sidecar/setup.ps1. */
+  /** The srctools venv built by src/core/python/setup.ps1. */
   sidecar: existsSync(pythonPath(config)),
   /** The .fgd files, which live beside the compilers. */
   fgd: config.binDir !== null && existsSync(join(config.binDir, "left4dead2.fgd")),
@@ -106,7 +106,7 @@ const LABELS: Record<keyof typeof has, string> = {
   toolchain: `the Left 4 Dead 2 compilers (${config.binDir ?? "no bin directory found"})`,
   plusplus: "the Tools++ compilers (optional)",
   vpk: "the game's vpk.exe",
-  sidecar: "the Python sidecar venv (run sidecar/setup.ps1)",
+  sidecar: "the Python sidecar venv (run src/core/python/setup.ps1)",
   fgd: "the game's .fgd files",
   plusFgd: "the Tools++ .fgd (optional)",
   prodMap: "a large production .bsp",

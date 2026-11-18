@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **132 tools**.
+Last checked against the tool list on 19/11/2026: **139 tools**.
 
 ## The file itself
 
@@ -232,6 +232,13 @@ map and looking, or by not happening at all.
 | `read_vmt` | nothing: the material's parameters, its `%compile*` flags and its `Proxies` blocks are invisible in the editor |
 | `write_vmt` | a text editor, and remembering which shader takes which parameter |
 | `read_qc` | nothing: Hammer never reads a model's source |
+| `read_smd` | nothing: the model source is not opened by the editor |
+| `write_smd` | nothing: Hammer has no model-source writer |
+| `read_dmx` | nothing: the datamodel an artist exports is invisible to Hammer |
+| `write_dmx` | nothing |
+| `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
+| `read_wav` | nothing: the editor never opens a sound |
+| `convert_wav` | nothing: sound conversion is a separate editor |
 | `read_compile_sequences` | the Run Map dialog, one sequence at a time, without saying which steps are disabled |
 | `write_qc` | writing model source by hand |
 | `read_sightlines` | the eye, standing in the map |

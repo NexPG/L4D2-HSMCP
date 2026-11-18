@@ -129,7 +129,7 @@ export const previewAssetTool = defineTool({
       previewWidth?: number;
       previewHeight?: number;
       pngBase64?: string;
-      error?: string;
+      previewError?: string;
       note?: string;
     };
     if (!r.found || !r.pngBase64) {
@@ -141,7 +141,7 @@ export const previewAssetTool = defineTool({
         width: r.width ?? null,
         height: r.height ?? null,
         note: r.note ?? "no preview was produced",
-        error: r.error ?? "material not found or its VTF could not be decoded",
+        error: r.previewError ?? "material not found or its VTF could not be decoded",
         previewPath: null,
       };
     }

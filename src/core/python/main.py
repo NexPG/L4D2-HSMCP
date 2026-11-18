@@ -326,6 +326,62 @@ def _model_info(req: dict[str, Any]) -> dict[str, Any]:
     return model_info(req)
 
 
+@verb("dmx_read")
+def _dmx_read(req: dict[str, Any]) -> dict[str, Any]:
+    """A .dmx model source as a JSON tree an agent can inspect."""
+    from dmx import dmx_read
+
+    return dmx_read(req)
+
+
+@verb("dmx_write")
+def _dmx_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a .dmx from a JSON tree, then reads it back."""
+    from dmx import dmx_write
+
+    return dmx_write(req)
+
+
+@verb("smd_read")
+def _smd_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Skeleton, frames, materials and triangles of a .smd model source."""
+    from smd import smd_read
+
+    return smd_read(req)
+
+
+@verb("smd_write")
+def _smd_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a .smd from JSON, then reads it back."""
+    from smd import smd_write
+
+    return smd_write(req)
+
+
+@verb("vtf_write")
+def _vtf_write(req: dict[str, Any]) -> dict[str, Any]:
+    """PNG to VTF without VTFCmd: header, mip chain and a pixel round-trip."""
+    from vtfgen import vtf_write
+
+    return vtf_write(req)
+
+
+@verb("wav_read")
+def _wav_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Format, duration, loop and whether a WAV is ready for L4D2."""
+    from wav import read_wav
+
+    return read_wav(req)
+
+
+@verb("wav_convert")
+def _wav_convert(req: dict[str, Any]) -> dict[str, Any]:
+    """Converts a WAV to 16-bit PCM mono/stereo at the requested rate."""
+    from wav import convert_wav
+
+    return convert_wav(req)
+
+
 @verb("asset_catalog")
 def _asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
     """The stock model categories Hammer++ shows, grouped by what they are."""

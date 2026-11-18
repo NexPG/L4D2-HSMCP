@@ -7,22 +7,20 @@ job is, not what it was written in.
 
 ## The language rule
 
-A module that needs more than one language splits by language underneath:
+The project is **TypeScript, Python and PowerShell**, and nothing else. A module that needs
+more than one language splits by language underneath:
 
 ```
 src/hammer/
   typescript/     the tools, settings, autosave matching
   python/         the WM_COPYDATA / WM_COMMAND bridge
+  data/           the build registry the tools read
 ```
 
 Those directories hold **source files only**. No assets, no licence texts, no build output,
-no module of their own inside them. A language directory does keep the **build manifest** of
-its own language -- `CMakeLists.txt` for `cpp/`, the `.csproj` for
-`csharp/` — because the manifest is what makes those sources a buildable piece of the
-project, and because it sits in the same directory as the files it names. A vendored tree
-also keeps its **internal layout** (`include/vpkpp/...`, `src/qc/...`): flattening it would
-break every `#include` and `mod` in it, which is a rewrite, not an import. Upstream READMEs,
-CI, documentation, brand images and benchmark suites are dropped on import.
+no module of their own inside them. TypeScript is compiled to `dist/` by the repository's
+own toolchain; Python is interpreted by the sidecar interpreter. There is no build manifest
+inside a language directory because there is no native build to describe.
 
 Everything that is not source has a home of its own:
 
@@ -30,48 +28,36 @@ Everything that is not source has a home of its own:
 |---|---|
 | Licences and notices | `third_party/` |
 | Test fixtures | `test/fixtures/` |
+| Runtime data (a registry, a table) | `<module>/data/` |
 | Rendered output, screenshots | the caller's directory, or the state directory |
 | Upstream repositories | nowhere: the part we use is ported here and credited |
 
-A single-language module keeps its files at the module root — `src/textures/typescript/` is
-the only exception in today's tree because that module also has to be able to grow a second
-language without moving every file again.
-
-## Native trees
-
-Four of the language directories hold real upstream implementations. Their internal layout is
-the build system's, not ours, and flattening it would break every `#include`, `mod` and
-`<ProjectReference>`:
-
-| Directory | Layout | Why |
-|---|---|---|
-| `src/formats/cpp/` | `include/`, `source/`, `cmake/`, `ext/`, `CMakeLists.txt` | CMake and the `#include <vpkpp/...>` paths |
-
-| `src/hammer/csharp/` | one directory per `.csproj`, plus `assets/` | MSBuild's project layout |
-
-`src/formats/cpp`) and `argparse`/`indicators` under `ext/cli/`; CMake fetches them or the
-paths are adjusted at configure time. Nothing here is built on this machine -- no CMake
-or dotnet — and `build/`, `target/`, `obj/` are gitignored.
+All modules now keep their files under a language directory, including the single-language
+ones: `src/textures/typescript/`, `src/nav/typescript/`, `src/scripts/typescript/`. The
+symmetry is what makes "where is the Python for maps" answerable without a second rule.
 
 ## Data, not source
 
 `src/hammer/data/` holds data a module reads at runtime: `hammers.json`, the registry of known
-editor builds. It is not code, so it is not in `typescript/`, `python/` or `csharp/`; it is
-not paperwork either, so it is not in `third_party/`. A module that needs a data file gets a
-`data/` directory beside its language directories.
+editor builds. It is not code, so it is not in `typescript/` or `python/`; it is not paperwork
+either, so it is not in `third_party/`. A module that needs a data file gets a `data/`
+directory beside its language directories.
 
 ## The modules
 
 | Module | What it owns |
 |---|---|
-| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences — plus `csharp/` (the upstream implementation) and `data/` (the build registry) |
+| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences, and `data/` (the build registry) |
 | `maps/` | VMF and BSP reading and writing, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
-| `textures/` | VTF and VMT |
+| `models/` | QC, SMD and DMX sources, studiomdl, HLMV |
+| `textures/` | VTF and VMT, PNG decoding and native VTF writing |
 | `nav/` | the navigation mesh: reading, generation, editing, trouble reports |
 | `scripts/` | VScript |
 | `campaigns/` | mission files, finales, campaign gates |
 | `assets/` | content search, material preview |
-| `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC — and `cpp/`, the sourcepp format libraries |
+| `audio/` | WAV reading and conversion to the 16-bit PCM L4D2 decodes |
+| `packages/` | addon packaging (VPK), pakfile writing |
+| `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC, DMX |
 | `core/` | config, version, logging, MCP plumbing, the sidecar client |
 
 ## Rules

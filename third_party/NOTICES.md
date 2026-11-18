@@ -21,25 +21,23 @@ files in this repository; the upstream file is named so a port can be re-checked
 
 | Project | Licence | What was taken, and where it is now |
 |---|---|---|
-| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | **The live Hammer shell channel** — `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` command grammar, `WM_COMMAND` menu ids, session/`mapversion` handling and process/window discovery (`src/hammer/python/hammer_live.py`, `src/hammer/typescript/tools/hammerlive.ts`). **Autosave locations and matching** — Hammer++'s `AutosaveDir`, the registry keys stock Hammer uses, `originalname` (`src/maps/typescript/game/autosave.ts`). **Run Map sequence formats** — the 804-byte binary command record and the KeyValues variant (`src/maps/typescript/compile/sequences.ts`). **VMT parsing behaviour** — case-insensitive parameters, blocks kept as blocks, a missing closing brace repaired (`src/formats/typescript/formats/vmt.ts`). |
+| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | **The live Hammer shell channel** — `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` command grammar, `WM_COMMAND` menu ids, session/`mapversion` handling and process/window discovery (`src/hammer/python/hammer_live.py`, `src/hammer/typescript/tools/hammerlive.ts`). **Autosave locations and matching** — Hammer++'s `AutosaveDir`, the registry keys stock Hammer uses, `originalname` (`src/maps/typescript/game/autosave.ts`). **Run Map sequence formats** — the 804-byte binary command record and the KeyValues variant (`src/maps/typescript/compile/sequences.ts`). **VMT parsing behaviour** — case-insensitive parameters, blocks kept as blocks, a missing closing brace repaired (`src/formats/typescript/formats/vmt.ts`). **The Hammer build registry** — `src/hammer/data/hammers.json`, read at runtime to identify an editor by its DLL hash. |
 | [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | [MIT](licenses/hammer-mcp-sycatle-MIT.txt) | The code this repository grew out of. The portions of that tree that survive are the VMF/BSP readers and writers, the compile pipeline, the measurement and render modules, and the tool contracts. Provenance and the change of licence are in [`NOTICE`](NOTICE). |
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | **Vendored** at `src/formats/cpp/` (bsppp, vpkpp, vtfpp, mdlpp, kvpp, dmxpp and the shared code they build on). **The VTF `IMAGE_FORMAT_*` table** (`vtfpp/ImageFormats.h` → `src/textures/typescript/bsp/vtf.ts`). **The VPK directory layout** (`vpkpp/format/VPK.cpp` → `src/formats/typescript/formats/vpk.ts`). **The MDL attachment/body-part/hitbox layout** (`mdlpp/structs/MDL.h` → `src/assets/python/content.py`). |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | **The VTF `IMAGE_FORMAT_*` table** (`vtfpp/ImageFormats.h` → `src/textures/typescript/bsp/vtf.ts`). **The VPK directory layout** (`vpkpp/format/VPK.cpp` → `src/formats/typescript/formats/vpk.ts`). **The MDL attachment/body-part/hitbox layout** (`mdlpp/structs/MDL.h` → `src/assets/python/content.py`). These are translations of specific files, not a copy of the library: the C++ tree is no longer in the repository. |
 
-### Vendored implementations
+### Code that was rewritten, not vendored
 
-Upstream trees are kept as source because their functionality is needed and a rewrite
-would be tens of thousands of lines. Each keeps its own `LICENSE` inside the tree — the
-licence has to travel with the code — and its canonical copy is under `licenses/`.
+The C++ and C# trees that were briefly vendored were **removed on 2026-11-19**. Every
+capability the toolkit exposes is implemented in TypeScript, Python or PowerShell, and the
+remaining source trees are none of them.
 
-| Path | Project | Provides |
-|---|---|---|
-| `src/formats/cpp/` | sourcepp | BSP, VPK, VTF, MDL, KeyValues and DMX libraries |
-| `src/hammer/csharp/` | EpicMorg/Hammer-MCP | the shell channel and the Core library |
-| `src/hammer/data/hammers.json` | EpicMorg/Hammer-MCP | the registry of known Hammer builds, used to identify an editor by its DLL hash |
+That does not erase the notices above. A translation is a derivative work: the three
+sourcepp-derived files named in the table, and the shell-channel port from EpicMorg, still
+carry the copyright and permission notices because their logic came from those projects.
+Removing the upstream tree removes the copy, not the obligation.
 
-They are not built on this machine (no `cmake` or `dotnet` installed), are not
-imported by the TypeScript server, and their build output (`build/`, `target/`, `obj/`) is
-ignored by git. `health` reports their binaries as missing when they have not been built.
+reading, writing and packing are this project's own TypeScript implementation; model
+compilation is driven through the game's `studiomdl` (and, optionally, a user-installed
 
 ### Licence texts
 
@@ -66,9 +64,9 @@ file is for what was taken **into the source tree**.
 ## No source trees are kept
 
 Nothing from another project is vendored in this repository. What is used has been ported
-into `src/` or `sidecar/`, tested, and is owned here — the table above says which upstream
-file each port is based on. A parked copy of someone else's tree is not integration: it
-drifts, it is never compiled, and it blurs what this project actually is.
+into `src/`, tested, and is owned here — the table above says which upstream file each port
+is based on. A parked copy of someone else's tree is not integration: it drifts, it is never
+compiled, and it blurs what this project actually is.
 
 ## Checklist for a new import
 

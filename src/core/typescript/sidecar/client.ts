@@ -26,7 +26,7 @@ function scriptPath(): string {
   return join(packageRoot(), "src", "core", "python", "main.py");
 }
 
-/** The interpreter of the venv `sidecar/setup.ps1` builds, unless configured otherwise. */
+/** The interpreter of the venv `src/core/python/setup.ps1` builds, unless configured otherwise. */
 export function pythonPath(config: Config): string {
   // Windows only: a venv keeps its interpreter in Scripts\python.exe.
   return config.sidecarPython ?? join(config.stateDir, "sidecar-venv", "Scripts", "python.exe");

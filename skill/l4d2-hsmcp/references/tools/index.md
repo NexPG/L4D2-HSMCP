@@ -1,6 +1,6 @@
 # Tool catalogue
 
-132 tools. This page groups them by the job you are doing; each tool's own description is the
+139 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -139,6 +139,10 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
 | `read_qc` | parse a `.qc` with its `$include` tree, sequences, materials and structural faults |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
+| `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
+| `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |
+| `read_dmx` | a DMX datamodel as a JSON element tree, with types and values |
+| `write_dmx` | build a binary v4 or KeyValues2 DMX from a JSON tree, then read it back |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |
 | `run_hlmv` | launch HLMV on one model, optionally return a screenshot as a real image |
@@ -169,4 +173,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_tga2skybox` | six TGAs into LDR and HDR cubemaps |
 | `run_cubemap2hdr` | LDR cubemap to HDR `.vtf` |
 | `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |
+| `write_vtf` | PNG to `.vtf` natively, with mipmaps and a pixel round-trip; no VTFCmd needed |
+| `read_wav` | WAV format, duration, loop and whether it is L4D2-game-ready |
+| `convert_wav` | resample and mix a WAV to 16-bit PCM mono/stereo at 22050/44100 |
 | `read_vtf` | a `.vtf` header: version, size, flags, frames, format, cubemap |
