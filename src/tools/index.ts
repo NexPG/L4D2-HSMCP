@@ -6,6 +6,7 @@ import { buildTools } from "./build.js";
 import { captureTools } from "./capture.js";
 import { campaignTools } from "./campaign.js";
 import { addonTools } from "./addon.js";
+import { autosaveTools } from "./autosave.js";
 import { clipTools } from "./clip.js";
 import { compileTools } from "./compile.js";
 import { contentTools } from "./content.js";
@@ -39,6 +40,7 @@ import { overlayTools } from "./overlay.js";
 import { pakfileTools } from "./pakfile.js";
 import { planTools } from "./plan.js";
 import { prefabTools } from "./prefab.js";
+import { qcTools } from "./qc.js";
 import { previewTools } from "./preview.js";
 import { renameTools } from "./rename.js";
 import { renderTools } from "./render.js";
@@ -77,6 +79,7 @@ export const allTools: AnyToolDef[] = [
   ...campaignTools,
   ...gateTools,
   ...addonTools,
+  ...autosaveTools,
   ...bspTools,
   ...bspEditTools,
   ...buildCubemapTools,
@@ -96,6 +99,7 @@ export const allTools: AnyToolDef[] = [
   ...renderTools,
   ...planTools,
   ...prefabTools,
+  ...qcTools,
   ...previewTools,
   ...displacementTools,
   ...exportMapTools,
