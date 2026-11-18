@@ -170,10 +170,4 @@ licence, and no notice is removed.
 
 **GPL-3.0-only.** Copyright (C) 2026 **NexPG**.
 
-This project began from code published as
-[`hammer-mcp`](https://github.com/Sycatle/hammer-mcp) by **Project Society Studio** under
-the MIT licence, and also uses code from the projects in the Credits table. The MIT notice
-is kept verbatim in [`LICENSE-MIT`](LICENSE-MIT); [`NOTICE`](NOTICE) records the provenance,
-the modification date and what the GPL asks of anyone redistributing this work.
-
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.
