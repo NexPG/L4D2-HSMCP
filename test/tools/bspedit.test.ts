@@ -2,9 +2,9 @@ import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readEntityLump } from "../../src/bsp/entities.js";
-import { editBspEntitiesTool } from "../../src/tools/bspedit.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
+import { editBspEntitiesTool } from "../../src/maps/typescript/tools/bspedit.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

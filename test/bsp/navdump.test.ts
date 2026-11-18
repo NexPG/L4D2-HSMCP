@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseNavDump } from "../../src/bsp/navdump.js";
+import { parseNavDump } from "../../src/nav/typescript/bsp/navdump.js";
 
 /** Three areas: a checkpoint, a finale area on the flow path, and one that is neither. */
 const DUMP = `----------------------------------------------

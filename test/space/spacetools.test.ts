@@ -2,14 +2,14 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
   readVmfClearanceTool,
   readVmfTraceTool,
   readVmfVisibilityTool,
-} from "../../src/tools/space.js";
-import { readVmfLeakTool } from "../../src/tools/scene.js";
-import { writeDisplacements } from "../../src/vmf/dispwrite.js";
+} from "../../src/maps/typescript/tools/space.js";
+import { readVmfLeakTool } from "../../src/scripts/typescript/tools/scene.js";
+import { writeDisplacements } from "../../src/maps/typescript/vmf/dispwrite.js";
 import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

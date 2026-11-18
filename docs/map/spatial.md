@@ -3,19 +3,19 @@
 > **Historical (Garry's Mod era).** This page describes the upstream project's spatial work;
 > the tools it mentions still exist, but the measurements are not L4D2 measurements.
 
-Every spatial question this server could answer used to go through `src/bsp/trace.ts`. That
+Every spatial question this server could answer used to go through `src/maps/typescript/bsp/trace.ts`. That
 is a good tracer — it is the engine's own recursion over vbsp's own tree — and it can only
 speak about the map **as it was when vbsp last ran**. An agent that has just moved a wall
 cannot ask whether the corridor still fits without compiling, and a compile takes minutes.
 So it does not ask, and it places by feel.
 
-`src/space/` is the other half: a collision engine over the brushes of a `.vmf`. It needs no
+`src/maps/typescript/space/` is the other half: a collision engine over the brushes of a `.vmf`. It needs no
 compilation, no lump format and no toolchain, because a brush *is already* an intersection
-of half-spaces — `src/vmf/solid.ts` reconstructs exactly that as its oracle.
+of half-spaces — `src/maps/typescript/vmf/solid.ts` reconstructs exactly that as its oracle.
 
 ## The rule that keeps the oracle honest
 
-**Nothing under `src/space/` may import `src/bsp/`.**
+**Nothing under `src/maps/typescript/space/` may import `src/maps/typescript/bsp/`.**
 
 The BSP tracer is this engine's independent witness: the same 5 000 rays go through both,
 one reading text and one reading three lumps, written from different sources. The moment one
@@ -80,8 +80,8 @@ apart, and the number looks perfectly reasonable. Source's hulls: **32×32×72**
 
 | Constant | Value | Where it is from |
 |---|---|---|
-| `DIST_EPSILON` | `0.03125` | Quake's hull check, unchanged in Source. Backs a contact off the surface so a point left there is outside the brush. `src/bsp/trace.ts` uses the same value, which is why the two engines agree far closer than the cross-check demands |
-| `ON_EPSILON` | `0.01` | Source's own, via `src/vmf/solid.ts`. A point within it of a face counts as inside — otherwise the surface reads as empty space and a voxel flood beside a wall walks through it one cell at a time |
+| `DIST_EPSILON` | `0.03125` | Quake's hull check, unchanged in Source. Backs a contact off the surface so a point left there is outside the brush. `src/maps/typescript/bsp/trace.ts` uses the same value, which is why the two engines agree far closer than the cross-check demands |
+| `ON_EPSILON` | `0.01` | Source's own, via `src/maps/typescript/vmf/solid.ts`. A point within it of a face counts as inside — otherwise the surface reads as empty space and a voxel flood beside a wall walks through it one cell at a time |
 
 ## Two results that are deliberately not numbers
 
@@ -117,7 +117,7 @@ test can see: it must actually prune. `TraceStats` exists so that has a number t
 
 | Claim | Witness |
 |---|---|
-| The tracer is right | 5 000 rays through `src/space/trace.ts` and `src/bsp/trace.ts`, on `hmcp_probe.vmf` and its committed `.bsp`. Agreement on hit, and on distance to under **0.5 units**; the six axis rays agree to under **0.001** |
+| The tracer is right | 5 000 rays through `src/maps/typescript/space/trace.ts` and `src/maps/typescript/bsp/trace.ts`, on `hmcp_probe.vmf` and its committed `.bsp`. Agreement on hit, and on distance to under **0.5 units**; the six axis rays agree to under **0.001** |
 | The tree changes no answer | 4 000 rays and 800 box sweeps, identical to the bit against brute force |
 | The tree earns its keep | fewer than 60 of 600 brushes tested per ray |
 | The box sweep is not a ray | a 32-wide hull refused by a 24-unit gap a ray goes straight through |
@@ -170,7 +170,7 @@ measures against.
 
 The rasteriser fills an `Int32` **id buffer** alongside the pixels: the brush visible at each
 one. That is not a debugging extra, it is the oracle. For a sample of pixels the test rebuilds
-the primary ray and asks `src/space/trace.ts` what it hits, then demands the same brush.
+the primary ray and asks `src/maps/typescript/space/trace.ts` what it hits, then demands the same brush.
 Scan-conversion with a z-buffer and a BVH descent share the camera and nothing else — and the
 ray side is itself cross-checked against the engine's own tracer. **The chain of oracles ends
 at the game.**

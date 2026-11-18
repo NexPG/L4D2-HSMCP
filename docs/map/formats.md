@@ -35,8 +35,8 @@ The Source formats are already written, in Python. [`srctools`](https://github.c
 reads and writes VMF, BSP, VPK, VTF, VMT and FGD, it is maintained, and **no mature TypeScript
 library exists for BSP**. Rewriting it would have been months of work on solved problems.
 
-So `sidecar/` is a pinned venv (`srctools==2.7.0`) behind a single entry point: a verb in
-`argv[1]`, JSON on stdin, JSON on stdout, diagnostics on stderr. `./sidecar/setup.ps1` builds it;
+So the Python half is a pinned venv (`srctools==2.7.0`) behind a single entry point, `src/core/python/main.py`: a verb in
+`argv[1]`, JSON on stdin, JSON on stdout, diagnostics on stderr. `src/core/python/setup.ps1` builds it;
 the venv lives under `<stateDir>/sidecar-venv`, outside the repository, because it is
 machine-specific build output.
 
@@ -124,7 +124,7 @@ All four are on disk:
 | `steamapps/appmanifest_<id>.acf` | `appid`, `name`, `installdir`, and the beta branch (`UserConfig.BetaKey`) |
 | `<game>/<mod>/gameinfo.txt` | `game`, `FileSystem.SteamAppId`, **`GameData`** — the FGD — and `InstancePath` |
 
-And **no parser was needed**: all three are KeyValues, the grammar `src/kv/` already lexes for
+And **no parser was needed**: all three are KeyValues, the grammar `src/formats/typescript/kv/` already lexes for
 `.vmf` files and the entity lump — bare words, quoted strings, `//` comments. Verified by reading
 the real files. The `// Just to shut up vbsp.exe` comment Valve leaves immediately above `GameData`
 in Garry's Mod's `gameinfo.txt` is in fact the lexer's negative control: drop `//` handling and the

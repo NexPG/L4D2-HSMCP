@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readVmfSolidsTool } from "../../src/tools/solids.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readVmfSolidsTool } from "../../src/maps/typescript/tools/solids.js";
 import {
   checkVmfSolids,
   hullFromPlanes,
@@ -14,8 +14,8 @@ import {
   planeFromPoints,
   pointsFromPlane,
   WORLD_BOUND,
-} from "../../src/vmf/solid.js";
-import type { Vec3 } from "../../src/vmf/solid.js";
+} from "../../src/maps/typescript/vmf/solid.js";
+import type { Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

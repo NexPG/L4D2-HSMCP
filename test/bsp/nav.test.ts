@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { checkNavFreshness, NavFormatError, readNavHeader } from "../../src/bsp/nav.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readNav } from "../../src/tools/compile.js";
+import { checkNavFreshness, NavFormatError, readNavHeader } from "../../src/nav/typescript/bsp/nav.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readNav } from "../../src/maps/typescript/tools/compile.js";
 import { ctx as sharedCtx, has, paths } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

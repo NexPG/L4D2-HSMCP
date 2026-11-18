@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { insertSolids, VmfBuildError } from "../../src/vmf/build.js";
-import { expandShape } from "../../src/vmf/shapes.js";
-import type { CompoundSpec } from "../../src/vmf/shapes.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck } from "../../src/vmf/solid.js";
+import { insertSolids, VmfBuildError } from "../../src/maps/typescript/vmf/build.js";
+import { expandShape } from "../../src/maps/typescript/vmf/shapes.js";
+import type { CompoundSpec } from "../../src/maps/typescript/vmf/shapes.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck } from "../../src/maps/typescript/vmf/solid.js";
 
 /** The smallest thing insertSolids will add to: an empty world. */
 const EMPTY = 'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';

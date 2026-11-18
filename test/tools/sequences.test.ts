@@ -20,9 +20,9 @@ import {
   loadCompileSequences,
   parseCmdSeqBinary,
   parseCmdSeqText,
-} from "../../src/compile/sequences.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readCompileSequencesTool } from "../../src/tools/sequences.js";
+} from "../../src/maps/typescript/compile/sequences.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readCompileSequencesTool } from "../../src/maps/typescript/tools/sequences.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { LUMP_SPECS } from "../../src/bsp/geometry.js";
-import { HDR_LUMPS, LUMP_NAMES, readHeader } from "../../src/bsp/header.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readBspInfo } from "../../src/tools/bsp.js";
+import { LUMP_SPECS } from "../../src/maps/typescript/bsp/geometry.js";
+import { HDR_LUMPS, LUMP_NAMES, readHeader } from "../../src/maps/typescript/bsp/header.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readBspInfo } from "../../src/maps/typescript/tools/bsp.js";
 import { ctx as sharedCtx, has, paths } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

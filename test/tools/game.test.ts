@@ -8,7 +8,7 @@ import {
   navGenerateConfig,
   waitForFile,
   waitForLog,
-} from "../../src/game/launch.js";
+} from "../../src/scripts/typescript/game/launch.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "hsmcp-game-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));

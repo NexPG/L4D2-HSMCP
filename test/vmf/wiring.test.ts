@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readEntityReportTool, validateIoTool } from "../../src/tools/wiring.js";
-import { applyVmfOps } from "../../src/vmf/edit.js";
-import { checkWiring, entityReport, parseConnection, readConnections } from "../../src/vmf/wiring.js";
-import type { ClassSchema } from "../../src/vmf/wiring.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readEntityReportTool, validateIoTool } from "../../src/maps/typescript/tools/wiring.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
+import { checkWiring, entityReport, parseConnection, readConnections } from "../../src/maps/typescript/vmf/wiring.js";
+import type { ClassSchema } from "../../src/maps/typescript/vmf/wiring.js";
 import { ctx as sharedCtx, FIXTURES, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

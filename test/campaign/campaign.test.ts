@@ -2,10 +2,10 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { parseMission, serializeMission, checkMissionStructure, checkMissionFiles } from "../../src/campaign/mission.js";
-import { checkCampaignTool, readCampaignTool, writeCampaignTool } from "../../src/tools/campaign.js";
+import { parseMission, serializeMission, checkMissionStructure, checkMissionFiles } from "../../src/campaigns/typescript/campaign/mission.js";
+import { checkCampaignTool, readCampaignTool, writeCampaignTool } from "../../src/campaigns/typescript/tools/campaign.js";
 import { config, ctx as sharedCtx, has } from "../support/env.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "l4d2-campaign-"));

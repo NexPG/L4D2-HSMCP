@@ -17,15 +17,15 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { writeVmfSolidTool } from "../../src/tools/build.js";
-import { runCompile } from "../../src/tools/compile.js";
-import { readGameContentTool } from "../../src/tools/content.js";
-import { editVmf, writeVmf } from "../../src/tools/vmfedit.js";
-import { readVmfLeakTool } from "../../src/tools/scene.js";
-import { DEFAULT_SKYNAME, emptyVmf } from "../../src/vmf/skeleton.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { writeVmfSolidTool } from "../../src/maps/typescript/tools/build.js";
+import { runCompile } from "../../src/maps/typescript/tools/compile.js";
+import { readGameContentTool } from "../../src/assets/typescript/tools/content.js";
+import { editVmf, writeVmf } from "../../src/maps/typescript/tools/vmfedit.js";
+import { readVmfLeakTool } from "../../src/scripts/typescript/tools/scene.js";
+import { DEFAULT_SKYNAME, emptyVmf } from "../../src/maps/typescript/vmf/skeleton.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readFgdClass } from "../../src/tools/vmf.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readFgdClass } from "../../src/maps/typescript/tools/vmf.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

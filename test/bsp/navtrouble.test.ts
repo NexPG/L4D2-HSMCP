@@ -4,8 +4,8 @@ import {
   parseNavTrouble,
   parseSavedSelection,
   parseSelectedPositions,
-} from "../../src/bsp/navtrouble.js";
-import { parseNavDump } from "../../src/bsp/navdump.js";
+} from "../../src/nav/typescript/bsp/navtrouble.js";
+import { parseNavDump } from "../../src/nav/typescript/bsp/navdump.js";
 
 const ENGINE = `
 Orphan check passed

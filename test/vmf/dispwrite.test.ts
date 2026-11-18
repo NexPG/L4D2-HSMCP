@@ -2,19 +2,19 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { callSidecar } from "../../src/sidecar/client.js";
-import { readDisplacements } from "../../src/vmf/displacement.js";
+import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
+import { readDisplacements } from "../../src/maps/typescript/vmf/displacement.js";
 import {
   paintDisplacements,
   sculptDisplacements,
   sewDisplacements,
   VmfDispWriteError,
   writeDisplacements,
-} from "../../src/vmf/dispwrite.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { writeDisplacementTool } from "../../src/tools/displacement.js";
+} from "../../src/maps/typescript/vmf/dispwrite.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { writeDisplacementTool } from "../../src/maps/typescript/tools/displacement.js";
 import { config, has, ctx as sharedCtx } from "../support/env.js";
 
 const toolCtx = sharedCtx as unknown as ToolContext;

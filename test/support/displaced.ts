@@ -10,7 +10,7 @@
  * x = 256. That is the arrangement every terrain in Source is made of, and the only one in
  * which a seam can exist to be found.
  */
-import { insertSolids } from "../../src/vmf/build.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
 
 const SEED =
   'versioninfo\n{\n\t"editorversion" "400"\n}\nvisgroups\n{\n}\nworld\n{\n\t"id" "1"\n' +

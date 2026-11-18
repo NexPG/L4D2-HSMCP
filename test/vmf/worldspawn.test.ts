@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { editWorldspawn } from "../../src/vmf/portals.js";
-import { VmfPortalError } from "../../src/vmf/portals.js";
+import { editWorldspawn } from "../../src/maps/typescript/vmf/portals.js";
+import { VmfPortalError } from "../../src/maps/typescript/vmf/portals.js";
 
 const MAP = `versioninfo
 {

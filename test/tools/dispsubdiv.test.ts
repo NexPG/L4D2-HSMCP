@@ -2,12 +2,12 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { readDisplacements } from "../../src/vmf/displacement.js";
-import { writeDisplacements } from "../../src/vmf/dispwrite.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import { subdivideDisplacementsTool } from "../../src/tools/displacement.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { readDisplacements } from "../../src/maps/typescript/vmf/displacement.js";
+import { writeDisplacements } from "../../src/maps/typescript/vmf/dispwrite.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import { subdivideDisplacementsTool } from "../../src/maps/typescript/tools/displacement.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

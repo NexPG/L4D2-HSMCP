@@ -348,7 +348,7 @@ with the real compilers and the real game:
 
 | Need | How the agent does it |
 |---|---|
-| Create/edit geometry, entities, I/O, instances, visgroups, cordons | Writers and splices in `src/vmf/` |
+| Create/edit geometry, entities, I/O, instances, visgroups, cordons | Writers and splices in `src/maps/typescript/vmf/` |
 | See the map without the game | `render_vmf_view`, `render_vmf_plan`, `render_vmf_tour` |
 | See the map in the editor | `open_in_hammer` launches Hammer++ and captures its window |
 | Read the editor's settings | `read_hammerpp` parses the INI, game config, build programs and keybindings |

@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { isEmptySelector, matchesSolid } from "../../src/vmf/select.js";
-import type { SolidSelector } from "../../src/vmf/select.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck } from "../../src/vmf/solid.js";
+import { isEmptySelector, matchesSolid } from "../../src/maps/typescript/vmf/select.js";
+import type { SolidSelector } from "../../src/maps/typescript/vmf/select.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck } from "../../src/maps/typescript/vmf/solid.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

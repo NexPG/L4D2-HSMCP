@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { captureWindowTool } from "../../src/tools/capture.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { captureWindowTool } from "../../src/hammer/typescript/tools/capture.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

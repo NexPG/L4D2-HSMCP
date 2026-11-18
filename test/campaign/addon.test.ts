@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { runVpkPackTool } from "../../src/tools/addon.js";
+import { runVpkPackTool } from "../../src/packages/typescript/tools/addon.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "l4d2-addon-"));

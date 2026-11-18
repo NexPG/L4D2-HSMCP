@@ -26,9 +26,9 @@ import {
   vpkDirPath,
   vpkPathParts,
   writeVpk,
-} from "../../src/formats/vpk.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readVpkTool, runVpkBuildTool, runVpkExtractTool } from "../../src/tools/vpk.js";
+} from "../../src/formats/typescript/formats/vpk.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readVpkTool, runVpkBuildTool, runVpkExtractTool } from "../../src/packages/typescript/tools/vpk.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

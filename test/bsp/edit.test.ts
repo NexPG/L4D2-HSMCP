@@ -2,9 +2,9 @@ import { copyFileSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { editEntityText, writeBspEntities, BspEditError } from "../../src/bsp/edit.js";
-import { readEntityLump } from "../../src/bsp/entities.js";
-import { readAt, readHeader } from "../../src/bsp/header.js";
+import { editEntityText, writeBspEntities, BspEditError } from "../../src/maps/typescript/bsp/edit.js";
+import { readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
+import { readAt, readHeader } from "../../src/maps/typescript/bsp/header.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");

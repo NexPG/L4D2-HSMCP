@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { insertSolids } from "../../src/vmf/build.js";
-import { readDisplacements } from "../../src/vmf/displacement.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { readDisplacements } from "../../src/maps/typescript/vmf/displacement.js";
 import {
   subdivideDisplacements,
   VmfDispWriteError,
   writeDisplacements,
-} from "../../src/vmf/dispwrite.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+} from "../../src/maps/typescript/vmf/dispwrite.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 
 const EMPTY = 'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';
 

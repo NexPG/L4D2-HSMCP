@@ -16,9 +16,9 @@ import {
   hammerPlusPlusAutosaveFolder,
   isAbsoluteWindowsPath,
   resolveAutosaveFolder,
-} from "../../src/game/autosave.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readAutosavesTool, restoreAutosaveTool } from "../../src/tools/autosave.js";
+} from "../../src/maps/typescript/game/autosave.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readAutosavesTool, restoreAutosaveTool } from "../../src/maps/typescript/tools/autosave.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

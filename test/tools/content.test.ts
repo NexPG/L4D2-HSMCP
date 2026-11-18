@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readGameContentTool, readModelInfoTool } from "../../src/tools/content.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readGameContentTool, readModelInfoTool } from "../../src/assets/typescript/tools/content.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

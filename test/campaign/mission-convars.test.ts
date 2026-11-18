@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { missionFromSpec, parseMission, serializeMission } from "../../src/campaign/mission.js";
+import { missionFromSpec, parseMission, serializeMission } from "../../src/campaigns/typescript/campaign/mission.js";
 
 describe("mission chapter convars", () => {
   it("writes a convar block and reads it back", () => {

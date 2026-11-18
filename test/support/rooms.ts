@@ -28,9 +28,9 @@
  * Everything is built with `insertSolids`, the writer that a compiled, booted probe map
  * already proves. A fixture written plane-by-plane by hand tests the hand.
  */
-import { insertSolids } from "../../src/vmf/build.js";
-import type { SolidSpec } from "../../src/vmf/build.js";
-import { applyVmfOps } from "../../src/vmf/edit.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import type { SolidSpec } from "../../src/maps/typescript/vmf/build.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
 
 const SEED =
   'versioninfo\n{\n\t"editorversion" "400"\n\t"mapversion" "1"\n\t"formatversion" "100"\n}\n' +

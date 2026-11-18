@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { callSidecar } from "../../src/sidecar/client.js";
-import { readDisplacements, VmfDisplacementError } from "../../src/vmf/displacement.js";
+import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
+import { readDisplacements, VmfDisplacementError } from "../../src/maps/typescript/vmf/displacement.js";
 import { config, has } from "../support/env.js";
 import {
   displacedMap,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readHammerPlusPlusTool } from "../../src/tools/hammerpp.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readHammerPlusPlusTool } from "../../src/hammer/typescript/tools/hammerpp.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOverlay } from "../../src/vmf/overlay.js";
+import { buildOverlay } from "../../src/maps/typescript/vmf/overlay.js";
 
 const FLOOR = `versioninfo
 {

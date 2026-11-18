@@ -2,12 +2,12 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { alignFaces } from "../../src/vmf/face.js";
-import { copyFaceAlignmentTool } from "../../src/tools/face.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck } from "../../src/vmf/solid.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { alignFaces } from "../../src/maps/typescript/vmf/face.js";
+import { copyFaceAlignmentTool } from "../../src/maps/typescript/tools/face.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

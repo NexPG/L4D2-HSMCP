@@ -7,9 +7,9 @@ import {
   readEntityLump,
   wirableFromLump,
   withOutputsSplit,
-} from "../../src/bsp/entities.js";
-import { checkEntityWiring, connectionsOf, entityRows } from "../../src/entity/wiring.js";
-import type { ClassSchema } from "../../src/entity/wiring.js";
+} from "../../src/maps/typescript/bsp/entities.js";
+import { checkEntityWiring, connectionsOf, entityRows } from "../../src/maps/typescript/entity/wiring.js";
+import type { ClassSchema } from "../../src/maps/typescript/entity/wiring.js";
 
 /**
  * #103. Nothing in this repository validated the wiring of a compiled map, which is the

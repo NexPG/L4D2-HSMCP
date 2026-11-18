@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { setMapPropertiesTool } from "../../src/tools/wiring.js";
-import { setMapProperties, VmfPortalError, writePortal } from "../../src/vmf/portals.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import { entityReport } from "../../src/vmf/wiring.js";
+import { setMapPropertiesTool } from "../../src/maps/typescript/tools/wiring.js";
+import { setMapProperties, VmfPortalError, writePortal } from "../../src/maps/typescript/vmf/portals.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import { entityReport } from "../../src/maps/typescript/vmf/wiring.js";
 import { AWKWARD_VMF } from "../support/awkward.js";
 import { FIXTURES } from "../support/env.js";
 

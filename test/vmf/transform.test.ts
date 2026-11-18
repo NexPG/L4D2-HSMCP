@@ -11,9 +11,9 @@ import {
   scaling,
   snapPoint,
   translation,
-} from "../../src/vmf/transform.js";
-import { hullFromPlanes, planeFromPoints } from "../../src/vmf/solid.js";
-import type { Vec3 } from "../../src/vmf/solid.js";
+} from "../../src/maps/typescript/vmf/transform.js";
+import { hullFromPlanes, planeFromPoints } from "../../src/maps/typescript/vmf/solid.js";
+import type { Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 
 const ORIGIN: Vec3 = [0, 0, 0];
 

@@ -2,11 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { Config } from "../../src/config.js";
-import { loadConfig } from "../../src/config.js";
-import { BUILTIN_PROFILES, resolveProfiles } from "../../src/games/profile.js";
-import { UnknownGameError, gameFor } from "../../src/games/resolve.js";
-import { readVmfLint } from "../../src/tools/vmf.js";
+import type { Config } from "../../src/core/typescript/config.js";
+import { loadConfig } from "../../src/core/typescript/config.js";
+import { BUILTIN_PROFILES, resolveProfiles } from "../../src/core/typescript/games/profile.js";
+import { UnknownGameError, gameFor } from "../../src/core/typescript/games/resolve.js";
+import { readVmfLint } from "../../src/maps/typescript/tools/vmf.js";
 import { FIXTURES, ctx, has } from "../support/env.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "l4d2-profile-"));

@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { readGeometry } from "../../src/bsp/geometry.js";
-import { readVisleafStats } from "../../src/bsp/visleaf.js";
+import { readGeometry } from "../../src/maps/typescript/bsp/geometry.js";
+import { readVisleafStats } from "../../src/maps/typescript/bsp/visleaf.js";
 import { FIXTURES, has, paths } from "../support/env.js";
 
 const LEAFS = 10;

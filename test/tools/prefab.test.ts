@@ -2,10 +2,10 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import { insertPrefabTool } from "../../src/tools/prefab.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import { insertPrefabTool } from "../../src/maps/typescript/tools/prefab.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

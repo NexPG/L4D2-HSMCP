@@ -2,8 +2,8 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { exportMapTool } from "../../src/tools/exportmap.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { exportMapTool } from "../../src/maps/typescript/tools/exportmap.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

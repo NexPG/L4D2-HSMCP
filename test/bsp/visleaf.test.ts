@@ -3,10 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { BspFormatError, LZMA_MAGIC } from "../../src/bsp/header.js";
-import { readVisleafStats } from "../../src/bsp/visleaf.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readVisleafStatsTool } from "../../src/tools/visleaf.js";
+import { BspFormatError, LZMA_MAGIC } from "../../src/maps/typescript/bsp/header.js";
+import { readVisleafStats } from "../../src/maps/typescript/bsp/visleaf.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readVisleafStatsTool } from "../../src/maps/typescript/tools/visleaf.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 import { lumpFields } from "../support/lumps.js";
 

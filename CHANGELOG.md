@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.87-alpha — 2026-11-18
+
+- **One project, split by module.** `src/` is now a set of semantic modules — `hammer`,
+  `maps`, `nav`, `models`, `textures`, `packages`, `campaigns`, `scripts`, `assets`,
+  `formats`, `core` — and a module holds everything its job needs. Language is a
+  subdirectory, not a boundary: `src/hammer/typescript/` and `src/hammer/python/` are the
+  same module, and `src/formats/cpp/sourcepp` sits beside the TypeScript that ports it.
+  There is no `vendor/` and no shared `src/tools/` pile any more.
+- **All paperwork in `third-party/`.** `NOTICE`, `NOTICES.md` and a verbatim licence file per
+  borrowed work in `third-party/licenses/`, linked from the README credits. `LICENSE-MIT` is
+  gone: one MIT text per project is more honest than one file with five copyright lines.
+- **The Python sidecar moved into its modules.** `sidecar/` is gone; `main.py` and the venv
+  script live in `src/core/python/`, the editor bridge in `src/hammer/python/`, the asset
+  verbs in `src/assets/python/`, and the VMF/FGD/displacement verbs in `src/maps/python/`.
+  `main.py` puts every `src/*/python` on `sys.path`, so the imports stay plain.
+- **Path lookups no longer count directory levels.** `version.ts`, the sidecar client,
+  `health` and `install` all find the package root by walking up to `package.json`. Moving a
+  file into a module used to break all four at once, silently.
+  artwork, language bindings and CI configuration were removed — 20.5 MB down to
+  6.3 MB. GitHub counts C++ in the language stats on purpose.
+
 ## 0.0.86-alpha — 2026-11-18
 
 - **VPK without `vpk.exe`.** `read_vpk`, `run_vpk_extract` and `run_vpk_build` read and write

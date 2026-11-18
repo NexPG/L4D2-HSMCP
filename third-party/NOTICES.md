@@ -22,7 +22,7 @@ those notices.
 | [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | The live Hammer shell-channel protocol: `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` text commands, `WM_COMMAND` menu ids, session/version handling, process and window discovery. Ported and adapted to `sidecar/hammer_live.py` and `src/tools/hammerlive.ts`. |
 | [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | [MIT](licenses/hammer-mcp-sycatle-MIT.txt) | The original project this repository grew out of; the parts of that tree that survive here. See `NOTICE`. |
 | [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | [MIT](licenses/srctools-MIT.txt) (excluding `libsquish/`, which has its own) | The Python sidecar's BSP, VPK, VTF, FGD and VMF readers. Installed as a dependency, not vendored as source. |
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | Source format libraries vendored in `modules/formats/native/sourcepp/`. The VTF image-format table in `src/bsp/vtf.ts` is taken from `vtfpp/ImageFormats.h`; VPK, BSP and MDL structure come from `vpkpp`, `bsppp` and `mdlpp`. |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | Source format libraries vendored in `src/formats/cpp/sourcepp/`. The VTF image-format table in `src/bsp/vtf.ts` is taken from `vtfpp/ImageFormats.h`; VPK, BSP and MDL structure come from `vpkpp`, `bsppp` and `mdlpp`. |
 
 ### Licence texts
 
@@ -52,7 +52,7 @@ table is updated in the same commit.
 ### Vendored trees that are not built
 
 compiled by this project's build and are not included in the published npm package, which
-ships `dist/` alone. `../modules/README.md` records the exact commands for building them and
+ships `dist/` alone. `../src/README.md` records the exact commands for building them and
 the submodules CMake fetches at configure time.
 
 ## Projects reviewed but not copied

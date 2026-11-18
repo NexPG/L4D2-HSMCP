@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IMAGE_KEY } from "@projectsociety/mcp-core";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { decodePng } from "../../src/render/png.js";
-import { renderVmfPlanTool } from "../../src/tools/plan.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { decodePng } from "../../src/maps/typescript/render/png.js";
+import { renderVmfPlanTool } from "../../src/maps/typescript/tools/plan.js";
 import { ctx as sharedCtx } from "../support/env.js";
 import { ROOMS, roomsVmf } from "../support/rooms.js";
 

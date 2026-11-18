@@ -1,9 +1,9 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IMAGE_KEY } from "@projectsociety/mcp-core";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { decodePng } from "../../src/render/png.js";
-import { renderVmfViewTool } from "../../src/tools/render.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { decodePng } from "../../src/maps/typescript/render/png.js";
+import { renderVmfViewTool } from "../../src/maps/typescript/tools/render.js";
 import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

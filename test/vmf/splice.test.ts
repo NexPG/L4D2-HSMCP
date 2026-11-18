@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySplices, SpliceError } from "../../src/vmf/splice.js";
+import { applySplices, SpliceError } from "../../src/maps/typescript/vmf/splice.js";
 
 const TEXT = "abcdefghij";
 

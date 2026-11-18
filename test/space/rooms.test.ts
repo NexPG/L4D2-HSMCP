@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { classify, FLOOR_COSINE, kindOf } from "../../src/space/classify.js";
-import { portalWidth } from "../../src/space/measure.js";
-import { findRooms, clearanceField } from "../../src/space/rooms.js";
-import { buildScene } from "../../src/space/scene.js";
-import { cellIndex, voxelise, VoxelBudgetError } from "../../src/space/voxel.js";
-import type { VoxelGrid } from "../../src/space/voxel.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import type { Vec3 } from "../../src/vmf/solid.js";
+import { classify, FLOOR_COSINE, kindOf } from "../../src/maps/typescript/space/classify.js";
+import { portalWidth } from "../../src/maps/typescript/space/measure.js";
+import { findRooms, clearanceField } from "../../src/maps/typescript/space/rooms.js";
+import { buildScene } from "../../src/maps/typescript/space/scene.js";
+import { cellIndex, voxelise, VoxelBudgetError } from "../../src/maps/typescript/space/voxel.js";
+import type { VoxelGrid } from "../../src/maps/typescript/space/voxel.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import type { Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 import { ROOMS, roomsVmf } from "../support/rooms.js";
 
 /** The seed is the corridor's middle, which is where the fixture puts info_player_start. */

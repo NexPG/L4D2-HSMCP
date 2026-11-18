@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Config } from "../../src/config.js";
-import { callSidecar, probeSidecar, pythonPath, SidecarError } from "../../src/sidecar/client.js";
+import type { Config } from "../../src/core/typescript/config.js";
+import { callSidecar, probeSidecar, pythonPath, SidecarError } from "../../src/core/typescript/sidecar/client.js";
 import { config as sharedConfig, has } from "../support/env.js";
 
 /**

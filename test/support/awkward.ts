@@ -27,8 +27,8 @@
  * brushes are built by `insertSolids`, which is proven, and only the *formatting* is made
  * hostile afterwards. What is under test is the shape of the file, not its contents.
  */
-import { insertSolids } from "../../src/vmf/build.js";
-import { applyVmfOps } from "../../src/vmf/edit.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
 
 const SEED =
   'versioninfo\n{\n\t"editorversion" "400"\n}\nvisgroups\n{\n}\nworld\n{\n\t"id" "1"\n' +

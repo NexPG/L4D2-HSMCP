@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CampaignFormatError, missionFromSpec, serializeMission } from "../../src/campaign/mission.js";
+import { CampaignFormatError, missionFromSpec, serializeMission } from "../../src/campaigns/typescript/campaign/mission.js";
 
 const BASE = {
   name: "TestCampaign",

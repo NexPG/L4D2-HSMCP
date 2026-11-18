@@ -2,11 +2,11 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { applyVmfOps, maxId, readEntities } from "../../src/vmf/edit.js";
-import { VmfEditError } from "../../src/vmf/edit.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { editVmf } from "../../src/tools/vmfedit.js";
-import { readVmf, readVmfLint } from "../../src/tools/vmf.js";
+import { applyVmfOps, maxId, readEntities } from "../../src/maps/typescript/vmf/edit.js";
+import { VmfEditError } from "../../src/maps/typescript/vmf/edit.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
+import { readVmf, readVmfLint } from "../../src/maps/typescript/tools/vmf.js";
 import { FIXTURES, ctx as sharedCtx, has, paths } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

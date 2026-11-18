@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { runStudiomdlTool } from "../../src/tools/studiomdl.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

@@ -3,14 +3,14 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseEntityText, readEntityLump } from "../../src/bsp/entities.js";
+import { parseEntityText, readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
 import {
   BspFormatError,
   HEADER_BYTES,
   MAP_REVISION_OFFSET,
   readHeader,
-} from "../../src/bsp/header.js";
-import { histogram } from "../../src/entity/model.js";
+} from "../../src/maps/typescript/bsp/header.js";
+import { histogram } from "../../src/maps/typescript/entity/model.js";
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");

@@ -21,9 +21,9 @@ import {
   qcModelName,
   qcSequences,
   walkQc,
-} from "../../src/formats/qc.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readQcTool, writeQcTool } from "../../src/tools/qc.js";
+} from "../../src/formats/typescript/formats/qc.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readQcTool, writeQcTool } from "../../src/models/typescript/tools/qc.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

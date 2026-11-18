@@ -16,14 +16,14 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { writeVmfFittingTool } from "../../src/tools/build.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { writeVmfFittingTool } from "../../src/maps/typescript/tools/build.js";
 import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
-import { COUNTER, DOOR, TRIM } from "../../src/vmf/fittings/dimensions.js";
-import { expandFitting } from "../../src/vmf/fittings/index.js";
-import type { FittingSpec } from "../../src/vmf/fittings/index.js";
-import { checkAssembly, interiorsMeet, touch } from "../../src/vmf/fittings/integrity.js";
-import type { Part } from "../../src/vmf/fittings/integrity.js";
+import { COUNTER, DOOR, TRIM } from "../../src/maps/typescript/vmf/fittings/dimensions.js";
+import { expandFitting } from "../../src/maps/typescript/vmf/fittings/index.js";
+import type { FittingSpec } from "../../src/maps/typescript/vmf/fittings/index.js";
+import { checkAssembly, interiorsMeet, touch } from "../../src/maps/typescript/vmf/fittings/integrity.js";
+import type { Part } from "../../src/maps/typescript/vmf/fittings/integrity.js";
 
 const part = (name: string, mins: Part["mins"], maxs: Part["maxs"]): Part => ({ name, mins, maxs });
 

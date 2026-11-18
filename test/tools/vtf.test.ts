@@ -10,8 +10,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readVtfTool, runVtfConvert } from "../../src/tools/vtf.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readVtfTool, runVtfConvert } from "../../src/textures/typescript/tools/vtf.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

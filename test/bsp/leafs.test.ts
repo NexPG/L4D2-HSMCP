@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { readGeometry } from "../../src/bsp/geometry.js";
-import { readHeader } from "../../src/bsp/header.js";
+import { readGeometry } from "../../src/maps/typescript/bsp/geometry.js";
+import { readHeader } from "../../src/maps/typescript/bsp/header.js";
 import { FIXTURES, has, paths } from "../support/env.js";
 import { lumpFields } from "../support/lumps.js";
 

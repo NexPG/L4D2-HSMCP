@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck, Vec3 } from "../../src/vmf/solid.js";
-import { moveVertices, VmfVertexError } from "../../src/vmf/vertex.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck, Vec3 } from "../../src/maps/typescript/vmf/solid.js";
+import { moveVertices, VmfVertexError } from "../../src/maps/typescript/vmf/vertex.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

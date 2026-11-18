@@ -14,7 +14,7 @@ import { mkdtempSync, mkdirSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildFreshness, newestMtime } from "../../src/version.js";
+import { buildFreshness, newestMtime } from "../../src/core/typescript/version.js";
 
 /** Seconds since the epoch, so `utimesSync` and the assertions speak the same units. */
 function stamp(dir: string, name: string, seconds: number): string {

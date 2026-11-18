@@ -17,9 +17,9 @@
  * source; issue #48 has the session.
  */
 import { describe, expect, it } from "vitest";
-import { findRooms } from "../../src/space/rooms.js";
-import { REACHED, SOLID } from "../../src/space/voxel.js";
-import type { VoxelGrid } from "../../src/space/voxel.js";
+import { findRooms } from "../../src/maps/typescript/space/rooms.js";
+import { REACHED, SOLID } from "../../src/maps/typescript/space/voxel.js";
+import type { VoxelGrid } from "../../src/maps/typescript/space/voxel.js";
 
 /**
  * A floor plan as text: `#` is solid, anything else is a cell a person can stand in.

@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { readEntityLump } from "../../src/bsp/entities.js";
-import { readModels, worldExtents } from "../../src/bsp/models.js";
+import { readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
+import { readModels, worldExtents } from "../../src/models/typescript/bsp/models.js";
 import {
   columnSurfaces,
   CONTENTS_SOLID,
@@ -10,10 +10,10 @@ import {
   pointContents,
   readTree,
   traceRay,
-} from "../../src/bsp/trace.js";
-import type { Vec3 } from "../../src/entity/model.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readSightlines } from "../../src/tools/measure.js";
+} from "../../src/maps/typescript/bsp/trace.js";
+import type { Vec3 } from "../../src/maps/typescript/entity/model.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readSightlines } from "../../src/maps/typescript/tools/measure.js";
 import { FIXTURES, ctx as sharedCtx, has, paths } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");

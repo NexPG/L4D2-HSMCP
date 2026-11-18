@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { KvSyntaxError, lex } from "../../src/kv/lex.js";
-import { children, get, getAll, pairs, parse } from "../../src/kv/parse.js";
-import type { KvBlock } from "../../src/kv/parse.js";
-import { findOffsetGaps, serialize } from "../../src/kv/serialize.js";
+import { KvSyntaxError, lex } from "../../src/formats/typescript/kv/lex.js";
+import { children, get, getAll, pairs, parse } from "../../src/formats/typescript/kv/parse.js";
+import type { KvBlock } from "../../src/formats/typescript/kv/parse.js";
+import { findOffsetGaps, serialize } from "../../src/formats/typescript/kv/serialize.js";
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 

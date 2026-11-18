@@ -2,7 +2,7 @@
 
 Every licence, notice and obligation that came with code we did not write, in one place.
 No source code lives here: the borrowed implementations belong to the module they serve
-(see [`../modules/`](../modules/README.md)), under the same licence recorded here.
+(see [`../src/README.md`](../src/README.md)), under the same licence recorded here.
 
 > **Licence compliance is mandatory.** `CONTRIBUTING.md` makes it rule 0 and
 > [`NOTICES.md`](NOTICES.md) is the authoritative record. A project with no licence cannot be
@@ -23,7 +23,7 @@ module whose job it does:
 
 | Module | What it does | Borrowed parts |
 |---|---|---|
-| [`modules/formats`](../modules/formats/) | Reading and writing Source file formats | `native/sourcepp` — MIT, © 2023 Laura Lewis |
+| [`src/formats`](../src/formats/) | Reading and writing Source file formats | `native/sourcepp` — MIT, © 2023 Laura Lewis |
 
 Each of those directories keeps its upstream `LICENSE` file next to the source, as MIT and the
 GPL require. Editing them is allowed — the licences permit modification — but a change must

@@ -1,0 +1,224 @@
+import { existsSync, readFileSync } from "node:fs";
+import { z } from "zod";
+import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { checkRules } from "../rules/check.js";
+import { CHECKS, parseRules, RULES_VERSION, rulesPathFor } from "../rules/schema.js";
+import { buildScene } from "../space/scene.js";
+import type { Scene } from "../space/scene.js";
+import type { Vec3 } from "../vmf/solid.js";
+import { resolveVmfInput } from "../../../core/typescript/tools/paths.js";
+
+const cache = new Map<string, { source: string; scene: Scene }>();
+
+function sceneFor(path: string): { scene: Scene; source: string } {
+  const source = readFileSync(path, "utf8");
+  const hit = cache.get(path);
+  if (hit && hit.source === source) return { scene: hit.scene, source };
+  const scene = buildScene(path, source);
+  cache.set(path, { source, scene });
+  return { scene, source };
+}
+
+export const checkVmfRulesTool = defineTool({
+  name: "check_vmf_rules",
+  description:
+    "Checks a .vmf against ITS OWN rules file -- `<map>.rules.json`, a sibling of the .vmf. " +
+    "'Four metres of pavement, no entrance obstructed, the view from the lobby preserved' is " +
+    "a design brief, and this is the form of it a machine can check. Per map and never " +
+    "global: a residential street and a warehouse have different right answers for every " +
+    "number, and a shared default would be wrong for both while looking authoritative. No " +
+    "rules file means NO checking, not checking against something reasonable. It REPORTS: " +
+    "the writing tools do not consult it and must not, because a mapper may want a narrow " +
+    "alley. Every violation carries the worst point, so render_vmf_view or render_vmf_plan " +
+    "can be pointed straight at it. Read `overall`, not `errorCount`: a run in which some " +
+    "rule matched nothing comes back 'skipped', never 'pass'.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    rulesPath: z
+      .string()
+      .optional()
+      .describe("Override the sibling file. There is no search up the directory tree."),
+    severity: z
+      .enum(["error", "warning", "info", "all"])
+      .default("all")
+      .describe("Report only violations at least this severe."),
+    seeds: z
+      .array(z.array(z.number()).length(3))
+      .optional()
+      .describe("Points inside the map, for rules about rooms. Default: the spawn entities."),
+    minRoomArea: z
+      .number()
+      .min(0)
+      .default(4096)
+      .describe(
+        "Below this floor area, in square units, a region is merged into its largest " +
+          "neighbour. The same knob read_vmf_rooms takes: pass both the same value, or a " +
+          "diagnosis and the verdict it explains are about different segmentations.",
+      ),
+    eyeHeight: z
+      .number()
+      .min(0)
+      .max(256)
+      .default(64)
+      .describe(
+        "Height above each end's origin that a sightline is traced at. Source's own eye " +
+          "is 64. It is in every sightline violation's message, because a rule that fails " +
+          "on a lintel is otherwise indistinguishable from one that fails on a wall.",
+      ),
+    step: z.number().int().min(4).max(128).default(16),
+    maxCells: z.number().int().min(1000).max(64_000_000).default(4_000_000),
+    limit: z.number().int().min(1).max(500).default(100),
+  },
+  outputSchema: {
+    path: z.string(),
+    rulesPath: z.string(),
+    /**
+     * One word for the whole run, in `read_map_report`'s vocabulary.
+     *
+     * `errorCount: 0` means three different things -- every rule checked and passed, no
+     * rules file at all, or some rules that matched nothing -- and a caller reading the
+     * count alone cannot tell them apart. One did not: on 13/08/2026 an agent building a
+     * map read zero errors on a run where one rule in seven had checked nothing, and
+     * took it for compliance.
+     */
+    overall: z.enum(["pass", "warn", "fail", "skipped"]),
+    /** What the room pass actually found, for the rules that needed it. */
+    segmentation: z
+      .object({ rooms: z.number(), portals: z.number(), step: z.number() })
+      .nullable(),
+    rulesFound: z.boolean(),
+    rulesChecked: z.number(),
+    matchedNothing: z.array(z.string()),
+    errorCount: z.number(),
+    warningCount: z.number(),
+    reported: z.number(),
+    violations: z.array(
+      z.object({
+        ruleId: z.string(),
+        severity: z.string(),
+        what: z.string(),
+        subject: z.string(),
+        required: z.string(),
+        measured: z.number().nullable(),
+        at: z.array(z.number()).nullable(),
+        message: z.string(),
+        note: z.string().optional(),
+        // How the measurement was taken, for the checks where a bare number is ambiguous.
+        // Absent for the ones where it is not (headroom, room area, sightline).
+        evidence: z
+          .object({
+            hullFits: z.boolean(),
+            startsInside: z
+              .object({ brushId: z.number(), owner: z.string() })
+              .nullable(),
+            blockedBy: z
+              .object({ brushId: z.number().nullable(), material: z.string().nullable() })
+              .nullable()
+              .optional(),
+            facing: z.array(z.number()).optional(),
+            yawDegrees: z.number().optional(),
+            assumedHull: z.array(z.number()),
+          })
+          .optional(),
+      }),
+    ),
+    notes: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const rulesPath = args.rulesPath ? resolveVmfInput(args.rulesPath, ctx.config) : rulesPathFor(path);
+
+    if (!existsSync(rulesPath)) {
+      // Not an error. A map without rules is the normal case, and inventing a bar to judge
+      // it against would be worse than saying nothing.
+      return {
+        path,
+        rulesPath,
+        overall: "skipped" as const,
+        segmentation: null,
+        rulesFound: false,
+        rulesChecked: 0,
+        matchedNothing: [],
+        errorCount: 0,
+        warningCount: 0,
+        reported: 0,
+        violations: [],
+        notes: [
+          `No rules file at ${rulesPath}, so nothing was checked. That is the honest answer: ` +
+            `there is no built-in bar, because the right width for a corridor depends on ` +
+            `what the map is. Write one as JSON with {"version": ${RULES_VERSION}, "rules": ` +
+            `[...]}; the checks available are ${CHECKS.join(", ")}.`,
+        ],
+      };
+    }
+
+    const file = parseRules(readFileSync(rulesPath, "utf8"), rulesPath);
+    const { scene, source } = sceneFor(path);
+    const report = checkRules(scene, source, file, {
+      eyeHeight: args.eyeHeight,
+      step: args.step,
+      minRoomArea: args.minRoomArea,
+      maxCells: args.maxCells,
+      seeds: args.seeds as Vec3[] | undefined,
+    });
+
+    const order = { error: 0, warning: 1, info: 2 } as const;
+    const wanted =
+      args.severity === "all"
+        ? report.violations
+        : report.violations.filter(
+            (v) => order[v.severity] <= order[args.severity as "error" | "warning" | "info"],
+          );
+    const sorted = [...wanted].sort((a, b) => order[a.severity] - order[b.severity]);
+
+    // `skipped` outranks `warn` on purpose. A warning is a finding this run stands
+    // behind; an unmatched rule is a hole in the run itself, and a caller told "warn"
+    // would believe everything else had been judged. `fail` outranks both: a violation
+    // that stands is the answer whatever else was incomplete.
+    const overall =
+      report.errorCount > 0
+        ? ("fail" as const)
+        : report.matchedNothing.length > 0 || report.checked === 0
+          ? ("skipped" as const)
+          : report.warningCount > 0
+            ? ("warn" as const)
+            : ("pass" as const);
+
+    return {
+      path,
+      rulesPath,
+      overall,
+      segmentation: report.segmentation,
+      rulesFound: true,
+      rulesChecked: report.checked,
+      matchedNothing: report.matchedNothing,
+      errorCount: report.errorCount,
+      warningCount: report.warningCount,
+      reported: Math.min(sorted.length, args.limit),
+      violations: sorted.slice(0, args.limit).map((v) => ({
+        ruleId: v.ruleId,
+        severity: v.severity,
+        what: v.what,
+        subject: v.subject,
+        required: v.required,
+        measured: v.measured,
+        at: v.at ? [...v.at] : null,
+        message: v.message,
+        ...(v.note === undefined ? {} : { note: v.note }),
+        ...(v.evidence === undefined
+          ? {}
+          : {
+              evidence: {
+                ...v.evidence,
+                ...(v.evidence.facing ? { facing: [...v.evidence.facing] } : {}),
+                assumedHull: [...v.evidence.assumedHull],
+              },
+            }),
+      })),
+      notes: report.notes,
+    };
+  },
+});
+
+export const rulesTools = [checkVmfRulesTool];

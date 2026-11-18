@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.86--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.87--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -92,7 +92,7 @@ git clone https://github.com/NexPG/L4D2-HSMCP
 cd L4D2-HSMCP
 pnpm install
 pnpm build
-powershell -ExecutionPolicy Bypass -File sidecar/setup.ps1
+powershell -ExecutionPolicy Bypass -File src/core/python/setup.ps1
 node dist/index.js install
 ```
 

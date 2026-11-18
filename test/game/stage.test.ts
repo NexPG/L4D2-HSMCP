@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { hideFiles, restoreFiles, stageMapPair } from "../../src/game/stage.js";
+import { hideFiles, restoreFiles, stageMapPair } from "../../src/packages/typescript/game/stage.js";
 
 const made: string[] = [];
 function tempDir(): string {

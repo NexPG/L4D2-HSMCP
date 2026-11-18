@@ -2,8 +2,8 @@ import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readVmf, readVmfLint } from "../../src/tools/vmf.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readVmf, readVmfLint } from "../../src/maps/typescript/tools/vmf.js";
 import { FIXTURES, ctx as sharedCtx, has } from "../support/env.js";
 
 const PROBE_VMF = join(FIXTURES, "hmcp_probe.vmf");

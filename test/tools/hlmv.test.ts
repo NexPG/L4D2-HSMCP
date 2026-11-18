@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { runHlmvTool } from "../../src/tools/hlmv.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { runHlmvTool } from "../../src/hammer/typescript/tools/hlmv.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

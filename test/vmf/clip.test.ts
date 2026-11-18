@@ -2,12 +2,12 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { runCompile } from "../../src/tools/compile.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { clipSolids, VmfClipError } from "../../src/vmf/clip.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { Plane, SolidCheck, Vec3 } from "../../src/vmf/solid.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { runCompile } from "../../src/maps/typescript/tools/compile.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { clipSolids, VmfClipError } from "../../src/maps/typescript/vmf/clip.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { Plane, SolidCheck, Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx, FIXTURES, has } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

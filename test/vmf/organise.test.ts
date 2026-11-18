@@ -7,10 +7,10 @@ import {
   setCordon,
   setVisgroup,
   VmfOrganiseError,
-} from "../../src/vmf/organise.js";
-import { applyVmfOps } from "../../src/vmf/edit.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck } from "../../src/vmf/solid.js";
+} from "../../src/maps/typescript/vmf/organise.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck } from "../../src/maps/typescript/vmf/solid.js";
 import { FIXTURES, paths } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

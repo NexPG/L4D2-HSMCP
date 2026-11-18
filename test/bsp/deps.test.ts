@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readMapDependenciesTool } from "../../src/tools/deps.js";
-import { callSidecar } from "../../src/sidecar/client.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readMapDependenciesTool } from "../../src/maps/typescript/tools/deps.js";
+import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
 import { config, ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");

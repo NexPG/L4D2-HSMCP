@@ -3,15 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { ToolContext } from "../../src/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
   LIMITS,
   overallVerdict,
   reportMap,
   SOURCE_STOCK,
-} from "../../src/report/budget.js";
-import type { BudgetProfile } from "../../src/report/budget.js";
-import { readMapReportTool } from "../../src/tools/report.js";
+} from "../../src/maps/typescript/report/budget.js";
+import type { BudgetProfile } from "../../src/maps/typescript/report/budget.js";
+import { readMapReportTool } from "../../src/maps/typescript/tools/report.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 import { lumpFields } from "../support/lumps.js";
 

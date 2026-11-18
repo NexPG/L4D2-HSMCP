@@ -31,9 +31,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { readTree, traceRay as bspTrace } from "../../src/bsp/trace.js";
-import { buildScene } from "../../src/space/scene.js";
-import { traceRay as vmfTrace } from "../../src/space/trace.js";
+import { readTree, traceRay as bspTrace } from "../../src/maps/typescript/bsp/trace.js";
+import { buildScene } from "../../src/maps/typescript/space/scene.js";
+import { traceRay as vmfTrace } from "../../src/maps/typescript/space/trace.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE_VMF = join(FIXTURES, "hmcp_probe.vmf");

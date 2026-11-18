@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { insertSolids } from "../../src/vmf/build.js";
-import { cloneSolids, VmfCloneError } from "../../src/vmf/clone.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import { scaling, translation } from "../../src/vmf/transform.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { cloneSolids, VmfCloneError } from "../../src/maps/typescript/vmf/clone.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import { scaling, translation } from "../../src/maps/typescript/vmf/transform.js";
 
 const EMPTY = 'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';
 

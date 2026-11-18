@@ -3,18 +3,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { Config } from "../../src/config.js";
-import { assertWritable, FORBIDDEN_TREES, WriteRefused } from "../../src/fs/guard.js";
-import { isCallAllowed, ToolRegistry } from "../../src/mcp/registry.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { writeVmfSolidTool } from "../../src/tools/build.js";
-import { allTools } from "../../src/tools/index.js";
+import type { Config } from "../../src/core/typescript/config.js";
+import { assertWritable, FORBIDDEN_TREES, WriteRefused } from "../../src/core/typescript/fs/guard.js";
+import { isCallAllowed, ToolRegistry } from "../../src/core/typescript/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { writeVmfSolidTool } from "../../src/maps/typescript/tools/build.js";
+import { allTools } from "../../src/registry.js";
 import {
   setLightmapScaleTool,
   setSolidClassTool,
   writeHintBrushTool,
-} from "../../src/tools/optimise.js";
-import { editVmf } from "../../src/tools/vmfedit.js";
+} from "../../src/maps/typescript/tools/optimise.js";
+import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
 import { FIXTURES } from "../support/env.js";
 
 const REPO = mkdtempSync(join(tmpdir(), "hmcp-repo-"));

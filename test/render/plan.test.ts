@@ -1,15 +1,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { boxesOverlap, fitPage, labelBox, pointInPolygon } from "../../src/render/display.js";
-import type { Label, Polygon } from "../../src/render/display.js";
-import { glyphPixels, textWidth } from "../../src/render/font.js";
-import { paint } from "../../src/render/paint.js";
-import { areaOf, buildPlan, sectionOf } from "../../src/render/plan.js";
-import { toSvg } from "../../src/render/svg.js";
-import { buildScene } from "../../src/space/scene.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import type { Vec3 } from "../../src/vmf/solid.js";
+import { boxesOverlap, fitPage, labelBox, pointInPolygon } from "../../src/maps/typescript/render/display.js";
+import type { Label, Polygon } from "../../src/maps/typescript/render/display.js";
+import { glyphPixels, textWidth } from "../../src/maps/typescript/render/font.js";
+import { paint } from "../../src/maps/typescript/render/paint.js";
+import { areaOf, buildPlan, sectionOf } from "../../src/maps/typescript/render/plan.js";
+import { toSvg } from "../../src/maps/typescript/render/svg.js";
+import { buildScene } from "../../src/maps/typescript/space/scene.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import type { Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 import { FIXTURES } from "../support/env.js";
 import { ROOMS, roomsVmf } from "../support/rooms.js";
 

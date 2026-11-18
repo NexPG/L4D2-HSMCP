@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { readGeometry } from "../../src/bsp/geometry.js";
-import { locateLeak, readPointfile } from "../../src/compile/leak.js";
-import { parseCompileLog, stageClean } from "../../src/compile/log.js";
+import { readGeometry } from "../../src/maps/typescript/bsp/geometry.js";
+import { locateLeak, readPointfile } from "../../src/maps/typescript/compile/leak.js";
+import { parseCompileLog, stageClean } from "../../src/maps/typescript/compile/log.js";
 import {
   chooseToolchain,
   compilerExe,
@@ -14,10 +14,10 @@ import {
   toolchainDir,
   toWindowsPath,
   windowsInvocation,
-} from "../../src/compile/toolchain.js";
-import type { MapEntity } from "../../src/entity/model.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readLeak, runCompile } from "../../src/tools/compile.js";
+} from "../../src/maps/typescript/compile/toolchain.js";
+import type { MapEntity } from "../../src/maps/typescript/entity/model.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readLeak, runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { FIXTURES, config, ctx as sharedCtx, has, paths } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

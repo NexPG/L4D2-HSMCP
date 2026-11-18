@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DoorPlacementError, placeDoor } from "../../src/vmf/door.js";
+import { DoorPlacementError, placeDoor } from "../../src/maps/typescript/vmf/door.js";
 
 /** The hull `read_model_info` reports for checkpoint_door_02. */
 const CHECKPOINT_02 = {

@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { exportMap } from "../../src/vmf/mapfile.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+import { exportMap } from "../../src/maps/typescript/vmf/mapfile.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 import { FIXTURES } from "../support/env.js";
 
 const VMF = readFileSync(join(FIXTURES, "hmcp_probe.vmf"), "utf8");

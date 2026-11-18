@@ -20,9 +20,9 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Config } from "../../src/config.js";
-import { loadConfig } from "../../src/config.js";
-import { pythonPath } from "../../src/sidecar/client.js";
+import type { Config } from "../../src/core/typescript/config.js";
+import { loadConfig } from "../../src/core/typescript/config.js";
+import { pythonPath } from "../../src/core/typescript/sidecar/client.js";
 
 export const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 

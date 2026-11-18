@@ -2,10 +2,10 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
-import { writeVmfWaterTool } from "../../src/tools/water.js";
-import { placeDoorTool } from "../../src/tools/door.js";
+import { writeVmfWaterTool } from "../../src/maps/typescript/tools/water.js";
+import { placeDoorTool } from "../../src/maps/typescript/tools/door.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const ready = has.sidecar && has.gameContent;

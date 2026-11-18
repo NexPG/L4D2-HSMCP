@@ -19,10 +19,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { checkVmfRulesTool } from "../../src/tools/rules.js";
-import { readVmfLeakTool, readVmfRoomsTool } from "../../src/tools/scene.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { checkVmfRulesTool } from "../../src/maps/typescript/tools/rules.js";
+import { readVmfLeakTool, readVmfRoomsTool } from "../../src/scripts/typescript/tools/scene.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

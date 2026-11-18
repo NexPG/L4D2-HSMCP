@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { insertSolids } from "../../src/vmf/build.js";
-import { transformSolids } from "../../src/vmf/modify.js";
-import { rotation } from "../../src/vmf/transform.js";
-import { moveToSurface, VmfSnapError } from "../../src/vmf/snap.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { transformSolids } from "../../src/maps/typescript/vmf/modify.js";
+import { rotation } from "../../src/maps/typescript/vmf/transform.js";
+import { moveToSurface, VmfSnapError } from "../../src/maps/typescript/vmf/snap.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 
 const EMPTY =
   'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';

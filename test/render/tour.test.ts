@@ -12,15 +12,15 @@
  */
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { anglesTowards } from "../../src/render/camera.js";
-import { contactSheet } from "../../src/render/sheet.js";
-import type { Tile } from "../../src/render/sheet.js";
-import type { Framebuffer } from "../../src/render/raster.js";
-import { glyphPixels } from "../../src/render/font.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { renderVmfTourTool } from "../../src/tools/render.js";
-import { buildScene } from "../../src/space/scene.js";
-import { eyeAt, standingAt } from "../../src/space/measure.js";
+import { anglesTowards } from "../../src/maps/typescript/render/camera.js";
+import { contactSheet } from "../../src/maps/typescript/render/sheet.js";
+import type { Tile } from "../../src/maps/typescript/render/sheet.js";
+import type { Framebuffer } from "../../src/maps/typescript/render/raster.js";
+import { glyphPixels } from "../../src/maps/typescript/render/font.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { renderVmfTourTool } from "../../src/maps/typescript/tools/render.js";
+import { buildScene } from "../../src/maps/typescript/space/scene.js";
+import { eyeAt, standingAt } from "../../src/maps/typescript/space/measure.js";
 import { readFileSync } from "node:fs";
 import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
 

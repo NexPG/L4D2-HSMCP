@@ -3,11 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { readVisleafStats } from "../../src/bsp/visleaf.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { runCompile } from "../../src/tools/compile.js";
-import { writeHintBrushTool } from "../../src/tools/optimise.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+import { readVisleafStats } from "../../src/maps/typescript/bsp/visleaf.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { runCompile } from "../../src/maps/typescript/tools/compile.js";
+import { writeHintBrushTool } from "../../src/maps/typescript/tools/optimise.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx, FIXTURES, has } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { insertSolids } from "../../src/vmf/build.js";
-import { extractInstance, instanceFileKey, VmfInstanceError } from "../../src/vmf/instance.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { extractInstance, instanceFileKey, VmfInstanceError } from "../../src/maps/typescript/vmf/instance.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 
 const EMPTY =
   'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';

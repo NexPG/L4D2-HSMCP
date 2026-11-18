@@ -44,7 +44,7 @@ half the doorway stays open while the other half goes through the wall.
 - Use the jamb, about **2 units inside the opening**, as the entity origin.
 - With `angles "0 90 0"` the leaf's local +Y turns to world **-X**, so the hinge belongs on
   the **+X** jamb (x = opening.max - 2). Yaw 270 puts it on the -X jamb.
-- `placeDoor` in `src/vmf/door.ts` does this from `read_model_info` bounds and an opening;
+- `placeDoor` in `src/maps/typescript/vmf/door.ts` does this from `read_model_info` bounds and an opening;
   the build uses it for both checkpoint doors.
 - `read_vmf_lint` reports `l4d2-door-hinge-at-center` when the origin is more than 8 units
   from both jambs, and `l4d2-door-opening-too-wide` / `-too-narrow` for the fit.

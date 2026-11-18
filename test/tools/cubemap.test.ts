@@ -13,10 +13,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { readVtfHeader, VTF_ENVMAP } from "../../src/bsp/vtf.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { runCubemap2Hdr, runTga2Skybox, SKY_FACES } from "../../src/tools/cubemap.js";
-import { runPakfileExtract } from "../../src/tools/pakfile.js";
+import { readVtfHeader, VTF_ENVMAP } from "../../src/textures/typescript/bsp/vtf.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { runCubemap2Hdr, runTga2Skybox, SKY_FACES } from "../../src/textures/typescript/tools/cubemap.js";
+import { runPakfileExtract } from "../../src/packages/typescript/tools/pakfile.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

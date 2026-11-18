@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapVerticesPlus, stripVerticesPlus } from "../../src/vmf/precision.js";
+import { mapVerticesPlus, stripVerticesPlus } from "../../src/maps/typescript/vmf/precision.js";
 
 const BLOCK = [
   "\t\t\tvertices_plus",

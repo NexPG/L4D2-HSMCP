@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { LUMP_SPECS, readGeometry } from "../../src/bsp/geometry.js";
+import { LUMP_SPECS, readGeometry } from "../../src/maps/typescript/bsp/geometry.js";
 import { FIXTURES, has, paths } from "../support/env.js";
 
 const LIGHTING = 8;

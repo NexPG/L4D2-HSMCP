@@ -2,9 +2,9 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import { PRECIPITATION_TYPES, writeWeather } from "../../src/tools/weather.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import { PRECIPITATION_TYPES, writeWeather } from "../../src/scripts/typescript/tools/weather.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

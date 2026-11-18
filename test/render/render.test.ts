@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { basisOf, planeScale, project, rayThrough } from "../../src/render/camera.js";
-import type { Camera } from "../../src/render/camera.js";
-import { decodePng, encodePng } from "../../src/render/png.js";
-import { colourFor, displayList, NO_BRUSH, render } from "../../src/render/raster.js";
-import { buildScene, MASK_SIGHT } from "../../src/space/scene.js";
-import { traceRay } from "../../src/space/trace.js";
-import { insertSolids } from "../../src/vmf/build.js";
+import { basisOf, planeScale, project, rayThrough } from "../../src/maps/typescript/render/camera.js";
+import type { Camera } from "../../src/maps/typescript/render/camera.js";
+import { decodePng, encodePng } from "../../src/maps/typescript/render/png.js";
+import { colourFor, displayList, NO_BRUSH, render } from "../../src/maps/typescript/render/raster.js";
+import { buildScene, MASK_SIGHT } from "../../src/maps/typescript/space/scene.js";
+import { traceRay } from "../../src/maps/typescript/space/trace.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

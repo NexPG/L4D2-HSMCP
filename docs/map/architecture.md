@@ -1,16 +1,19 @@
 # Architecture
 
 ```
-src/kv/{lex,parse,serialize}.ts    Valve KeyValues, source offsets preserved
-src/bsp/{header,entities,...}.ts   offset readers, never the whole file
-src/lmp/codec.ts                   the lump-file codec
-src/entity/{model,edit}.ts         the entity model shared by all three formats
-src/vmf/edit.ts                    the VMF write path
-src/games/{steam,profile,resolve}  discovering and resolving game profiles
-src/fs/guard.ts                    assertWritable -- the single chokepoint
-src/mcp/{registry,server}.ts       MCP plumbing
-src/tools/*.ts                     tool definitions
+src/<module>/typescript/…          see src/README.md for the module map
+src/formats/typescript/kv/         KeyValues, source offsets preserved
+src/maps/typescript/bsp/           offset readers, never the whole file
+src/maps/typescript/entity/        the entity model shared by all three formats
+src/maps/typescript/vmf/           the VMF read and write paths
+src/core/typescript/games/         discovering and resolving game profiles
+src/core/typescript/fs/guard.ts    assertWritable -- the single chokepoint
+src/core/typescript/mcp/           MCP plumbing
 ```
+
+A module owns its tools in `<module>/typescript/tools/`; there is no shared `tools/` pile
+any more. Language is a subdirectory, not a separation: `src/hammer/python/` and
+`src/hammer/typescript/` are the same module.
 
 ## Splicing
 
@@ -24,7 +27,7 @@ So the AST keeps `[start, end)` for every block and every pair, and edits are ra
 applied right to left. **Everything untouched is byte-identical by construction.** Only brand-new
 blocks are formatted.
 
-One implementation of that, in `src/vmf/splice.ts`. It used to be three, one per write module, and
+One implementation of that, in `src/maps/typescript/vmf/splice.ts`. It used to be three, one per write module, and
 neither copy did the two things the single one does: it **refuses overlapping ranges** rather than
 producing text that depends on which sorted first, and it resolves ties at one offset **in push
 order** rather than backwards. Both cases are reachable through `applyVmfOps` — an op that removes
@@ -89,7 +92,7 @@ The only write targets are the state directory, the patch output directory, and 
 passes explicitly. Two trees are refused outright.
 
 ⚠️ **Those tree names are the ones this server was built for, and they are currently hard-coded**
-(`src/fs/guard.ts`, `src/tools/lmp.ts`). On any other repository they name nothing: the guard then
+(`src/core/typescript/fs/guard.ts`). On any other repository they name nothing: the guard then
 refuses nothing, and lump patches land in a directory that did not exist. Making them configurable
 is identified work, not finished work — said here rather than discovered.
 
@@ -98,15 +101,15 @@ replaced by a `validate` or a branch change, so anything of ours living there wo
 warning. What is ours lives elsewhere and is deployed into place by a script.
 
 **This is discipline, not enforcement.** An editor hook intercepts Edit/Write tools; it does not
-see a `node:fs` call inside an MCP server. Hence `src/fs/guard.ts`: a single `assertWritable()` every
+see a `node:fs` call inside an MCP server. Hence `src/core/typescript/fs/guard.ts`: a single `assertWritable()` every
 write passes through, which resolves symlinks before judging — addon directories are often symlinks
 into another tree, so a lexically innocent path can land in the managed one — plus a contract test
 that asserts it on resolved paths.
 
 ## Shared plumbing
 
-`src/mcp/registry.ts`, `src/mcp/server.ts`, `src/config.ts`, `src/logger.ts`, `src/install.ts` and
-`src/proc/run.ts` were adapted copies of another MCP server's, duplicated **deliberately**: a
+`src/core/typescript/mcp/registry.ts`, `src/core/typescript/mcp/server.ts`, `src/core/typescript/config.ts`, `src/core/typescript/logger.ts`, `src/core/typescript/install.ts` and
+`src/core/typescript/proc/run.ts` were adapted copies of another MCP server's, duplicated **deliberately**: a
 shared package looked premature for ~350 lines across two repositories. The revision threshold
 written down at the time was "a third MCP server, or the same plumbing bug fixed twice".
 
@@ -115,7 +118,7 @@ other side, `stripAnsi()` on only one, the image block on only the other) and an
 `^1.12` to `1.30` would have had to be done and proven twice. Those six files are now three-line
 adapters over [`@projectsociety/mcp-core`](https://github.com/ProjectSocietyStudio/mcp-core).
 
-What does **not** move into the core: `src/fs/guard.ts`, specific to our write trees, and the
+What does **not** move into the core: `src/core/typescript/fs/guard.ts`, specific to our write trees, and the
 `Realm` enum — `map`/`local` stays deliberately distinct from the live-engine server's
 `sv`/`cl`/`local`. The lifecycles do not merge either: that server holds a lock and a transport
 into a running engine; this one is stateless. **Two servers, one core.**

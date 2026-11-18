@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { clipSolids } from "../../src/vmf/clip.js";
-import { applyVmfOps } from "../../src/vmf/edit.js";
-import { alignFaces, resolveFaces, setFaceMaterial, setSmoothingGroups } from "../../src/vmf/face.js";
-import { hollowSolid } from "../../src/vmf/hollow.js";
-import { setLightmapScale } from "../../src/vmf/lightmap.js";
-import { deleteSolids, transformSolids } from "../../src/vmf/modify.js";
-import { groupSolids, readOrganisation, setCordon, setVisgroup } from "../../src/vmf/organise.js";
-import { reclassSolids } from "../../src/vmf/reclass.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck } from "../../src/vmf/solid.js";
-import { rotation, translation } from "../../src/vmf/transform.js";
-import { moveVertices } from "../../src/vmf/vertex.js";
+import { clipSolids } from "../../src/maps/typescript/vmf/clip.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
+import { alignFaces, resolveFaces, setFaceMaterial, setSmoothingGroups } from "../../src/maps/typescript/vmf/face.js";
+import { hollowSolid } from "../../src/maps/typescript/vmf/hollow.js";
+import { setLightmapScale } from "../../src/maps/typescript/vmf/lightmap.js";
+import { deleteSolids, transformSolids } from "../../src/maps/typescript/vmf/modify.js";
+import { groupSolids, readOrganisation, setCordon, setVisgroup } from "../../src/maps/typescript/vmf/organise.js";
+import { reclassSolids } from "../../src/maps/typescript/vmf/reclass.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck } from "../../src/maps/typescript/vmf/solid.js";
+import { rotation, translation } from "../../src/maps/typescript/vmf/transform.js";
+import { moveVertices } from "../../src/maps/typescript/vmf/vertex.js";
 import { AWKWARD_CENTRED, AWKWARD_OFFSET, AWKWARD_VMF } from "../support/awkward.js";
 
 const read = (text: string): SolidCheck[] => checkVmfSolids("x", text).solids;

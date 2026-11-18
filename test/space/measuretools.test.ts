@@ -2,13 +2,13 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ToolContext } from "../../src/mcp/registry.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
   measureVmfApproachTool,
   measureVmfClearanceTool,
   readVmfSightlinesTool,
-} from "../../src/tools/measurespace.js";
-import { applyVmfOps } from "../../src/vmf/edit.js";
+} from "../../src/maps/typescript/tools/measurespace.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
 import { ctx as sharedCtx } from "../support/env.js";
 import { ROOMS, roomsVmf } from "../support/rooms.js";
 

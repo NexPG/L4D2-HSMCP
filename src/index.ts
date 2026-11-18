@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadConfig } from "./config.js";
-import { runInstall } from "./install.js";
-import { AuditLog } from "./logger.js";
-import { ToolRegistry } from "./mcp/registry.js";
-import type { ToolContext } from "./mcp/registry.js";
-import { createMcpServer } from "./mcp/server.js";
+import { loadConfig } from "./core/typescript/config.js";
+import { runInstall } from "./core/typescript/install.js";
+import { AuditLog } from "./core/typescript/logger.js";
+import { ToolRegistry } from "./core/typescript/mcp/registry.js";
+import type { ToolContext } from "./core/typescript/mcp/registry.js";
+import { createMcpServer } from "./core/typescript/mcp/server.js";
 
 /**
  * Handed to the client at connection time.
@@ -28,9 +28,9 @@ large map would stall this transport.
 Realms: \`map\` is pure file work, \`local\` shells out to a host binary. Tools that write
 or execute are guarded and take confirm:true. It never talks to a running game or a
 dedicated server and holds no lock.`;
-import { allTools } from "./tools/index.js";
-import { preapprove } from "./mcp/preapprove.js";
-import { VERSION } from "./version.js";
+import { allTools } from "./registry.js";
+import { preapprove } from "./core/typescript/mcp/preapprove.js";
+import { VERSION } from "./core/typescript/version.js";
 
 /**
  * Entry point of the l4d2-hsmcp MCP server (stdio transport, local-first).

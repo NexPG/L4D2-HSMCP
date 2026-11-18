@@ -14,7 +14,7 @@ import {
   TRIM,
   UNITS_PER_INCH,
   fromInches,
-} from "../../src/vmf/fittings/dimensions.js";
+} from "../../src/maps/typescript/vmf/fittings/dimensions.js";
 
 describe("the measured dimensions", () => {
   /**

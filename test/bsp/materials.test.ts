@@ -3,11 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { readMaterials } from "../../src/bsp/materials.js";
-import { BspFormatError } from "../../src/bsp/header.js";
-import { LZMA_MAGIC } from "../../src/bsp/header.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readMaterialsTool } from "../../src/tools/materials.js";
+import { readMaterials } from "../../src/textures/typescript/bsp/materials.js";
+import { BspFormatError } from "../../src/maps/typescript/bsp/header.js";
+import { LZMA_MAGIC } from "../../src/maps/typescript/bsp/header.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readMaterialsTool } from "../../src/textures/typescript/tools/materials.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 import { lumpFields } from "../support/lumps.js";
 

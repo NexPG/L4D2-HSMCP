@@ -8,12 +8,12 @@ import {
   nearestObstacle,
   sweep,
   widthAcross,
-} from "../../src/space/measure.js";
-import { findRooms } from "../../src/space/rooms.js";
-import { buildScene, MASK_PLAYER } from "../../src/space/scene.js";
-import { voxelise } from "../../src/space/voxel.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import type { Vec3 } from "../../src/vmf/solid.js";
+} from "../../src/maps/typescript/space/measure.js";
+import { findRooms } from "../../src/maps/typescript/space/rooms.js";
+import { buildScene, MASK_PLAYER } from "../../src/maps/typescript/space/scene.js";
+import { voxelise } from "../../src/maps/typescript/space/voxel.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import type { Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 import { ROOMS, roomsVmf } from "../support/rooms.js";
 
 const SEED: Vec3 = [0, -256, 16];

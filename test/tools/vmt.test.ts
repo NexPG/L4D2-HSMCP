@@ -20,10 +20,10 @@ import {
   vmtParameter,
   vmtTextures,
   vmtTree,
-} from "../../src/formats/vmt.js";
-import { readVpk, readVpkEntry, vpkArchivePath } from "../../src/formats/vpk.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readVmtTool, writeVmtTool } from "../../src/tools/vmt.js";
+} from "../../src/formats/typescript/formats/vmt.js";
+import { readVpk, readVpkEntry, vpkArchivePath } from "../../src/formats/typescript/formats/vpk.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readVmtTool, writeVmtTool } from "../../src/textures/typescript/tools/vmt.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;

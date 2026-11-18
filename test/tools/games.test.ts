@@ -8,7 +8,7 @@ import {
   libraryPaths,
   modDirs,
   steamRoots,
-} from "../../src/games/steam.js";
+} from "../../src/core/typescript/games/steam.js";
 import { has } from "../support/env.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "hammer-steam-"));

@@ -10,9 +10,9 @@
  * `write_vmf_solid` dozens of times in one session with the tool allowlisted throughout.
  */
 import { describe, expect, it } from "vitest";
-import { HUMAN_GATE, preapprove } from "../../src/mcp/preapprove.js";
-import type { ToolDef } from "../../src/mcp/registry.js";
-import { allTools } from "../../src/tools/index.js";
+import { HUMAN_GATE, preapprove } from "../../src/core/typescript/mcp/preapprove.js";
+import type { ToolDef } from "../../src/core/typescript/mcp/registry.js";
+import { allTools } from "../../src/registry.js";
 
 const tool = (name: string, meta?: Record<string, unknown>): ToolDef =>
   ({ name, description: "", realm: "map", inputSchema: {}, handler: () => ({}), ...(meta ? { meta } : {}) }) as unknown as ToolDef;

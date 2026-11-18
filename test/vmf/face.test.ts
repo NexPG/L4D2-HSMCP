@@ -9,10 +9,10 @@ import {
   setFaceUv,
   setSmoothingGroups,
   VmfFaceError,
-} from "../../src/vmf/face.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck, Vec3 } from "../../src/vmf/solid.js";
-import { insertSolids } from "../../src/vmf/build.js";
+} from "../../src/maps/typescript/vmf/face.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck, Vec3 } from "../../src/maps/typescript/vmf/solid.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");

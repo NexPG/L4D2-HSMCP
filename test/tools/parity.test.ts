@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { allTools } from "../../src/tools/index.js";
+import { allTools } from "../../src/registry.js";
 
 const DOC = join(import.meta.dirname, "..", "..", "docs", "reference", "hammer-parity.md");
 const text = (): string => readFileSync(DOC, "utf8");

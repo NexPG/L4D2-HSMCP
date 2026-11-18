@@ -4,9 +4,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { Config } from "../../src/config.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { allTools } from "../../src/tools/index.js";
+import type { Config } from "../../src/core/typescript/config.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { allTools } from "../../src/registry.js";
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");

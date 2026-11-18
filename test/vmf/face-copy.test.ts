@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { insertSolids } from "../../src/vmf/build.js";
-import { alignFaces, copyFaceAlignment, VmfFaceError } from "../../src/vmf/face.js";
-import { setLightmapScale } from "../../src/vmf/lightmap.js";
-import { checkVmfSolids } from "../../src/vmf/solid.js";
-import type { SolidCheck, SolidSide } from "../../src/vmf/solid.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { alignFaces, copyFaceAlignment, VmfFaceError } from "../../src/maps/typescript/vmf/face.js";
+import { setLightmapScale } from "../../src/maps/typescript/vmf/lightmap.js";
+import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import type { SolidCheck, SolidSide } from "../../src/maps/typescript/vmf/solid.js";
 
 const EMPTY = 'versioninfo\n{\n\t"editorversion" "400"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n}\n';
 

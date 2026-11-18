@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shellCommandsFor } from "../../src/tools/hammerlive.js";
+import { shellCommandsFor } from "../../src/hammer/typescript/tools/hammerlive.js";
 
 describe("Hammer shell commands", () => {
   it("creates an entity and sets its keyvalues", () => {

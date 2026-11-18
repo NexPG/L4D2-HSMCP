@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildBvh } from "../../src/space/bvh.js";
+import { buildBvh } from "../../src/maps/typescript/space/bvh.js";
 import {
   buildScene,
   HULL_STANDING,
@@ -9,7 +9,7 @@ import {
   MASK_SIGHT,
   MASK_SOLID,
   maskFor,
-} from "../../src/space/scene.js";
+} from "../../src/maps/typescript/space/scene.js";
 import {
   boxInSolid,
   isVisible,
@@ -17,12 +17,12 @@ import {
   pointInSolid,
   traceRay,
   traceRayBruteForce,
-} from "../../src/space/trace.js";
-import { findRooms } from "../../src/space/rooms.js";
-import { voxelise } from "../../src/space/voxel.js";
-import { insertSolids } from "../../src/vmf/build.js";
-import { deleteSolids } from "../../src/vmf/modify.js";
-import type { Vec3 } from "../../src/vmf/solid.js";
+} from "../../src/maps/typescript/space/trace.js";
+import { findRooms } from "../../src/maps/typescript/space/rooms.js";
+import { voxelise } from "../../src/maps/typescript/space/voxel.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { deleteSolids } from "../../src/maps/typescript/vmf/modify.js";
+import type { Vec3 } from "../../src/maps/typescript/vmf/solid.js";
 import { FIXTURES } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.vmf");
@@ -334,10 +334,10 @@ describe("buildBvh", () => {
 });
 
 describe("the oracle stays independent", () => {
-  it("never lets src/space import src/bsp", () => {
+  it("never lets the spatial module import the BSP oracle", () => {
     // The BSP tracer is what proves this engine right. The moment one calls the other the
     // cross-check becomes decoration, and nothing about the test output would say so.
-    const dir = join(FIXTURES, "..", "..", "src", "space");
+    const dir = join(FIXTURES, "..", "..", "src", "maps", "typescript", "space");
     for (const name of readdirSync(dir)) {
       if (!name.endsWith(".ts")) continue;
       const text = readFileSync(join(dir, name), "utf8");

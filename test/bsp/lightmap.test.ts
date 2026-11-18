@@ -3,10 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { readLightmapBudget } from "../../src/bsp/lightmap.js";
-import { BspFormatError, LZMA_MAGIC } from "../../src/bsp/header.js";
-import type { ToolContext } from "../../src/mcp/registry.js";
-import { readLightmapBudgetTool } from "../../src/tools/lightmap.js";
+import { readLightmapBudget } from "../../src/maps/typescript/bsp/lightmap.js";
+import { BspFormatError, LZMA_MAGIC } from "../../src/maps/typescript/bsp/header.js";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readLightmapBudgetTool } from "../../src/maps/typescript/tools/lightmap.js";
 import { ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 import { lumpFields } from "../support/lumps.js";
 

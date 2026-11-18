@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkFinale, readCustomStages } from "../../src/campaign/finale.js";
-import type { FinaleEntity } from "../../src/campaign/finale.js";
+import { checkFinale, readCustomStages } from "../../src/campaigns/typescript/campaign/finale.js";
+import type { FinaleEntity } from "../../src/campaigns/typescript/campaign/finale.js";
 
 function entity(
   classname: string,
