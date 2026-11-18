@@ -15,6 +15,19 @@ with a line here.
 - **`read_vtf`.** A `.vtf` header as data — version, size, flags, frames, format and whether
   it is a cubemap — from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
   sourcepp/vtfpp, not the six entries that turn up in map content.
+- **`read_qc` / `write_qc`.** The model source file, the gap between `run_studiomdl` and
+  `read_model_info`. The reader follows `$include` with cycle detection and scriplib's
+  16-deep limit, and reports the faults that stop a compile: no `$modelname`, no `$body`, a
+  sequence declared twice, a model path outside `models/`. It keeps a backslash literal, as
+  the grammar does. The writer builds a well-formed QC from parameters and reads it back
+  through its own parser before reporting success.
+- **`read_autosaves` / `restore_autosave`.** Hammer writes `<map>_NNN.vmf_autosave` into a
+  folder the user picked, in one of three places depending on the editor: Hammer++'s
+  `hammerplusplus_settings.ini`, the registry key stock Hammer uses, or nowhere. The tools
+  find that folder, match autosaves to their map through `versioninfo.originalname` (two maps
+  in different folders can share a base name), say which one is newer than the saved `.vmf`,
+  and write it out as a normal `.vmf` without touching the original. Layout and locations
+  ported from Hammer-MCP's `Autosaves`.
 - **`read_vmt` / `write_vmt`.** The file between a face and its texture: shader, parameters,
   `Proxies` and `patch` blocks, `%compile*` flags and the textures it names. Parameter names
   are matched case-insensitively, as the engine does; a missing closing brace is repaired and

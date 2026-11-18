@@ -1,6 +1,6 @@
 # Tool catalogue
 
-123 tools. This page groups them by the job you are doing; each tool's own description is the
+127 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -16,6 +16,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `hammer_live_edit` | create/set/delete/rotate entities in the open editor through the shell channel |
 | `hammer_menu` | save, undo, redo, Run Map, Check for Problems through the editor's menu |
 | `read_source_games` | how the install was discovered, if `health` looks wrong |
+| `read_autosaves` | Hammer autosaves of a map, and which is newer than the saved `.vmf` |
+| `restore_autosave` | write one autosave out as a normal `.vmf` without touching the original |
 
 ## Campaign files
 
@@ -133,6 +135,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_text_file` | read UTF-8 source text (QC, SMD, VMT, mission) with a byte cap and line window |
 | `read_vmt` | material shader, parameters, `Proxies`/`patch` blocks, `%compile*` flags, textures |
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
+| `read_qc` | parse a `.qc` with its `$include` tree, sequences, materials and structural faults |
+| `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |
 | `run_hlmv` | launch HLMV on one model, optionally return a screenshot as a real image |
