@@ -14,9 +14,9 @@
 - [`l4d2-campaign-authoring.md`](l4d2-campaign-authoring.md) — the ten-guide synthesis:
   addon/mission contracts, map goals, safe-room door names, finale types, boundaries,
   terrain, water and optimization.
+- Research logs live in the development diary, not here:
+  `.develop-diary/04-log/2026-11-18-l4d2-modding-research.md` and
+  `.develop-diary/04-log/2026-11-18-hammerpp-l4d2-research.md`. These references are the
+  stable contracts distilled from them.
 - [`gates.md`](gates.md) — the inherited gate history from the upstream project, kept as
   provenance.
-
-Research **logs** are kept in the development diary (`04-log/`), not in this published
-reference. This directory holds the reference manuals distilled from them: the two complete
-references above, the parity table, the limits and the campaign-authoring synthesis.

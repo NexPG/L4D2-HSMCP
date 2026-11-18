@@ -19,6 +19,7 @@ import { finaleTools } from "./finale.js";
 import { gameTools } from "./games.js";
 import { gateTools } from "./gate.js";
 import { hammerTools } from "./hammer.js";
+import { hammerLiveTools } from "./hammerlive.js";
 import { hammerPlusPlusTools } from "./hammerpp.js";
 import { healthTools } from "./health.js";
 import { hlmvTools } from "./hlmv.js";
@@ -67,6 +68,7 @@ import { worldspawnTools } from "./worldspawn.js";
 export const allTools: AnyToolDef[] = [
   ...healthTools,
   ...hammerTools,
+  ...hammerLiveTools,
   ...hammerPlusPlusTools,
   ...hlmvTools,
   ...gameTools,

@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.84--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.85--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -10,6 +10,10 @@ actually works.
 
 > **Alpha.** The project is under active development. Features, tool names and behaviour may
 > change between `0.0.x` releases. Windows only. Left 4 Dead 2 only.
+>
+> **Licence compliance is mandatory.** Every borrowed code, FGD, model or data file must
+> have a compatible licence and keep its copyright/permission notice. See
+> [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) before importing anything.
 
 ## What it is
 
@@ -45,8 +49,10 @@ clear description, and anything that writes asks for confirmation.
   a copy of the map.
 - **Compile models** from QC/SMD sources with the game's `studiomdl`, open a model in HLMV,
   and capture the window as an image the agent can see.
-- **Capture any GUI window** — HLMV or the running game — as a real image block, and ask
-  `run_map_test` for a screenshot of the running map.
+- **Edit the map in the open Hammer++** through its own shell channel: create, change,
+  delete and rotate entities, then Save/Undo/Redo/Run Map with the editor's menu commands.
+- **Capture any GUI window** — HLMV, Hammer++ or the running game — as a real image block,
+  and ask `run_map_test` for a screenshot of the running map.
 - **Build a 3D skybox copy** at 1/16 scale with `write_skybox_copy`.
 - **Paste a saved prefab** with `insert_prefab`, optionally moved and yaw-rotated about a pivot.
 - **Skew a texture** by writing a face's U/V vectors directly with `set_face_uv`.
@@ -134,10 +140,6 @@ prompt a person would.
 ## Documentation
 
 - [`docs/README.md`](docs/README.md) — the documentation index.
-- [`docs/reference/hammerpp-complete-reference.md`](docs/reference/hammerpp-complete-reference.md)
-  — Hammer++ build 8873, Tools++, settings and the feature → tool matrix.
-- [`docs/reference/l4d2-complete-reference.md`](docs/reference/l4d2-complete-reference.md)
-  — L4D2 mission, nav, Director, finale, infected, weapon and entity reference.
 - [`docs/campaign/overview.md`](docs/campaign/overview.md) — missions, safe rooms,
   transitions, finales, nav and deployment.
 - [`skill/l4d2-hsmcp/SKILL.md`](skill/l4d2-hsmcp/SKILL.md) — the agent workflow and its
@@ -150,49 +152,28 @@ prompt a person would.
 The project is in **alpha** (`0.0.x`). It is under active development, not production-ready,
 and anything may change between releases. Use it, test it and expect rough edges.
 
-## Upstream and prior art
+## Credits
 
-This project **began from** [`Sycatle/hammer-mcp`](https://github.com/Sycatle/hammer-mcp)
-(MIT, Project Society Studio), but it is no longer a fork that tracks upstream: the L4D2
-toolchain, the skill, the game-specific contracts and most of the code have been rewritten.
-The original MIT notice is kept verbatim in [`LICENSE-MIT`](LICENSE-MIT), and
-[`NOTICE`](NOTICE) records the provenance, the modification date and the GPL obligations.
-
-These repositories were reviewed during the Hammer++/L4D2 research. The table says exactly
-what came from each one; “reviewed” means the ideas and format coverage were studied, not
-that code was copied.
-
-**Who gets credited.** Only code we actually carry is imported, and only the commits that
-carry it. We do not merge an upstream's whole history for a partial import: that would put
-every author of that project in the graph for code we did not take. Each imported commit
-keeps its original `Author:` and gains `(cherry picked from <sha>)`; a path-only extraction
-uses `git filter-repo --path`, which keeps the author but changes the hash because the tree
-changed. GitHub shows an author when such a commit is reachable from the default branch and
-the author's email is linked to their account. We preserve the email; the graph itself is
-GitHub's decision. The authoritative record is [`NOTICE`](NOTICE) plus the commit itself.
-
-| Repository | License | What came from it |
+| Project | Licence | What we use |
 |---|---|---|
-| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | MIT | The original MCP/skill foundation this repository started from. The surviving MIT code is covered by `LICENSE-MIT` and `NOTICE`. |
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | MIT | Reviewed as a C++20/Python reference for BSP v17–27 (including L4D2), VPK, VTF, MDL/VTX/VVD, FGD and KeyValues. Not vendored yet; the sidecar still uses `srctools` for the formats it handles. |
-| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | MIT | Reviewed for the Windows Hammer shell-channel (`WM_COPYDATA` / `WM_COMMAND`) and live-editor approach. `open_in_hammer` uses the simpler launch-and-capture path; no C# code is vendored. The shell channel is a candidate for future live editing. |
-| [Mrfunreal/L4D2-FGD-Edits](https://github.com/Mrfunreal/L4D2-FGD-Edits) | No licence declared | Reference only: L4D2/Hammer++ FGD additions, visgroups and detail-type helpers. No files copied. |
-| [Mrfunreal/L4D2_Navmesh_CFG](https://github.com/Mrfunreal/L4D2_Navmesh_CFG) | No licence declared | Reference only: nav-editing consoles/CFG workflows. No files copied. |
-| [Mrfunreal/Various_Scripts](https://github.com/Mrfunreal/Various_Scripts) | No licence declared | Reference only: miscellaneous Source/L4D2 scripts. No files copied. |
-| [Mrfunreal/-L4D2_Weapon_Viewmodel_QC_Prefabs](https://github.com/Mrfunreal/-L4D2_Weapon_Viewmodel_QC_Prefabs) | No licence declared | Reference only for future weapon/viewmodel QC authoring. No files copied. |
-| [Mrfunreal/L4D2_Player_Extra_Files](https://github.com/Mrfunreal/L4D2_Player_Extra_Files) | No licence declared | Reference only for future survivor/infected animation and model authoring. No files copied. |
+| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | MIT | Live Hammer shell channel: `WM_COPYDATA` commands, `WM_COMMAND` menu ids, session and window discovery |
+| [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | MIT | The original project this repository grew out of |
+| [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | MIT | Python sidecar BSP/VPK/VTF/FGD readers |
 
-A repository with **no licence declared** is “all rights reserved” by default; nothing from
-those five repositories is copied into this tree. If one of them becomes necessary, the
-options are to ask the author for permission, or to reimplement the idea from the documented
-behaviour.
+Every borrowed work and its licence notice is recorded in
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). Other projects reviewed during the
+upstream audit are listed there as reference-only; no code was taken from them.
+**Licence compliance is mandatory:** no code is copied from a project without a compatible
+licence, and no notice is removed.
 
 ## License
 
 **GPL-3.0-only.** Copyright (C) 2026 **NexPG**.
 
-The original MIT notice for the Sycatle/hammer-mcp code is kept verbatim in
-[`LICENSE-MIT`](LICENSE-MIT); [`NOTICE`](NOTICE) records the provenance, the modification
-date and what the GPL asks of anyone redistributing this work.
+This project began from code published as
+[`hammer-mcp`](https://github.com/Sycatle/hammer-mcp) by **Project Society Studio** under
+the MIT licence, and also uses code from the projects in the Credits table. The MIT notice
+is kept verbatim in [`LICENSE-MIT`](LICENSE-MIT); [`NOTICE`](NOTICE) records the provenance,
+the modification date and what the GPL asks of anyone redistributing this work.
 
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.

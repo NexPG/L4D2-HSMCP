@@ -56,6 +56,9 @@ covered: this table is the summary.
 | Edit keyvalues | `edit_vmf` `update` | verified |
 | Outputs | `edit_vmf` `addOutput` / `removeOutput` | verified |
 | Entity report | `read_entity_report` | verified |
+| Live entity create/edit in the open editor | `hammer_live_edit` | verified on Hammer++ 8873 x86: created a `light`, saved, read it back from the VMF |
+| Live Save/Undo/Redo/Run Map/Check for Problems | `hammer_menu` | verified: Save wrote the live edit to the VMF |
+| Editor discovery | `hammer_status` | verified: pid, shell window, main window, open map |
 | FGD browser (classes, keys, I/O) | `read_fgd_class` (with prefix) | verified |
 | I/O validation | `validate_io` | verified |
 | Check for problems (Alt+P) | `read_vmf_lint`, `check_vmf_rules` | verified |

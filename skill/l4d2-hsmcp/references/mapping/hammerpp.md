@@ -40,6 +40,21 @@ read before touching the editor's settings or trusting a VMF that came out of Ha
 - `func_instance_io_proxy` — Tools++/VBSP++ support for I/O crossing an instance.
 - Multiple cordons — `set_cordon` writes the compile-relevant half.
 
+## Live editor: the shell channel
+
+Hammer and Hammer++ have a hidden `Worldcraft_ShellMessageWnd`. The toolkit can talk to it:
+
+- `hammer_status` — pid, shell window, main window, open map.
+- `hammer_live_edit` — `entity_create`, `entity_set_keyvalue`, `entity_delete`,
+  `entity_rotate_incremental`; changes land in Hammer's undo history. `save: true` runs the
+  Save menu command.
+- `hammer_menu` — Save, Save As, Run Map, Undo, Redo, Check for Problems, load pointfile,
+  center on selection, select all, entity report, show connections.
+
+This is **write-only and entity-level**: it addresses entities by class + origin, cannot
+create brushes, move entities or read the selection. Use the VMF writers for geometry. The
+port is from Hammer-MCP (MIT); see `THIRD-PARTY-NOTICES.md`.
+
 ## The editor-only layer
 
 Lighting, fog, 2D/3D sky, particles, ropes, render effects, material proxies, `env_sun`,

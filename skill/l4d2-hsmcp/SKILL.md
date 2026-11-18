@@ -46,6 +46,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/campaign/addon-and-deployment.md` | staging, packing, deploying |
 | `references/nav/generation.md` | generating a nav mesh |
 | `references/nav/attributes-and-flow.md` | marking CHECKPOINT/FINALE, or bots ignore the map |
+| `references/nav/editing.md` | the console command set for repairing a generated mesh |
 | `references/scripting/vscript.md` | shipping a `.nut` in the add-on |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
@@ -95,6 +96,10 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 
 ## Invariants
 
+- **Licence first.** Any borrowed code, FGD, model or data file must have a licence
+  compatible with GPL-3.0-only, keep its copyright/permission notice, and be recorded in
+  `THIRD-PARTY-NOTICES.md`. No licence means no copied code; use it as a reference and
+  implement our own.
 - **L4D2 only.** Do not apply GMod, CS:S or HL2 conventions. Every game-specific fact here
   was read from L4D2's own files, its FGD or its engine.
 - **A `.bsp` is never read whole.** Use the readers; real maps are gigabytes.

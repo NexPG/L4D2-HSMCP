@@ -172,6 +172,10 @@ export const readHammerPlusPlusTool = defineTool({
       { name: "base.fgd", path: join(bin, "base.fgd") },
       { name: "toolsplusplus.fgd", path: join(bin, "toolsplusplus.fgd") },
       {
+        name: "L4D2-FGD-Edits/left4dead2_ADDON.fgd",
+        path: join(bin, "L4D2-FGD-Edits", "left4dead2_ADDON.fgd"),
+      },
+      {
         name: "hammerplusplus_fgd.fgd",
         path: join(hp, "hammerplusplus_fgd.fgd"),
       },

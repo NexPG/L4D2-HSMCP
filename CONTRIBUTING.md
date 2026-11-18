@@ -1,7 +1,36 @@
 # Contributing
 
-This is a standalone project that began from `hammer-mcp`, developed on its own terms and
-aimed at Left 4 Dead 2. The process is deliberately light; the four rules below are not.
+This is an independent project that began from code published as `hammer-mcp`, developed on
+its own terms and aimed at Left 4 Dead 2. The process is deliberately light; the rules below
+are not.
+
+## 0. Licence compliance is non-negotiable
+
+**This rule outranks every other rule.** If a borrowed work cannot be used lawfully, it does
+not go in, no matter how useful it is.
+
+Before taking code, data or an asset from another repository:
+
+1. **Identify the licence and the copyright holder.** Check the repository's `LICENSE`,
+   `COPYING` or `NOTICE`. A repository with no licence is **all rights reserved** by default;
+   do not copy its code or content.
+2. **Check compatibility with GPL-3.0-only.** MIT, BSD, Apache-2.0 and GPL-3.0 are compatible;
+   GPL-2.0-only, proprietary and unlicensed code are not. If you are unsure, stop and ask.
+3. **Keep the notice.** Put the upstream copyright and permission notice in
+   [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md), and keep the upstream `LICENSE` text
+   or a verbatim copy of it.
+4. **Mark the source.** Every ported file starts with a comment naming the upstream project,
+   its licence, and the fact that it was modified here.
+5. **Record the provenance.** The commit message says what was taken, from which repository
+   and commit (use `cherry picked from commit ...` when that is true), and that the licence
+   was checked.
+6. **Never silently relicense.** The imported part stays under its own licence; the GPL
+   applies to the combined work.
+7. **No licence, no code.** Learn from the behaviour, write our own implementation, and cite
+   the project as a reference. Do not copy the expression.
+
+A component missing from `THIRD-PARTY-NOTICES.md` is a compliance defect even if the code is
+correct. A missing feature is recoverable; a licence violation is not.
 
 ## 1. A passing test proves nothing until it has been shown it can fail
 
@@ -62,9 +91,14 @@ that does not exist is a bug, not a delay: somebody reads it and relies on it.
 
 Findings are not finished in the diary. Every experiment that produced a fact, a limit or an error
 goes into `skill/l4d2-hsmcp/troubleshooting/` or `references/` as **symptom → cause → check → fix**,
-including what the error means and what it affects. Research **reports** belong in
-`.develop-diary/04-log/`; the skill and `docs/reference/` get the distilled contracts. If an agent
-has to ask "why is this happening?", the documentation is incomplete.
+including what the error means and what it affects. The diary records the process; the skill is what
+the agent reads while working. If an agent has to ask "why is this happening?", the documentation is
+incomplete.
+
+**Research reports and upstream-intake audits belong in `.develop-diary/04-log/`, not in
+`docs/`.** `docs/reference/` is for stable contracts the agent reads while working;
+`docs/reports/` is for build/test incident reports. A research narrative in `docs/reports/`
+is in the wrong place.
 
 **Leave the game install as you found it.** A test that copies a map, injects entities or creates
 `materials/maps/<map>/` removes those files and restores any modified original in a `finally`, even
@@ -155,14 +189,10 @@ still being measured and the campaign pipeline does not exist yet, releases stay
 
 ## Licence
 
-The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT
-notice it began from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in
-[`NOTICE`](NOTICE). By contributing you agree that your contribution is licensed under the
-same terms, and that it carries no notice, dependency or vendored file that would add a
-restriction on top of the GPL.
+The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)), with the upstream MIT notice it
+was forked from kept in [`LICENSE-MIT`](LICENSE-MIT) and the history in [`NOTICE`](NOTICE). By
+contributing you agree that your contribution is licensed under the same terms, and that it carries
+no notice, dependency or vendored file that would add a restriction on top of the GPL.
 
 A file copied from somewhere else is the one thing to say out loud in the commit or PR: a
-GPL-compatible licence with its notice intact is fine, anything else is not. Partial imports
-keep the original author and use `cherry-pick -x` or `filter-repo --path`; do not merge a
-whole upstream history for one file, because that credits authors for code we did not take.
-No-licence projects are reference only.
+GPL-compatible licence with its notice intact is fine, anything else is not.

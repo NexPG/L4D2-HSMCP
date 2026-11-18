@@ -96,9 +96,21 @@ def load_fgds(
     for name in names:
         if os.path.isabs(name):
             own = RawFileSystem(os.path.dirname(name))
-            fgd.parse_file(own, own[os.path.basename(name)], eval_bases=True)
+            fgd.parse_file(
+                own,
+                own[os.path.basename(name)],
+                eval_bases=True,
+                # Community FGDs add types such as `vector3`; Hammer itself tolerates
+                # them as strings. Refusing the whole file makes an optional FGD useless.
+                ignore_unknown_valuetype=True,
+            )
         else:
-            fgd.parse_file(fs, fs[name], eval_bases=True)
+            fgd.parse_file(
+                fs,
+                fs[name],
+                eval_bases=True,
+                ignore_unknown_valuetype=True,
+            )
     fgd.apply_bases()
 
     result = (fgd, dict(tolerated))

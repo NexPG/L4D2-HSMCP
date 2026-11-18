@@ -35,8 +35,11 @@ export const openInHammerTool = defineTool({
       .int()
       .min(1000)
       .max(120_000)
-      .default(12_000)
-      .describe("How long to let the editor load the map before capture."),
+      .default(20_000)
+      .describe(
+        "How long to let the editor load the map before capture. A large VMF or a recovery " +
+          "dialog can take 20–30 s.",
+      ),
     screenshot: z.boolean().default(true),
     out: z
       .string()
@@ -75,9 +78,17 @@ export const openInHammerTool = defineTool({
       cwd: dirname(editor),
       stdio: "ignore",
       windowsHide: false,
+      // `unref` is not enough on Windows: without `detached` the child is still in the
+      // parent's job and dies when the short-lived MCP process exits. A `close:false`
+      // launch is meant to leave the editor open for the next tool call.
+      detached: !args.close,
     });
     const pid = child.pid;
     if (pid === undefined) throw new Error("Hammer++ started without a process id");
+    // Leaving the editor open must not keep the MCP server's own process alive: a stdio
+    // session would hang after the tool result. `unref` lets Node exit; the editor keeps
+    // running for a person or for hammer_live_edit.
+    if (!args.close) child.unref();
 
     await sleep(args.waitMs);
     let screenshotPath: string | null = null;
@@ -118,13 +129,31 @@ export const openInHammerTool = defineTool({
     let closed = false;
     if (args.close) {
       try {
-        execFileSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
-          stdio: "ignore",
-          windowsHide: true,
-        });
+        // Close the main window first: Hammer++ records a clean shutdown, and a forced
+        // taskkill sets the "did not shut down correctly" recovery flag, which makes the
+        // next launch open a modal recovery prompt instead of the map.
+        execFileSync(
+          "powershell",
+          [
+            "-NoProfile",
+            "-Command",
+            `$p = Get-Process -Id ${pid} -ErrorAction Stop; ` +
+              `if (-not $p.CloseMainWindow()) { exit 1 }; ` +
+              `if (-not $p.WaitForExit(5000)) { Stop-Process -Id ${pid} -Force }`,
+          ],
+          { stdio: "ignore", windowsHide: true, timeout: 15_000 },
+        );
         closed = true;
       } catch {
-        // The editor already exited, or the process tree is gone.
+        try {
+          execFileSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
+            stdio: "ignore",
+            windowsHide: true,
+          });
+          closed = true;
+        } catch {
+          // The editor already exited, or the process tree is gone.
+        }
       }
       await sleep(800);
     }

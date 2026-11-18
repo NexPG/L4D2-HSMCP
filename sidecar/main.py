@@ -33,6 +33,26 @@ def verb(name: str) -> Callable[[Callable[[dict[str, Any]], dict[str, Any]]], An
     return register
 
 
+@verb("hammer_live")
+def _hammer_live(req: dict[str, Any]) -> dict[str, Any]:
+    """Live editor shell channel: status, send, batch, menu.
+
+    The editor must already be running. This never launches a game and never touches one.
+    """
+    from hammer_live import batch, menu, send, status
+
+    action = req.get("action", "status")
+    if action == "status":
+        return status()
+    if action == "send":
+        return send(int(req["pid"]), str(req["command"]))
+    if action == "menu":
+        return menu(int(req["pid"]), int(req["commandId"]))
+    if action == "batch":
+        return batch(int(req["pid"]), str(req["vmf"]), [str(c) for c in req["commands"]])
+    raise ValueError(f"unknown hammer_live action {action!r}")
+
+
 @verb("health")
 def _health(_req: dict[str, Any]) -> dict[str, Any]:
     """Reports what this sidecar can actually do. Must never raise: hammer-mcp's own

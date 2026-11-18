@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **114 tools**.
+Last checked against the tool list on 18/11/2026: **117 tools**.
 
 ## The file itself
 
@@ -104,6 +104,10 @@ getting `ENOENT` on the first call.
 | Hammer | Here | Notes |
 |---|---|---|
 | Place a point entity | `edit_vmf` | Including `prop_static`: it is an ordinary entity in a `.vmf` |
+| Place a point entity in the open editor | `hammer_live_edit` | Live shell channel; lands in Hammer's undo history, entity-level only |
+| Edit/delete/rotate an open-editor entity | `hammer_live_edit` | Addressed by class + origin, the shell channel's own limit |
+| Save / undo / redo / Run Map / Check for Problems | `hammer_menu` | The editor's own menu ids, not a reimplementation |
+| See which editor is attached | `hammer_status` | Process, shell window, main window, open map |
 | Tie to entity / move to world | `set_solid_class` | |
 | Edit keyvalues | `edit_vmf` | |
 | Entity Report | `read_entity_report` | Filterable by classname, targetname or a key's presence. Takes a `.vmf` **or a compiled `.bsp`** |

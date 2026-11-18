@@ -352,6 +352,8 @@ with the real compilers and the real game:
 | See the map without the game | `render_vmf_view`, `render_vmf_plan`, `render_vmf_tour` |
 | See the map in the editor | `open_in_hammer` launches Hammer++ and captures its window |
 | Read the editor's settings | `read_hammerpp` parses the INI, game config, build programs and keybindings |
+| Create/edit entities in the open editor | `hammer_live_edit` uses the shell channel (`WM_COPYDATA`), entity-level and undoable |
+| Save/undo/redo/Run Map from the editor | `hammer_menu` posts the editor's own `WM_COMMAND` ids |
 | See the map in the game | `run_map_test` screenshot, `run_campaign_gate` screenshots |
 | See a texture | `preview_asset` (VTF → PNG) |
 | See a model | `read_model_info` bounds, `preview_asset` HLMV capture; **HLMV's 3D canvas is blank on some desktops**, so bounds + materials are the reliable half until a preview-map fallback exists |
@@ -362,6 +364,30 @@ with the real compilers and the real game:
 **The honest boundary:** every *map* feature is reachable. The editor's viewport, its mouse
 interactions and its aesthetic judgement are not tools; they are a person at a screen. When
 the agent needs to see, it renders the file or screenshots the game.
+
+### 7.1 The live shell channel
+
+Hammer and Hammer++ have a hidden window named `Worldcraft_ShellMessageWnd`. A
+`WM_COPYDATA` message carries an ANSI text command; a `WM_COMMAND` on the main window runs a
+menu id. This is the editor's public shell interface, documented by Valve in
+`editor_sendcommand.cpp` and used by Hammer-MCP.
+
+| Command | Effect |
+|---|---|
+| `session_begin <map> <mapversion>` | Open an edit session on the saved VMF |
+| `session_end` | Close it |
+| `entity_create <class> x y z` | Create a point entity |
+| `entity_delete <class> x y z` | Delete it |
+| `entity_set_keyvalue <class> x y z "key" "value"` | Set a keyvalue |
+| `entity_rotate_incremental <class> x y z pitch yaw roll` | Rotate it |
+| `node_create` / `node_delete` / `nodelink_create` / `nodelink_delete` | Node graph |
+
+The channel is **write-only and entity-level**: entities are addressed by class + origin,
+there is no move, no brush creation and no read-back. The answer is accepted/rejected, not a
+value. The VMF readers and writers remain the geometry path; the shell channel is the live
+"put this in the open editor, in its undo history" path.
+
+Real commands in this project: `hammer_status`, `hammer_live_edit`, `hammer_menu`.
 
 ## 8. Feature → tool matrix
 

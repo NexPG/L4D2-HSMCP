@@ -5,6 +5,32 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.85-alpha — 2026-11-18
+
+- **Live Hammer / Hammer++ editing.** The editor's built-in shell channel
+  (`Worldcraft_ShellMessageWnd`) is now available as `hammer_status`, `hammer_live_edit` and
+  `hammer_menu`. The port creates/deletes/rotates point entities, sets keyvalues and runs
+  Save, Undo, Redo, Run Map and Check for Problems in the open editor. Verified on Hammer++
+  8873 x86: a `light` was created at `0 0 128`, saved, and read back from the VMF.
+  Ported from **Hammer-MCP** (MIT); attribution is in `THIRD-PARTY-NOTICES.md`.
+- **Licence compliance is rule 0.** `CONTRIBUTING.md`, `NOTICE`, `README.md`, `SKILL.md` and
+  the new `THIRD-PARTY-NOTICES.md` state that every borrowed code, FGD, model or data file
+  needs a compatible licence, its copyright/permission notice, a source header and a record.
+  No licence means no copied code; reference only.
+- **Optional external FGD.** `read_fgd_class` and `read_vmf_lint` accept an extra `fgd` path.
+  The FGD loader tolerates community extensions such as `vector3` instead of rejecting the
+  whole file. This lets a user load `L4D2-FGD-Edits` or another pack from disk without this
+  repository redistributing it.
+- **`open_in_hammer` waits longer and closes gracefully.** A forced `taskkill` sets
+  Hammer++'s "did not shut down correctly" recovery flag; the tool now closes the main window
+  first and only force-kills if it will not exit.
+- **`run_map_test` waits for the old client to leave the process table** before launching;
+  `taskkill` returns before the process is gone and the next `+map` could reach a dying client
+  with an empty log.
+- **Research reports live in the diary.** The Hammer++/L4D2 research report moved to
+  `.develop-diary/04-log/2026-11-18-hammerpp-l4d2-research.md`; the upstream intake audit is
+  `.develop-diary/04-log/2026-11-18-upstream-intake.md`.
+
 ## 0.0.84-alpha — 2026-11-18
 
 - **Hammer++ complete reference.** `docs/reference/hammerpp-complete-reference.md`
@@ -34,12 +60,6 @@ with a line here.
   (0x100000); the L4D2 `func_nav_attribute_region` list is in the references.
 - **Honest gaps recorded.** Propper++ (brush → model), hotspot `.rect` lookup, 4-way blend
   verification and the preview-map fallback for HLMV remain open.
-- **Research logs live in the development diary.** `docs/` keeps the distilled manuals;
-  the two research logs were moved to `.develop-diary/04-log/` per the project rule.
-- **Upstream and prior art.** `README.md` and `NOTICE` now list the reviewed repositories,
-  their licences and what came from each. Only code actually carried is credited; partial
-  imports use `cherry-pick -x` / `filter-repo`, never a whole-history merge that would credit
-  authors for code we did not take. No-licence repositories are reference-only.
 
 ## 0.0.83-alpha — 2026-11-18
 
@@ -72,10 +92,10 @@ with a line here.
 
 ## 0.0.82-alpha — 2026-11-18
 
-- **Deep research pass.** The research log is in the development diary (`04-log/`); the
-  distilled references are `docs/reference/l4d2-campaign-authoring.md` and, in the later
-  0.0.84 pass, `docs/reference/l4d2-complete-reference.md` and
-  `docs/reference/hammerpp-complete-reference.md`.
+- **Deep research pass.** `docs/reference/l4d2-modding-research-2026.md` collects Hammer/
+  Hammer++ setup, campaign/mission contracts, checkpoint/nav/finale rules, Director and
+  game modes, entity classes, optimization and limits, the asset pipeline, and a gap table
+  against this MCP. `docs/reference/l4d2-campaign-authoring.md` is the shorter synthesis.
 - **Hammer++ I/O delimiter is a real failure mode.** Hammer++'s
   `Use special I/O delimiter (ESC)` (`IOParamNewDelimiter=1`) writes ESC-separated outputs;
   L4D2 expects commas and every output silently does nothing. This install had it set to 1

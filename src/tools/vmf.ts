@@ -16,7 +16,7 @@ import type { Vec3 } from "../vmf/solid.js";
 
 /** How far below a prop to look for its floor. Half a map is further than any prop stands. */
 const FLOOR_REACH = 8192;
-import { CONFIRM, GAME, GAME_BLOCK, resolveVmfInput } from "./paths.js";
+import { CONFIRM, GAME, GAME_BLOCK, resolveInput, resolveVmfInput } from "./paths.js";
 
 const FINDING = z.object({
   severity: z.string(),
@@ -48,7 +48,13 @@ const FINDING = z.object({
  * redeclares existing classes to add editor helpers, so merging it would change the
  * accepted keyvalues of entities the game already defines.
  */
-const OPTIONAL_FGDS = ["win64/toolsplusplus.fgd"]; // the older in-game layout
+const OPTIONAL_FGDS = [
+  "win64/toolsplusplus.fgd", // the older in-game layout
+  // Optional community packs. They are read from the user's install, never bundled; the
+  // path is the one `L4D2-FGD-Edits` documents.
+  "L4D2-FGD-Edits/left4dead2_ADDON.fgd",
+  "L4D2-FGD-Edits/Visgroups.fgd",
+];
 const TOOLS_PLUSPLUS_FGD = "toolsplusplus.fgd";
 
 /**
@@ -107,6 +113,14 @@ export const readFgdClass = defineTool({
   inputSchema: {
     classname: z.string().optional().describe("Exact class, e.g. logic_relay."),
     prefix: z.string().optional().describe("When listing: keep classes starting with this."),
+    fgd: z
+      .string()
+      .optional()
+      .describe(
+        "Extra FGD to merge, absolute or repo-relative. Use it for a community pack such " +
+          "as L4D2-FGD-Edits or Tools++; the file is read from disk, not bundled, and the " +
+          "reply names every FGD that was loaded.",
+      ),
     game: GAME,
     limit: z.number().int().min(1).max(2000).default(200),
   },
@@ -133,19 +147,22 @@ export const readFgdClass = defineTool({
     matched: z.number().optional(),
     returned: z.number().optional(),
   },
-  handler: async (args, ctx) =>
-    callSidecar(
+  handler: async (args, ctx) => {
+    const fgd = fgdContext(ctx.config, args.game);
+    const extra = args.fgd ? resolveInput(args.fgd, ctx.config) : null;
+    return callSidecar(
       "fgd_class",
       {
-        binDir: fgdContext(ctx.config, args.game).binDir,
-        fgd: fgdContext(ctx.config, args.game).fgd,
+        binDir: fgd.binDir,
+        fgd: extra ? [...fgd.fgd, extra] : fgd.fgd,
         ...(args.classname ? { classname: args.classname } : {}),
         ...(args.prefix ? { prefix: args.prefix } : {}),
         limit: args.limit,
       },
       ctx.config,
       120_000,
-    ),
+    );
+  },
 });
 
 export const readVmf = defineTool({
@@ -327,6 +344,13 @@ export const readVmfLint = defineTool({
       .optional()
       .describe("Keep only findings at this severity."),
     rule: z.string().optional().describe("Keep only findings from this rule."),
+    fgd: z
+      .string()
+      .optional()
+      .describe(
+        "Extra FGD to merge, absolute or repo-relative (L4D2-FGD-Edits, Tools++). The file " +
+          "is read from disk, not bundled; fgdsLoaded in the reply names what was loaded.",
+      ),
     collapseInstances: z
       .boolean()
       .default(false)
@@ -370,12 +394,13 @@ export const readVmfLint = defineTool({
   handler: async (args, ctx) => {
     const { game, from, binDir, fgd } = fgdContext(ctx.config, args.game);
     const path = resolveVmfInput(args.path, ctx.config);
+    const extra = args.fgd ? resolveInput(args.fgd, ctx.config) : null;
     const reply = await callSidecar<LintReply>(
       "vmf_lint",
       {
         path,
         binDir,
-        fgd,
+        fgd: extra ? [...fgd, extra] : fgd,
         collapseInstances: args.collapseInstances,
         gameDir: game.gameDir ?? ctx.config.gameDir,
         ...(game.instancePath ? { instancePath: game.instancePath } : {}),

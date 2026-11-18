@@ -1,6 +1,6 @@
 # Tool catalogue
 
-114 tools. This page groups them by the job you are doing; each tool's own description is the
+117 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -12,6 +12,9 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `health` | game profile, compilers, FGD, sidecar, tool count, whether the build is stale |
 | `read_hammerpp` | Hammer++ settings by section, game config/build programs, keybindings, warnings |
 | `open_in_hammer` | open the VMF in Hammer++ and capture the editor window |
+| `hammer_status` | running editor, shell channel, main window and open map |
+| `hammer_live_edit` | create/set/delete/rotate entities in the open editor through the shell channel |
+| `hammer_menu` | save, undo, redo, Run Map, Check for Problems through the editor's menu |
 | `read_source_games` | how the install was discovered, if `health` looks wrong |
 
 ## Campaign files

@@ -27,3 +27,4 @@ scratchpad/
 # Test campaigns: the directory itself is local, never pushed.
 # History lives here; the game only ever holds the latest deploy.
 /campaigns/
+.3d-projects/
