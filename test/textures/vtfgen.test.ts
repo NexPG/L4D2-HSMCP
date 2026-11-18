@@ -143,6 +143,20 @@ describe.skipIf(!installed)("write_vtf", () => {
     expect(scaled.verified).toBe(true);
   });
 
+  it("writes BGRX as an opaque copy and says so by verifying against that", async () => {
+    const image = join(scratch, "alpha.png");
+    const rgba = gradient(8, 8);
+    rgba[3] = 40; // a transparent pixel the format cannot keep
+    writeFileSync(image, png(8, 8, rgba));
+    const result = await callSidecar<WriteResult>(
+      "vtf_write",
+      { path: join(scratch, "alpha.vtf"), image, format: "BGRX8888", resize: "none" },
+      config,
+    );
+    expect(result.format).toBe("BGRX8888");
+    expect(result.verified).toBe(true);
+  });
+
   it("refuses DXT instead of writing an uncompressed file under a compressed name", async () => {
     const image = join(scratch, "opaque.png");
     writeFileSync(image, png(4, 4, gradient(4, 4)));

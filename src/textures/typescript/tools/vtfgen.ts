@@ -30,22 +30,13 @@ export const writeVtfTool = defineTool({
       .string()
       .describe("Where to write the .vtf. The .vtf suffix is added if missing."),
     format: z
-      .enum([
-        "BGRA8888",
-        "RGBA8888",
-        "RGB888",
-        "BGR888",
-        "RGB565",
-        "BGR565",
-        "BGRX8888",
-        "BGRA4444",
-        "BGRA5551",
-        "I8",
-        "IA88",
-        "A8",
-      ])
+      .enum(["BGRA8888", "RGBA8888", "BGRX8888"])
       .default("BGRA8888")
-      .describe("Uncompressed VTF format. DXT1/DXT5 are not offered because writing them needs a compressor."),
+      .describe(
+        "Uncompressed VTF format. BGRX keeps RGB and forces alpha to 255. DXT and " +
+          "quantised formats are left to vtex/VTFCmd, because writing them needs a " +
+          "compressor and verifying them exactly would be a false claim.",
+      ),
     version: z.string().default("7.4").describe("VTF version, 7.2 through 7.5. L4D2 uses 7.4."),
     clampS: z.boolean().default(false).describe("Set CLAMP_S: no horizontal wrapping."),
     clampT: z.boolean().default(false).describe("Set CLAMP_T: no vertical wrapping."),

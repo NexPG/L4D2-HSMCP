@@ -22,21 +22,10 @@ from typing import Any
 
 from png import ImageError, decode_png
 
-# Formats `srctools.vtf` can write from RGBA without a compressor.
-_WRITABLE = {
-    "RGBA8888",
-    "BGRA8888",
-    "RGB888",
-    "BGR888",
-    "RGB565",
-    "BGR565",
-    "BGRX8888",
-    "BGRA4444",
-    "BGRA5551",
-    "I8",
-    "IA88",
-    "A8",
-}
+# Formats that store the source RGBA exactly; BGRX keeps RGB and forces alpha to 255.
+# Quantising formats are left to vtex/VTFCmd: a pixel comparison that silently tolerates
+# error would turn "verified" into a word that means nothing.
+_WRITABLE = {"RGBA8888", "BGRA8888", "BGRX8888"}
 
 
 def _is_pot(value: int) -> bool:
@@ -178,7 +167,12 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         back_frame = back.get()
         back_frame.load()
     written_rgba = bytes(back_frame._data)  # noqa: SLF001
-    verified = written_rgba == rgba
+    expected = rgba
+    if fmt_name == "BGRX8888":
+        opaque = bytearray(rgba)
+        opaque[3::4] = b"\xff" * (len(rgba) // 4)
+        expected = bytes(opaque)
+    verified = written_rgba == expected
 
     return {
         "path": str(path),
@@ -198,6 +192,10 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         "clampT": bool(back.flags & VTFFlags.CLAMP_T),
         "verified": verified,
         "note": (
+            "Pixels were compared with the source after a round-trip through the VTF "
+            "reader. A BGRX8888 copy is opaque: alpha was forced to 255 before comparing."
+            if fmt_name == "BGRX8888"
+            else
             "Pixels were compared with the source after a round-trip through the VTF "
             "reader. An uncompressed VTF is larger than DXT1/DXT5; vtex or VTFCmd can "
             "compress the same image if the addon's size matters."
