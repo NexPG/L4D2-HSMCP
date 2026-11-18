@@ -41,6 +41,7 @@ import { pakfileTools } from "./pakfile.js";
 import { planTools } from "./plan.js";
 import { prefabTools } from "./prefab.js";
 import { qcTools } from "./qc.js";
+import { sequencesTools } from "./sequences.js";
 import { previewTools } from "./preview.js";
 import { renameTools } from "./rename.js";
 import { renderTools } from "./render.js";
@@ -100,6 +101,7 @@ export const allTools: AnyToolDef[] = [
   ...planTools,
   ...prefabTools,
   ...qcTools,
+  ...sequencesTools,
   ...previewTools,
   ...displacementTools,
   ...exportMapTools,

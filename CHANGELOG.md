@@ -15,6 +15,12 @@ with a line here.
 - **`read_vtf`.** A `.vtf` header as data — version, size, flags, frames, format and whether
   it is a cubemap — from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
   sourcepp/vtfpp, not the six entries that turn up in map content.
+- **`read_compile_sequences`.** What the user's editor does when they press F9: the binary
+  `CmdSeq.wc` (804-byte records), Hammer++'s KeyValues `hammerplusplus_sequences.cfg`, and
+  Strata's `cmdseq.wc`. Reports every step with its enabled flag, executable, parameters and
+  compiler stage, so a difference from `run_compile` is a fact rather than a mystery. Layout
+  ported from Hammer-MCP's `CompileSequences`; a truncated file is refused instead of
+  half-read.
 - **`read_model_info` gains the parts of a model that placement depends on.** Attachments
   with the bone each follows, body parts and hitbox sets, read from the header the way
   `mdlpp` documents it. `mstudioattachment_t` is 92 bytes in L4D2 — not the 60 of the older

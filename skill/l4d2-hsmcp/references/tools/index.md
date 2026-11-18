@@ -1,6 +1,6 @@
 # Tool catalogue
 
-127 tools. This page groups them by the job you are doing; each tool's own description is the
+128 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -149,6 +149,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 |---|---|
 | `open_in_hammer` | launch Hammer++ on a VMF and capture the editor window (the visual viewport) |
 | `run_compile` | vbsp/vvis/vrad natively, per-stage findings |
+| `read_compile_sequences` | what the editor's own Run Map steps do: enabled flags, executables, parameters |
 | `read_compile_log` | structured findings from a compiler log |
 | `read_leak` | turn a leak into a location |
 | `run_pack` | bspzip assets into a compiled map |
