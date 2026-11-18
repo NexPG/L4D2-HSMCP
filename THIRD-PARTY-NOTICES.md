@@ -22,6 +22,7 @@ those notices.
 | [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | MIT | The live Hammer shell-channel protocol: `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` text commands, `WM_COMMAND` menu ids, session/version handling, process and window discovery. Ported and adapted to `sidecar/hammer_live.py` and `src/tools/hammerlive.ts`. |
 | [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | MIT | The original project this repository grew out of; the parts of that tree that survive here. See `NOTICE`. |
 | [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | MIT (excluding `libsquish/`, which has its own licence) | The Python sidecar's BSP, VPK, VTF, FGD and VMF readers. Installed as a dependency, not vendored as source. |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | MIT | Source format libraries vendored in `vendor/sourcepp/`. The VTF image-format table in `src/bsp/vtf.ts` is taken from `vtfpp/ImageFormats.h`; VPK, BSP and MDL structure come from `vpkpp`, `bsppp` and `mdlpp`. |
 
 ### MIT licence text
 
@@ -33,6 +34,8 @@ MIT License
 
 Copyright (c) 2026 EpicMorg
 Copyright (c) 2026 Project Society Studio
+Copyright (c) 2023 Laura Lewis
+Copyright (c) 2022 Laura Lewis
 Copyright (c) 2021 Spencer Brown
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,6 +60,18 @@ SOFTWARE.
 `srctools` also contains `libsquish/` under its own licence; this project does not copy or
 modify that directory and uses the installed package as a whole.
 
+### GPL-3.0 components
+
+same licence as this repository, so combining and porting are permitted. Its full licence
+it, the ported file carries a header naming the upstream project and the change, and this
+table is updated in the same commit.
+
+### Vendored trees that are not built
+
+compiled by this project's build and are not included in the published npm package, which
+ships `dist/` alone. `vendor/README.md` records the exact commands for building them and
+the submodules CMake fetches at configure time.
+
 ## Projects reviewed but not copied
 
 These were examined during the 2026 upstream-intake pass. **No code or content from them is
@@ -65,12 +80,14 @@ not accidentally assume a licence that is not there.
 
 | Project | Licence | Status |
 |---|---|---|
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | MIT | Reference for Source formats; not vendored. |
 | [Mrfunreal/L4D2-FGD-Edits](https://github.com/Mrfunreal/L4D2-FGD-Edits) | No licence file found | Reference only. No FGD, model, texture or script is copied. The toolkit can load a user-installed FGD through the `fgd` argument of `read_fgd_class` / `read_vmf_lint`; the file stays on the user's disk. |
 | [Mrfunreal/L4D2_Navmesh_CFG](https://github.com/Mrfunreal/L4D2_Navmesh_CFG) | No licence file found | Reference for nav console commands; no `.cfg` copied. |
 | [Mrfunreal/Various_Scripts](https://github.com/Mrfunreal/Various_Scripts) | No licence file found | Reference only; no scripts copied. |
 | [Mrfunreal/-L4D2_Weapon_Viewmodel_QC_Prefabs](https://github.com/Mrfunreal/-L4D2_Weapon_Viewmodel_QC_Prefabs) | No licence file found | Reference only; no QC prefab copied. |
 | [Mrfunreal/L4D2_Player_Extra_Files](https://github.com/Mrfunreal/L4D2_Player_Extra_Files) | No licence file found | Reference only; no model, QCI or SMD copied. |
+| [justin-chellah/navmesh-lib](https://github.com/justin-chellah/navmesh-lib) | GPL-3.0 | Reference only. A SourceMod plugin that reads nav data out of a running server's memory through gamedata offsets; it never touches `.nav` files, which is what this project works with. |
+| [justin-chellah/survivor-bot-nav-fixes](https://github.com/justin-chellah/survivor-bot-nav-fixes) | GPL-3.0 | Reference for the L4D2 nav attribute names and bits. Those values come from Valve's public `nav.h`, so our implementation is written from the header, not from this plugin. |
+| [Zolfyyy/sourcepawn-navmesh](https://github.com/Zolfyyy/sourcepawn-navmesh) | GPL-3.0 | Reference only. Its `.nav` parser is credited to Anthony Iacono's `War3SourceV2/Nav`, which has **no licence of any kind** (`/license` returns 404), so the wrapper's GPL cannot cover that code. Our nav reader is written from the format itself. |
 
 A project without a licence is **all rights reserved** by default. Reading it to learn a
 protocol or a command name is not the same as copying its expression; when in doubt, write

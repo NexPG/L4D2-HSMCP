@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/sourcepp.csproj">
+    <Deploy Solution="Release|*" />
+  </Project>
+  <Project Path="test/sourcepp.test.csproj" />
+</Solution>
