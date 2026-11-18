@@ -8,7 +8,7 @@
  *
  * The grammar is `scriplib`'s, which is not KeyValues and not a config file: a line starting
  * with `$` is a command, its arguments are quoted or bare, and some commands take a `{ }`
- * licence as this repository) and from `scriplib.cpp`:
+ * block of further commands. Three details come from Valve's `scriplib.h` / `scriplib.cpp`:
  *
  * * `\` is a literal backslash, not an escape — `$cdmaterials "models\weapons\"` is a real
  *   spelling and the trailing backslash closes nothing;
