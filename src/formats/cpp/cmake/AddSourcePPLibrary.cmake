@@ -7,7 +7,7 @@ function(add_sourcepp_library TARGET)
         set(PROPAGATE_VARS "")
 
         # Add C++
-        include("${CMAKE_CURRENT_SOURCE_DIR}/src/${TARGET}/_${TARGET}.cmake")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/source/${TARGET}/_${TARGET}.cmake")
 
         # Add C
         if(SOURCEPP_BUILD_C_WRAPPERS AND OPTIONS_C)

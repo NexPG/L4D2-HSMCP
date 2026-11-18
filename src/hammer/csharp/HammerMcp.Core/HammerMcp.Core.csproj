@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>HammerMcp.Core</RootNamespace>
-    <ApplicationIcon>hammer-mcp-stopped.ico</ApplicationIcon>
+    <ApplicationIcon>..\assets\hammer-mcp-stopped.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="hammer-mcp-stopped.ico" />
+    <Content Include="..\assets\hammer-mcp-stopped.ico" Link="assets\hammer-mcp-stopped.ico" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="KeyValues2" Version="1.0.0" />
@@ -13,6 +13,6 @@
     <PackageReference Include="ValveKeyValue" Version="0.80.0.542" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\..\registry\hammers.json" LogicalName="hammers.json" Link="registry\hammers.json" />
+    <EmbeddedResource Include="..\..\data\hammers.json" LogicalName="hammers.json" Link="data\hammers.json" />
   </ItemGroup>
 </Project>

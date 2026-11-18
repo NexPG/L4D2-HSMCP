@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.91-alpha — 2026-11-19
+
+
+  remaining C++ trees now use `include/` + `source/` instead of `src/` inside `src/`, with the
+  five CMake references updated. One icon serves both C# projects (`csharp/assets/`), and the
+  Hammer build registry moved out of the C# code tree to `src/hammer/data/`.
+- **The layout is documented where it is decided.** `src/README.md` now says why the four
+  native trees keep their internal layout (the build systems require it), what is not imported
+  (submodules, upstream docs), and that non-code data gets a `data/` directory beside
+  the language directories.
+- **Nothing was built here and nothing pretends otherwise.** No CMake or dotnet is
+  installed; `build/`, `target/` and `obj/` stay ignored.
+
 ## 0.0.90-alpha — 2026-11-18
 
 - **`run_pakfile_add`: the pakfile is written here, not by `bspzip`.** A map's embedded

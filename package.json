@@ -1,6 +1,6 @@
 {
   "name": "hammer-mcp",
-  "version": "0.0.90-alpha",
+  "version": "0.0.91-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
   "license": "GPL-3.0-only",
   "author": "NexPG",

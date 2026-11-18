@@ -37,11 +37,34 @@ A single-language module keeps its files at the module root — `src/textures/ty
 the only exception in today's tree because that module also has to be able to grow a second
 language without moving every file again.
 
+## Native trees
+
+Four of the language directories hold real upstream implementations. Their internal layout is
+the build system's, not ours, and flattening it would break every `#include`, `mod` and
+`<ProjectReference>`:
+
+| Directory | Layout | Why |
+|---|---|---|
+| `src/formats/cpp/` | `include/`, `source/`, `cmake/`, `ext/`, `CMakeLists.txt` | CMake and the `#include <vpkpp/...>` paths |
+
+| `src/hammer/csharp/` | one directory per `.csproj`, plus `assets/` | MSBuild's project layout |
+
+`src/formats/cpp`) and `argparse`/`indicators` under `ext/cli/`; CMake fetches them or the
+paths are adjusted at configure time. Nothing here is built on this machine -- no CMake
+or dotnet — and `build/`, `target/`, `obj/` are gitignored.
+
+## Data, not source
+
+`src/hammer/data/` holds data a module reads at runtime: `hammers.json`, the registry of known
+editor builds. It is not code, so it is not in `typescript/`, `python/` or `csharp/`; it is
+not paperwork either, so it is not in `third_party/`. A module that needs a data file gets a
+`data/` directory beside its language directories.
+
 ## The modules
 
 | Module | What it owns |
 |---|---|
-| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences — and `csharp/`, the upstream reference implementation of the shell channel and its Core library |
+| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences — plus `csharp/` (the upstream implementation) and `data/` (the build registry) |
 | `maps/` | VMF and BSP reading and writing, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
 | `textures/` | VTF and VMT |
 | `nav/` | the navigation mesh: reading, generation, editing, trouble reports |

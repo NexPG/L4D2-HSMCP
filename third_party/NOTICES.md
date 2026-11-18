@@ -34,7 +34,8 @@ licence has to travel with the code — and its canonical copy is under `license
 | Path | Project | Provides |
 |---|---|---|
 | `src/formats/cpp/` | sourcepp | BSP, VPK, VTF, MDL, KeyValues and DMX libraries |
-| `src/hammer/csharp/` | EpicMorg/Hammer-MCP | the shell channel, the Core library and the Hammer build registry |
+| `src/hammer/csharp/` | EpicMorg/Hammer-MCP | the shell channel and the Core library |
+| `src/hammer/data/hammers.json` | EpicMorg/Hammer-MCP | the registry of known Hammer builds, used to identify an editor by its DLL hash |
 
 They are not built on this machine (no `cmake` or `dotnet` installed), are not
 imported by the TypeScript server, and their build output (`build/`, `target/`, `obj/`) is

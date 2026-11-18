@@ -135,7 +135,7 @@ def _open_map(titles: list[str]) -> str | None:
 
 
 _REGISTRY_PATH = (
-    Path(__file__).resolve().parents[2] / "hammer" / "csharp" / "registry" / "hammers.json"
+    Path(__file__).resolve().parents[1] / "data" / "hammers.json"
 )
 _registry: dict[str, dict[str, Any]] | None = None
 

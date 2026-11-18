@@ -11,16 +11,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const REGISTRY = join(
-  import.meta.dirname,
-  "..",
-  "..",
-  "src",
-  "hammer",
-  "csharp",
-  "registry",
-  "hammers.json",
-);
+const REGISTRY = join(import.meta.dirname, "..", "..", "src", "hammer", "data", "hammers.json");
 
 interface Build {
   id: string;

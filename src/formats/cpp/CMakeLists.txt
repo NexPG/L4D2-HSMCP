@@ -134,10 +134,10 @@ include_subdirectory(ext)
 
 
 # Shared code
-include_subdirectory(src/sourcepp)
-include_subdirectory(src/sourcepp/compression)
-include_subdirectory(src/sourcepp/crypto)
-include_subdirectory(src/sourcepp/parser)
+include_subdirectory(source/sourcepp)
+include_subdirectory(source/sourcepp/compression)
+include_subdirectory(source/sourcepp/crypto)
+include_subdirectory(source/sourcepp/parser)
 
 
 # Benchmarks
