@@ -8,6 +8,14 @@ project's skill and MCP, not into a tutorial for one test map. The campaign in
 an anti-bot page when fetched; their search snippets and oldid/printable forms were used, and
 the facts below are the ones repeated across sources and confirmed in game where possible.
 
+**Companion documents (later, deeper passes):**
+
+- [`hammerpp-complete-reference.md`](hammerpp-complete-reference.md) — Hammer++ build 8873
+  feature inventory, settings, Tools++ flags and the feature → tool matrix.
+- [`l4d2-complete-reference.md`](l4d2-complete-reference.md) — L4D2 mission/nav/Director/
+  finale/mode/infected/weapon/entity/console/limit reference with values read from the
+  installed game.
+
 ## 1. What a campaign actually is
 
 ```

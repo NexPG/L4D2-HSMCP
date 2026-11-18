@@ -51,8 +51,25 @@ function OnBeginCustomFinaleStage( num, type )
 - `PANIC` — a horde wave; its value is how many.
 - `TANK` — a tank wave; its value is how many.
 - `DELAY` — a pause in seconds.
-- `SCRIPTED` — an onslaught stage that ends only on `EndCustomScriptedStage` or
-  `AdvanceFinaleState`; its value is a script name.
+- `ONSLAUGHT` / `SCRIPTED` — value `3`, an onslaught stage that ends only on
+  `EndCustomScriptedStage` or `AdvanceFinaleState`; its value is a script name (or `""`).
+
+`A_CustomFinaleMusicN` overrides the music for that stage. Stock finales also use
+`SharedOptions` and copy it into `MapScript.DirectorOptions` on each stage:
+
+```squirrel
+function OnBeginCustomFinaleStage( num, type )
+{
+    MapScript.DirectorOptions.clear()
+    foreach ( key, val in SharedOptions )
+        MapScript.DirectorOptions[key] <- val
+}
+```
+
+The stock patterns are the best templates: `c2m5_concert_finale.nut` (9 stages, two tanks),
+`c4m5_milltown_escape_finale.nut` (8 stages), `c1m4_atrium_finale.nut` (31 stages with
+`ONSLAUGHT` delays and a gas-can counter). Read them from the installed VPK or the
+L4D2-Decompiled mirror before inventing a sequence.
 
 Multiple finales can be declared with prefixes `A_`..`E_`; the Director picks one.
 

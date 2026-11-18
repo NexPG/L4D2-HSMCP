@@ -12,11 +12,14 @@ import { contentTools } from "./content.js";
 import { cubemapTools } from "./cubemap.js";
 import { depsTools } from "./deps.js";
 import { displacementTools } from "./displacement.js";
+import { doorTools } from "./door.js";
 import { exportMapTools } from "./exportmap.js";
 import { faceTools } from "./face.js";
 import { finaleTools } from "./finale.js";
 import { gameTools } from "./games.js";
 import { gateTools } from "./gate.js";
+import { hammerTools } from "./hammer.js";
+import { hammerPlusPlusTools } from "./hammerpp.js";
 import { healthTools } from "./health.js";
 import { hlmvTools } from "./hlmv.js";
 import { hollowTools } from "./hollow.js";
@@ -57,11 +60,14 @@ import { vmfTools } from "./vmf.js";
 import { vmfEditTools } from "./vmfedit.js";
 import { vscriptTools } from "./vscript.js";
 import { wiringTools } from "./wiring.js";
+import { waterTools } from "./water.js";
 import { weatherTools } from "./weather.js";
 import { worldspawnTools } from "./worldspawn.js";
 
 export const allTools: AnyToolDef[] = [
   ...healthTools,
+  ...hammerTools,
+  ...hammerPlusPlusTools,
   ...hlmvTools,
   ...gameTools,
   ...campaignTools,
@@ -120,5 +126,7 @@ export const allTools: AnyToolDef[] = [
   ...worldspawnTools,
   ...textTools,
   ...terrainTools,
+  ...waterTools,
+  ...doorTools,
   ...studiomdlTools,
 ];

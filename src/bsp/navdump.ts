@@ -50,6 +50,8 @@ const TERROR_ATTRIBUTES: Array<[number, string]> = [
   [0x2000, "no-mobs"],
   [0x8000, "rescue-vehicle"],
   [0x10000, "rescue-closet"],
+  [0x80000, "no-threat"],
+  [0x100000, "lying-down"],
 ];
 
 function decode(flags: number, table: Array<[number, string]>): string[] {

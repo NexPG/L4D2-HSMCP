@@ -11,8 +11,8 @@ when it has all four:
 | Mechanic | What it needs | Status |
 |---|---|---|
 | Campaign, chapter transition, saferoom | info_changelevel, checkpoint door, CHECKPOINT, landmark pair | **verified** (`verify.ps1`, PASS) |
-| Finale: start, escape, victory | trigger_finale, FINALE nav, arrival changelevel, FinaleEscapeFinished | **verified** with a custom type-2 stage list: stages → `FinaleEscapeStarted` → escape → `Map: credits` (70 s) |
-| Finale: waves, tanks, specials | spawn areas, Director state machine | custom finale stages verified in game: PANIC → DELAY → TANK → DELAY → DELAY, escape and credits (137 s). TANK stage transitioned; bots killing a tank is not proven |
+| Finale: start, escape, victory | trigger_finale, FINALE nav, arrival changelevel, FinaleEscapeFinished | **verified on `hsmcp_test_m2`** with a custom type-2 stage list: stages → `FinaleEscapeStarted` → escape → `Map: credits` (70 s). On the current `night_moscow_m2`, the `+map` harness has no player +use, so the campaign-menu start is still open |
+| Finale: waves, tanks, specials | spawn areas, Director state machine | custom finale stages verified on `hsmcp_test_m2`: PANIC → DELAY → TANK → DELAY → DELAY, escape and credits (137 s). TANK stage transitioned; bots killing a tank is not proven |
 | Director flow, goal area | nav CHECKPOINT/FINALE, info_director | **verified** (dump + bots) |
 | Nav generation and attributes | run_nav_generate, func_nav_attribute_region, read_nav_dump | **verified** |
 | Assets: textures, models, sizes, skyboxes, particles | read_game_content (details), read_model_info | **verified** |
@@ -35,6 +35,11 @@ when it has all four:
 | Instances | `write_instance`, `read_vmf` with `collapseInstances` | tool (fixture-tested); in-game visual pending |
 | Model/material authoring | QC/SMD source, `studiomdl`, `run_vtf_convert` | tool: sample model compiled; HLMV launches and its UI captures, the 3D canvas needs an interactive desktop |
 | Non-campaign add-ons | other addon types | not yet |
+| Director defaults and `DirectorOptions` | cvar/read from the game, stage types from stock scripts | **documented and read from the install**; `director_*` defaults and `z_*` health/speed are in `docs/reference/l4d2-complete-reference.md` |
+| Special infected stats | `z_*` cvars | **documented** (common 50, boomer 50, hunter/smoker 250, spitter 100, jockey 325, charger 600, tank 4000, witch 1000); behaviours still need a live test |
+| Weapon/item stats | `scripts/weapon_*.txt`, `info_map_parameters` | **documented**; placement is tool-checked, balance is a play-test judgement |
+| Hammer++ editor-only previews | lighting/fog/sky/particles/ropes | **view-only**; `render_vmf_*` and `run_map_test` are the agent's eyes |
+| Propper++ brush → model | model authoring | **gap** (no SMD/QC writer) |
 
 ## Order of work
 

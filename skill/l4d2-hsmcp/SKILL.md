@@ -52,6 +52,9 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
+| `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
+| `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |
+| `docs/reference/l4d2-complete-reference.md` | L4D2 mechanics, Director defaults, finale stages, infected/weapon stats, entities, console, limits |
 | `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |
 | `references/mapping/hammer-coverage.md` | every Hammer++ feature, its tool, and what is still a gap |
 | `references/mapping/3d-skybox.md` | sky_camera, scale 16, and the scaled-copy workflow |
@@ -87,7 +90,8 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 6. **Pack and deploy.** `references/campaign/addon-and-deployment.md`: one archive in the
    game, fixed name, previous ones removed.
 7. **Play test.** `workflows/playtest.md`. What counts as passed is written there, not
-   inferred.
+   inferred. The one-call form is `run_campaign_gate`: mission → lint → compile → nav →
+   props → finale → `nav_trouble_report` → map test with the exact BSP/nav pair.
 
 ## Invariants
 
@@ -135,7 +139,11 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 - **A full Survival wave.** Setup and HUD are verified; the round still starts from the
   map's own `trigger_finale` or `ForcePanicEvent`, which the map author must place.
 - **HLMV's 3D canvas in a headless session.** The editor launches and its UI captures; the
-  viewport needs an interactive desktop.
+  viewport needs an interactive desktop. `read_model_info` bounds and `preview_asset` on
+  the model's materials are the reliable half until a preview-map fallback exists.
+- **A player-driven finale start in `+map`.** `ForceFinaleStart` without a spawned player
+  is not the player-facing path; the last proof is the campaign menu or a reachable +use
+  button in a live round.
 - **A general VScript API wrapper.** Scripts are authored and attached, but what they call
   at runtime is the map's own logic.
 - **Model import from DCC formats.** QC/SMD compilation with `studiomdl` is covered;

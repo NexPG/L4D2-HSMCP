@@ -1,6 +1,6 @@
 # Tool catalogue
 
-110 tools. This page groups them by the job you are doing; each tool's own description is the
+114 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -10,6 +10,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | Tool | Use |
 |---|---|
 | `health` | game profile, compilers, FGD, sidecar, tool count, whether the build is stale |
+| `read_hammerpp` | Hammer++ settings by section, game config/build programs, keybindings, warnings |
+| `open_in_hammer` | open the VMF in Hammer++ and capture the editor window |
 | `read_source_games` | how the install was discovered, if `health` looks wrong |
 
 ## Campaign files
@@ -79,6 +81,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `edit_vmf` | add/update/remove entities and outputs by splicing |
 | `write_vmf_solid` | brushes from box, wedge, cylinder, convex; also into a brush entity by id |
 | `write_vmf_terrain` | floor grid + displacement + noise + sew in one call |
+| `write_vmf_water` | `func_water_analog` + `water_lod_control`, Water shader checked |
+| `place_door` | rotating door with the origin on the hinge; checkpoint names checked |
 | `write_vmf_fitting` | door casing, counter, skirting, cornice |
 | `transform_solids` | move, turn, scale, mirror brushes |
 | `merge_solids` | merge convex brushes into the one brush around them |
@@ -134,6 +138,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 
 | Tool | Use |
 |---|---|
+| `open_in_hammer` | launch Hammer++ on a VMF and capture the editor window (the visual viewport) |
 | `run_compile` | vbsp/vvis/vrad natively, per-stage findings |
 | `read_compile_log` | structured findings from a compiler log |
 | `read_leak` | turn a leak into a location |

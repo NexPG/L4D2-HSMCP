@@ -1,6 +1,6 @@
 # Open problems — 2026-11-18 (post-gate list)
 
-**Version:** 0.0.83-alpha
+**Version:** 0.0.84-alpha
 **Campaign:** `campaigns/002-night-moscow/` (local, gitignored)
 **Meaning:** only problems that are still open. The fixes already landed are listed at the
 end; they are not repeated as open work.
@@ -150,6 +150,43 @@ material, but a reader can mistake it for one.
 tools that trust the FGD may not.
 **Next fix:** a small known-entity supplement for `logic_script` (`vscripts`,
 `RunScriptCode`, `RunScriptFile`) shared by every FGD consumer.
+
+## P2b — Hammer++ features with no agent path yet
+
+These came from the build-8873 feature audit (`docs/reference/hammerpp-complete-reference.md`).
+
+### 15. Propper++ (brush → model)
+
+**When:** a mapper wants to turn detailed brushwork into a `prop_static` model.
+**Symptom:** there is no SMD/QC writer; `run_studiomdl` compiles a source that already
+exists, but nothing extracts a brush selection into a mesh.
+**Next fix:** a mesh writer (faces → SMD), a QC template, `run_studiomdl`, and a preview.
+
+### 16. Hotspot texturing (`.rect` / `$rectanglemap`)
+
+**When:** a material declares rectangle hotspots and `Fit` should map a face to the nearest
+one.
+**Symptom:** `align_faces(fit)` assumes a 512-texel texture; the `.rect` lookup is
+editor-side.
+**Next fix:** read `$rectanglemap`, parse the `.rect`, choose the rectangle, then call
+`set_face_uv`.
+
+### 17. 4-way displacement blends
+
+**When:** `Enable4WayBlends` is on and a displacement has extra blend data.
+**Symptom:** the writer can paint alpha, but whether L4D2 shaders render the extra data is
+unverified.
+**Next fix:** a test map with a 4-way blend material, `paint_displacement` for the extra
+channel, and an in-game screenshot.
+
+### 18. Hammer++ settings reader
+
+**When:** the agent needs more than the I/O delimiter (autosave, microgrid, HDR preview,
+instance collapse, gizmo, 4-way blends).
+**Symptom:** `health` reports the editor, settings file and I/O delimiter; the rest is not
+structured.
+**Next fix:** parse `hammerplusplus_settings.ini`, `hammerplusplus_gameconfig.txt` and the
+keybindings, and return them by section.
 
 ## P3 — environment and verification limits
 

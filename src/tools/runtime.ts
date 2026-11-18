@@ -66,7 +66,23 @@ async function stopGame(): Promise<void> {
   } catch {
     // Not running. That is the normal case.
   }
-  await sleep(1200);
+  // `taskkill` returns before the process has actually left the process table. A launch
+  // during that window is handed to the dying client and produces an empty console log,
+  // which reads as a timeout with no evidence. Poll instead of guessing with one sleep.
+  for (let i = 0; i < 20; i++) {
+    try {
+      const out = execFileSync(
+        "tasklist",
+        ["/FI", "IMAGENAME eq left4dead2.exe", "/NH"],
+        { encoding: "utf8", windowsHide: true },
+      );
+      if (!/left4dead2\.exe/i.test(out)) break;
+    } catch {
+      break;
+    }
+    await sleep(300);
+  }
+  await sleep(500);
 }
 
 /**
@@ -493,6 +509,10 @@ export const runMapTest = defineTool({
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
+    // A previous client still running is a launch that goes to the old process: the new
+    // command line is ignored and the wait sees no new log. The nav generator already did
+    // this; the map test did not, and a compile immediately before a test could hit it.
+    await stopGame();
     const consoleLog = join(gameDir, "console.log");
     // Truncate rather than delete: a delete that silently fails leaves yesterday's
     // "Mission credits" in the file and a wait-for match returns immediately.

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **110 tools**.
+Last checked against the tool list on 18/11/2026: **114 tools**.
 
 ## The file itself
 
@@ -93,6 +93,12 @@ getting `ENOENT` on the first call.
 | Free-hand sculpting | *the mouse* | Declarative shapes are here; dragging a brush over a hillside is not something a tool call is |
 | Displacement seams | `read_displacements` | Reports them, which Hammer does not |
 
+## Terrain and water
+
+| Hammer | Here | Notes |
+|---|---|---|
+| Water brush | `write_vmf_water` | `func_water_analog` + `water_lod_control`; the material is checked for the Water shader before writing |
+
 ## Entities
 
 | Hammer | Here | Notes |
@@ -110,6 +116,7 @@ getting `ENOENT` on the first call.
 | Look at a model or texture | `preview_asset` | Material: base VTF decoded to a PNG. Model: HLMV viewport captured |
 | Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
+| Rotating door | `place_door` | Origin is the hinge; model hull read with `read_model_info`; checkpoint names checked |
 | Create instance from selection | `create_instance_from_selection` | Writes the instance file, recentres it and leaves one `func_instance`; a brush entity is taken whole |
 | Areaportals | `write_portal` | |
 | Occluders | `write_portal` | |
@@ -132,6 +139,7 @@ getting `ENOENT` on the first call.
 | Hammer | Here | Notes |
 |---|---|---|
 | Run map | `run_compile` | vbsp, vvis, vrad, stock or the Hammer++/Tools++ chain; the compilers are Windows-native here |
+| Open the map in the editor | `open_in_hammer` | Launches Hammer++ on the VMF and captures its window; the editor viewport is the one visual layer a writer cannot reproduce |
 | See the running map | `run_map_test` | waits for a marker, can install a bsp and nav, and can capture the game window as a real image; `screen` method |
 | Read the compile log | `read_compile_log` | Turns each message into what it actually means |
 | Find the leak | `read_leak` | A position and the entity that caused it, from a compile that already ran |
@@ -182,6 +190,8 @@ map and looking, or by not happening at all.
 | Tool | What Hammer has instead |
 |---|---|
 | `health` | nothing |
+| `read_hammerpp` | nothing: the editor's settings file is not a map command, but it decides I/O and brush precision |
+| `open_in_hammer` | launching the editor is the one visual layer a writer cannot reproduce |
 | `read_source_games` | a dialog you fill in yourself |
 | `read_bsp_info` | nothing: a compiled map is opaque to the editor |
 | `read_bsp_entities` | nothing |

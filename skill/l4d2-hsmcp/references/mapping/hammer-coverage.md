@@ -5,6 +5,10 @@ The goal is that an agent can do everything Hammer++ can, and more. This is the 
 `tool` means the tool exists but has not been exercised on L4D2 content; `gap` means there is
 no way to do it yet.
 
+The full inventory, including Tools++ flags and the settings that change output, is
+`docs/reference/hammerpp-complete-reference.md`. Read it before assuming a feature is
+covered: this table is the summary.
+
 ## Map and file
 
 | Feature | Tool | Status |
@@ -30,6 +34,8 @@ no way to do it yet.
 | Delete | `delete_solids` | verified |
 | Carve | several clips | tool |
 | Fitting (door casing, counter, skirting) | `write_vmf_fitting` | tool |
+| Rotating door | `place_door` | verified: hinge origin and checkpoint name on the night-moscow door |
+| Water volume | `write_vmf_water` | verified on a fixture: Water shader checked, brush valid, `water_lod_control` added |
 
 ## Displacements
 
@@ -100,6 +106,7 @@ no way to do it yet.
 | Feature | Tool | Status |
 |---|---|---|
 | Compile (stock or Tools++) | `run_compile` | verified |
+| Open the editor's viewport | `open_in_hammer` | verified: Hammer++ loaded the night-moscow VMF and the capture shows the 3D view |
 | Leak check | `read_vmf_leak`, `read_leak` | verified |
 | Compile log findings | `read_compile_log` | verified |
 | Pack assets into BSP | `run_pack` | tool |
@@ -133,10 +140,20 @@ its file-level result or named as view-only.
 | `editor_text` | `edit_vmf` can write the entity. It is Hammer++-only and has no in-game effect |
 | Compile window | `run_compile` plus `read_compile_log`; no CMD window, but the log is parsed |
 | Color picker | `edit_vmf` sets `rendercolor`; the palette is editor state |
-| Keybind editor, Discord RPC, MP3 playback, model hotload, crash recovery, autosave | Application features with no file-level operation. Guarded writers take backups and support `dryRun`; there is no live session to recover |
+| Keybind editor, Discord RPC, MP3 playback, model hotload, crash recovery, autosave | Application features with no file-level operation. `read_hammerpp` reports the settings and keybinding count; guarded writers take backups and support `dryRun` |
+| `vertices_plus` precise brush data | Kept, moved with geometry, dropped when a clip changes the loop; Hammer++ regenerates it |
+| Multiple cordons | `set_cordon` writes the compile-relevant half; the editor's cordon list is not map content |
+| 3-point clip | `clip_solids` with two plane cuts; the result is the same convex pieces |
+| Polygon tool | `write_vmf_solid` shape `convex` |
+| UV lock | `move_vertices`/`transform_solids` move geometry; `set_face_uv` writes the resulting axes |
+| Propper++ (brush → model) | **gap**: no SMD/QC writer; `run_studiomdl` compiles a supplied source |
+| Hotspot texturing (`$rectanglemap`/`.rect`) | `align_faces(fit)` writes U/V; the rectangle lookup is editor-side and not implemented |
+| Particle/rope/fog/render-effect previews | Editor-only; `render_vmf_view`, `run_map_test`, `read_lightmap_budget` are the substitutes |
 
 These are not gaps in what a map can contain. They are the editor application's own surface,
-and the table above says which primitive stands in for each one.
+and the table above says which primitive stands in for each one. Propper++ is the one row
+that is a real capability gap, because it produces a model the map needs and the toolkit
+cannot yet write that model.
 
 ## Hammer++ files
 

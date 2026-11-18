@@ -7,3 +7,4 @@ the fix or the next step; it is not a promise that the fault is closed.
 |---|---|
 | [2026-11-18-wish-build-findings.md](2026-11-18-wish-build-findings.md) | The first wish-to-campaign build (night forest, Moscow metro, VDNKh, BTR): nav/BSP contract, unplayable chapter 1, checkpoint and finale findings, and the full problem list |
 | [2026-11-18-open-problems.md](2026-11-18-open-problems.md) | The current open list after the asset/terrain/door passes, with conditions, symptoms and next fixes |
+| [2026-11-18-hammerpp-l4d2-research.md](2026-11-18-hammerpp-l4d2-research.md) | The Hammer++ 8873 / L4D2 deep research: settings, Tools++ flags, mechanics defaults, the three tools it produced, and the remaining gaps |

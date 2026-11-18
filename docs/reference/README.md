@@ -1,5 +1,12 @@
 # Project reference
 
+- [`hammerpp-complete-reference.md`](hammerpp-complete-reference.md) — Hammer++ build
+  8873: every editor feature, the settings that change output, Tools++ flags and limits,
+  the VMF blocks Hammer++ adds, and the feature → tool matrix.
+- [`l4d2-complete-reference.md`](l4d2-complete-reference.md) — L4D2 mechanics from the
+  installed game: mission files, flow, nav, Director defaults, finales and the stage
+  machine, survivors/infected stats, weapons, entities, console surface, limits, assets,
+  optimization and failure signatures.
 - [`hammer-parity.md`](hammer-parity.md) — every tool against the Hammer command it replaces;
   checked by `test/tools/parity.test.ts`.
 - [`engine-limits-l4d2.md`](engine-limits-l4d2.md) — the 32-bit/DX9 ceilings that decide

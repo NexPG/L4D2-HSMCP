@@ -12,6 +12,7 @@ export type AuditKind =
   | "vmf_edit"
   | "compile_start"
   | "compile_end"
+  | "hammer_capture_failed"
   | "error";
 
 /**

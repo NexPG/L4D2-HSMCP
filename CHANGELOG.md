@@ -5,6 +5,36 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.84-alpha — 2026-11-18
+
+- **Hammer++ complete reference.** `docs/reference/hammerpp-complete-reference.md`
+  inventories build 8873: every editor feature, the settings that change output
+  (`IOParamNewDelimiter`, `vertices_plus`, HDR preview, instance collapse), the Tools++
+  flags and limits (`-l4d2`, `-staticpropformat 9`, `-simpleladders`, AO, texture shadows,
+  `-both`), the VMF blocks Hammer++ adds, and a feature → tool matrix.
+- **L4D2 complete reference.** `docs/reference/l4d2-complete-reference.md` covers mission
+  fields and modes, map flow, nav defaults and the 18 checks, Director defaults and
+  `DirectorOptions`, the custom-finale stage machine (PANIC/TANK/DELAY/ONSLAUGHT), escape
+  events, survivor/infected health and speed (`z_*` defaults), weapons from the installed
+  scripts, `info_map_parameters` densities, entities, console surface, limits, assets,
+  optimization and failure signatures.
+- **`write_vmf_water`.** Writes a `func_water_analog` volume and a `water_lod_control`
+  entity, checks that the material is an installed Water-shader material before writing,
+  and rolls the file back if the brush write fails.
+- **`place_door`.** Turns a model hull + opening + yaw into the hinge origin with
+  `placeDoor`, writes the door entity, and warns when a checkpoint door is not named
+  `checkpoint_exit`/`checkpoint_entrance`.
+- **`open_in_hammer`.** Launches Hammer++ on a VMF and captures the editor window as a real
+  image block. This is the one visual layer a file writer cannot reproduce: the 3D viewport,
+  lighting preview, fog, sky, particles and gizmos. The tool does not drive the UI.
+- **`read_hammerpp`.** Reads `hammerplusplus_settings.ini` by section, the game
+  configuration and build programs, the FGD mount and the keybinding count, and warns when
+  the I/O delimiter, precise vertex data, HDR preview or 4-way blends are wrong for L4D2.
+- **Nav flags completed.** `read_nav_dump` decodes `no-threat` (0x80000) and `lying-down`
+  (0x100000); the L4D2 `func_nav_attribute_region` list is in the references.
+- **Honest gaps recorded.** Propper++ (brush → model), hotspot `.rect` lookup, 4-way blend
+  verification and the preview-map fallback for HLMV remain open.
+
 ## 0.0.83-alpha — 2026-11-18
 
 - **`run_campaign_gate`.** One guarded tool runs the campaign through mission check, VMF
