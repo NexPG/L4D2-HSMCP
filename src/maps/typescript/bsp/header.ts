@@ -21,6 +21,8 @@ export type LumpLayout = "standard" | "l4d2";
 export const LUMP_ENTITIES = 0;
 /** Brush models. Model 0 is the world, and its bounding box is the map's real extent. */
 export const LUMP_MODELS = 14;
+/** The embedded ZIP: a map's custom assets. */
+export const LUMP_PAKFILE = 40;
 
 /**
  * Lump names, from `LUMP_*` in `src/public/bspfile.h` of source-sdk-2013, read 11/08/2026.
@@ -261,6 +263,33 @@ export function readHeader(path: string): BspHeader {
     fileSize: size,
     lumps,
   };
+}
+
+/**
+ * Writes a lump's offset and length into the header, in the field order this file uses.
+ *
+ * The writer needs this because L4D2 swaps the descriptor fields: patching a "standard"
+ * header on an L4D2 map writes the length where the offset belongs, and the map then reads
+ * from the wrong place with no error. `readHeader` decides the layout; this applies it.
+ */
+export function setLumpDescriptor(
+  bytes: Buffer,
+  index: number,
+  layout: LumpLayout,
+  offset: number,
+  length: number,
+): void {
+  const at = 8 + index * 16;
+  if (at + 16 > bytes.length) {
+    throw new BspFormatError(`cannot write lump ${index}: the header is only ${bytes.length} bytes`);
+  }
+  if (layout === "l4d2") {
+    bytes.writeInt32LE(offset, at + 4);
+    bytes.writeInt32LE(length, at + 8);
+  } else {
+    bytes.writeInt32LE(offset, at);
+    bytes.writeInt32LE(length, at + 4);
+  }
 }
 
 /** The lump descriptor for `index`, or throws when it is empty. */

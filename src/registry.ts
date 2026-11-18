@@ -38,6 +38,7 @@ import { navTroubleTools } from "./nav/typescript/tools/navtrouble.js";
 import { optimiseTools } from "./maps/typescript/tools/optimise.js";
 import { organiseTools } from "./maps/typescript/tools/organise.js";
 import { overlayTools } from "./maps/typescript/tools/overlay.js";
+import { pakfileAddTools } from "./maps/typescript/tools/pakfileadd.js";
 import { pakfileTools } from "./packages/typescript/tools/pakfile.js";
 import { planTools } from "./maps/typescript/tools/plan.js";
 import { prefabTools } from "./maps/typescript/tools/prefab.js";
@@ -127,6 +128,7 @@ export const allTools: AnyToolDef[] = [
   ...renameTools,
   ...cubemapTools,
   ...pakfileTools,
+  ...pakfileAddTools,
   ...vtfTools,
   ...vpkTools,
   ...vmtTools,

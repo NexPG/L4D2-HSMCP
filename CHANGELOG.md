@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.90-alpha — 2026-11-18
+
+- **`run_pakfile_add`: the pakfile is written here, not by `bspzip`.** A map's embedded
+  archive is a plain ZIP, so adding a material, model or sound no longer needs the game's
+  `bspzip` and a Steam install. The archive is appended and lump 40 is moved to it, so the
+  map's other lumps are untouched; the result is read back and every entry compared with the
+  file it came from.
+- **L4D2's lump descriptor order is respected.** Left 4 Dead 2 writes `version, offset,
+  length` where every other Source game writes `offset, length, version`. The writer goes
+  through the shared header reader, so it cannot patch the wrong slot and leave a map that
+  reads from nowhere. Verified on the probe map, which is L4D2-layout.
+- **The ZIP reader and writer are ours.** Stored and deflated entries, a fixed timestamp and
+  sorted names, so the same input produces the same bytes; anything else — encryption,
+  ZIP64, a data descriptor — is refused rather than written wrong.
+
 ## 0.0.89-alpha — 2026-11-18
 
 - **The four useful upstream implementations are now in the project.** They are filed by

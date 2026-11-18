@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **131 tools**.
+Last checked against the tool list on 18/11/2026: **132 tools**.
 
 ## The file itself
 
@@ -222,6 +222,7 @@ map and looking, or by not happening at all.
 | `read_static_props` | nothing: Hammer shows a static prop as solid even when its model has no `.phy` |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
+| `run_pakfile_add` | nothing: Hammer cannot put a file into a compiled map |
 | `run_cubemap2hdr` | nothing offline. The engine builds cubemaps in whichever mode it is running |
 | `run_tga2skybox` | nothing offline: six TGAs into LDR and HDR cubemap `.vtf` files |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-131 tools. This page groups them by the job you are doing; each tool's own description is the
+132 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -165,6 +165,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_nav` | nav header and freshness against the `.bsp` |
 | `run_bsp_rename` | rename a `.bsp` and the content packed inside it |
 | `run_pakfile_extract` | extract a map's embedded pakfile |
+| `run_pakfile_add` | add/replace files in a map's pakfile with the native ZIP writer, no bspzip |
 | `run_tga2skybox` | six TGAs into LDR and HDR cubemaps |
 | `run_cubemap2hdr` | LDR cubemap to HDR `.vtf` |
 | `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |
