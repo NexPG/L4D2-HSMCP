@@ -53,6 +53,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
+| `references/mapping/model-authoring.md` | QC/SMD, `studiomdl`, physics, viewmodels and player models |
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |
 | `docs/reference/l4d2-complete-reference.md` | L4D2 mechanics, Director defaults, finale stages, infected/weapon stats, entities, console, limits |

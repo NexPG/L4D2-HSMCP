@@ -30,6 +30,9 @@ with a line here.
 - **Research reports live in the diary.** The Hammer++/L4D2 research report moved to
   `.develop-diary/04-log/2026-11-18-hammerpp-l4d2-research.md`; the upstream intake audit is
   `.develop-diary/04-log/2026-11-18-upstream-intake.md`.
+- **Model and nav authoring references.** `references/mapping/model-authoring.md` covers
+  QC/SMD, `studiomdl`, physics, viewmodels and player models; `references/nav/editing.md`
+  is the console command set for repairing a generated mesh, with the manual steps named.
 
 ## 0.0.84-alpha — 2026-11-18
 
