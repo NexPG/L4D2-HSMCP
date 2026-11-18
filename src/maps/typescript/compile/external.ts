@@ -19,7 +19,7 @@
  * survive: a tool waiting on a key it will never get looks identical to a slow one.
  */
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { run } from "@projectsociety/mcp-core";
 import type { Config } from "../../../core/typescript/config.js";
 import { ToolchainError, windowsInvocation } from "./toolchain.js";
@@ -56,7 +56,9 @@ export async function runExternalTool(
   args: readonly string[],
   options: { timeoutMs?: number; stdin?: string; where?: string } = {},
 ): Promise<ExternalRun> {
-  const binary = externalToolPath(config, exe);
+  // A bare name is looked up in the tools directory; an absolute path is used as given, so a
+  // binary the user installed elsewhere (or found on PATH) can be driven without copying it.
+  const binary = isAbsolute(exe) ? exe : externalToolPath(config, exe);
   if (!existsSync(binary)) {
     throw new ToolchainError(
       `${binary} not found. ${exe} is a standalone tool, not part of a game install: ` +

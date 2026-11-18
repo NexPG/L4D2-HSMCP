@@ -28,3 +28,9 @@ scratchpad/
 # History lives here; the game only ever holds the latest deploy.
 /campaigns/
 .3d-projects/
+
+# Build output of the vendored C++ and C# modules (CMake, dotnet).
+target/
+build/
+obj/
+

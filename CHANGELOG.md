@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.89-alpha — 2026-11-18
+
+- **The four useful upstream implementations are now in the project.** They are filed by
+  module, not by repository: `src/formats/cpp/` (sourcepp: bsppp, vpkpp, vtfpp, mdlpp,
+  channel, the Core library and the build registry). Upstream READMEs, CI, docs, brand
+  images and benchmark suites are not imported; the code and the build manifest of each
+  language are.
+  `.vtx` exist, and refuses with an actionable message when the binary is absent. The
+  alternative to `run_studiomdl`: one binary, no Crowbar, DMX/glTF sources the 2009 compiler
+  cannot read.
+- **Licences travel with the code.** Each vendored tree keeps its own `LICENSE`; the
+  canonical copies and the record are in `third_party/`. `third_party/NOTICES.md` says which
+  path belongs to which project and what it provides.
+- **Build output is ignored.** `build/`, `target/` and `obj/` are gitignored; none of these
+  trees is built on this machine (no CMake or dotnet), and the TypeScript server does
+  not import them.
+
 ## 0.0.88-alpha — 2026-11-18
 
 - **Nav areas: read and edit.** `read_nav_areas` lists every area of a `.nav` with its

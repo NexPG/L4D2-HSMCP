@@ -132,6 +132,22 @@ def _open_map(titles: list[str]) -> str | None:
     return None
 
 
+def _modified(titles: list[str]) -> bool | None:
+    """Whether the open map has unsaved changes, when the editor says so.
+
+    Hammer appends `*` to the map name inside the title's brackets. Not every build does:
+    Hammer++ 8873 x86 was measured on 18/11/2026 with an edited map open and its title stayed
+    `[map.vmf - Textured Shaded]`. So `True` is proof of unsaved changes and `None` means the
+    title carries no marker — never "the map is saved". A caller that needs certainty should
+    compare the saved `.vmf` with the editor's map version, not trust a missing asterisk.
+    """
+    for title in titles:
+        match = re.search(r"\[([^\]]+?\.vmf[^\]]*)\]", title, re.IGNORECASE)
+        if match:
+            return True if "*" in match.group(1) else None
+    return None
+
+
 def _editor(pid: int, shell: int) -> dict[str, Any]:
     windows = _windows_of(pid)
     main = next((w for w in windows if "[" in w["title"]), windows[0] if windows else None)
@@ -146,6 +162,7 @@ def _editor(pid: int, shell: int) -> dict[str, Any]:
         "hasShell": bool(shell),
         "titles": titles,
         "openMap": _open_map(titles),
+        "modified": _modified(titles),
     }
 
 

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>HammerMcp.Core</RootNamespace>
+    <ApplicationIcon>hammer-mcp-stopped.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="hammer-mcp-stopped.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="KeyValues2" Version="1.0.0" />
+    <PackageReference Include="Sledge.Formats.GameData" Version="1.1.8" />
+    <PackageReference Include="Sledge.Formats.Map" Version="1.2.9" />
+    <PackageReference Include="ValveKeyValue" Version="0.80.0.542" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\registry\hammers.json" LogicalName="hammers.json" Link="registry\hammers.json" />
+  </ItemGroup>
+</Project>

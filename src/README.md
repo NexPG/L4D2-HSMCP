@@ -16,8 +16,15 @@ src/hammer/
 ```
 
 Those directories hold **source files only**. No assets, no licence texts, no build output,
-no third-party trees, no module of their own inside them. Everything that is not source has
-a home of its own:
+no module of their own inside them. A language directory does keep the **build manifest** of
+its own language -- `CMakeLists.txt` for `cpp/`, the `.csproj` for
+`csharp/` — because the manifest is what makes those sources a buildable piece of the
+project, and because it sits in the same directory as the files it names. A vendored tree
+also keeps its **internal layout** (`include/vpkpp/...`, `src/qc/...`): flattening it would
+break every `#include` and `mod` in it, which is a rewrite, not an import. Upstream READMEs,
+CI, documentation, brand images and benchmark suites are dropped on import.
+
+Everything that is not source has a home of its own:
 
 | Not source | Where it goes |
 |---|---|
@@ -34,16 +41,14 @@ language without moving every file again.
 
 | Module | What it owns |
 |---|---|
-| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences |
+| `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences — and `csharp/`, the upstream reference implementation of the shell channel and its Core library |
 | `maps/` | VMF and BSP reading and writing, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
-| `models/` | QC parsing and building, studiomdl, HLMV |
 | `textures/` | VTF and VMT |
-| `nav/` | the navigation mesh: reading, generation, trouble reports |
+| `nav/` | the navigation mesh: reading, generation, editing, trouble reports |
 | `scripts/` | VScript |
 | `campaigns/` | mission files, finales, campaign gates |
 | `assets/` | content search, material preview |
-| `packages/` | addon packaging (VPK) |
-| `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC |
+| `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC — and `cpp/`, the sourcepp format libraries |
 | `core/` | config, version, logging, MCP plumbing, the sidecar client |
 
 ## Rules

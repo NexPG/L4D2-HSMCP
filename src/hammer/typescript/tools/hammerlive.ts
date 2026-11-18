@@ -38,14 +38,20 @@ const EDITOR = z.object({
   hasShell: z.boolean(),
   titles: z.array(z.string()),
   openMap: z.string().nullable(),
+  /**
+   * `true` when Hammer marks the map with `*` in the title — proof of unsaved changes.
+   * `null` means the title carries no marker: some builds never add one (Hammer++ 8873 x86
+   * was measured with an edited map open), so absence is not proof that the map is saved.
+   */
+  modified: z.boolean().nullable(),
 });
 
 export const hammerStatusTool = defineTool({
   name: "hammer_status",
   description:
     "Lists running Hammer / Hammer++ / J.A.C.K. / Sledge editors, their process id, main " +
-    "window, shell-channel window, open map path from the title, and whether the live " +
-    "shell channel is available. The shell channel is the editor's built-in " +
+    "window, shell-channel window, open map path from the title, whether that map has " +
+    "unsaved changes, and whether the live shell channel is available. The shell channel is the editor's built-in " +
     "`Worldcraft_ShellMessageWnd`; it is write-only and entity-level. Use it before " +
     "`hammer_live_edit` or `hammer_menu`. Read-only, no game process involved.",
   realm: "local",

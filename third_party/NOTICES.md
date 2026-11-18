@@ -23,7 +23,22 @@ files in this repository; the upstream file is named so a port can be re-checked
 |---|---|---|
 | [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | **The live Hammer shell channel** — `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` command grammar, `WM_COMMAND` menu ids, session/`mapversion` handling and process/window discovery (`src/hammer/python/hammer_live.py`, `src/hammer/typescript/tools/hammerlive.ts`). **Autosave locations and matching** — Hammer++'s `AutosaveDir`, the registry keys stock Hammer uses, `originalname` (`src/maps/typescript/game/autosave.ts`). **Run Map sequence formats** — the 804-byte binary command record and the KeyValues variant (`src/maps/typescript/compile/sequences.ts`). **VMT parsing behaviour** — case-insensitive parameters, blocks kept as blocks, a missing closing brace repaired (`src/formats/typescript/formats/vmt.ts`). |
 | [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | [MIT](licenses/hammer-mcp-sycatle-MIT.txt) | The code this repository grew out of. The portions of that tree that survive are the VMF/BSP readers and writers, the compile pipeline, the measurement and render modules, and the tool contracts. Provenance and the change of licence are in [`NOTICE`](NOTICE). |
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | **The VTF `IMAGE_FORMAT_*` table** (`vtfpp/ImageFormats.h` → `src/textures/typescript/bsp/vtf.ts`). **The VPK directory layout** — tree grouping, preload handling, `0x7FFF` offsets (`vpkpp/format/VPK.cpp` → `src/formats/typescript/formats/vpk.ts`). **The MDL attachment/body-part/hitbox layout** — including the 92-byte `mstudioattachment_t` and its entry-relative name index (`mdlpp/structs/MDL.h`, `mdlpp/structs/MDL.cpp` → `src/assets/python/content.py`). |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | **Vendored** at `src/formats/cpp/` (bsppp, vpkpp, vtfpp, mdlpp, kvpp, dmxpp and the shared code they build on). **The VTF `IMAGE_FORMAT_*` table** (`vtfpp/ImageFormats.h` → `src/textures/typescript/bsp/vtf.ts`). **The VPK directory layout** (`vpkpp/format/VPK.cpp` → `src/formats/typescript/formats/vpk.ts`). **The MDL attachment/body-part/hitbox layout** (`mdlpp/structs/MDL.h` → `src/assets/python/content.py`). |
+
+### Vendored implementations
+
+Upstream trees are kept as source because their functionality is needed and a rewrite
+would be tens of thousands of lines. Each keeps its own `LICENSE` inside the tree — the
+licence has to travel with the code — and its canonical copy is under `licenses/`.
+
+| Path | Project | Provides |
+|---|---|---|
+| `src/formats/cpp/` | sourcepp | BSP, VPK, VTF, MDL, KeyValues and DMX libraries |
+| `src/hammer/csharp/` | EpicMorg/Hammer-MCP | the shell channel, the Core library and the Hammer build registry |
+
+They are not built on this machine (no `cmake` or `dotnet` installed), are not
+imported by the TypeScript server, and their build output (`build/`, `target/`, `obj/`) is
+ignored by git. `health` reports their binaries as missing when they have not been built.
 
 ### Licence texts
 
