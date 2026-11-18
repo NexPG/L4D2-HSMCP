@@ -57,7 +57,7 @@ describe.skipIf(!has.sidecar || !has.vpk)("run_vpk_pack", () => {
     expect(r.verified.compared).toBe(4);
     expect(readFileSync(out).length).toBeGreaterThan(0);
     // The manifest really is the conventional one, not a placeholder.
-    expect(readFileSync(join(dir, "addoninfo.txt"), "utf8")).toContain('"addonTitle"');
+    expect(readFileSync(join(dir, "addoninfo.txt"), "utf8")).toContain('"addontitle"');
   }, 120_000);
 
   it("refuses to replace an archive unasked, and replaces it when told", async () => {

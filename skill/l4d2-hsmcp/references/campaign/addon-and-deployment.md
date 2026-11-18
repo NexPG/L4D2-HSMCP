@@ -17,19 +17,27 @@ addon/
     materials/vgui/maps/my_map_a.vmt  optional chapter image
 ```
 
-`addoninfo.txt`:
+`addoninfo.txt` (the keys are case-sensitive in the add-on scanner):
 
 ```
 "addoninfo"
 {
     "addonSteamAppID"       "550"
-    "addonTitle"            "My Campaign"
-    "addonAuthor"           "NexPG"
-    "addonVersion"          "1"
-    "addonTag"              "campaign"
+    "addontitle"            "My Campaign"
+    "addonauthor"           "NexPG"
+    "addonversion"          "1"
     "addonContent_Campaign" "1"
+    "addonDescription"      "A two-chapter campaign."
 }
 ```
+
+`addonTitle`, `addonTag` and `addonDesc` are older spellings; a scanner that does not match
+them leaves the add-on unlisted. `addonTagline` is optional.
+
+**The BSP must carry the string-table dictionary.** `run_nav_generate` bakes it; if you ship
+a BSP from another pipeline, the engine logs `missing stringtable dictionary, don't ship this
+way` and a client may spend a long time rebuilding it. `read_map_dependencies` reports the
+dictionary as a packed entry; `read_nav` being `fresh` is the pair check.
 
 `run_vpk_pack` calls the game's own `vpk.exe`, then reads the archive back and compares its
 entry list with the staging tree. A file the packer dropped is reported, not assumed away.
@@ -42,7 +50,10 @@ entry list with the staging tree. A file the packer dropped is reported, not ass
 2. **The add-on must be enabled** in *Extras → Add-ons*. A disabled add-on is mounted; its
    campaign is not offered.
 3. **Restart the game** after replacing the VPK. Add-ons are mounted at startup.
-4. **Do not edit the game's addons by hand** as part of a build. Copy from the project's
+4. **Launch through Steam for the normal-client test.** A direct `left4dead2.exe` launch
+   outside Steam reaches `No Steam logon` and drops to the menu; that is an auth failure,
+   not a broken add-on. Use `steam.exe -applaunch 550 ...` or the Steam UI.
+5. **Do not edit the game's addons by hand** as part of a build. Copy from the project's
    `dist/` output so the archive that was verified is the archive that shipped.
 
 ## After deploy

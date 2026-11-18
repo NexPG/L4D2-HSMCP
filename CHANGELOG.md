@@ -5,6 +5,40 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.78-alpha — 2026-11-18
+
+- **Nav is generated on a dictionary-bearing BSP.** `run_nav_generate` now bakes the
+  engine's string-table dictionary with a `-stringtables` changelevel *before* generating,
+  so `savedBspSize` describes the file that ships. It returns `fresh`,
+  `stringtableDictionary` and `shadowingArchives`, resolves bare add-on names against the
+  game's `addons/`, and hides every installed VPK whose index contains the same map. The
+  sidecar's `vpk_list` prefix filter was also returning nothing for a path prefix, which had
+  made the shadow search silently ineffective. This is the root fix for the stale pair that
+  produced "Map is unplayable".
+- **The sky name carries its mode suffix.** Stock L4D2 maps store `sky_l4d_c1_1_hdr`, not
+  `sky_l4d_c1_1`; the engine asks for `skybox/<skyname><side>.vmt`. `checkSkybox` groups by
+  the full name, returns `suggested`, `write_vmf` stores it, and `run_compile` refuses a sky
+  with no faces for the lighting mode it is about to build. The default sky is
+  `sky_l4d_rural02_hdr`. This fixes the flat/void sky.
+- **Asset discovery no longer needs a guessed name.** `read_game_content` accepts an empty
+  pattern as a paged browse, and `read_asset_catalog` groups stock models into escalators,
+  stairs, doors, vehicles, foliage, street, interiors, lights and signs, with hull bounds,
+  plus every sky's LDR/HDR completeness and exact storable name.
+- **Geometry that nav cannot cross is refused.** A `wedge` over 45 degrees and a stair rise
+  over 18 units now fail unless `steep: true`; the message names the run/steps to use.
+- **Lint catches door and landmark mistakes.** `l4d2-door-opening-too-wide` /
+  `-too-narrow` compares the opening to the model's horizontal width;
+  `l4d2-landmark-in-solid` ignores trigger/region volumes so it does not cry wolf.
+- **Tool readout fixes.** `read_nav_dump` parses CRLF dumps (it returned zero areas on every
+  real dump), and `read_bsp_entities` / `read_nav_dump` no longer treat an unparsed default
+  `limit` as zero.
+- **Canonical addon manifest keys** (`addontitle`, `addonauthor`, `addonversion`,
+  `addonDescription`), and an engine-limits reference:
+  `docs/reference/engine-limits-l4d2.md`.
+- Campaign 002 now loads both chapters with no `NAV ERRORS`, uses stock escalator side
+  panels on the 23-degree shaft, 16-unit stairs instead of a 51-degree wedge, 64x112 door
+  openings around 58-unit doors, and a FINALE nav area at the BTR.
+
 ## 0.0.77-alpha — 2026-11-18
 
 - **Nav generation now stages the BSP and nav mesh it actually produced.** The engine

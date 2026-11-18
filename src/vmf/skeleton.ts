@@ -28,7 +28,7 @@ export interface SkeletonOptions {
   gridSpacing?: number;
 }
 
-export const DEFAULT_SKYNAME = "sky_l4d_c1_1";
+export const DEFAULT_SKYNAME = "sky_l4d_rural02_hdr";
 export const DEFAULT_GRID = 64;
 
 /**

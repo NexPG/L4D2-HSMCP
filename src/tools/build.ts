@@ -23,6 +23,13 @@ const Spec = z.discriminatedUnion("shape", [
     maxs: Vec3,
     slopeAxis: z.enum(["x", "y"]),
     high: z.enum(["min", "max"]),
+    steep: z
+      .boolean()
+      .optional()
+      .describe(
+        "Build a ramp steeper than 45 degrees. Refused by default: the engine stops walking " +
+          "at 45 and nav will not cross it, so a steep wedge is a wall that looks like a ramp.",
+      ),
   }),
   z.object({
     shape: z.literal("cylinder"),
@@ -45,6 +52,13 @@ const Spec = z.discriminatedUnion("shape", [
     maxs: Vec3,
     steps: z.number().int().min(1).max(256),
     direction: z.enum(["+x", "-x", "+y", "-y"]).describe("Which way the flight climbs."),
+    steep: z
+      .boolean()
+      .optional()
+      .describe(
+        "Build steps taller than the player's 18-unit step-up anyway. Refused by default: " +
+          "such a flight is scenery, not a route.",
+      ),
   }),
   z.object({
     shape: z.literal("arch"),

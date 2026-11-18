@@ -165,6 +165,7 @@ describe("what vrad does with the scale it was given", () => {
         cull: false,
         timeoutMinutes: 5,
         confirm: true,
+        allowMissingSkyFaces: true,
       },
       ctx,
     )) as { leaked: boolean; bspExists: boolean };

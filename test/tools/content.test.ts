@@ -53,10 +53,11 @@ const search = (args: Record<string, unknown>): Promise<SearchReply> =>
   ) as unknown as Promise<SearchReply>;
 
 describe("read_game_content", () => {
-  it("refuses an empty pattern rather than returning the whole game", async () => {
-    // Refused in TypeScript, before the sidecar is reached, so this holds on a bare
-    // machine -- which is the machine CI runs on and where every other test here skips.
-    await expect(search({ pattern: "   " })).rejects.toThrow(/needs a pattern/);
+  it("allows an empty pattern in its schema, because empty means browse", () => {
+    // The old refusal meant an agent could only find an asset whose name it already
+    // guessed, which is how an installed escalator was never seen. This is the schema
+    // check; the sidecar path is exercised by the game-backed tests below.
+    expect(() => readGameContentTool.inputSchema.pattern.parse("")).not.toThrow();
   });
 
   it.skipIf(!ready)("finds a stock L4D2 material", async () => {

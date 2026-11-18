@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 17/11/2026: **102 tools**.
+Last checked against the tool list on 18/11/2026: **103 tools**.
 
 ## The file itself
 
@@ -66,6 +66,7 @@ getting `ENOENT` on the first call.
 |---|---|---|
 | Apply current texture | `set_face_material` | Selects by solid, material, facing or area |
 | Browse textures | `read_game_content` | Searches the game's own VPKs. Returns names in the form a `.vmf` stores |
+| Browse models by kind | `read_asset_catalog` | What Hammer's model browser shows grouped: escalators, stairs, doors, vehicles, foliage, street, interiors, lights, signs, plus every sky's LDR/HDR completeness |
 | Align to World | `align_faces` (`world`) | vbsp's own base-axis table |
 | Align to Face | `align_faces` (`face`) | Axes kept perpendicular by orthogonalisation, not by a cross product — vbsp's table is not consistently handed |
 | Fit | `align_faces` (`fit`) | Assumes a 512-texel texture and says so |

@@ -24,7 +24,7 @@ import type { Config } from "../config.js";
 /** The six faces Source derives from a skyname, in the order the engine names them. */
 export const SKY_SIDES = ["rt", "lf", "bk", "ft", "up", "dn"] as const;
 
-const SKY_FACE = /^materials\/skybox\/(.+?)(?:_(hdr))?(rt|lf|bk|ft|up|dn)(?:_(hdr))?\.vmt$/i;
+const SKY_FACE = /^materials\/skybox\/(.+?)(?:_(hdr|ldr))?(rt|lf|bk|ft|up|dn)(?:_(hdr|ldr))?\.vmt$/i;
 
 export interface SkyboxCheck {
   /** False when there was no game to look in, or the sidecar could not mount it. */
@@ -33,6 +33,12 @@ export interface SkyboxCheck {
   found: boolean | null;
   /** The sides that are missing, when some are. */
   missingSides: string[];
+  /** The LDR face set is complete. A sky may be HDR-only. */
+  ldrComplete: boolean | null;
+  /** The HDR face set is complete. */
+  hdrComplete: boolean | null;
+  /** The name to store in worldspawn; a bare base gets `_hdr` when that set exists. */
+  suggested: string;
   /** A few complete skies the game does have, for a caller that has to pick another. */
   alternatives: string[];
   note: string;
@@ -42,6 +48,9 @@ const unchecked = (why: string): SkyboxCheck => ({
   checked: false,
   found: null,
   missingSides: [],
+  ldrComplete: null,
+  hdrComplete: null,
+  suggested: "",
   alternatives: [],
   note: why,
 });
@@ -91,29 +100,53 @@ export async function checkSkybox(
     );
   }
 
-  const sides = new Map<string, Set<string>>();
-  const hdrSides = new Map<string, Set<string>>();
+  const faces = new Map<string, Set<string>>();
   for (const row of (result.results as Array<{ path?: string }> | undefined) ?? []) {
     const m = SKY_FACE.exec((row.path ?? "").toLowerCase());
     if (!m) continue;
-    const map = m[2] || m[4] ? hdrSides : sides;
-    const name = m[1]!;
-    (map.get(name) ?? map.set(name, new Set()).get(name)!).add(m[3]!);
+    const base = m[1]!;
+    const mode = (m[2] || m[4] || "").toLowerCase();
+    // The engine asks for `<skyname><side>.vmt`, and a stock L4D2 map carries
+    // `sky_l4d_c1_1_hdr` in worldspawn, not `sky_l4d_c1_1`. The mode infix is part of the
+    // name the map must store; stripping it here is how the checker used to bless a name
+    // the engine could never find.
+    const prefix = mode ? `${base}_${mode}` : base;
+    (faces.get(prefix) ?? faces.set(prefix, new Set()).get(prefix)!).add(m[3]!);
   }
 
-  const completeIn = (map: Map<string, Set<string>>): string[] =>
-    [...map.entries()]
-      .filter(([, s]) => SKY_SIDES.every((side) => s.has(side)))
-      .map(([name]) => name);
+  const completePrefixes = [...faces.entries()]
+    .filter(([, s]) => SKY_SIDES.every((side) => s.has(side)))
+    .map(([name]) => name);
+  const complete = (name: string): boolean => completePrefixes.includes(name);
 
-  // Left 4 Dead 2 ships many skies only as `_hdr` faces. The engine resolves a skyname to
-  // those when it runs HDR, so a complete HDR set is a complete sky; a complete LDR set is
-  // one too. Requiring the LDR set made every one of this game's skies look absent.
-  const complete = [...new Set([...completeIn(sides), ...completeIn(hdrSides)])].sort();
+  const lower = skyname.toLowerCase();
+  const parts = /^(.+)_(hdr|ldr)$/.exec(lower);
+  const base = parts?.[1] ?? lower;
+  const ldrComplete = complete(`${base}_ldr`) || complete(lower) && !parts;
+  const hdrComplete = complete(`${base}_hdr`);
+  // Prefer the HDR name: every stock L4D2 campaign map stores `_hdr`, and a dual-mode VMT
+  // falls back to its `_ldr` set on a renderer that cannot do HDR.
+  const suggested = complete(lower)
+    ? lower
+    : hdrComplete
+      ? `${base}_hdr`
+      : ldrComplete
+        ? `${base}_ldr`
+        : lower;
 
-  const have = new Set([...(sides.get(skyname.toLowerCase()) ?? []), ...(hdrSides.get(skyname.toLowerCase()) ?? [])]);
+  const have = faces.get(lower) ?? new Set<string>();
   const missingSides = SKY_SIDES.filter((side) => !have.has(side));
   const found = missingSides.length === 0;
+  const mode =
+    found && parts?.[2] === "hdr" && ldrComplete
+      ? "It has complete HDR faces and an LDR set."
+      : found && parts?.[2] === "hdr"
+        ? "It has HDR faces only; an LDR renderer has no sky unless the VMT falls back."
+        : found && parts?.[2] === "ldr"
+          ? "It has LDR faces only; HDR mode has no sky."
+          : found
+            ? "It has unsuffixed faces; stock L4D2 maps store `_hdr` or `_ldr` in worldspawn."
+            : "";
 
   const truncated = result.truncated === true;
   const caveat =
@@ -126,16 +159,22 @@ export async function checkSkybox(
     checked: true,
     found,
     missingSides: [...missingSides],
-    alternatives: found ? [] : complete.slice(0, 3),
+    ldrComplete,
+    hdrComplete,
+    suggested,
+    alternatives: found
+      ? []
+      : completePrefixes.filter((n) => n !== lower).slice(0, 5),
     note: found
-      ? `The game has all six sides of skybox/${skyname}.` + caveat
-      : `The game has no skybox/${skyname}${have.size > 0 ? `${SKY_SIDES.filter((s) => have.has(s)).join(", ")}` : ``}: ` +
+      ? `The game has all six sides of skybox/${lower}. ${mode}` + caveat
+      : `The game has no skybox/${lower}${have.size > 0 ? ` (${[...have].join(", ")})` : ``}: ` +
         `${missingSides.length} of its six sides are missing (${missingSides.join(", ")}). ` +
-        `vbsp resolves a skyname literally, so this compiles and renders as whatever sky ` +
-        `the engine loaded last.` +
-        (complete.length > 0
-          ? ` Complete skies this game does have: ${complete.slice(0, 3).join(", ")}` +
-            (complete.length > 3 ? ` (${complete.length} in all -- read_game_content lists them).` : `.`)
+        `L4D2 asks for skybox/<skyname><side>.vmt, so a base name without \`_hdr\` or ` +
+        `\`_ldr\` finds nothing.` +
+        (suggested !== lower ? ` Use \`${suggested}\`.` : ``) +
+        (completePrefixes.length > 0
+          ? ` Complete sky names: ${completePrefixes.slice(0, 5).join(", ")}` +
+            (completePrefixes.length > 5 ? ` (${completePrefixes.length} in all).` : `.`)
           : ` This game ships no complete sky at all, which is itself worth knowing.`) +
         (truncated ? ` The search was truncated, so that list is partial.` : ``),
   };

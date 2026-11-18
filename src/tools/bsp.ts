@@ -156,7 +156,12 @@ export const readBspEntities = defineTool({
     const lump = readEntityLump(resolveInput(args.path, ctx.config));
     const all = lump.entities;
     const filtered = all.filter((e) => matchesFilter(e, toFilter(args)));
-    const page = filtered.slice(args.offset, args.offset + args.limit);
+    // Defaults live in the schema, and the MCP layer applies them; a direct handler call
+    // (tests, campaign builds) does not. `slice(0, 0 + undefined)` returned [] for every
+    // filter, which looked like a broken classname filter rather than an unparsed default.
+    const limit = args.limit ?? 200;
+    const offset = args.offset ?? 0;
+    const page = filtered.slice(offset, offset + limit);
 
     return {
       path: lump.header.path,
@@ -170,7 +175,7 @@ export const readBspEntities = defineTool({
         ? {}
         : {
             returned: page.length,
-            truncated: args.offset + page.length < filtered.length,
+            truncated: offset + page.length < filtered.length,
             entities: page.map((e) => ({
               index: e.index,
               classname: e.classname,
@@ -227,7 +232,9 @@ const readNavDump = defineTool({
   handler: (args, ctx) => {
     const path = resolveInput(args.path, ctx.config);
     const report = parseNavDump(path, readFileSync(path, "utf8"));
-    const page = report.areas.slice(args.offset, args.offset + args.limit);
+    const limit = args.limit ?? 200;
+    const offset = args.offset ?? 0;
+    const page = report.areas.slice(offset, offset + limit);
     return {
       path: report.path,
       areaCount: report.areaCount,

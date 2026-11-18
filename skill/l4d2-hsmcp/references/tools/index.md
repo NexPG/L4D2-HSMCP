@@ -1,6 +1,6 @@
 # Tool catalogue
 
-102 tools. This page groups them by the job you are doing; each tool's own description is the
+103 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -61,7 +61,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_entity_report` | Hammer's Entity Report, filterable |
 | `validate_io` | entity wiring against the FGD |
 | `read_fgd_class` | keyvalues, inputs, outputs of one entity class from the game's FGD |
-| `read_game_content` | find installed materials and models by name |
+| `read_game_content` | find installed materials and models by name; an empty pattern browses a kind, paged with `offset` |
+| `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, vehicles, foliage, street, interiors, lights, signs) plus every sky's LDR/HDR completeness |
 | `read_model_info` | bounds, skins, sequences, materials of one `.mdl` |
 
 ## Build and edit

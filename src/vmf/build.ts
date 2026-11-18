@@ -111,6 +111,14 @@ export type SolidSpec =
       maxs: Vec3;
       slopeAxis: "x" | "y";
       high: "min" | "max";
+      /**
+       * Build it even when the walking surface is steeper than 45 degrees.
+       *
+       * A player's step-up is 18 units and a walkable plane stops at 45; a 51-degree ramp
+       * looks like a ramp in Hammer and is a wall in game, and nav refuses to cross it. The
+       * default refusal exists because that is a property of the engine, not a style choice.
+       */
+      steep?: boolean;
     }
   | {
       /** An n-sided prism inscribed in the bounding box, extruded along `axis`. */
@@ -308,6 +316,20 @@ function validateExtent(spec: SolidSpec): void {
             `each axis. (The often-quoted 32768 is the width of that range, not a bound.)`,
         );
       }
+    }
+  }
+  if (spec.shape === "wedge" && !spec.steep) {
+    const along = spec.slopeAxis === "x" ? 0 : 1;
+    const rise = spec.maxs[2] - spec.mins[2];
+    const run = spec.maxs[along] - spec.mins[along];
+    const degrees = (Math.atan2(rise, run) * 180) / Math.PI;
+    if (degrees > 45) {
+      throw new VmfBuildError(
+        `this wedge is ${degrees.toFixed(1)} degrees: the rise is ${rise} over a run of ` +
+          `${run}. A walkable slope stops at 45 degrees, and nav will not cross it. Use ` +
+          `shape "stairs" with steps of 16 units or less, widen the run to at least ${rise}, ` +
+          `or pass steep: true if this is scenery rather than a route.`,
+      );
     }
   }
 }

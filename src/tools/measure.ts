@@ -76,6 +76,14 @@ export const readMapGeometry = defineTool({
     mapRevision: z.number(),
     fileSize: z.number(),
     limitSource: z.string(),
+    /** The coordinate box vbsp accepts, and whether this map sits inside it. */
+    world: z.object({
+      mins: VEC3,
+      maxs: VEC3,
+      limit: z.number(),
+      withinBounds: z.boolean(),
+    }),
+    warnings: z.array(z.string()),
     lumps: z.array(
       z.object({
         index: z.number(),
@@ -92,13 +100,31 @@ export const readMapGeometry = defineTool({
     nearLimitCount: z.number(),
   },
   handler: (args, ctx) => {
-    const g = readGeometry(resolveInput(args.path, ctx.config));
+    const path = resolveInput(args.path, ctx.config);
+    const g = readGeometry(path);
+    const world = worldExtents(readModels(path));
+    const withinBounds = [...world.mins, ...world.maxs].every((v) => Math.abs(v) <= 16384);
+    const warnings: string[] = [];
+    if (!withinBounds) {
+      warnings.push(
+        "The world extends outside -16384..+16384. vbsp removes or refuses that geometry; " +
+          "a map cannot be larger than 32768 units on an axis.",
+      );
+    }
+    if (g.header.fileSize > 300 * 1024 * 1024) {
+      warnings.push(
+        `The BSP is ${(g.header.fileSize / 1048576).toFixed(0)} MB. The engine is 32-bit; ` +
+          `keep a shipping map under ~300 MB and never above 2 GB.`,
+      );
+    }
     return {
       path: g.header.path,
       version: g.header.version,
       mapRevision: g.header.mapRevision,
       fileSize: g.header.fileSize,
       limitSource: "source-sdk-2013 src/public/bspfile.h, read 11/08/2026",
+      world: { mins: world.mins, maxs: world.maxs, limit: 16384, withinBounds },
+      warnings,
       lumps: args.nearLimitOnly ? g.nearLimit : g.lumps,
       nearLimitCount: g.nearLimit.length,
     };

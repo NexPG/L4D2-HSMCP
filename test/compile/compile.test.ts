@@ -288,7 +288,7 @@ async function compile(
   stages: Array<{ stage: string; stdoutTail: string }>;
 }> {
   return (await runCompile.handler(
-    { vmf, fast: true, hdr: false, stages, toolchain, cull, timeoutMinutes: 10, confirm: true },
+    { vmf, fast: true, hdr: false, stages, toolchain, cull, timeoutMinutes: 10, confirm: true, allowMissingSkyFaces: true },
     ctx,
   )) as never;
 }

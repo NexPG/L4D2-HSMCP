@@ -6,7 +6,11 @@ distant buildings, hills or a city skyline that the player can never reach.
 ## What it needs
 
 1. A **2D sky**: `skyname` on worldspawn (`set_map_properties`). Without it the 3D skybox has
-   nothing to draw against.
+   nothing to draw against. The name must carry the mode suffix the engine looks up:
+   stock L4D2 maps store `sky_l4d_c1_1_hdr`, not `sky_l4d_c1_1`. A bare base name makes the
+   engine request `skybox/<name>rt.vmt`, which does not exist, and the sky draws as a flat
+   void. `read_asset_catalog` returns every sky with `ldrComplete`, `hdrComplete` and the
+   exact `suggested` name; `write_vmf` appends `_hdr` when that set is complete.
 2. **One `sky_camera`**, placed at the point the skybox is centred on. `scale` is 16 by
    default: the camera stays at world scale, the geometry around it is 1/16 size.
 3. A **sealed skybox area** built far from the playable map, containing the scaled geometry.

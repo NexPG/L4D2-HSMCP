@@ -21,6 +21,7 @@ export interface AddonInfo {
   author?: string;
   version?: string;
   tag?: string;
+  tagline?: string;
 }
 
 /** The conventional Left 4 Dead 2 addon manifest. */
@@ -29,15 +30,15 @@ export function addonInfoText(info: AddonInfo): string {
     quote("addoninfo"),
     "{",
     `\t"addonSteamAppID"\t${quote("550")}`,
-    `\t"addonTitle"\t${quote(info.title)}`,
-    `\t"addonAuthor"\t${quote(info.author ?? "")}`,
-    `\t"addonVersion"\t${quote(info.version ?? "1")}`,
-    `\t"addonTag"\t${quote(info.tag ?? "campaign")}`,
+    `\t"addontitle"\t${quote(info.title)}`,
+    `\t"addonauthor"\t${quote(info.author ?? "")}`,
+    `\t"addonversion"\t${quote(info.version ?? "1")}`,
   ];
+  if (info.tagline) lines.push(`\t"addonTagline"\t${quote(info.tagline)}`);
   if ((info.tag ?? "campaign") === "campaign") {
     lines.push(`\t"addonContent_Campaign"\t${quote("1")}`);
   }
-  if (info.description) lines.push(`\t"addonDesc"\t${quote(info.description)}`);
+  if (info.description) lines.push(`\t"addonDescription"\t${quote(info.description)}`);
   lines.push("}");
   lines.push("");
   return lines.join("\n");
@@ -49,6 +50,7 @@ const ADDON_INFO = z.object({
   author: z.string().optional(),
   version: z.string().optional(),
   tag: z.string().optional().describe('Usually "campaign".'),
+  tagline: z.string().optional().describe("AddonTagline, the one-line description in the menu."),
 });
 
 export const runVpkPackTool = defineTool({

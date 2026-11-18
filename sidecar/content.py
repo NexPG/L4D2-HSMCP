@@ -201,28 +201,18 @@ def _model_bounds(fsys: Any, rel: str) -> dict[str, Any]:
 
 
 def search_content(req: dict[str, Any]) -> dict[str, Any]:
-    """Finds materials and models in the game, by name."""
+    """Finds materials and models in the game, by name.
+
+    An empty pattern is a browse, not a refusal: it returns the whole `kind`, paged with
+    `offset`. Refusing it was the reason an agent could only find an asset whose name it
+    already guessed -- the escalator existed in the game and the agent never saw it.
+    """
     game_dir = req.get("gameDir")
     pattern = str(req.get("pattern", "")).strip()
     kind = req.get("kind", "material")
     limit = min(int(req.get("limit", DEFAULT_LIMIT)), MAX_LIMIT)
+    offset = max(0, int(req.get("offset", 0)))
     want_details = bool(req.get("details", False))
-
-    if not pattern:
-        # Not a top-level `error`: callSidecar reads any truthy top-level `error` as the
-        # fault envelope and looks for `error.message`, so a string there reaches the caller
-        # as "unknown error" and this diagnostic is lost. The verb reports the problem in
-        # its own result instead.
-        return {
-            "gameDir": game_dir,
-            "mounted": False,
-            "mountError": None,
-            "pattern": pattern,
-            "kind": kind,
-            "total": 0,
-            "results": [],
-            "refused": "a search needs a pattern; an empty one would return the whole game",
-        }
 
     fsys, mount_error = _mount(game_dir)
     if fsys is None:
@@ -243,7 +233,7 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
         "particle": ("particles/", ".pcf"),
         "sound": ("sound/", ".wav"),
     }.get(kind, ("materials/", ".vmt"))
-    match = _matcher(pattern)
+    match = _matcher(pattern) if pattern else (lambda name: True)
     hits: list[str] = []
     for path in _walk(fsys):
         low = path.lower()
@@ -254,7 +244,7 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
 
     hits.sort()
     total = len(hits)
-    shown = hits[:limit]
+    shown = hits[offset : offset + limit]
 
     results: list[dict[str, Any]] = []
     for rel in shown:
@@ -275,14 +265,145 @@ def search_content(req: dict[str, Any]) -> dict[str, Any]:
         "mountError": None,
         "pattern": pattern,
         "kind": kind,
+        "offset": offset,
         "total": total,
         "shown": len(results),
-        "truncated": total > len(results),
+        "truncated": offset + len(results) < total,
+        "nextOffset": offset + len(results) if offset + len(results) < total else None,
         "results": results,
         "note": (
             "names only unless details was asked for. Materials: details reads the VMT and "
             "every texture it names. Models: details reads the hull bounds Hammer's model "
-            "viewer shows"
+            "viewer shows. An empty pattern browses; page it with offset."
+        ),
+    }
+
+
+MODEL_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "escalator": ("escalator",),
+    "stairs": ("stair", "stairs", "step", "steps", "tread", "ladder"),
+    "door": ("door", "doorway", "gate"),
+    "vehicle": ("vehicle", "car", "truck", "bus", "van", "apc", "btr", "train"),
+    "foliage": ("tree", "foliage", "plant", "bush", "fern", "grass"),
+    "street": ("street", "bench", "fountain", "statue", "lamp", "hydrant", "trash"),
+    "interior": ("interior", "chair", "table", "shelf", "cabinet", "desk", "bed"),
+    "light": ("light", "lamp", "fluorescent", "neon", "fixture"),
+    "sign": ("sign", "poster", "billboard", "graffiti"),
+}
+
+
+def _category_hit(stem: str, needles: tuple[str, ...]) -> bool:
+    """Whether a model filename carries one of these words as a word.
+
+    A plain substring test made `log_cabin_corners` a street prop (`bin`) and
+    `checkpoint_door_lighthouse01` a light (`light`). A filename is tokenised on
+    non-alphanumerics; a token matches exactly, or a needle plus a numeric suffix
+    (`escalator01`).
+    """
+    for token in re.split(r"[^a-z0-9]+", stem):
+        for needle in needles:
+            if token == needle:
+                return True
+            if token.startswith(needle) and token[len(needle):].isdigit():
+                return True
+    return False
+
+
+def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
+    """Every category of stock model Hammer++ shows, in one walk.
+
+    `search_content` needs a name. That is the wrong shape for "what stair and escalator
+    models does this game have": the caller does not know the name, which is why it is
+    asking. This groups the mounted model tree by what the path says it is, and returns the
+    bounds for the structural categories (stairs, escalators, doors) because those numbers
+    decide whether a doorway or a shaft fits.
+    """
+    game_dir = req.get("gameDir")
+    kind = str(req.get("kind", "model"))
+    per_category = min(max(int(req.get("perCategory", 40)), 1), 200)
+    fsys, mount_error = _mount(game_dir)
+    if fsys is None:
+        return {
+            "gameDir": game_dir,
+            "mounted": False,
+            "mountError": mount_error,
+            "categories": [],
+            "skyboxes": [],
+        }
+
+    paths = _walk(fsys)
+    models = sorted(p for p in paths if p.lower().startswith("models/") and p.lower().endswith(".mdl"))
+    materials = sorted(
+        p for p in paths if p.lower().startswith("materials/skybox/") and p.lower().endswith(".vmt")
+    )
+
+    details_for = {"escalator", "stairs", "door", "vehicle"}
+    categories: list[dict[str, Any]] = []
+    for name, needles in MODEL_CATEGORIES.items():
+        hits = [
+            p
+            for p in models
+            if _category_hit(p.rsplit("/", 1)[-1].lower().removesuffix(".mdl"), needles)
+        ]
+        # A model can match two categories; that is fine and better than a silent miss.
+        rows: list[dict[str, Any]] = []
+        for rel in hits[:per_category]:
+            row: dict[str, Any] = {"path": rel}
+            if name in details_for:
+                row.update(_model_bounds(fsys, rel))
+            rows.append(row)
+        categories.append(
+            {
+                "name": name,
+                "total": len(hits),
+                "shown": len(rows),
+                "results": rows,
+            }
+        )
+
+    # Sky completeness, grouped the way the engine resolves it: `_hdr`/`_ldr` infix (or no
+    # infix, which Source treats as the LDR set) before rt/lf/bk/ft/up/dn.
+    sides = ("rt", "lf", "bk", "ft", "up", "dn")
+    sky: dict[str, dict[str, set[str]]] = {}
+    side_re = re.compile(r"^materials/skybox/(.+?)(?:_(hdr|ldr))?(rt|lf|bk|ft|up|dn)(?:_(hdr|ldr))?\.vmt$", re.I)
+    for rel in materials:
+        m = side_re.match(rel)
+        if not m:
+            continue
+        base = m.group(1).lower()
+        mode = (m.group(2) or m.group(4) or "ldr").lower()
+        sky.setdefault(base, {"ldr": set(), "hdr": set()})[mode].add(m.group(3).lower())
+    skies: list[dict[str, Any]] = []
+    for base, faces in sorted(sky.items()):
+        ldr_complete = all(s in faces["ldr"] for s in sides)
+        hdr_complete = all(s in faces["hdr"] for s in sides)
+        skies.append(
+            {
+                "name": base,
+                "ldrName": f"{base}_ldr",
+                "hdrName": f"{base}_hdr",
+                "suggested": f"{base}_hdr" if hdr_complete else f"{base}_ldr" if ldr_complete else base,
+                "ldrComplete": ldr_complete,
+                "hdrComplete": hdr_complete,
+                "strictComplete": ldr_complete and hdr_complete,
+            }
+        )
+
+    return {
+        "gameDir": game_dir,
+        "mounted": True,
+        "mountError": None,
+        "kind": kind,
+        "modelCount": len(models),
+        "materialCount": len(paths) - len(models),
+        "categories": categories,
+        "skyboxes": skies,
+        "note": (
+            "One walk of the mounted VPK-and-loose chain. Categories are by path name; "
+            "`total` is the real count and `shown` is capped by perCategory. Bounds are the "
+            "hull Hammer's model viewer reports, so `mins.z` is how far below the origin the "
+            "model reaches. `strictComplete` is the only sky value safe to compile in both "
+            "LDR and HDR."
         ),
     }
 

@@ -84,7 +84,7 @@ export function parseNavDump(path: string, text: string): NavDumpReport {
     throw new Error(`${path}: not a nav mesh text dump (no area count)`);
   }
 
-  const blocks = text.split(/NAV AREA\s*\r?\n-+/i).slice(1);
+  const blocks = text.split(/NAV AREA[^\S\r\n]*\r?\n-+/i).slice(1);
   const areas: NavDumpArea[] = blocks.map((block) => {
     const baseFlags = flagsField(block, "Base Attribute Flags");
     const terrorFlags = flagsField(block, "Terror Spawn Attribute Flags");

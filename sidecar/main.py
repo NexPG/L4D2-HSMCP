@@ -178,12 +178,17 @@ def _vpk_list(req: dict[str, Any]) -> dict[str, Any]:
     from srctools.filesys import VPKFileSystem
 
     path = req["path"]
-    prefix = req.get("prefix", "")
+    prefix = str(req.get("prefix", "")).replace("\\", "/")
     limit = int(req.get("limit", 20_000))
     fs = VPKFileSystem(path)
     entries: list[str] = []
     truncated = False
-    for entry in fs.walk_folder(prefix):
+    # `walk_folder` wants a Folder object; a bare string prefix returned nothing, which made
+    # `run_nav_generate`'s shadow-archive search silently find no shadowing VPK. Walk the
+    # root and filter the path prefix instead.
+    for entry in fs.walk_folder(""):
+        if prefix and not entry.path.replace("\\", "/").startswith(prefix):
+            continue
         if len(entries) >= limit:
             truncated = True
             break
@@ -288,6 +293,14 @@ def _model_info(req: dict[str, Any]) -> dict[str, Any]:
     from content import model_info
 
     return model_info(req)
+
+
+@verb("asset_catalog")
+def _asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
+    """The stock model categories Hammer++ shows, grouped by what they are."""
+    from content import asset_catalog
+
+    return asset_catalog(req)
 
 
 @verb("vmf_displacements")
@@ -399,7 +412,7 @@ def _vmf_lint(req: dict[str, Any]) -> dict[str, Any]:
     names = _fgd_names(req)
     fgd, tolerated = load_fgds(req["binDir"], names)
     vmf, instances = _load_vmf(req["path"], req)
-    findings = lint_vmf(vmf, fgd)
+    findings = lint_vmf(vmf, fgd, req.get("gameDir"))
     # Not a finding: the raw halves of one. Whether a prop sinks into the floor is a
     # question about the floor, and the tracer that answers it is in TypeScript.
     props = model_bounds(vmf, req.get("gameDir"))

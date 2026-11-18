@@ -67,7 +67,7 @@ describe("the empty map", () => {
       expect(text).toMatch(new RegExp(`^${block}$`, "m"));
     }
     expect(text).toMatch(/"classname" "worldspawn"/);
-    expect(text).toMatch(/"skyname" "sky_l4d_c1_1"/);
+    expect(text).toMatch(/"skyname" "sky_l4d_rural02_hdr"/);
   });
 
   it("carries the sky and grid it was asked for", () => {
@@ -158,10 +158,13 @@ describe("write_vmf", () => {
         { pattern: `skybox/${first}*`, kind: "material", limit: 100 } as never,
         ctx,
       )) as unknown as { results: Array<{ path: string }> };
+      // Alternatives are stored names (`docks_hdr`), because that is what worldspawn must
+      // carry. The face file appends the side to that name, with no second `_hdr`.
+      const firstBase = first.replace(/_(?:hdr|ldr)$/i, "");
       const sides = new Set(
         found.results
-          .map((row) => /skybox\/(.+?)(?:_hdr)?(rt|lf|bk|ft|up|dn)\.vmt$/i.exec(row.path))
-          .filter((m): m is RegExpExecArray => m !== null && m[1] === first)
+          .map((row) => /skybox\/(.+?)(?:_(?:hdr|ldr))?(rt|lf|bk|ft|up|dn)\.vmt$/i.exec(row.path))
+          .filter((m): m is RegExpExecArray => m !== null && m[1]!.replace(/_(?:hdr|ldr)$/i, "") === firstBase)
           .map((m) => m[2]!),
       );
       expect([...sides].sort()).toEqual(["bk", "dn", "ft", "lf", "rt", "up"]);

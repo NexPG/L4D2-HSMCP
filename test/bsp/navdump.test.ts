@@ -65,6 +65,17 @@ describe("parseNavDump", () => {
     expect(r.verdict).toBe("playable");
   });
 
+  it("reads a dump written with CRLF line endings", () => {
+    // The engine writes console text with \r\n. `NAV AREA\s*\n-+` consumed the line ending
+    // with \s* and then required a second one, so every real dump parsed as zero areas
+    // while the area count beside it was correct.
+    const crlf = DUMP.replace(/\n/g, "\r\n");
+    const r = parseNavDump("x_nav.txt", crlf);
+    expect(r.areaCount).toBe(3);
+    expect(r.areas).toHaveLength(3);
+    expect(r.verdict).toBe("playable");
+  });
+
   it("says no-goal when neither CHECKPOINT nor FINALE exists", () => {
     const noGoal = DUMP.replace("0x00000800", "0x00000000").replace("0x00000040", "0x00000000");
     const r = parseNavDump("x_nav.txt", noGoal);

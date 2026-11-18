@@ -11,7 +11,8 @@ addon/scripts/vscripts/<mapname>_finale.nut
 ```
 
 The name must match the map exactly. A `trigger_finale` with `type 2` loads it automatically
-when the finale starts; no `ScriptFile` keyvalue is needed. The script lands in the map script
+when the finale starts; the FGD key is `type` (displayed as "Finale Type"), not
+`FinaleType`. No `ScriptFile` keyvalue is needed. The script lands in the map script
 scope (`DirectorScript.MapScript`).
 
 ## Stages

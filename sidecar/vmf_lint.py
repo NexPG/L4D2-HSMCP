@@ -102,7 +102,175 @@ def _finding(
     return {"severity": severity, "rule": rule, "message": message, **extra}
 
 
-def lint_vmf(vmf: Any, fgd: Any) -> list[dict[str, Any]]:
+def _point_in_solid(vmf: Any, point: Any) -> int | None:
+    """The id of the first *solid* brush containing this point, world or entity-owned.
+
+    Trigger volumes, nav attribute regions and `info_changelevel` brushes are brush
+    entities too, but they have no collision. Counting them made a landmark in the middle
+    of a safe room "embedded in solid", which is exactly the false positive that sends a
+    builder moving a correct entity.
+    """
+    non_solid = (
+        "trigger_",
+        "func_nav_",
+        "func_areaportal",
+        "func_occluder",
+        "func_viscluster",
+        "func_instance",
+        "info_changelevel",
+        "func_water_analog",
+    )
+    for solid in vmf.brushes:
+        try:
+            if solid.point_inside(point):
+                return int(solid.id)
+        except Exception:  # noqa: BLE001
+            continue
+    for ent in vmf.entities:
+        if str(ent["classname", ""]).startswith(non_solid):
+            continue
+        for solid in ent.solids:
+            try:
+                if solid.point_inside(point):
+                    return int(solid.id)
+            except Exception:  # noqa: BLE001
+                continue
+    return None
+
+
+def _lint_landmarks_and_doors(
+    vmf: Any, entities: list[Any], game_dir: str | None
+) -> list[dict[str, Any]]:
+    """Point entities that must sit in open space, and doors whose opening does not fit.
+
+    Two failures that compile cleanly and are only found by walking the map:
+
+    * `info_landmark` is where the next chapter places the team. Inside a solid, the engine
+      reports `landmark embedded in solid` and the transition can drop survivors into geometry.
+    * A door model is a fixed size. A 128-unit opening around a 58-unit checkpoint door is a
+      hole with a door in the middle: it looks wrong and it leaks sight and nav through the
+      gap. Both numbers exist -- the model's hull and the brush gap -- so the lint compares
+      them instead of leaving it to a screenshot.
+    """
+    findings: list[dict[str, Any]] = []
+    import math
+
+    for ent in entities:
+        if ent["classname", ""] != "info_landmark":
+            continue
+        try:
+            p = ent.get_origin()
+        except Exception:  # noqa: BLE001
+            continue
+        brush = _point_in_solid(vmf, p)
+        if brush is not None:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-landmark-in-solid",
+                    f"info_landmark is inside brush {brush}; the engine logs 'landmark "
+                    f"embedded in solid' and the arrival point can be unreachable. Move it "
+                    f"into open space at survivor height",
+                    entity_id=int(ent.id),
+                    classname="info_landmark",
+                    brush_id=brush,
+                )
+            )
+
+    try:
+        bounds = {b["id"]: b for b in model_bounds(vmf, game_dir)}
+    except Exception:  # noqa: BLE001
+        bounds = {}
+
+    for ent in entities:
+        classname = ent["classname", ""]
+        if not classname.startswith("prop_door"):
+            continue
+        model = str(ent["model", ""]).replace("\\", "/").strip()
+        if not model.lower().endswith(".mdl"):
+            continue
+        try:
+            p = ent.get_origin()
+        except Exception:  # noqa: BLE001
+            continue
+        if _point_in_solid(vmf, p) is not None:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-door-origin-in-solid",
+                    "door origin is inside a brush; the door cannot swing and the opening is "
+                    "not where the entity thinks it is",
+                    entity_id=int(ent.id),
+                    classname=classname,
+                )
+            )
+            continue
+        b = bounds.get(int(ent.id))
+        if not b:
+            continue
+        model_width = max(
+            float(b["maxs"][0]) - float(b["mins"][0]),
+            float(b["maxs"][1]) - float(b["mins"][1]),
+        )
+        try:
+            angles = [float(x) for x in str(ent["angles", "0 0 0"]).split()]
+            yaw = math.radians(angles[1] if len(angles) > 1 else 0.0)
+        except Exception:  # noqa: BLE001
+            yaw = 0.0
+        # A door model's width is its local Y; yaw 0 keeps it on world Y, yaw 90 turns it
+        # onto world X. Only axis-aligned doors: a diagonal doorway needs a ray, and
+        # guessing is worse than saying nothing.
+        if abs(math.sin(yaw)) >= 0.9:
+            axis = 0
+        elif abs(math.cos(yaw)) >= 0.9:
+            axis = 1
+        else:
+            continue
+        gap = 0.0
+        for sign in (1.0, -1.0):
+            travelled = 0.0
+            while travelled < 512.0:
+                travelled += 2.0
+                probe = [p[0], p[1], p[2]]
+                probe[axis] += sign * travelled
+                if _point_in_solid(vmf, probe) is not None:
+                    break
+            else:
+                travelled = 512.0
+            gap += travelled
+        if gap >= 1024.0:
+            continue
+        if gap - model_width > 16.0:
+            findings.append(
+                _finding(
+                    "warning",
+                    "l4d2-door-opening-too-wide",
+                    f"door opening is about {gap:.0f} units, but {model} is "
+                    f"{model_width:.0f} units wide; the extra "
+                    f"{gap - model_width:.0f} units is a hole beside the door",
+                    entity_id=int(ent.id),
+                    classname=classname,
+                    opening=round(gap, 1),
+                    modelWidth=round(model_width, 1),
+                )
+            )
+        elif model_width - gap > 8.0:
+            findings.append(
+                _finding(
+                    "error",
+                    "l4d2-door-opening-too-narrow",
+                    f"door opening is about {gap:.0f} units, but {model} is "
+                    f"{model_width:.0f} units wide; the door cannot fit",
+                    entity_id=int(ent.id),
+                    classname=classname,
+                    opening=round(gap, 1),
+                    modelWidth=round(model_width, 1),
+                )
+            )
+    return findings
+
+
+def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, Any]]:
     """Left 4 Dead 2's FGD is the whole truth about entity classes.
 
     Unlike Garry's Mod, there is no Lua layer registering entities at runtime, so an
@@ -396,6 +564,8 @@ def lint_vmf(vmf: Any, fgd: Any) -> list[dict[str, Any]]:
                         side_id=int(side.id),
                     )
                 )
+
+    findings.extend(_lint_landmarks_and_doors(vmf, entities, game_dir))
 
     return findings
 

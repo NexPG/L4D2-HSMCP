@@ -1,188 +1,160 @@
-# Wish-to-campaign test — findings
+# Wish-to-campaign test — findings after the root-cause pass
 
 **Date:** 2026-11-18
-**Brief:** two chapters. Chapter 1: night forest, moonlight only, a swamp in the middle,
-a basement descent, transition. Chapter 2: the same safe room, Moscow metro, escalator to
-VDNKh, walk through the park, escape in a BTR. No zombies on either map. Stock L4D2 content
-only.
-**Campaign:** `campaigns/002-night-moscow/` (local; gitignored).
+**Campaign:** `campaigns/002-night-moscow/` (local; gitignored)
+**Version:** 0.0.78-alpha
 
-## What was built
+## What was verified this pass
 
-- Two maps, `night_moscow_m1` (forest/basement) and `night_moscow_m2` (metro/VDNKh).
-- Both sealed, lint-clean except listed warnings, compiled with Tools++ (`vbsp/vvis/vrad`
-  exit 0), nav generated, mission checked, VPK packed and deployed.
-- Chapter transition tested with the self-test warp: the engine loaded
-  `night_moscow_m2` and logged `HSMCP_DIRECTOR_STOPPED`.
-- Map 2 loads without the "Map is unplayable" panel after the nav fixes.
-- Chapter 1 still loads into the "NAV ERRORS / Map is unplayable" state. It is **not done**.
-- The maps call `director_stop` at spawn; the console marker is present and no zombie was
-  seen in the runs. Chapter 1 still carries two `info_zombie_spawn` anchors for the
-  Director/nav; they are inert while stopped.
+- Both chapters compile with Tools++ (`vbsp/vvis/vrad` exit 0), lint is **0 findings**, and
+  both nav meshes are `fresh` with the string-table dictionary present.
+- `night_moscow_m1` loads from the **normal Steam client** (not `-insecure`) out of the
+  installed VPK with no `NAV ERRORS`; the menu is responsive and the add-on does not hang.
+- `night_moscow_m2` loads with no `NAV ERRORS` after its end nav region was changed from
+  CHECKPOINT to FINALE. The safe-room door is open in the capture and the metro is visible.
+- The chapter transition `m1 -> m2` was exercised with the self-test warp and
+  `Host_Changelevel` reached `night_moscow_m2`.
+- `director_stop` runs at spawn in both maps (`HSMCP_DIRECTOR_STOPPED`) and no infected were
+  seen in the captures.
+- Sky: the engine no longer logs `material "skybox/..." not found`; a sky is drawn through
+  the cabin doorway. It is `urbannightburning_hdr`, the closest dual-mode night stock sky.
+- A normal Steam launch with the deployed VPK reaches the main menu; a direct
+  `left4dead2.exe` launch does not (Steam auth), which is a test-harness fault, not an
+  add-on fault.
 
-## Findings, conditions and fixes
+## Root fixes in the repository
 
-### P0 — nav/BSP pair mismatch
+| Problem | Root cause | Fix |
+|---|---|---|
+| `read_nav` stale; game says "Map is unplayable" | The engine appends the string-table dictionary **after** writing nav, so nav's `savedBspSize` described the pre-dictionary BSP | `run_nav_generate` bakes the dictionary with a `-stringtables` changelevel before generating; returns `bsp`, `fresh`, `stringtableDictionary`; retries once if the pair is stale |
+| Nav generated for the wrong map | A mounted VPK wins over a loose map; `addonsToHide` resolved bare names against the repo root, not the game's `addons/` | Bare names resolve in `<game>/left4dead2/addons/`; every installed VPK whose index contains `maps/<map>.bsp` is moved aside and reported as `shadowingArchives`; the sidecar's `vpk_list` prefix filter was fixed (it returned nothing for a path prefix, so the first shadow search was silent) |
+| No sky / flat void / "laggy sky" | worldspawn held `sky_l4d_night02`/`urbannightburning`; L4D2 asks for `skybox/<skyname><side>.vmt`, and stock maps store `..._hdr` | `checkSkybox` groups by full suffixed name, returns `suggested`; `write_vmf` stores it; `run_compile` refuses a sky without faces for the mode; default is `sky_l4d_rural02_hdr` |
+| Sky-only-one-mode | HDR-only skies (`sky_l4d_night02`) draw nothing in LDR | A dual-mode sky is required for `-both`; `read_asset_catalog` lists `ldrComplete`/`hdrComplete` |
+| Door opening twice the door | Walls were cut 128/256 wide around a 58-unit `checkpoint_door_02` | Openings are 64 x 112 (or 72 x 112 for the 68-unit door); lint `l4d2-door-opening-too-wide` / `-too-narrow` compares the gap to the model's horizontal width |
+| Slippery block / bots will not climb | A 51-degree `wedge` is a wall; a 20-unit stair rise is above the 18-unit step height | `write_vmf_solid` refuses a >45-degree wedge and a >18-unit step unless `steep: true`; campaign uses eight 16x16 steps |
+| `landmark embedded in solid` | `info_landmark` inside a trigger/region brush was counted as solid | `l4d2-landmark-in-solid` checks world solids and solid brush entities, ignoring triggers, nav regions and `info_changelevel` |
+| Escape unreachable | The end region was CHECKPOINT, not FINALE, so the Director had two checkpoints and the flow was rejected | `nav_finale` spawnflags changed from 2048 to 64; dump now shows FINALE areas |
+| Map2 "does not load / crashes" | Stale nav/BSP pair and wrong end-goal type | Both fixed above; map2 loads cleanly |
+| Normal-client add-on worry | Direct `left4dead2.exe` without Steam gives `No Steam logon`; canonical addoninfo keys and the dictionary were also missing | Manifest keys fixed; dictionary baked; tested via `steam.exe -applaunch 550` |
+| Agent did not see the escalator | `read_game_content` refused an empty pattern, so an asset had to be named before it could be found | Empty pattern browses; `read_asset_catalog` groups escalators/stairs/doors/etc. with bounds |
+| `read_nav_dump` returned 0 areas | Split regex `NAV AREA\s*\n-+` consumed the CRLF and required a second newline | `NAV AREA[^\S\r\n]*\r?\n-+`; CRLF regression test |
+| `read_bsp_entities` classname filter returned nothing | `handler` used `slice(offset, offset + limit)`; a direct call does not apply the Zod default, so `limit` was `undefined` | Defaults are applied in the handler for `limit`/`offset` |
+| Unknown `FinaleType` key | The FGD key is `type`, displayed as "Finale Type" | Campaign and skill docs use `type` |
 
-**When:** after `run_nav_generate`, when a build copies its own pre-generation `.bsp` next
-to the returned `.nav`.
-**Symptom:** `read_nav` says `stale`; the game shows "NAV ERRORS / Map is unplayable" even
-though map and nav exist. The engine's nav `savedBspSize` is the size of the BSP **after**
-it rewrote the stringtable, not the file passed in.
-**Root cause:** the tool returned only the nav; the build paired it with the old BSP.
-**Fixed in code:** `run_nav_generate` now returns `bsp`, and the build stages that exact
-pair. The nav docs state the rule. The local build also patches the nav header's
-`savedBspSize` when a build tool has already broken the pair.
-**Prevention:** a campaign build must assert `read_nav(...).verdict === "fresh"` before
-packing; this is now in the generated findings, not yet an automated acceptance test.
+## New problem list (conditions, symptoms, next fix)
 
-### P0 — chapter 1 is still unplayable
+### P1 — the type-2 finale did not start in the harness
 
-**When:** loading `night_moscow_m1` standalone or from the campaign.
-**Symptom:** "NAV ERRORS / Map is unplayable"; the camera starts in the cabin/ground and
-the HUD is blocked. `read_nav` says fresh and `read_nav_dump` says playable, but
-`nav_trouble_report` reports ~99 orphan areas.
-**Likely root cause:** the start checkpoint, the forest, the swamp bridge and the basement
-exit are not one nav island. The start area is enclosed in a cabin; the route crosses water
-and then a ramp to a below-ground checkpoint. One of those links is not generating or not
-connecting.
-**Tried and not sufficient:** an enclosed cabin, a wide doorway, removing the south wall, a
-boardwalk across the swamp, `navSlopeLimit: 0.5`, moving the BSP/nav pair.
-**Next fix:** use `nav_trouble_report` and flow numbers (`z_show_flow_distance 1`,
-`z_debug 1`) from the **end checkpoint backwards**; find the first area at `-9999/-9999`.
-Then either flatten the basement entrance to a nav-friendly landing or make the ramp
-shorter/wider with flat landings. Do not declare the chapter done until the flow is `X/X`
-and the game has no NAV panel.
+**When:** `trigger_finale` with `type 2` on the last map, loaded with `+map` (standalone) or
+after a `+map` campaign transition, with or without `director_stop`, with `Enable` and
+`ForceFinaleStart` fired by `ent_fire`, a timer, or entity I/O.
+**Symptom:** no `Finale started`; no `<map>_finale.nut` load; no stage log. The escape
+trigger is enabled independently, so the map is still completable.
+**What is ruled out:** missing model (fixed), missing FINALE nav (fixed; 81 areas), missing
+script in the VPK (present and loose test also failed), wrong `type` key (FGD confirms
+`type`), missing arrival `info_changelevel` (present, disabled).
+**Likely cause:** the campaign mission context. `+map` loads a single map; the Director may
+not treat it as the campaign finale, and type 2 then starts nothing. The stock maps start a
+finale through a button that `Enable`s the trigger and a player `+use`.
+**Next fix:** test from the **campaign menu** or a mission launch, not `+map`; if it still
+does not start, compare the entity and outputs byte-for-byte with `c2m5_concert` and start it
+with a real +use button. Do not claim a working finale until the stage lines and
+`FinaleEscapeStarted` are in the log.
 
-### P0 — below-ground checkpoint and `Checkpoint::GetSpawnPosition: Selected NULL area`
+### P1 — the downloadable string-table dictionary is incomplete
 
-**When:** the safe room/player start is below the main floor and the checkpoint area is
-small or isolated; also when a finale map is launched standalone.
-**Symptom:** repeated `Checkpoint::GetSpawnPosition: Selected NULL area`, then "Map is
-unplayable".
-**Root cause:** nav flow is generated backwards from the end checkpoint; if the start
-checkpoint cannot be identified/reached, the Director has no spawn. A large `info_changelevel`
-brush at player height, too few checkpoint nav areas, or a broken ramp all contribute.
-**Tried:** 4 `info_survivor_position` entities, `PLAYER_START` + `CHECKPOINT` on the start
-region, moving `info_changelevel` above the player.
-**Next fix:** keep a flat, generous checkpoint floor; put `info_changelevel` above head
-height; ensure 4 survivor positions; confirm flow from the end checkpoint back to start;
-run `nav_trouble_report` and recompute flow after every geometry change.
+**When:** any map shipped after a `-stringtables` bake; the normal client logs
+`String Table dictionary for downloadables should be rebuilt, only found 45 of 92 strings`.
+**Symptom:** the map still loads, but the client may spend time rebuilding and the warning is
+a real inconsistency.
+**Likely cause:** the bake runs with the shadowing campaign VPK hidden; strings that only the
+mounted archive contributes (scripts, particles, sounds) are not in the map's dictionary.
+**Next fix:** bake on a copy while the archive is mounted and the loose map wins (or merge
+the archive's dictionary); add a `dictionaryComplete` check to the nav result instead of only
+`stringtableDictionary`.
 
-### P1 — water is not nav
+### P1 — a real moonlit sky needs custom content
 
-**When:** a swamp/pond is crossed by the only route.
-**Symptom:** the nav mesh stops at the water; the area beyond becomes orphan.
-**Fix applied:** a solid boardwalk across the swamp. It must be wide enough for the 32×32
-survivor hull and connect to nav on both banks. Still not sufficient alone for chapter 1.
+**When:** the brief asks for a night forest / Moscow night, and only stock assets are allowed.
+**Symptom:** `urbannightburning_hdr` is a burning-city dusk; through the cabin doorway it
+reads as a brown haze, not moonlight. `sky_l4d_night02_hdr` is the right night sky but has
+no LDR faces, so it is black whenever the engine falls back to LDR.
+**Fix:** with the current rule (stock assets only) this is the closest correct choice. A
+true moonlit sky requires a custom skybox (six LDR + six HDR faces), which the brief excludes.
+Document it as a content limit, not a tool bug.
 
-### P1 — steep stairs and escalators do not generate nav by default
+### P2 — `read_vmf_view` cannot frame an interior
 
-**When:** `stairs` of 16 rise/16–32 run, or a 45-degree ramp.
-**Symptom:** no nav areas on the slope, street/finale disconnected, "unplayable".
-**Fix applied:** `navSlopeLimit: 0.5` in `run_nav_generate`, and a 23-degree ramp instead
-of 45-degree steps. The metro escalator then generated 189 areas and loaded. A 51-degree
-basement ramp still needs the chapter-1 investigation above.
+**When:** `render_vmf_view` with an origin inside the cabin.
+**Symptom:** `insideSolid: true`, `facesDrawn: 0`, `voidFraction: 1`; the camera reports the
+eye inside a brush even though the game spawns there. `render_vmf_tour` is black for both
+maps.
+**Next fix:** the point-in-solid/voxel pass is wrong for this geometry; reproduce on the
+probe fixture and fix the solid set or the eye drop. Until then use `run_map_test` for visual
+evidence.
 
-### P1 — no real finale on chapter 2
+### P2 — prop placement is still a table in the campaign
 
-**When:** the last map ends with `info_changelevel`/`trigger_once` to `credits` instead of
-a type-2 `trigger_finale`.
-**Symptom:** the map can load and end, but it is not a proper campaign finale; the nav end
-was temporarily marked as a checkpoint instead of FINALE.
-**Next fix:** build a type-2 finale with a stage list and an escape phase, and test the
-stage markers and credits. The current BTR trigger is a test escape, not a campaign finale.
+**When:** `prop_static` is placed with the model origin on the floor.
+**Symptom:** `prop-below-floor` until `MODEL_LIFT` is right; the 18-prop forest still needed
+manual lifts.
+**Next fix:** a placement helper that reads `mins.z` from `read_model_info` and writes
+`origin.z = floor + lift`, or a writer option `onFloor: true`; the lint already reports the
+mistake.
 
-### P1 — prop origins and model bounds
+### P2 — visual quality of the street and forest
 
-**When:** placing `prop_static` with the model's origin on the floor.
-**Symptom:** `prop-below-floor` warnings; trees/rocks/benches sink into the ground.
-**Fix applied:** a model-lift table from `read_game_content(details: true)`; still 1–2
-warnings remain. The durable fix is a placement helper/tool that takes the model's lowest
-point from `read_model_info` and stands it on the floor, or a writer that refuses a prop
-whose bounds penetrate the floor unless `buried: true` is passed.
+**When:** night outdoor lighting with `CONCRETE/BLEND_CONCRETE_01`, dark `light_environment`,
+and stock foliage.
+**Symptom:** the street is flat and the forest reads as black silhouettes; the BTR is an
+`apc001.mdl` stand-in; the escalator side panels are visual only (collision off) and the
+walking surface is the wedge.
+**Next fix:** matte street materials, lower `_light`, fog/light pools, non-solid step lips or
+handrails on the escalator, and a proper BTR model if one exists. This is content work, not a
+pipeline fault.
 
-### P1 — start area outside a safe room
+### P2 — `read_map_dependencies` reports `cedar_large01.phy` absent
 
-**When:** the first map spawns in an open field with only `info_player_start`.
-**Symptom:** "Map is unplayable" and the Director cannot establish a start checkpoint.
-**Fix applied:** a forester's cabin with an open doorway and a checkpoint nav region.
-**Remaining:** chapter 1 still fails; do not assume a cabin alone is enough.
+**When:** a static prop model has no `.phy` in the install.
+**Symptom:** `optionalAbsent`; the map loads, physics for that prop is static. Worth knowing,
+not a blocker. Do not treat it as a missing material.
 
-### P1 — street lighting and materials
+### P2 — direct-exe launches are not normal-client tests
 
-**When:** a night outdoor area uses `CONCRETE/BLEND_CONCRETE_01` and bright
-`light_environment` values.
-**Symptom:** the street is blown-out white/black, facades are unreadable, and the APC/BTR
-close-up looks like a broken wall. The escalator is a giant yellow ramp with no step
-readability.
-**Next fix:** use matte stock facade/blacktop materials, lower `_light`/`_ambient`, add
-streetlight pools and fog, add non-solid step lips and handrails over the ramp, and capture
-again. Do not judge visual quality from a single frame at 4 s after load.
+**When:** `left4dead2.exe` is started outside Steam with `-insecure` or by a script.
+**Symptom:** `STEAMAUTH ... failure code 8`, `No Steam logon`, drop to the menu. This was the
+first "infinite loading" reproduction and it was the harness.
+**Fix:** use `steam.exe -applaunch 550 ...` or the Steam UI for the normal-client gate;
+`run_map_test` keeps `-insecure` for cheats and loose maps and should say so in its result.
 
-### P2 — `logic_auto` has no `targetname` in L4D2's FGD
+### P3 — unverified surfaces
 
-**When:** adding one to hold `OnMapSpawn` outputs.
-**Symptom:** lint `unknown-keyvalue`; outputs still work in the built map, but the key is
-meaningless. **Fix:** match `logic_auto` by classname/id when adding outputs, or accept the
-warning explicitly.
+- **Versus / Scavenge:** no dedicated server and no second Steam account; two-team rounds are
+  unverified. Single-team coop is verified.
+- **Finale stages / escape:** see P1.
+- **HLMV 3D canvas:** needs an interactive desktop; the UI is captured, the canvas is not.
+- **Full Survival wave:** depends on the map's panic/finale entities; not run.
 
-### P2 — `info_changelevel` brush height
+## Engine limits
 
-**When:** a disabled arrival `info_changelevel` brush sits on the floor.
-**Symptom:** if treated as solid/low, it fragments nav in the safe room. Keep it above the
-survivor hull; a brush is not a point entity.
+The full table is in `docs/reference/engine-limits-l4d2.md`. The numbers that decided this
+build:
 
-### P2 — test camera / teleport controls
+- Coordinates **-16384..+16384**; the BSP is **32-bit**, keep it well under 300 MB.
+- Brushes **8192**, brush sides **65536**, faces **65536**, texinfo **12288**, unique
+  materials **2048**, displacement surfaces **2048**, brush models **1024**.
+- Map entities **8192**; runtime edicts **2048**.
+- Lighting **16 MB per mode**; visibility **16 MB**.
+- Walkable slope **45 degrees**; step height **18 units**.
+- Dynamic lights under **32**; projected textures **1-4**.
 
-**When:** trying to capture metro/street/BTR in one run.
-**Symptom:** `point_clientcommand` `setpos` and enabling `trigger_teleport` while the
-player is stationary did not move the player; `point_teleport` with `target: "!player"`
-worked for the first hop. **Fix:** use `point_teleport` for test sequences, or add a
-dedicated `run_map_test` camera/warp option. Never ship the test entities; they are
-conditional on `HSMCP_SELFTEST`.
+## Acceptance gate still missing
 
-### P2 — tool/readout bugs found
+The durable fix is a single `run_campaign_gate` that, for every map:
 
-- `read_nav_dump` returns `areaCount` and a correct summary but `returned: 0` and an empty
-  `areas` list. It should page areas; currently it hides the per-area evidence.
-- `read_bsp_entities` with a `classname` filter returns no entities even when the histogram
-  contains the class; the histogram is correct. The filter path is broken.
-- `render_vmf_tour` produced black frames for both maps; `render_vmf_view` reported
-  `facesDrawn: 0` from inside the metro/street. The room/camera pass needs investigation.
-- `run_nav_generate` originally returned only `nav`; fixed to return `bsp` as well.
+1. fails unless `read_nav` is `fresh` and the dictionary is present;
+2. fails on `NAV ERRORS`, orphan/missing-goal output from `nav_trouble_report`;
+3. runs `run_map_test` with the exact BSP/nav pair and the VPK hidden;
+4. records one screenshot and one log marker per requested mechanic.
 
-### P2 — assets and setting fidelity
-
-- `models/props_vehicles/apc001.mdl` is an APC, not a BTR. It is used as the closest stock
-  stand-in; the model's materials/orientation need an in-game check.
-- L4D2 has no Moscow/VDNKh set. The street is generic concrete blocks, bay windows, a
-  pavilion, a fountain and a horse statue. It is a themed approximation, not a Moscow
-  replica. The user's "only existing assets" rule is respected; the visual result is not
-  yet convincing.
-- The forest uses generic cedar/cypress/rock props; the moon-only look is too dark in the
-  first frames. A controlled moonlight fill and fog tuning are needed.
-
-### P3 — verification limits
-
-- No dedicated server is installed and a second Steam account is not available, so
-  two-team Versus/Scavenge rounds remain unverified. This does not block a campaign's
-  single-team environment test, but it blocks claims about versus balance.
-- Full Survival wave still depends on the map's own `trigger_finale`/panic trigger.
-- HLMV's 3D canvas needs an interactive desktop.
-
-## Root incident and prevention
-
-The core incident was not "a missing brush": it was **two contracts that were implicit**.
-1. The nav tool returned a mesh without the BSP the engine had just rewritten.
-2. The build accepted `read_nav_dump: playable` as a map verdict without checking
-   `read_nav: fresh` and without checking the nav flow from the end checkpoint.
-
-Both are now written down and partly enforced. The next structural fix is a **campaign
-acceptance gate** that, for every map:
-- reads `read_nav` and fails unless `fresh`;
-- reads the engine's `nav_trouble_report` and fails on orphan/missing checkpoint areas;
-- runs `run_map_test` with the exact BSP/nav pair and fails on the "NAV ERRORS" panel;
-- records one screenshot and one evidence line per requested mechanic.
-
-Until that gate exists, a sealed/compiled map is not the same as a playable one.
+Until that exists, a sealed/compiled map is not a playable one.

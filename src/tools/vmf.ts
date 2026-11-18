@@ -307,8 +307,9 @@ export const readVmfLint = defineTool({
     "outputs aimed at nothing, inputs a target class does not answer to, texture scales " +
     "that become 'Bad surface extents', displacements on brush entities (with the real " +
     "brush id, which vbsp does not print), props standing below the floor they were placed " +
-    "on because their model's origin is at its centre, and counts that approach the " +
-    "compiler limits. " +
+    "on because their model's origin is at its centre, doors whose opening does not match " +
+    "the door model's width, info_landmark entities inside a solid, and counts that approach " +
+    "the compiler limits. " +
     "Knows the entities the installed FGD declares, so a class the game has is not reported " +
     "as unknown. L4D2 campaign rules are included: a non-L4D2 changelevel, a missing " +
     "landmark or checkpoint door, and a Standard finale are reported. " +

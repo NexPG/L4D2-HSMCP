@@ -117,6 +117,8 @@ export interface StairsSpec {
   steps: number;
   /** Which way the flight climbs. */
   direction: "+x" | "-x" | "+y" | "-y";
+  /** Build steps taller than the player's 18-unit step-up anyway. */
+  steep?: boolean;
 }
 
 export interface ArchSpec {
@@ -202,6 +204,13 @@ function stairs(spec: StairsSpec): Expansion {
   const ascending = spec.direction.startsWith("+");
   const run = (spec.maxs[along]! - spec.mins[along]!) / spec.steps;
   const rise = (spec.maxs[2] - spec.mins[2]) / spec.steps;
+  if (rise > 18 && !spec.steep) {
+    throw new VmfBuildError(
+      `each step rises ${Math.round(rise)} units: a player climbs at most 18 without ` +
+        `jumping, and bots will not path up it. Use at least ${Math.ceil((spec.maxs[2] - spec.mins[2]) / 18)} ` +
+        `steps for this height, or pass steep: true if this is scenery.`,
+    );
+  }
 
   const specs: SolidSpec[] = [];
   for (let i = 0; i < spec.steps; i++) {

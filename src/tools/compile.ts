@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { clip } from "@projectsociety/mcp-core";
 import { z } from "zod";
@@ -18,6 +18,7 @@ import { assertWritable } from "../fs/guard.js";
 import { defineTool } from "../mcp/registry.js";
 import { callSidecar } from "../sidecar/client.js";
 import { gameBlock, gameFor } from "../games/resolve.js";
+import { checkSkybox } from "../games/skybox.js";
 import { GAME, GAME_BLOCK, resolveInput, resolveVmfInput } from "./paths.js";
 
 const FINDING = z.object({
@@ -76,7 +77,22 @@ export const runCompile = defineTool({
       .boolean()
       .default(true)
       .describe("vvis -fast and vrad -fast: minutes instead of hours, dev quality only."),
-    hdr: z.boolean().default(false).describe("vrad -both, for an HDR and an LDR lightmap set."),
+    hdr: z
+      .boolean()
+      .default(true)
+      .describe(
+        "vrad -both: produce the HDR and the LDR lightmap set. On by default because L4D2 " +
+          "renders HDR by default, and an LDR-only map whose sky ships only HDR faces draws " +
+          "no sky at all. Pass false only for a deliberate LDR-only build.",
+      ),
+    allowMissingSkyFaces: z
+      .boolean()
+      .optional()
+      .describe(
+        "Compile even when worldspawn's skyname has no faces for the mode being built. The " +
+          "result is a map with no sky (the engine draws whatever it loaded last); this " +
+          "exists for diagnosing an old map, not for shipping.",
+      ),
     stages: z
       .array(z.enum(["vbsp", "vvis", "vrad"]))
       .default(["vbsp", "vvis", "vrad"])
@@ -114,6 +130,18 @@ export const runCompile = defineTool({
     stages: z.array(STAGE_RESULT),
     leaked: z.boolean(),
     pointfile: z.string().nullable(),
+    /** The sky check that ran before vbsp; `checked: false` means it could not run. */
+    skybox: z.object({
+      skyname: z.string().nullable(),
+      checked: z.boolean(),
+      found: z.boolean().nullable(),
+      missingSides: z.array(z.string()),
+      ldrComplete: z.boolean().nullable(),
+      hdrComplete: z.boolean().nullable(),
+      suggested: z.string(),
+      alternatives: z.array(z.string()),
+      note: z.string(),
+    }),
     ok: z.boolean(),
   },
   handler: async (args, ctx) => {
@@ -150,6 +178,48 @@ export const runCompile = defineTool({
     const game = toWindowsPath(gameDir);
     const target = toWindowsPath(vmf);
     const timeoutMs = args.timeoutMinutes * 60_000;
+
+    // A sky is part of the compiled result, not of the editor view: vbsp writes the name
+    // into worldspawn and the engine resolves six faces at load. A name with HDR faces only,
+    // compiled LDR, produces "material skybox/<name>rt not found" and the map renders the
+    // engine's fallback sky -- the bug that reads as "the skybox is broken". Check the mode
+    // that vrad is about to write, before spending minutes on the compile.
+    const vmfText = readFileSync(vmf, "utf8");
+    const skyname = /"skyname"\s+"([^"]*)"/i.exec(vmfText)?.[1] ?? null;
+    const skybox = skyname
+      ? await checkSkybox(skyname, gameDir, ctx.config)
+      : {
+          checked: false,
+          found: null,
+          missingSides: [],
+          ldrComplete: null,
+          hdrComplete: null,
+          suggested: "",
+          alternatives: [],
+          note:
+            "worldspawn has no skyname. The engine will draw its fallback sky; set one " +
+            "with write_vmf or set_worldspawn.",
+        };
+    const missingForMode =
+      args.stages.includes("vrad") &&
+      skybox.checked === true &&
+      (skybox.found !== true ||
+        skybox.ldrComplete !== true ||
+        (args.hdr && skybox.hdrComplete !== true));
+    if (missingForMode && args.allowMissingSkyFaces !== true) {
+      throw new Error(
+        `skybox/${skyname} is not a usable L4D2 sky for this build. ` +
+          `L4D2 stores a mode-suffixed name in worldspawn (stock maps use \`_hdr\`) and ` +
+          `asks for skybox/<skyname><side>.vmt. ` +
+          (skybox.suggested && skybox.suggested !== skyname
+            ? `Use \`${skybox.suggested}\`. `
+            : `No \`_hdr\` or \`_ldr\` set with all six sides was found. `) +
+          (skybox.alternatives.length > 0
+            ? `Complete names in this game: ${skybox.alternatives.join(", ")}. `
+            : ``) +
+          `Pass allowMissingSkyFaces: true only to compile a known-broken map.`,
+      );
+    }
 
     // Resolved against what is on disk, for the stages actually being run: asking for the
     // ++ chain on a machine that has none of it is a normal state, not a fault.
@@ -235,6 +305,7 @@ export const runCompile = defineTool({
       stages,
       leaked,
       pointfile: existsSync(pointfile) ? pointfile : null,
+      skybox: { skyname, ...skybox },
       ok: stages.every((s) => s.clean && !s.timedOut) && bspExists,
     };
   },

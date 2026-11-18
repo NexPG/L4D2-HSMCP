@@ -5,7 +5,9 @@ goal area is FINALE and whose entities give the survivors a way to win.
 
 ## What Valve does
 
-Every stock finale uses `trigger_finale` with **type 2 (Custom)**:
+Every stock finale uses `trigger_finale` with **type 2 (Custom)**. The FGD keyvalue is
+`type` -- the display name is "Finale Type"; `FinaleType` is not a key and the engine
+ignores it.
 
 | Campaign | Type | Script |
 |---|---|---|

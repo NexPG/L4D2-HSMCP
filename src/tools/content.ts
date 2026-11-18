@@ -7,7 +7,8 @@ import { GAME, GAME_BLOCK } from "./paths.js";
 export const readGameContentTool = defineTool({
   name: "read_game_content",
   description:
-    "Searches the game's installed content for materials and models, by name. This is " +
+    "Searches the game's installed content for materials and models, by name, or browses a " +
+    "whole kind when the pattern is empty. This is " +
     "Hammer's texture browser and model browser, which an agent otherwise does not have: " +
     "without it a material is named from memory, and vbsp resolves a name literally, so a " +
     "wrong one is a purple checkerboard nobody sees until a player loads the map. Returns " +
@@ -24,11 +25,21 @@ export const readGameContentTool = defineTool({
   inputSchema: {
     pattern: z
       .string()
-      .describe("Name to look for. 'brick' matches anything containing it; 'brick*' is a glob."),
+      .describe(
+        "Name to look for. 'brick' matches anything containing it; 'brick*' is a glob. " +
+          "Empty is a browse: it lists the kind from `offset`, which is how to discover an " +
+          "asset whose name is not known yet.",
+      ),
     kind: z
       .enum(["material", "model", "particle", "sound"])
       .default("material")
       .describe("Materials (.vmt), models (.mdl), particle systems (.pcf) or sounds (.wav)."),
+    offset: z
+      .number()
+      .int()
+      .min(0)
+      .default(0)
+      .describe("Skip this many matches. Use the returned `nextOffset` to page a browse."),
     details: z
       .boolean()
       .optional()
@@ -48,10 +59,12 @@ export const readGameContentTool = defineTool({
     mountError: z.string().nullable(),
     pattern: z.string(),
     kind: z.string(),
+    offset: z.number().optional(),
     /** Every match, not only those returned. */
     total: z.number(),
     shown: z.number().optional(),
     truncated: z.boolean().optional(),
+    nextOffset: z.number().nullable().optional(),
     results: z.array(
       z.object({
         path: z.string(),
@@ -83,11 +96,6 @@ export const readGameContentTool = defineTool({
     refused: z.string().optional(),
   },
   handler: async (args, ctx) => {
-    // Refused here rather than in the sidecar so it holds on a machine with no venv: an
-    // empty pattern would walk the whole game and serialise tens of thousands of names.
-    if (args.pattern.trim().length === 0) {
-      throw new Error("a search needs a pattern; an empty one would return the whole game");
-    }
     const { game, from } = gameFor(ctx.config, args.game);
     const result = (await callSidecar(
       "search_content",
@@ -100,6 +108,7 @@ export const readGameContentTool = defineTool({
         gameDir: game.gameDir,
         pattern: args.pattern,
         kind: args.kind,
+        offset: args.offset,
         limit: args.limit,
         ...(args.details !== undefined ? { details: args.details } : {}),
       },
@@ -161,4 +170,74 @@ export const readModelInfoTool = defineTool({
   },
 });
 
-export const contentTools = [readGameContentTool, readModelInfoTool];
+export const readAssetCatalogTool = defineTool({
+  name: "read_asset_catalog",
+  description:
+    "The stock model categories Hammer++'s model browser shows, in one call: escalators, " +
+    "stairs and steps, doors, vehicles, foliage, street furniture, interiors, lights and " +
+    "signs, each with its real count and a bounded sample. Use this before choosing an asset " +
+    "for a feature: `read_game_content` needs a name, and an agent that has to guess the name " +
+    "will build a ramp instead of using the escalator that is already installed. Structural " +
+    "categories (stairs, escalators, doors, vehicles) carry the hull bounds, because those " +
+    "numbers decide the opening or shaft they need. Also returns every skybox with its LDR " +
+    "and HDR completeness; `strictComplete` is the only one safe to compile in both modes. " +
+    "One walk of the same VPK-and-loose chain the engine reads. Needs the Python sidecar.",
+  realm: "map",
+  inputSchema: {
+    perCategory: z
+      .number()
+      .int()
+      .min(1)
+      .max(200)
+      .default(40)
+      .describe("Sample size per category. `total` is always the real count."),
+    game: GAME,
+  },
+  outputSchema: {
+    game: GAME_BLOCK,
+    gameDir: z.string().nullable(),
+    mounted: z.boolean(),
+    mountError: z.string().nullable(),
+    modelCount: z.number().optional(),
+    categories: z.array(
+      z.object({
+        name: z.string(),
+        total: z.number(),
+        shown: z.number(),
+        results: z.array(
+          z.object({
+            path: z.string(),
+            mins: z.array(z.number()).nullable().optional(),
+            maxs: z.array(z.number()).nullable().optional(),
+            size: z.array(z.number()).nullable().optional(),
+            error: z.string().nullable().optional(),
+          }),
+        ),
+      }),
+    ),
+    skyboxes: z.array(
+      z.object({
+        name: z.string(),
+        ldrName: z.string(),
+        hdrName: z.string(),
+        suggested: z.string(),
+        ldrComplete: z.boolean(),
+        hdrComplete: z.boolean(),
+        strictComplete: z.boolean(),
+      }),
+    ),
+    note: z.string().optional(),
+  },
+  handler: async (args, ctx) => {
+    const { game, from } = gameFor(ctx.config, args.game);
+    const result = (await callSidecar(
+      "asset_catalog",
+      { gameDir: game.gameDir, perCategory: args.perCategory },
+      ctx.config,
+      180_000,
+    )) as Record<string, unknown>;
+    return { ...result, game: gameBlock(game, from) };
+  },
+});
+
+export const contentTools = [readGameContentTool, readModelInfoTool, readAssetCatalogTool];

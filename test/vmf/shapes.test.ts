@@ -115,15 +115,25 @@ describe("stairs", () => {
     expect(byX[byX.length - 1]!.maxs[2]).toBe(16);
   });
 
-  it("says so when the rise is more than a player can climb", () => {
+  it("refuses a rise above the step height unless steep is passed", () => {
     // 18 units is the Half-Life 2 step height. Above it the flight needs a jump, which is
-    // almost never what someone building stairs meant.
+    // almost never what someone building stairs meant, and nav will not cross it.
+    expect(() =>
+      build({
+        shape: "stairs",
+        mins: [0, 0, 0],
+        maxs: [256, 128, 256],
+        steps: 4,
+        direction: "+x",
+      }),
+    ).toThrow(/each step rises/);
     const { notes } = build({
       shape: "stairs",
       mins: [0, 0, 0],
       maxs: [256, 128, 256],
       steps: 4,
       direction: "+x",
+      steep: true,
     });
     expect(notes.join(" ")).toMatch(/not walkable/);
   });

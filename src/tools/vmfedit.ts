@@ -187,6 +187,7 @@ export const writeVmf = defineTool({
     written: z.boolean(),
     bytes: z.number(),
     skyname: z.string(),
+    skynameRequested: z.string(),
     /**
      * Whether the sky this tool just wrote is one the game actually has.
      *
@@ -198,6 +199,9 @@ export const writeVmf = defineTool({
       checked: z.boolean(),
       found: z.boolean().nullable(),
       missingSides: z.array(z.string()),
+      ldrComplete: z.boolean().nullable(),
+      hdrComplete: z.boolean().nullable(),
+      suggested: z.string(),
       alternatives: z.array(z.string()),
       note: z.string(),
     }),
@@ -220,8 +224,15 @@ export const writeVmf = defineTool({
     // can start a map unusable there.
     const { game } = gameFor(ctx.config, args.game);
     const skybox = await checkSkybox(args.skyname, game.gameDir, ctx.config);
+    // Store the name the engine will actually find. Stock L4D2 maps carry
+    // `sky_l4d_c1_1_hdr`, not `sky_l4d_c1_1`; a bare base name is looked up literally and
+    // renders no sky. The check says which suffixed set is complete.
+    const effective =
+      skybox.checked === true && skybox.found === false && skybox.suggested
+        ? skybox.suggested
+        : args.skyname;
 
-    const text = emptyVmf({ skyname: args.skyname, gridSpacing: args.gridSpacing });
+    const text = emptyVmf({ skyname: effective, gridSpacing: args.gridSpacing });
     const write = writeGuarded(path, text, ctx.config, { dryRun: args.dryRun });
 
     ctx.audit.record({
@@ -234,7 +245,8 @@ export const writeVmf = defineTool({
       dryRun: args.dryRun ?? false,
       written: write.written,
       bytes: Buffer.byteLength(text),
-      skyname: args.skyname,
+      skyname: effective,
+      skynameRequested: args.skyname,
       skybox,
       note:
         `${skybox.note} ` +
