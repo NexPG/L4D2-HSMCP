@@ -34,6 +34,7 @@ const ROOT_FILES = new Set([
   "LICENSE-MIT",
   "NOTICE",
   "README.md",
+  "THIRD-PARTY-NOTICES.md",
   "config.example.json",
   "opencode.json",
   "package.json",
