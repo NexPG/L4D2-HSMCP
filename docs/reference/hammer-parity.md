@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **121 tools**.
+Last checked against the tool list on 18/11/2026: **123 tools**.
 
 ## The file itself
 
@@ -224,6 +224,8 @@ map and looking, or by not happening at all.
 | `run_tga2skybox` | nothing offline: six TGAs into LDR and HDR cubemap `.vtf` files |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |
 | `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames or whether it is a cubemap |
+| `read_vmt` | nothing: the material's parameters, its `%compile*` flags and its `Proxies` blocks are invisible in the editor |
+| `write_vmt` | a text editor, and remembering which shader takes which parameter |
 | `read_sightlines` | the eye, standing in the map |
 | `read_vmf_rooms` | nothing: Hammer has no idea what a room is |
 | `read_vmf_surfaces` | nothing: no readout says which faces are buried between brushes |

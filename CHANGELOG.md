@@ -15,6 +15,12 @@ with a line here.
 - **`read_vtf`.** A `.vtf` header as data — version, size, flags, frames, format and whether
   it is a cubemap — from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
   sourcepp/vtfpp, not the six entries that turn up in map content.
+- **`read_vmt` / `write_vmt`.** The file between a face and its texture: shader, parameters,
+  `Proxies` and `patch` blocks, `%compile*` flags and the textures it names. Parameter names
+  are matched case-insensitively, as the engine does; a missing closing brace is repaired and
+  reported, because shipped Valve materials contain them. Behaviour ported from Hammer-MCP's
+  `VmtMaterial`. Checked against 300 real materials from `pak01_dir.vpk`: 0 failures, and
+  every `patch` has its `include`.
   build commands, so the algorithm reference survives the removal of the temporary
   `.3d-projects` folder. Nothing there is compiled or published. `THIRD-PARTY-NOTICES.md`
   records the copyright lines and moves the three projects to the used table, and adds three
