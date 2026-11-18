@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.88-alpha — 2026-11-18
+
+- **Nav areas: read and edit.** `read_nav_areas` lists every area of a `.nav` with its
+  attributes, L4D2 spawn attributes, place, centre, size and connection counts;
+  `write_nav_areas` sets or clears those attributes in place. The parser handles L4D2's
+  version 16 / sub-version 14 record, including the population string and the per-area spawn
+  block, and was verified against the real `c1m1_hotel.nav`: 1 582 areas, population
+  `c1streets`, 551 areas with spawn attributes.
+- **Edits are masks, not replacement values.** An area can carry bits this project has no
+  name for (`MOSTLY_FLAT`, `OUTSIDE_WORLD`), and writing a value built only from known names
+  would clear them. A patch touches the named bits only, writes a `.bak` first, and reads the
+  file back to prove the change landed. A wrong edit is one backup away from undone.
+- **Runtime dependencies are no longer listed as borrowed code.** `srctools` is installed
+  from `requirements.txt` and imported; its source is not vendored, modified or
+  redistributed, so `third_party/NOTICES.md` no longer lists it and its licence file is gone.
+  The notices now cover only what was taken into the source tree.
+
 ## 0.0.87-alpha — 2026-11-18
 
 - **One project, modules by meaning.** `src/` is now eleven semantic modules — `hammer/`,

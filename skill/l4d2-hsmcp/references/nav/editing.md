@@ -53,6 +53,27 @@ commands. `nav_show_area_info -1` keeps the area id and attributes on screen.
 
 ## Attributes and places
 
+These console commands are what a person types in the editor. The same changes can be made as
+data — without the game running — with the two tools that read and patch a `.nav`:
+
+| Tool | Use |
+|---|---|
+| `read_nav_areas` | Every area with its attributes, L4D2 spawn attributes, place, centre, size and connection counts. Filter by `MOB_ONLY`, `SPAWN_NO_MOBS`, a place name |
+| `write_nav_areas` | Set/clear attribute and spawn bits on one or more area ids, or assign an existing place. Writes a `.bak` and reads the file back |
+
+**Attributes are masks, not values.** An area may carry bits this toolkit has no name for;
+`write_nav_areas` changes only the bits named in the call, so those survive. A `.nav` is not
+rewritten: the file keeps its length and every other byte.
+
+L4D2-specific attribute bits (`TerrorNavAttributeType`): `TANK_ONLY` `0x10000`, `MOB_ONLY`
+`0x20000`, `PLAYERCLIP` `0x40000`, `BREAKABLEWALL` `0x80000`, `FLOW_BLOCKED` `0x8000000`,
+`OUTSIDE_WORLD` `0x10000000`, `MOSTLY_FLAT` `0x20000000`.
+
+Spawn attributes (`TerrorNavSpawnAttributeType`), the ones the Director reads: `EMPTY`,
+`STOP`, `BATTLESTATION`, `FINALE`, `PLAYER_START`, `BATTLEFIELD`, `CHECKPOINT`, `NO_MOBS`,
+`THREAT`, `NOTHREAT`, `RESCUE_VEHICLE`, `RESCUE_CLOSET`, `ESCAPE_ROUTE`, `DOOR`, plus the
+eight `COMPASS_*` directions for a rescue closet's facing.
+
 | Command | Effect |
 |---|---|
 | `nav_mark_attribute` / `nav_clear_attribute` | Add/remove one attribute on the selection |

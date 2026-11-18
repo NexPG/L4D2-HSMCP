@@ -1,6 +1,6 @@
 # Tool catalogue
 
-128 tools. This page groups them by the job you are doing; each tool's own description is the
+130 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -40,6 +40,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_map_geometry` | what each lump holds and how close it is to the compiler ceiling |
 | `read_map_report` | verdict per budget criterion, not just numbers |
 | `read_nav_dump` | engine's `<map>_nav.txt`: areas, attributes, flow verdict |
+| `read_nav_areas` | every `.nav` area: attributes, L4D2 spawn attributes, place, connections |
+| `write_nav_areas` | set/clear area and spawn attributes in place, with a `.bak` and a read-back |
 | `nav_trouble_report` | the engine's own nav checks, as findings with the selected areas' coordinates |
 | `read_map_dependencies` | every asset the map references and where it will come from |
 | `read_prop_survey` | props by model and class, including unnamed `prop_dynamic` |

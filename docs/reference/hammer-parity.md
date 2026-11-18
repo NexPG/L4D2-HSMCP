@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 18/11/2026: **128 tools**.
+Last checked against the tool list on 18/11/2026: **130 tools**.
 
 ## The file itself
 
@@ -203,6 +203,8 @@ map and looking, or by not happening at all.
 | `read_text_file` | nothing: Hammer does not open QC, SMD or VMT as text |
 | `write_text_file` | nothing: source formats are edited in a text editor |
 | `read_nav_dump` | nothing: the engine's own nav dump is not readable from Hammer |
+| `read_nav_areas` | nothing: Hammer never shows a nav area, its attributes or its connections |
+| `write_nav_areas` | the nav edit commands, typed one area at a time with no undo |
 | `nav_trouble_report` | `nav_trouble_report` in the console, read by eye; this selects the same areas and returns their coordinates |
 | `run_nav_generate` | the engine's nav generator, driven without a person at the console |
 | `check_finale` | nothing: no editor checks the finale contract — type, script, stage list, nav area, escape outputs |

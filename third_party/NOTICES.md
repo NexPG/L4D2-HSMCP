@@ -21,10 +21,9 @@ files in this repository; the upstream file is named so a port can be re-checked
 
 | Project | Licence | What was taken, and where it is now |
 |---|---|---|
-| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | **The live Hammer shell channel** — `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` command grammar, `WM_COMMAND` menu ids, session/`mapversion` handling and process/window discovery (`sidecar/hammer_live.py`, `src/tools/hammerlive.ts`). **Autosave locations and matching** — Hammer++'s `AutosaveDir`, the registry keys stock Hammer uses, `originalname` (`src/game/autosave.ts`). **Run Map sequence formats** — the 804-byte binary command record and the KeyValues variant (`src/compile/sequences.ts`). **VMT parsing behaviour** — case-insensitive parameters, blocks kept as blocks, a missing closing brace repaired (`src/formats/vmt.ts`). |
+| [EpicMorg/Hammer-MCP](https://github.com/EpicMorg/Hammer-MCP) | [MIT](licenses/hammer-mcp-epicmorg-MIT.txt) | **The live Hammer shell channel** — `Worldcraft_ShellMessageWnd`, `WM_COPYDATA` command grammar, `WM_COMMAND` menu ids, session/`mapversion` handling and process/window discovery (`src/hammer/python/hammer_live.py`, `src/hammer/typescript/tools/hammerlive.ts`). **Autosave locations and matching** — Hammer++'s `AutosaveDir`, the registry keys stock Hammer uses, `originalname` (`src/maps/typescript/game/autosave.ts`). **Run Map sequence formats** — the 804-byte binary command record and the KeyValues variant (`src/maps/typescript/compile/sequences.ts`). **VMT parsing behaviour** — case-insensitive parameters, blocks kept as blocks, a missing closing brace repaired (`src/formats/typescript/formats/vmt.ts`). |
 | [Sycatle/hammer-mcp](https://github.com/Sycatle/hammer-mcp) | [MIT](licenses/hammer-mcp-sycatle-MIT.txt) | The code this repository grew out of. The portions of that tree that survive are the VMF/BSP readers and writers, the compile pipeline, the measurement and render modules, and the tool contracts. Provenance and the change of licence are in [`NOTICE`](NOTICE). |
-| [TeamSpen210/srctools](https://github.com/TeamSpen210/srctools) | [MIT](licenses/srctools-MIT.txt) (excluding `libsquish/`, which has its own) | Used as a runtime dependency, installed into the sidecar's virtual environment: the BSP, VPK, VTF, FGD and VMF readers behind `sidecar/main.py`. Not vendored, not modified. |
-| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | **The VTF `IMAGE_FORMAT_*` table** (`vtfpp/ImageFormats.h` → `src/bsp/vtf.ts`). **The VPK directory layout** — tree grouping, preload handling, `0x7FFF` offsets (`vpkpp/format/VPK.cpp` → `src/formats/vpk.ts`). **The MDL attachment/body-part/hitbox layout** — including the 92-byte `mstudioattachment_t` and its entry-relative name index (`mdlpp/structs/MDL.h`, `mdlpp/structs/MDL.cpp` → `sidecar/content.py`). |
+| [craftablescience/sourcepp](https://github.com/craftablescience/sourcepp) | [MIT](licenses/sourcepp-MIT.txt) | **The VTF `IMAGE_FORMAT_*` table** (`vtfpp/ImageFormats.h` → `src/textures/typescript/bsp/vtf.ts`). **The VPK directory layout** — tree grouping, preload handling, `0x7FFF` offsets (`vpkpp/format/VPK.cpp` → `src/formats/typescript/formats/vpk.ts`). **The MDL attachment/body-part/hitbox layout** — including the 92-byte `mstudioattachment_t` and its entry-relative name index (`mdlpp/structs/MDL.h`, `mdlpp/structs/MDL.cpp` → `src/assets/python/content.py`). |
 
 ### Licence texts
 
@@ -35,15 +34,18 @@ The full text of each licence travels here, one file per project, under `license
 | `licenses/hammer-mcp-epicmorg-MIT.txt` | EpicMorg/Hammer-MCP, © 2026 EpicMorg |
 | `licenses/hammer-mcp-sycatle-MIT.txt` | Sycatle/hammer-mcp, © 2026 Project Society Studio |
 | `licenses/sourcepp-MIT.txt` | craftablescience/sourcepp, © 2023 Laura Lewis |
-| `licenses/srctools-MIT.txt` | TeamSpen210/srctools, © 2021 Spencer Brown |
 
 MIT requires the copyright line **and** the permission notice to travel with every copy of
 the software, so each file contains both, verbatim. Nothing is relicensed by the GPL: the
 GPL applies to the combined work, and a recipient may still exercise the MIT permissions on
 the MIT portions.
 
-`srctools` also contains `libsquish/` under its own licence; this project does not copy or
-modify that directory and uses the installed package as a whole.
+### Runtime dependencies are not listed here
+
+Python packages installed from `requirements.txt`, and npm packages, are dependencies rather
+than borrowed code: they are not vendored, not modified and not redistributed by this
+project. Their licences ship with the package and are recorded by the package manager. This
+file is for what was taken **into the source tree**.
 
 ## No source trees are kept
 

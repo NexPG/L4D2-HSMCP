@@ -33,6 +33,7 @@ import { measureTools } from "./maps/typescript/tools/measure.js";
 import { measureTools2 } from "./maps/typescript/tools/measurespace.js";
 import { mergeTools } from "./maps/typescript/tools/merge.js";
 import { modifyTools } from "./maps/typescript/tools/modify.js";
+import { navAreasTools } from "./nav/typescript/tools/navareas.js";
 import { navTroubleTools } from "./nav/typescript/tools/navtrouble.js";
 import { optimiseTools } from "./maps/typescript/tools/optimise.js";
 import { organiseTools } from "./maps/typescript/tools/organise.js";
@@ -107,6 +108,7 @@ export const allTools: AnyToolDef[] = [
   ...exportMapTools,
   ...finaleTools,
   ...navTroubleTools,
+  ...navAreasTools,
   ...buildTools,
   ...modifyTools,
   ...mergeTools,
