@@ -4,3 +4,17 @@
 # Fixtures are compared byte for byte — line endings are part of what the tests assert,
 # and a Windows checkout must not rewrite them.
 test/fixtures/** -text
+
+# Third-party source trees kept for reference (see vendor/README.md). GitHub's linguist
+# already treats a `vendor/` directory as vendored, which keeps it out of the language
+# statistics -- but that is a path heuristic, and the project's whole language bar depends on
+# the language bar match what was actually written. Stating the rule makes
+# the result independent of a heuristic that can change.
+vendor/** linguist-vendored
+
+# The artwork inside those trees is binary; keep git from trying to diff it.
+vendor/**/*.png -diff
+vendor/**/*.ico -diff
+vendor/**/*.xcf -diff
+vendor/**/*.blend -diff
+vendor/**/*.pdn -diff
