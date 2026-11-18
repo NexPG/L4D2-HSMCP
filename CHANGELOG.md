@@ -15,6 +15,11 @@ with a line here.
   `.vtx` exist, and refuses with an actionable message when the binary is absent. The
   alternative to `run_studiomdl`: one binary, no Crowbar, DMX/glTF sources the 2009 compiler
   cannot read.
+- **`hammer_status` reports the exact build.** The editor's DLL is hashed and looked up in the
+  vendored registry of 182 known builds: Hammer++ 8873 L4D2 x86 is identified as
+  `hpp-l4d2-8873-x86`, with its shell support. An unknown build is `null`, not a guess.
+  `modified` is `true` only when the title carries `*`; Hammer++ 8873 never marks it, so
+  `null` is the honest answer and the schema says so.
 - **Licences travel with the code.** Each vendored tree keeps its own `LICENSE`; the
   canonical copies and the record are in `third_party/`. `third_party/NOTICES.md` says which
   path belongs to which project and what it provides.

@@ -2,7 +2,7 @@
 
 Portions ported from Hammer-MCP (https://github.com/EpicMorg/Hammer-MCP),
 MIT License, Copyright (c) 2026 EpicMorg. Adapted to Python/ctypes for this project.
-The full notice is in THIRD-PARTY-NOTICES.md.
+The full notice is in third_party/NOTICES.md.
 
 Hammer has a hidden window named ``Worldcraft_ShellMessageWnd``. Sending it a
 ``WM_COPYDATA`` message with an ANSI text command creates/deletes point entities and sets
@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.wintypes as wt
+import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -132,6 +134,79 @@ def _open_map(titles: list[str]) -> str | None:
     return None
 
 
+_REGISTRY_PATH = (
+    Path(__file__).resolve().parents[2] / "hammer" / "csharp" / "registry" / "hammers.json"
+)
+_registry: dict[str, dict[str, Any]] | None = None
+
+
+def _load_registry() -> dict[str, dict[str, Any]]:
+    """Hammers the upstream registry knows, keyed by the SHA-256 of their editor DLL.
+
+    The file is JSON with `//` comments and a trailing comma, so it is cleaned before
+    `json.loads`. A missing or unreadable registry is not an error: identification is a
+    bonus, and `hammer_status` still reports the process, the windows and the open map.
+    """
+    global _registry
+    if _registry is not None:
+        return _registry
+    try:
+        text = _REGISTRY_PATH.read_text(encoding="utf-8")
+    except OSError:
+        _registry = {}
+        return _registry
+    text = re.sub(r"(?m)^\s*//.*$", "", text)
+    text = re.sub(r",(\s*[}\]])", r"\1", text)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        _registry = {}
+        return _registry
+    found: dict[str, dict[str, Any]] = {}
+    for build in data.get("builds", []):
+        digest = (build.get("match") or {}).get("sha256")
+        if isinstance(digest, str) and digest:
+            found[digest.lower()] = build
+    _registry = found
+    return _registry
+
+
+def _identify(exe: str | None) -> dict[str, Any] | None:
+    """The registry entry for this editor's DLL, or None.
+
+    The DLL is not always beside the executable: Hammer++ for L4D2 keeps it in
+    `bin/hammerplusplus/bin/` while `hammerplusplus.exe` is in `bin/`. The candidate list is
+    therefore the shapes the shipped layouts use, not one guess.
+    """
+    registry = _load_registry()
+    if not exe or not registry:
+        return None
+    base = Path(exe).parent
+    names = {
+        (build.get("match") or {}).get("dll")
+        for build in registry.values()
+        if (build.get("match") or {}).get("dll")
+    }
+    for name in names:
+        for root in (base, base / "hammerplusplus" / "bin", base / "hammerplusplus", base / "bin"):
+            candidate = root / str(name)
+            try:
+                digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+            except OSError:
+                continue
+            build = registry.get(digest)
+            if build:
+                return {
+                    "id": build.get("id"),
+                    "family": build.get("family"),
+                    "branch": build.get("branch"),
+                    "build": build.get("build"),
+                    "arch": build.get("arch"),
+                    "shell": (build.get("shell") or {}).get("present"),
+                }
+    return None
+
+
 def _modified(titles: list[str]) -> bool | None:
     """Whether the open map has unsaved changes, when the editor says so.
 
@@ -163,6 +238,7 @@ def _editor(pid: int, shell: int) -> dict[str, Any]:
         "titles": titles,
         "openMap": _open_map(titles),
         "modified": _modified(titles),
+        "build": _identify(exe),
     }
 
 

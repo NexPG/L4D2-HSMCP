@@ -44,6 +44,20 @@ const EDITOR = z.object({
    * was measured with an edited map open), so absence is not proof that the map is saved.
    */
   modified: z.boolean().nullable(),
+  /**
+   * Exact build, when the editor DLL matches the registry of known builds
+   * (`src/hammer/csharp/registry/hammers.json`). Null for an unknown build.
+   */
+  build: z
+    .object({
+      id: z.string().nullable(),
+      family: z.string().nullable(),
+      branch: z.string().nullable(),
+      build: z.number().nullable(),
+      arch: z.string().nullable(),
+      shell: z.boolean().nullable(),
+    })
+    .nullable(),
 });
 
 export const hammerStatusTool = defineTool({
@@ -51,7 +65,8 @@ export const hammerStatusTool = defineTool({
   description:
     "Lists running Hammer / Hammer++ / J.A.C.K. / Sledge editors, their process id, main " +
     "window, shell-channel window, open map path from the title, whether that map has " +
-    "unsaved changes, and whether the live shell channel is available. The shell channel is the editor's built-in " +
+    "unsaved changes, the exact editor build when its DLL is known, and whether the live " +
+    "shell channel is available. The shell channel is the editor's built-in " +
     "`Worldcraft_ShellMessageWnd`; it is write-only and entity-level. Use it before " +
     "`hammer_live_edit` or `hammer_menu`. Read-only, no game process involved.",
   realm: "local",

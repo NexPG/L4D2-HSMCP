@@ -11,6 +11,7 @@ answers "where is the test for this file" without a search.
 | [`render/`](render/) | offline views, plans, tours |
 | [`compile/`](compile/) | compilers, logs, leaks, toolchains, rename |
 | [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching |
+| [`hammer/`](hammer/) | editor data: the Hammer build registry and its hash lookup |
 | [`campaign/`](campaign/) | mission files, convars, addons, finale contract |
 | [`game/`](game/) | game-directory staging: hide/restore archives, install a BSP/nav pair |
 | [`kv/`](kv/) | KeyValues parse/serialise |
