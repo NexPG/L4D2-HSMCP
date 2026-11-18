@@ -46,7 +46,7 @@ const EDITOR = z.object({
   modified: z.boolean().nullable(),
   /**
    * Exact build, when the editor DLL matches the registry of known builds
-   * (`src/hammer/csharp/registry/hammers.json`). Null for an unknown build.
+   * (`src/hammer/data/hammers.json`). Null for an unknown build.
    */
   build: z
     .object({

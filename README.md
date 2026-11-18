@@ -99,6 +99,12 @@ node dist/index.js install
 `install` registers the server with your MCP client and writes `.mcp.json` with local paths.
 Start or reload your agent, then ask it:
 
+> **No separate compiler is needed.** The server is TypeScript and the sidecar is Python; the
+> C++ and C# trees in `src/` are source for the tools we ported from and for optional
+> adapters, and nothing imports them at runtime. `pnpm build` transpiles the TypeScript to
+> `dist/` in a few seconds. To skip that step entirely, run straight from source with
+> `pnpm start:src` (uses `tsx`) — required only when you want to work on the code itself.
+
 ```
 health
 ```
