@@ -17,7 +17,7 @@ actually works.
 > [`third_party/NOTICES.md`](third_party/NOTICES.md) before importing anything.
 
 <p align="center">
-  <img src="docs/media/mascot-HSMCP.jpg" alt="1980s Japanese anime VHS-style mascot for L4D2-HSMCP" width="70%">
+  <img src="docs/media/mascot-HSMCP.jpg" alt="1980s Japanese anime VHS-style mascot for L4D2-HSMCP" width="80%">
 </p>
 
 ## What it is
