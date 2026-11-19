@@ -76,6 +76,15 @@ It reports `chapter-numbering`, `map-not-a-name`, `map-file-missing`, `image-mis
 `display-name-missing`. A campaign can be a work in progress, so it reports and does not stop
 the build; `write_campaign` is the tool that refuses invalid structure.
 
+`check_modes` is the next question: can each map run the mode it is listed under? It counts
+`weapon_scavenge_item_spawn` for scavenge, looks for a `trigger_finale`/`func_finale` on a
+survival map, and warns when the last coop/versus chapter has neither a finale nor a
+changelevel. A BSP that exists only in a VPK is reported as skipped, not passed.
+
+```
+check_modes(path: "campaigns/001/src/missions/my_campaign.txt", mapsDirs: ["campaigns/001/addon/maps"])
+```
+
 When reading a campaign already installed in the game, point it at a VPK and an entry:
 
 ```

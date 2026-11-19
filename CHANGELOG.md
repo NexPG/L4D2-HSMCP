@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.108-alpha - 2026-11-19
+
+- **`check_modes` checks a mode against the maps it lists.** Scavenge needs
+  `weapon_scavenge_item_spawn` (an error when none); survival needs a
+  `trigger_finale`/`func_finale` (a warning, because the timer otherwise stays at `00:00`);
+  a coop/versus campaign whose last chapter has neither a finale nor an `info_changelevel`
+  has no ending; a map repeated inside one mode and a mode name outside
+  coop/versus/survival/scavenge/mutation*/community* are warnings. A BSP that exists only in
+  a VPK is reported as skipped, never passed.
+- **Verified against the test campaign:** scavenge finds 16 gas-can spawns; survival on
+  `hsmcp_test_m1` is flagged for having no trigger; the coop last chapter (`hsmcp_test_m2`)
+  has a finale; an unknown mode and a duplicate map are reported.
+- **Long in-game proof:** Steam stayed logged on long enough for the custom finale to run
+  through stages 1-6, `HSMCP_ESCAPE_STARTED`, `HSMCP_ESCAPE_TOUCHED` and `Map: credits`.
+- **A capture failure no longer loses a matched run.** `run_map_test` catches a
+  `captureWindow` error after the last marker and returns `captureError` instead of throwing:
+  the game window closing on the credits map was turning a successful timeline into an
+  exception.
+- **Tool count: 164.** Tests: 150 files, 1428 passed, 33 skipped.
+
 ## 0.0.107-alpha - 2026-11-19
 
 - **`read_vscript` checks a `.nut` as Squirrel without running it.** The source is stripped

@@ -39,7 +39,7 @@ const FINDING = z.object({
 });
 
 /** Resolves the mission text from a file or from a VPK entry. */
-async function loadMission(
+export async function loadMission(
   config: import("../../../core/typescript/config.js").Config,
   args: { path?: string; vpk?: string; entry?: string },
 ): Promise<{ mission: Mission; source: { kind: "file" | "vpk"; path: string; entry: string | null } }> {

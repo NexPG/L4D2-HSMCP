@@ -64,6 +64,8 @@ contracts the tools enforce.
 - [ ] `run_map_test` with the exact nav-generated BSP/nav pair; screenshot per requested
       mechanic. `NAV ERRORS` or `Map is unplayable` in the log fails the run.
 - [ ] `check_campaign(vpk: ...)` reads the installed archive.
+- [ ] `check_modes`: scavenge gas cans, the survival trigger, the last coop/versus ending,
+      duplicate maps and known mode names.
 - [ ] Or run all of the above as `run_campaign_gate` and require `ok: true`.
 
 The gate's shipping BSP is the **nav-generated** one. The engine appends its string-table

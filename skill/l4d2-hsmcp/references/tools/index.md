@@ -1,6 +1,6 @@
 # Tool catalogue
 
-163 tools. This page groups them by the job you are doing; each tool's own description is the
+164 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -25,6 +25,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 |---|---|
 | `read_campaign` | parse a mission file or an entry inside a VPK |
 | `write_campaign` | write a mission file; refuses invalid structure |
+| `check_modes` | per-mode contract: scavenge cans, survival trigger, campaign ending, duplicate maps, unknown mode names |
 | `check_campaign` | verify chapters, maps, images against real files or VPKs |
 | `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |

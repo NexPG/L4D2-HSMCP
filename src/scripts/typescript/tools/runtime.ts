@@ -547,6 +547,7 @@ export const runMapTest = defineTool({
     elapsedSeconds: z.number(),
     processId: z.number().nullable(),
     gameClosed: z.boolean(),
+    captureError: z.string().nullable(),
     screenshotPath: z.string().nullable(),
     screenshotWidth: z.number().nullable(),
     screenshotHeight: z.number().nullable(),
@@ -696,6 +697,7 @@ export const runMapTest = defineTool({
     let timeline: MarkerHit[] = [];
     let missing: string[] = [];
     let gameClosed = false;
+    let captureError: string | null = null;
     try {
       if ((args.markers?.length ?? 0) > 0) {
         const result = await waitForMarkers(
@@ -724,16 +726,21 @@ export const runMapTest = defineTool({
               ctx.config.stateDir,
               "screenshots",
               `${args.map}-${new Date().toISOString().replace(/[:.]/g, "-")}.png`,
-            );
-        mkdirSync(dirname(out), { recursive: true });
-        const captured = await captureWindow(pid, out, 3000, args.method ?? "screen");
-        screenshotPath = captured.path;
-        screenshotWidth = captured.width;
-        screenshotHeight = captured.height;
-        image = {
-          data: readFileSync(captured.path).toString("base64"),
-          mimeType: "image/png",
-        };
+            );        mkdirSync(dirname(out), { recursive: true });
+        try {
+          const captured = await captureWindow(pid, out, 3000, args.method ?? "screen");
+          screenshotPath = captured.path;
+          screenshotWidth = captured.width;
+          screenshotHeight = captured.height;
+          image = {
+            data: readFileSync(captured.path).toString("base64"),
+            mimeType: "image/png",
+          };
+        } catch (error) {
+          // The timeline already answered the test; a window that closed on the credits
+          // map must not turn a matched run into a thrown error.
+          captureError = error instanceof Error ? error.message : String(error);
+        }
       }
     } finally {
       if (direct) direct.stop(); else stopGameProcess();
@@ -743,7 +750,8 @@ export const runMapTest = defineTool({
       if (cfgWritten) {
         rmSync(cfgPath, { force: true });
         if (existsSync(cfgBackup)) renameSync(cfgBackup, cfgPath);
-      }      for (const entry of scriptBackups) {
+      }
+      for (const entry of scriptBackups) {
         rmSync(entry.path, { force: true });
         if (entry.had && existsSync(`${entry.path}.hsmcp-backup`)) {
           renameSync(`${entry.path}.hsmcp-backup`, entry.path);
@@ -768,6 +776,7 @@ export const runMapTest = defineTool({
       elapsedSeconds: Math.round((Date.now() - started) / 1000),
       processId: runPid,
       gameClosed,
+      captureError,
       screenshotPath,
       screenshotWidth,
       screenshotHeight,

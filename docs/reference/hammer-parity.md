@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **163 tools**.
+Last checked against the tool list on 19/11/2026: **164 tools**.
 
 ## The file itself
 
@@ -288,6 +288,7 @@ map and looking, or by not happening at all.
 | `write_hint_brush` | a brush you texture yourself and hope |
 | `read_campaign` | nothing: the game reads mission files, the editor never shows them |
 | `write_campaign` | nothing: a mission file is written by hand |
+| `check_modes` | nothing: no editor checks that a map can actually run the mode it is listed under |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
 | `run_vpk_pack` | nothing: Hammer has no addon packaging |
 | `run_vpk_build` | nothing: Hammer has no addon packaging, and this one needs neither the game nor its `vpk.exe` |

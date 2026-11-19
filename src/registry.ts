@@ -10,6 +10,7 @@ import { buildCubemapTools } from "./textures/typescript/tools/buildcubemaps.js"
 import { buildTools } from "./maps/typescript/tools/build.js";
 import { captureTools } from "./hammer/typescript/tools/capture.js";
 import { campaignTools } from "./campaigns/typescript/tools/campaign.js";
+import { checkModeTools } from "./campaigns/typescript/tools/modes.js";
 import { addonTools } from "./packages/typescript/tools/addon.js";
 import { autosaveTools } from "./maps/typescript/tools/autosave.js";
 import { clipTools } from "./maps/typescript/tools/clip.js";
@@ -99,6 +100,7 @@ export const allTools: AnyToolDef[] = [
   ...hlmvTools,
   ...gameTools,
   ...campaignTools,
+  ...checkModeTools,
   ...gateTools,
   ...addonTools,
   ...autosaveTools,
