@@ -11,7 +11,7 @@ answers "where is the test for this file" without a search.
 | [`space/`](space/) | offline measurement: traces, rooms, clearance, visibility, dimensions |
 | [`render/`](render/) | offline views, plans, tours |
 | [`compile/`](compile/) | compilers, logs, leaks, toolchains, rename |
-| [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching |
+| [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching, directional connections |
 | [`formats/`](formats/) | shared formats: DMX datamodels read/write |
 | [`textures/`](textures/) | textures: PNG decode, VTF write/convert/extract, DXT |
 | [`hammer/`](hammer/) | editor data: build registry and hash lookup, window cleanup |

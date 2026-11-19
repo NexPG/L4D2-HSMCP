@@ -95,6 +95,14 @@ export interface NavArea {
   flags: number;
   /** Byte offset of the 32-bit flags field. */
   flagsOffset: number;
+  /** First byte of the area record. */
+  recordOffset: number;
+  /** First connection count; four count+id lists follow. */
+  connectionsOffset: number;
+  /** First byte after the fourth connection list. */
+  connectionsEnd: number;
+  /** One past the end of this area record. */
+  recordEnd: number;
   /** Byte offset of the 16-bit place id. */
   placeIdOffset: number;
   minX: number;
@@ -261,6 +269,7 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
   const areas: NavArea[] = [];
 
   for (let index = 0; index < areaCount; index += 1) {
+    const recordOffset = cursor.at;
     const id = cursor.u32();
     const flagsOffset = cursor.at;
     const flags = version >= 13 ? cursor.u32() : 0;
@@ -281,6 +290,7 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     const swZ = cursor.f32();
 
     const directions = ["north", "east", "south", "west"] as const;
+    const connectionsOffset = cursor.at;
     const connections: NavArea["connections"] = { north: [], east: [], south: [], west: [] };
     for (const direction of directions) {
       const count = cursor.u32();
@@ -289,6 +299,7 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       for (let i = 0; i < count; i += 1) ids.push(cursor.u32());
       connections[direction] = ids;
     }
+    const connectionsEnd = cursor.at;
 
     const hidingSpots = cursor.u8();
     cursor.skip(hidingSpots * 17); // id u32 + x,y,z f32 + flags u8
@@ -361,6 +372,10 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       id,
       flags,
       flagsOffset,
+      recordOffset,
+      connectionsOffset,
+      connectionsEnd,
+      recordEnd: cursor.at,
       placeIdOffset,
       minX,
       minY,
@@ -468,6 +483,131 @@ export function patchNavAreas(nav: NavFile, updates: readonly NavAreaUpdate[]): 
   }
 
   return out;
+}
+
+export type NavDirection = "north" | "east" | "south" | "west";
+
+export interface NavConnectionUpdate {
+  id: number;
+  /** Append these area ids to a direction; duplicates and self-links are refused. */
+  add?: Partial<Record<NavDirection, number[]>>;
+  /** Remove these area ids from a direction. */
+  remove?: Partial<Record<NavDirection, number[]>>;
+  /** Replace a direction's list exactly. */
+  set?: Partial<Record<NavDirection, number[]>>;
+  /**
+   * Also change the opposite direction on the target area (north↔south, east↔west).
+   * Default true; `set` is always exact and never mirrored.
+   */
+  symmetric?: boolean;
+}
+
+const DIRECTIONS: readonly NavDirection[] = ["north", "east", "south", "west"];
+const OPPOSITE: Record<NavDirection, NavDirection> = {
+  north: "south",
+  south: "north",
+  east: "west",
+  west: "east",
+};
+
+function connectionBytes(connections: NavArea["connections"]): Buffer {
+  const parts: Buffer[] = [];
+  for (const direction of DIRECTIONS) {
+    const ids = connections[direction];
+    const count = Buffer.alloc(4);
+    count.writeUInt32LE(ids.length);
+    parts.push(count);
+    for (const id of ids) {
+      const b = Buffer.alloc(4);
+      b.writeUInt32LE(id);
+      parts.push(b);
+    }
+  }
+  return Buffer.concat(parts);
+}
+
+/**
+ * Rewrites the connection lists of a nav mesh and returns a new file.
+ *
+ * Connections are length-variable, so this cannot patch in place like a flags bit. It
+ * copies every area record verbatim except the eight connection lists, which keeps hiding
+ * spots, encounters, ladders, places and the L4D2 spawn/visibility blocks byte-identical.
+ * The output may be a few bytes longer or shorter; every offset inside the new file is
+ * written by this function, not inherited from the old one.
+ */
+export function patchNavConnections(
+  nav: NavFile,
+  updates: readonly NavConnectionUpdate[],
+): Buffer {
+  if (nav.areas.length === 0) return Buffer.from(nav.bytes);
+  const byId = new Map(nav.areas.map((area) => [area.id, area]));
+  const lists = new Map<number, NavArea["connections"]>();
+  for (const area of nav.areas) {
+    lists.set(area.id, {
+      north: [...area.connections.north],
+      east: [...area.connections.east],
+      south: [...area.connections.south],
+      west: [...area.connections.west],
+    });
+  }
+
+  const requireArea = (id: number): NavArea => {
+    const area = byId.get(id);
+    if (!area) throw new Error(`area ${id} is not in ${nav.path}`);
+    return area;
+  };
+  const unique = (ids: readonly number[]): number[] => [...new Set(ids)];
+
+  for (const update of updates) {
+    const area = requireArea(update.id);
+    const own = lists.get(area.id)!;
+    const symmetric = update.symmetric ?? true;
+
+    for (const direction of DIRECTIONS) {
+      const replacement = update.set?.[direction];
+      if (replacement !== undefined) {
+        const ids = unique(replacement);
+        for (const id of ids) {
+          if (id === area.id) throw new Error(`area ${area.id} cannot connect to itself`);
+          requireArea(id);
+        }
+        own[direction] = ids;
+      }
+
+      for (const id of update.add?.[direction] ?? []) {
+        if (id === area.id) throw new Error(`area ${area.id} cannot connect to itself`);
+        requireArea(id);
+        if (!own[direction].includes(id)) own[direction].push(id);
+        if (symmetric) {
+          const target = lists.get(id)!;
+          const back = OPPOSITE[direction];
+          if (!target[back].includes(area.id)) target[back].push(area.id);
+        }
+      }
+
+      for (const id of update.remove?.[direction] ?? []) {
+        own[direction] = own[direction].filter((value) => value !== id);
+        if (symmetric && byId.has(id)) {
+          const target = lists.get(id)!;
+          const back = OPPOSITE[direction];
+          target[back] = target[back].filter((value) => value !== area.id);
+        }
+      }
+    }
+  }
+
+  const blocks = nav.areas.map((area) =>
+    Buffer.concat([
+      nav.bytes.subarray(area.recordOffset, area.connectionsOffset),
+      connectionBytes(lists.get(area.id)!),
+      nav.bytes.subarray(area.connectionsEnd, area.recordEnd),
+    ]),
+  );
+  return Buffer.concat([
+    nav.bytes.subarray(0, nav.areas[0]!.recordOffset),
+    ...blocks,
+    nav.bytes.subarray(nav.areas[nav.areas.length - 1]!.recordEnd),
+  ]);
 }
 
 /** Centre of an area, in world units. */

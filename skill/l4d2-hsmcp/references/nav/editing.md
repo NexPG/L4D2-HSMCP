@@ -60,10 +60,16 @@ data — without the game running — with the two tools that read and patch a `
 |---|---|
 | `read_nav_areas` | Every area with its attributes, L4D2 spawn attributes, place, centre, size and connection counts. Filter by `MOB_ONLY`, `SPAWN_NO_MOBS`, a place name |
 | `write_nav_areas` | Set/clear attribute and spawn bits on one or more area ids, or assign an existing place. Writes a `.bak` and reads the file back |
+| `edit_nav_connections` | Add, remove or replace directional links by area id; mirrored on the target by default. Rewrites only the four connection lists and reads every edited area back |
 
 **Attributes are masks, not values.** An area may carry bits this toolkit has no name for;
 `write_nav_areas` changes only the bits named in the call, so those survive. A `.nav` is not
 rewritten: the file keeps its length and every other byte.
+
+**Connections are directional and length-variable.** `edit_nav_connections` cannot patch a
+bit; it rebuilds the four count+id lists of each edited area and copies the rest of the
+record byte-for-byte. `add`/`remove` mirror the opposite direction on the target by default
+(north↔south, east↔west); `symmetric: false` is the one-way case, and `set` is exact.
 
 L4D2-specific attribute bits (`TerrorNavAttributeType`): `TANK_ONLY` `0x10000`, `MOB_ONLY`
 `0x20000`, `PLAYERCLIP` `0x40000`, `BREAKABLEWALL` `0x80000`, `FLOW_BLOCKED` `0x8000000`,

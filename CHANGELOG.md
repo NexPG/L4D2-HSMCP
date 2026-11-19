@@ -54,7 +54,13 @@ with a line here.
 - **The licence record is unchanged and still honest.** No new upstream tree was copied;
   these are implementations in TypeScript and Python. sourcepp and EpicMorg remain credited
   for the translations that predate this pass.
-- **Tool count: 148.** Parity, the skill catalogue and the test layout are updated in the
+- **Nav connections can be edited as data.** `edit_nav_connections` adds, removes or
+  replaces the directional links of an area. Links are length-variable, so it rebuilds only
+  the four count+id lists and copies the rest of every area record verbatim; `add`/`remove`
+  mirror the opposite direction by default, `symmetric: false` is the one-way case, and the
+  result is read back area by area. This is the repair path for bots that will not cross a
+  threshold, without opening the game console.
+- **Tool count: 149.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
 ## 0.0.92-alpha — 2026-11-19
