@@ -37,6 +37,27 @@ have this name? It is exact and case-insensitive, and it flags the path form:
 returns `effectName.resolved: true`, while `"fire_01l4d/fire_barrel_big"` returns
 `pathStyle: true, resolved: false` with the rule in `hint`.
 
+### Renaming a copied system
+
+`renames` renames systems while copying `source`, and rewrites the child references with them:
+
+```json
+{
+  "path": "particles/my_fire.pcf",
+  "source": "particles/fire_01l4d.pcf",
+  "renames": { "fire_barrel_big": "my_barrel" }
+}
+```
+
+This is how a stock effect becomes a new effect without reusing a name: `my_barrel` appears in
+the file and in `read_particle`, and its children still point at the stock child systems. A
+target must be bare and must not collide with a system that is not being renamed. The rename
+is verified by reading the written file back.
+
+What is **not** proven: in one in-game run the renamed copy registered (no unknown-particle
+line) but did not visibly draw, while the stock system did. Until that is explained, treat a
+renamed effect as unverified and check it with `run_map_test`.
+
 ## Naming a system in the map
 
 `info_particle_system.effect_name` is the **bare system name**. Valve's own entities on

@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.111-alpha - 2026-11-20
+
+- **`write_particle` can rename systems.** `renames: { "fire_barrel_big": "my_barrel" }` with
+  `source` rewrites the name and every child reference, verified by reading the file back.
+  The stock `name` option has to be rewritten too: `Particle.export` copies options over the
+  element, so setting `particle.name` alone left the old name in the file.
+- **Rename rendering is still open.** A renamed copy shipped in an addon with a manifest
+  registered (no unknown-particle line) but eight entities in an eye-height ring drew nothing,
+  while the stock system had rendered in the same room. Registration and rendering are
+  different problems for a written file.
+- **Survival waves run in game.** After `ForceSurvivalStart()`, a Tank arrived 65 s into the
+  round (`Damage Taken from "Tank" - 98 in 5 hits`, `Tank Count = 0`), wiped the team, and the
+  engine restarted the map. `[SURVIVAL]:` stage lines never appear because this install has no
+  loose `survival.nut` (`Script not found (survival)`); the C++ director drives the waves.
+  A 4-minute bronze run still needs an arena the bots can hold.
+- **Tool count stays 164.** Tests: 150 files, 1431 passed, 33 skipped.
+
 ## 0.0.110-alpha - 2026-11-20
 
 - **VScript event hooks run in game.** A `logic_script` entity with `"vscripts" "hookprobe"` in

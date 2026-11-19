@@ -175,6 +175,14 @@ export const writeParticleTool = defineTool({
           "game-relative `particles/foo.pcf` resolved through `game`.",
       ),
     game: GAME,
+    renames: z
+      .record(z.string(), z.string())
+      .default({})
+      .describe(
+        "Rename systems while copying `source`, old name to new name; child references are " +
+          "rewritten too. This is how a stock effect becomes a new effect without renewing " +
+          "its system name. A target must be bare (not a path) and must not collide.",
+      ),
     formatVersion: z
       .union([z.literal(1), z.literal(2)])
       .default(2)
@@ -205,6 +213,7 @@ export const writeParticleTool = defineTool({
     ),
     verified: z.boolean(),
     warnings: z.array(z.string()),
+    renames: z.record(z.string(), z.string()).optional(),
     note: z.string(),
   },
   handler: async (args, ctx) => {
@@ -227,6 +236,7 @@ export const writeParticleTool = defineTool({
         ...(args.source === undefined
           ? {}
           : { source: args.source, gameDir: game.gameDir ?? undefined }),
+        renames: args.renames,
         formatVersion: args.formatVersion,
         overwrite: args.overwrite,
       },

@@ -402,6 +402,48 @@ def particle_write(req: dict[str, Any]) -> dict[str, Any]:
                     )
             particle.children = kept
 
+    renames_raw = req.get("renames") or {}
+    if not isinstance(renames_raw, dict):
+        raise ValueError("renames must be an object of old system name -> new system name")
+    renames: dict[str, str] = {}
+    if renames_raw:
+        if not source_text:
+            raise ValueError("renames applies to `source`; a file built from `systems` names its own systems")
+        present = {particle.name.casefold(): particle.name for particle in particles}
+        plan: dict[str, str] = {}
+        for raw_old, raw_new in renames_raw.items():
+            old = str(raw_old).strip()
+            new = str(raw_new).strip()
+            if not old or not new:
+                raise ValueError("a rename needs a non-empty old and new name")
+            if any(sep in new for sep in ("/", "\\")):
+                raise ValueError(f"rename target {new!r} is a path; a system name is bare")
+            if old.casefold() not in present:
+                raise ValueError(f"no system {old!r} in {source_label} to rename")
+            plan[old.casefold()] = new
+        taken = {name.casefold() for name in plan.values()}
+        if len(taken) != len(plan):
+            raise ValueError("two systems were renamed to the same name")
+        untouched = {folded for folded in present if folded not in plan}
+        clash = taken & untouched
+        if clash:
+            raise ValueError(f"rename target {sorted(clash)[0]!r} already exists in {source_label}")
+
+        def renamed(name: str) -> str:
+            return plan.get(name.casefold(), name)
+
+        # `Particle.export` copies `options` over the element, and the stock `name` option is
+        # one of them -- setting `particle.name` alone leaves the old name in the file.
+        from srctools.dmx import Attribute, ValueType
+
+        for particle in particles:
+            new_name = renamed(particle.name)
+            if new_name != particle.name:
+                particle.name = new_name
+                particle.options["name"] = Attribute("name", ValueType.STRING, new_name)
+            particle.children = [Child(renamed(child.particle)) for child in particle.children]
+        renames = {present[old]: new for old, new in plan.items()}
+
     root = Particle.export(particles)
     buffer = io.BytesIO()
     try:
@@ -456,6 +498,7 @@ def particle_write(req: dict[str, Any]) -> dict[str, Any]:
         ],
         "verified": verified,
         "warnings": warnings,
+        "renames": renames,
         "note": (
             "A binary PCF (DMX format `pcf`, version 1 or 2) written through srctools' "
             "Particle.export and read back with its own parser. Child references point at "

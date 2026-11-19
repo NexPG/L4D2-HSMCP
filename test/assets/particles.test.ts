@@ -162,6 +162,46 @@ describe.skipIf(!installed)("read_particle", () => {
     expect(styled.effectName?.hint).toContain("bare system name");
   });
 
+  it.skipIf(!has.gameContent)("renames a copied system and its child references", async () => {
+    const copy = join(scratch, "renamed.pcf");
+    const written = await callSidecar<{
+      written: boolean;
+      verified: boolean;
+      renames?: Record<string, string>;
+      systems: Array<{ name: string; children: string[] }>;
+    }>(
+      "particle_write",
+      {
+        path: copy,
+        source: "particles/fire_01l4d.pcf",
+        renames: { fire_barrel_big: "hsmcp_barrel" },
+        gameDir: config.gameDir,
+      },
+      config,
+      300_000,
+    );
+    expect(written.written).toBe(true);
+    expect(written.verified).toBe(true);
+    expect(written.renames).toEqual({ fire_barrel_big: "hsmcp_barrel" });
+    const renamed = written.systems.find((system) => system.name === "hsmcp_barrel");
+    expect(renamed, "the renamed parent is missing").toBeDefined();
+    expect(renamed!.children).toContain("fire_barrel_big_b");
+    expect(written.systems.some((system) => system.name === "fire_barrel_big")).toBe(false);
+
+    await expect(
+      callSidecar(
+        "particle_write",
+        {
+          path: join(scratch, "renamed-clash.pcf"),
+          source: "particles/fire_01l4d.pcf",
+          renames: { fire_barrel_big: "fire_barrel_big_b" },
+          gameDir: config.gameDir,
+        },
+        config,
+        300_000,
+      ),
+    ).rejects.toThrow(/already exists/);
+  });
   it.skipIf(!has.gameContent)("rewrites a stock PCF through the writer without losing systems", async () => {
     const copy = join(scratch, "fire_copy.pcf");
     const written = await callSidecar<{
