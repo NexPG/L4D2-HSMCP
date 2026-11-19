@@ -565,11 +565,32 @@ export function loadQc(path: string, options: LoadQcOptions = {}): QcFile {
   seedMacros(absolute, macros, [], 0);
   const root = parseQc(readFileSync(absolute, "utf8"), absolute, variables, macros);
 
-  const loadIncludes = (file: QcFile, chain: string[], depth: number): void => {
+  const loadIncludes = (file: QcFile, chain: string[], depth: number, startDir: string): string => {
+    // scriplib keeps one global `qdir`; `$pushd`, `$popd` and `$cd` change it while the
+    // script is read, so an `$include` is resolved against the directory in force at that
+    // point, not against the including file's own directory.
+    let qdir = startDir;
+    const stack: string[] = [];
     for (const statement of file.statements) {
-      if (statement.command.toLowerCase() !== "$include") continue;
+      const command = statement.command.toLowerCase();
+      if (command === "$pushd") {
+        stack.push(qdir);
+        const target = statement.args[0];
+        if (target) qdir = resolve(qdir, target.replace(/\\/g, "/"));
+        continue;
+      }
+      if (command === "$popd") {
+        qdir = stack.pop() ?? qdir;
+        continue;
+      }
+      if (command === "$cd") {
+        const target = statement.args[0];
+        if (target) qdir = resolve(qdir, target.replace(/\\/g, "/"));
+        continue;
+      }
+      if (command !== "$include") continue;
       for (const arg of statement.args) {
-        const target = resolve(dirname(file.path), arg.replace(/\\/g, "/"));
+        const target = resolve(qdir, arg.replace(/\\/g, "/"));
         if (chain.includes(target)) {
           file.diagnostics.push({
             severity: "error",
@@ -603,12 +624,13 @@ export function loadQc(path: string, options: LoadQcOptions = {}): QcFile {
         const child = parseQc(readFileSync(target, "utf8"), target, variables, macros);
         file.includes.push(target);
         file.included.push(child);
-        loadIncludes(child, [...chain, target], depth + 1);
+        qdir = loadIncludes(child, [...chain, target], depth + 1, qdir);
       }
     }
+    return qdir;
   };
 
-  loadIncludes(root, [absolute], 0);
+  loadIncludes(root, [absolute], 0, dirname(absolute));
   return root;
 }
 

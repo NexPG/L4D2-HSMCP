@@ -207,6 +207,31 @@ $Loop
     expect(body.args[1]).toBe("body.smd");
   });
 
+  it("resolves $include through $pushd/$popd/$cd, as scriplib's qdir does", () => {
+    const dir = join(scratch, "qdir");
+    mkdirSync(join(dir, "parts"), { recursive: true });
+    writeFileSync(join(dir, "parts", "body.qci"), '$body "Body" "body.smd"\n');
+    writeFileSync(join(dir, "other.qci"), '$cdmaterials "models/x/"\n');
+    writeFileSync(
+      join(dir, "main.qc"),
+      [
+        '$modelname "models/a.mdl"',
+        '$pushd "parts"',
+        '$include "body.qci"',
+        '$popd',
+        '$cd "parts"',
+        '$include "body.qci"',
+        '$cd ".."',
+        '$include "other.qci"',
+        "",
+      ].join("\n"),
+    );
+    const file = loadQc(join(dir, "main.qc"));
+    const names = file.includes.map((p) => p.replace(/\\/g, "/").split("/").pop());
+    expect(names).toEqual(["body.qci", "body.qci", "other.qci"]);
+    expect(file.diagnostics.map((d) => d.rule)).not.toContain("qc-include-missing");
+  });
+
   it("follows includes, reports a missing one, and refuses to loop", () => {
     const dir = join(scratch, "includes");
     mkdirSync(dir, { recursive: true });

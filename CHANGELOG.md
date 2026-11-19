@@ -37,7 +37,8 @@ with a line here.
     token level: bare tokens only, first definition wins (as studiomdl does), `\\` continues
     a macro body, and definitions in an included `.qci` are visible to the file that included
     it. A real QC that used to read as unknown `$Macro` now reads as the statements it
-    produces.
+    produces. `$pushd` / `$popd` / `$cd` move scriplib's `qdir`, so an `$include` after
+    `$pushd "parts"` resolves inside `parts/`, not next to the including file.
 - **The licence record is unchanged and still honest.** No new upstream tree was copied;
   these are implementations in TypeScript and Python. sourcepp and EpicMorg remain credited
   for the translations that predate this pass.
