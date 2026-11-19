@@ -7,7 +7,7 @@ import { readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
 import { readHeader } from "../../src/maps/typescript/bsp/header.js";
 import { editBspEntitiesTool } from "../../src/maps/typescript/tools/bspedit.js";
 import { readBspLumpTool, writeBspLumpTool } from "../../src/maps/typescript/tools/bsplump.js";
-import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
+import { FIXTURES, ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
@@ -64,7 +64,7 @@ describe("edit_bsp_entities tool", () => {
     expect(readEntityLump(out).entities.some((e) => e.targetname === "copy")).toBe(true);
   });
 
-  it("decompresses a compressed entity lump before editing it", async () => {
+  it.skipIf(!has.sidecar)("decompresses a compressed entity lump before editing it", async () => {
     const path = copy("compressed.bsp");
     const textPath = join(scratch, "entities.txt");
     await readBspLumpTool.handler(
