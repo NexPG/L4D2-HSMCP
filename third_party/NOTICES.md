@@ -38,6 +38,8 @@ Removing the upstream tree removes the copy, not the obligation.
 
 reading, writing and packing are this project's own TypeScript implementation; model
 compilation is driven through the game's `studiomdl` (and, optionally, a user-installed
+glTF findings** were used as a reference oracle for the axis, UV and bind-pose conventions
+copied, and the GPL-3.0-only tree is not part of this repository.
 
 ### Licence texts
 

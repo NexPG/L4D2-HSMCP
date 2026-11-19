@@ -445,11 +445,18 @@ function validateStatements(statements: readonly QcStatement[], file: string): Q
   for (const statement of modelName) {
     const name = statement.args[0] ?? "";
     if (!name) continue;
-    if (!name.toLowerCase().startsWith("models/")) {
+    // `studiomdl` resolves `$modelname` inside the game's `models/` directory: real QCs
+    // write `props_junk/box.mdl`, not `models/props_junk/box.mdl`. A leading `models/`
+    // therefore produces `models/models/...`, which the engine never loads. The old check
+    // had it backwards and warned about the correct form.
+    if (name.toLowerCase().startsWith("models/") || name.toLowerCase().startsWith("models\\")) {
       diagnostics.push({
         severity: "warning",
-        rule: "qc-modelname-outside-models",
-        message: `$modelname "${name}" does not start with models/; the engine only loads models from there`,
+        rule: "qc-modelname-includes-models",
+        message:
+          `$modelname "${name}" starts with models/; studiomdl already resolves it under ` +
+          "the game's models/ directory, so this writes models/models/... and the engine " +
+          "will not find it",
         file,
         line: statement.line,
       });
@@ -731,7 +738,13 @@ export function buildQc(spec: QcSpec): string {
     throw new Error("`body: []` would produce a model with no geometry; omit it to write only the header");
   }
 
-  const lines: string[] = [`$modelname ${quote(spec.modelname)}`];
+  // `studiomdl` prepends the game's `models/` directory to `$modelname`. Accepting the
+  // full engine path here and stripping the prefix keeps the common "paste the model path"
+  // input from compiling to `models/models/...`.
+  const modelname = spec.modelname.replace(/^[\\/]*models[\\/]+/i, "").replace(/^[\\/]+/, "");
+  if (!modelname) throw new Error("a QC needs a $modelname inside models/");
+
+  const lines: string[] = [`$modelname ${quote(modelname)}`];
   for (const body of spec.body ?? []) {
     lines.push(`$body ${quote(body.name)} ${quote(body.smd)}`);
   }

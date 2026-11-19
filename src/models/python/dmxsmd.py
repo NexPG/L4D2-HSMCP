@@ -25,6 +25,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from modelmath import euler_xyz
+
 
 def _children(element: Any) -> list[Any]:
     out: list[Any] = []
@@ -183,18 +185,12 @@ def _material_name(face_set: Any, fallback: str) -> str:
 
 
 def _euler(quat: tuple[float, float, float, float]) -> tuple[float, float, float]:
-    """Quaternion to the XYZ Euler angles an SMD skeleton line carries.
+    """Quaternion to the SMD XYZ Euler angles (see `modelmath.euler_xyz`).
 
-    Verified against the compiler's own Blender fixture: the root quaternion
-    (0.683, 0.183, 0.183, 0.683) becomes (1.570796, 0, 0.523599), which is exactly the
-    line in `blender_cube.smd`. A different order (ZYX, or Blender's `to_euler('XYZ')`)
-    would compile and put every bone in the wrong place.
+    The DMX fixture and the glTF importer must agree on this order, so the function moved
+    to `modelmath`; this name stays because the rest of the module reads better with it.
     """
-    x, y, z, w = quat
-    roll = math.atan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y))
-    pitch = math.asin(max(-1.0, min(1.0, 2.0 * (w * y - z * x))))
-    yaw = math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
-    return roll, pitch, yaw
+    return euler_xyz(quat)
 
 
 def _skeleton(model: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[int, int], int]:

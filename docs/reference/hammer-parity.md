@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **153 tools**.
+Last checked against the tool list on 19/11/2026: **155 tools**.
 
 ## The file itself
 
@@ -250,6 +250,8 @@ map and looking, or by not happening at all.
 | `read_dmx` | nothing: the datamodel an artist exports is invisible to Hammer |
 | `write_dmx` | nothing |
 | `dmx_to_smd` | nothing: no editor converts a model datamodel to a compiler source |
+| `read_gltf` | nothing: the editor never opens a glTF/GLB scene |
+| `gltf_to_smd` | nothing: Hammer does not compile a model, and studiomdl cannot read glTF |
 | `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
 | `read_wav` | nothing: the editor never opens a sound |
 | `convert_wav` | nothing: sound conversion is a separate editor |

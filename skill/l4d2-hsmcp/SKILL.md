@@ -56,6 +56,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
+| `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |
 | `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, and the sound tools |
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |

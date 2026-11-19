@@ -20,6 +20,7 @@ import { cubemapTools } from "./textures/typescript/tools/cubemap.js";
 import { depsTools } from "./maps/typescript/tools/deps.js";
 import { dmxTools } from "./formats/typescript/tools/dmx.js";
 import { dmxSmdTools } from "./models/typescript/tools/dmxsmd.js";
+import { gltfTools } from "./models/typescript/tools/gltf.js";
 import { displacementTools } from "./maps/typescript/tools/displacement.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
 import { exportMapTools } from "./maps/typescript/tools/exportmap.js";
@@ -125,6 +126,7 @@ export const allTools: AnyToolDef[] = [
   ...qcTools,
   ...smdTools,
   ...dmxSmdTools,
+  ...gltfTools,
   ...sequencesTools,
   ...previewTools,
   ...displacementTools,

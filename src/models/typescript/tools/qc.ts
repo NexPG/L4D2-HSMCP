@@ -140,7 +140,11 @@ export const writeQcTool = defineTool({
     modelname: z
       .string()
       .min(1)
-      .describe('Target path, e.g. `models/props_myaddon/crate.mdl`. Studiomdl writes the .mdl there.'),
+      .describe(
+        'Target path relative to the game\'s models/ directory, e.g. ' +
+          '`props_myaddon/crate.mdl`. A leading `models/` is stripped because studiomdl ' +
+          "already adds it.",
+      ),
     body: z
       .array(z.object({ name: z.string(), smd: z.string() }))
       .optional()

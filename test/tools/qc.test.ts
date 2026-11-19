@@ -101,11 +101,16 @@ $body a "b.smd"
     expect(rules).not.toContain("qc-no-cdmaterials");
   });
 
-  it("warns about a model path the engine will not load", () => {
-    const file = parseQc('$modelname "props/thing"\n$body "b" "a.smd"\n');
-    const rules = file.diagnostics.map((d) => d.rule);
-    expect(rules).toContain("qc-modelname-outside-models");
-    expect(rules).toContain("qc-modelname-without-mdl");
+  it("warns about a model path studiomdl would write under models/models/", () => {
+    // Real QCs write `props_junk/box.mdl`: studiomdl adds the game's models/ directory.
+    const correct = parseQc('$modelname "props/thing.mdl"\n$body "b" "a.smd"\n');
+    expect(correct.diagnostics.map((d) => d.rule)).not.toContain("qc-modelname-includes-models");
+
+    const wrong = parseQc('$modelname "models/props/thing.mdl"\n$body "b" "a.smd"\n');
+    expect(wrong.diagnostics.map((d) => d.rule)).toContain("qc-modelname-includes-models");
+
+    const extension = parseQc('$modelname "props/thing"\n$body "b" "a.smd"\n');
+    expect(extension.diagnostics.map((d) => d.rule)).toContain("qc-modelname-without-mdl");
   });
 
   it("expands $definemacro bodies, including the \\\\ continuation", () => {
@@ -274,12 +279,13 @@ $Loop
       attachments: [{ name: "attach", bone: "root", position: [0, 0, 64] }],
       extra: ["$keyvalues { prop_data { base \"Wooden.Medium\" } }"],
     });
-    expect(text).toContain('$modelname "models/props_myaddon/crate.mdl"');
+    // `models/` is stripped: studiomdl adds the game's models/ directory itself.
+    expect(text).toContain('$modelname "props_myaddon/crate.mdl"');
     expect(text).toContain("$staticprop");
     expect(text).toContain("$attachment");
 
     const parsed = parseQc(text, "crate.qc");
-    expect(qcModelName(parsed)).toBe("models/props_myaddon/crate.mdl");
+    expect(qcModelName(parsed)).toBe("props_myaddon/crate.mdl");
     expect(parsed.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     expect(walkQc(parsed.statements).map((s) => s.command)).toContain("$surfaceprop");
   });
@@ -299,6 +305,7 @@ describe("qc tools", () => {
         path,
         modelname: "models/props_test/crate.mdl",
         body: [{ name: "Body", smd: "crate_ref.smd" }],
+        // The writer accepts the full engine path and strips models/ for the QC.
         cdmaterials: ["models/props_test"],
         surfaceprop: "wood",
         staticprop: true,
@@ -311,7 +318,7 @@ describe("qc tools", () => {
     )) as { written: boolean; modelName: string; diagnostics: Array<{ severity: string }> };
 
     expect(written.written).toBe(true);
-    expect(written.modelName).toBe("models/props_test/crate.mdl");
+    expect(written.modelName).toBe("props_test/crate.mdl");
     expect(written.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     expect(existsSync(path)).toBe(true);
 
@@ -322,7 +329,7 @@ describe("qc tools", () => {
       ok: boolean;
       includeCount: number;
     };
-    expect(read.modelName).toBe("models/props_test/crate.mdl");
+    expect(read.modelName).toBe("props_test/crate.mdl");
     expect(read.sequences.map((s) => [s.name, s.fps])).toEqual([["idle", 30]]);
     expect(read.materials).toEqual(["models/props_test"]);
     expect(read.includeCount).toBe(0);

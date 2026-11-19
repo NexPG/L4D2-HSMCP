@@ -74,5 +74,10 @@ one. A `prop_static` without a `.phy` is **not solid**. Either:
 
 - `read_dmx` shows what Blender/Crowbar wrote, without expanding the cyclic graph.
 - `read_smd` shows the skeleton, frames, materials, triangles and weights.
-- If `studiomdl` refuses a glTF/FBX source, that is a format the game's 2009 compiler does
-  those formats.
+- A `.glb`/`.gltf` is converted first: `read_gltf` describes it, `gltf_to_smd` writes the
+  SMD and can write the QC in the same call. The default is Blender's export: mesh-space
+  geometry, node transforms ignored, bind pose from `inverseBindMatrices`. Pass
+  `axis: "y"` only for hand-written Y-up data, and `useNodeTransforms: true` for a
+  multi-object scene. Animations and morph targets are reported, not exported; each needs
+  its own SMD. See [glTF and GLB → SMD](../references/mapping/gltf-import.md).
+- FBX is still not read: `studiomdl` does not read it either. Export SMD/DMX, or install

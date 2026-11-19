@@ -5,6 +5,36 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.95-alpha — 2026-11-19
+
+- **glTF/GLB is now a model source.** `studiomdl.exe` has no glTF loader (its extension
+  probe chain is `fbx xml obj vta phys sma smd mpp dmx vrm`), so a Blender `.glb` used to
+  mean a DCC re-export or a separate compiler. `read_gltf` describes the document without
+  converting it; `gltf_to_smd` reads `.gltf` and `.glb` itself — JSON, GLB chunks, external
+  and `data:` buffers, interleaved and sparse accessors, triangle lists/strips/fans, node
+  TRS or matrices, skins with `inverseBindMatrices` and `JOINTS_0`/`WEIGHTS_0` — and writes
+  the SMD through the same writer the rest of the toolkit uses. The optional `qc` block
+  writes the QC in the same call.
+- **The conventions are the ones a Source model needs.** Geometry stays in mesh space by
+  default (what a Blender `+Y up` export writes), the bind pose comes from the IBM rather
+  than node TRS (the "Use Rest Position Armature = off" case), and SMD V is inverted so
+  studiomdl's parse-time inversion leaves the glTF UV intact. `axis`, `useNodeTransforms`,
+  `parts`, `scale` and `flipV` cover hand-authored files. Morph targets and animations are
+  counted and reported, not silently dropped: SMD has no morph target and this path writes
+  one bind-pose frame.
+- **Proven against the real compiler.** The test suite converts a static and a skinned glTF,
+  runs the game's own `studiomdl.exe`, and reads the result back with `read_model_info`
+  (the skinned model keeps both bones). That test also documented an official behaviour
+  that looks like a bug: `$staticprop` rotates the geometry by studiomdl's default
+  `Rz(90°)`, so a compiled static prop's hull is rotated relative to its SMD.
+- **`$modelname` convention fixed.** `studiomdl` resolves `$modelname` inside the game's
+  `models/` directory, as the stock QC prefabs do (`props_junk/box.mdl`). `write_qc` now
+  strips a leading `models/`, the QC reader warns about that prefix instead of warning
+  about the correct form, and `run_studiomdl` finds a model an old QC wrote to
+  `models/models/...` and says why.
+- **Tool count: 155.** Parity, the skill catalogue and the test layout are updated in the
+  same commit.
+
 ## 0.0.94-alpha — 2026-11-19
 
 - **The project is now GPL-3.0-or-later.** The `only` was removed at the owner's request.

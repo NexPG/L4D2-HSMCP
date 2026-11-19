@@ -374,6 +374,22 @@ def _dmx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     return dmx_to_smd(req)
 
 
+@verb("gltf_read")
+def _gltf_read(req: dict[str, Any]) -> dict[str, Any]:
+    """A glTF 2.0 / GLB document as a JSON summary an agent can inspect."""
+    from gltf import gltf_read
+
+    return gltf_read(req)
+
+
+@verb("gltf_to_smd")
+def _gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
+    """Converts glTF/GLB geometry and a skeleton to the SMD studiomdl reads."""
+    from gltf import gltf_to_smd
+
+    return gltf_to_smd(req)
+
+
 @verb("vtf_write")
 def _vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     """PNG to VTF without VTFCmd: header, mip chain and a pixel round-trip."""

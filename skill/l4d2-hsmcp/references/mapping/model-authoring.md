@@ -58,6 +58,12 @@ the absence instead of hiding it.
   skeleton**: node hierarchy, local bone rotations and per-vertex weights. Verified against
   BlenderSourceTools' own cube export. A datamodel without a joint list falls back to one
   root bone and says so.
+- `read_gltf` / `gltf_to_smd` — the same bridge for a `.gltf`/`.glb`, which `studiomdl`
+  cannot read at all. Geometry stays in mesh space by default (what Blender's `+Y up` export
+  writes), the bind pose comes from `inverseBindMatrices`, and the SMD V is inverted so
+  studiomdl's parse-time inversion leaves the glTF UV intact. `axis`, `useNodeTransforms`,
+  `parts` and an optional `qc` block cover the rest. See
+  [glTF and GLB → SMD](gltf-import.md) for the conventions and the limits.
 
 ## L4D2 specifics
 
@@ -77,6 +83,8 @@ the absence instead of hiding it.
 | Build an SMD from JSON | `write_smd` |
 | Read a DMX datamodel | `read_dmx` |
 | Build a DMX from JSON | `write_dmx` |
+| Inspect a glTF/GLB | `read_gltf` |
+| Convert glTF/GLB to SMD (and optionally write the QC) | `gltf_to_smd` |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |

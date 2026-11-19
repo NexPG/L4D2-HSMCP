@@ -89,6 +89,7 @@ export const runStudiomdlTool = defineTool({
     modelname: z.string().nullable(),
     model: z.string().nullable(),
     modelExists: z.boolean(),
+    warning: z.string().nullable(),
     files: z.array(z.object({ name: z.string(), bytes: z.number() })),
     exitCode: z.number().nullable(),
     timedOut: z.boolean(),
@@ -121,9 +122,26 @@ export const runStudiomdlTool = defineTool({
       (args.timeoutMinutes ?? 10) * 60_000,
     );
 
-    const normalized = modelname?.replace(/\\/g, "/").replace(/^models\//i, "") ?? null;
-    const model = normalized ? join(gameDir, "models", normalized) : null;
-    const modelExists = model !== null && existsSync(model);
+    // `studiomdl` resolves `$modelname` under the game's `models/` directory, so the
+    // correct spelling has no leading `models/`. Real QCs (the stock prefabs included) use
+    // `props_junk/box.mdl`. An old QC that still has the prefix compiles to
+    // `models/models/...`; look there too, and say why rather than reporting a false
+    // failure for a compile that actually succeeded.
+    const normalized = modelname?.replace(/\\/g, "/") ?? null;
+    const candidates =
+      normalized === null
+        ? []
+        : [
+            join(gameDir, "models", normalized),
+            join(gameDir, "models", normalized.replace(/^models[\\/]+/i, "")),
+          ];
+    const model = candidates.find((candidate) => existsSync(candidate)) ?? candidates[0] ?? null;
+    const modelExists = candidates.some((candidate) => existsSync(candidate));
+    const warning =
+      normalized !== null && /^models[\\/]/i.test(normalized) && modelExists
+        ? `$modelname starts with models/; studiomdl wrote ${model}, under models/models/. ` +
+          "Remove the leading models/ (it is relative to the game's models/ directory)."
+        : null;
     const files: Array<{ name: string; bytes: number }> = [];
     if (model && existsSync(dirname(model))) {
       const base = basename(model, ".mdl").toLowerCase();
@@ -140,6 +158,7 @@ export const runStudiomdlTool = defineTool({
       modelname,
       model,
       modelExists,
+      warning,
       files,
       exitCode: run.code,
       timedOut: run.timedOut,
