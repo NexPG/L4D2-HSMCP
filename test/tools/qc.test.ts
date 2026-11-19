@@ -268,6 +268,58 @@ $Loop
     );
   });
 
+  it("checks command structure and leaves opaque blocks alone", () => {
+    const good = parseQc(
+      [
+        '$modelname "props/a.mdl"',
+        '$body "Body" "a.smd"',
+        '$cdmaterials "models/props/a/"',
+        '$bodygroup "skins" { studio "a1.smd" blank 1 }',
+        '$attachment "muzzle" "root" position 0 0 64 rotate 0 0 0',
+        '$definebone "root" "" 0 0 0 0 0 0',
+        '$hboxset "default"',
+        '$hbox 0 "root" -1 -1 -1 1 1 1',
+        '$sequence "idle" "a.smd" fps 30 { event 5001 0 "1" "2" node "muzzle" }',
+        '$keyvalues { prop_data { base "Wooden.Medium" } }',
+      ].join("\n"),
+    );
+    expect(good.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(good.diagnostics.map((d) => d.rule)).not.toContain("qc-unknown-command");
+  });
+
+  it("reports a malformed known command, a bad sequence number and an unknown command", () => {
+    const bad = parseQc(
+      [
+        '$modelname "a.mdl"',
+        '$body "only-a-name"',
+        "$bbox 1 2 3",
+        "$nonsense 1",
+        '$sequence "idle" "a.smd" { fps nope }',
+      ].join("\n"),
+    );
+    const byRule = new Map(bad.diagnostics.map((d) => [d.rule, d]));
+    expect(byRule.get("qc-command-args")?.severity).toBe("error");
+    expect(byRule.get("qc-bbox-number")?.severity).toBe("error");
+    expect(byRule.get("qc-sequence-number")?.severity).toBe("error");
+    expect(byRule.get("qc-unknown-command")?.severity).toBe("warning");
+  });
+
+  it("counts $model as geometry, as the viewmodel QCs in the wild do", () => {
+    const parsed = parseQc('$modelname "weapons/v_test.mdl"\n$model Body "v_test.smd"\n');
+    expect(parsed.diagnostics.map((d) => d.rule)).not.toContain("qc-no-body");
+  });
+
+  it("reports unknown commands through read_qc as well", async () => {
+    const path = join(scratch, "unknown.qc");
+    writeFileSync(path, '$modelname "a.mdl"\n$body "b" "b.smd"\n$nonsense 1\n');
+    const read = (await readQcTool.handler({ path }, ctx)) as {
+      unknownCommands: string[];
+      diagnostics: { rule: string; severity: string }[];
+    };
+    expect(read.unknownCommands).toEqual(["$nonsense"]);
+    expect(read.diagnostics.map((d) => d.rule)).toContain("qc-unknown-command");
+  });
+
   it("builds a QC that its own parser accepts", () => {
     const text = buildQc({
       modelname: "models/props_myaddon/crate.mdl",

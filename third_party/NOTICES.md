@@ -41,6 +41,12 @@ compilation is driven through the game's `studiomdl` (and, optionally, a user-in
 glTF findings** were used as a reference oracle for the axis, UV and bind-pose conventions
 copied, and the GPL-3.0-only tree is not part of this repository.
 
+FBX is read by this project's own parser (`src/models/python/fbx.py`). The binary 7.x record
+layout, the zlib-compressed property arrays and the ASCII grammar were implemented from the
+published format documentation and checked against files built by the tests. The FBX SDK,
+behaviour, and the implementation here is independent, so no new licence entry is required.
+If a future change ports code from any of them, the table above is where it must be recorded.
+
 ### Licence texts
 
 The full text of each licence travels here, one file per project, under `licenses/`:

@@ -52,9 +52,11 @@ clear description, and anything that writes asks for confirmation.
 - **Compile models** from QC/SMD sources with the game's `studiomdl`, including a
   `.gltf`/`.glb` converted by `gltf_to_smd` (geometry, skeleton, weights, one SMD per
   animation, and an optional box or convex-hull collision model for a solid prop), shape keys converted to
-  flexes by `gltf_to_dmx`, and a Hammer brush converted by `brush_to_model` (Propper++
-  without the plugin); open a model in HLMV, and capture the window as an image the agent
-  can see.
+  flexes by `gltf_to_dmx`, an `.fbx` converted by `fbx_to_smd` (binary 7.x or ASCII, with the
+  bind pose from the skin clusters), and a Hammer brush converted by `brush_to_model`
+  (Propper++ without the plugin); open a model in HLMV or render it in the engine with
+  `preview_model` when HLMV's 3D canvas stays blank, and capture the window as an image the
+  agent can see.
 - **Edit the map in the open Hammer++** through its own shell channel: create, change,
   delete and rotate entities, then Save/Undo/Redo/Run Map with the editor's menu commands.
 - **Capture any GUI window** — HLMV, Hammer++ or the running game — as a real image block,

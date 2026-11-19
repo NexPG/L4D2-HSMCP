@@ -56,7 +56,7 @@ covered: this table is the summary.
 | Edit keyvalues | `edit_vmf` `update` | verified |
 | Outputs | `edit_vmf` `addOutput` / `removeOutput` | verified |
 | Entity report | `read_entity_report` | verified |
-| Live entity create/edit in the open editor | `hammer_live_edit` | verified on Hammer++ 8873 x86: created a `light`, saved, read it back from the VMF |
+| Live entity create/edit in the open editor | `hammer_live_edit` | verified on Hammer++ 8873 x86: created a `light`, saved, read it back from the VMF. The channel has no entity ids, so the saved VMF is checked first: a create must land on an empty class+origin and an edit on exactly one. Create/delete/rotate are undoable, a keyvalue change is not |
 | Live Save/Undo/Redo/Run Map/Check for Problems | `hammer_menu` | verified: Save wrote the live edit to the VMF |
 | Editor discovery | `hammer_status` | verified: pid, shell window, main window, open map |
 | FGD browser (classes, keys, I/O) | `read_fgd_class` (with prefix) | verified |
@@ -177,6 +177,6 @@ be. That is why geometry edits update or drop it rather than leave it behind.
 Ordered by how often a mapper needs it:
 
 1. **3D-skybox design** - `write_skybox_copy` makes the scaled copy and `write_sky_camera` places the camera; choosing what to copy, sealing the area and matching the view remain design work.
-2. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. The operation is covered; rendering it is the environment's limit.
+2. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
 
 Each of these is a row that keeps the project short of "everything Hammer++ can do".

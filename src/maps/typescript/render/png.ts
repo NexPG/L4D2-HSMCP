@@ -92,6 +92,124 @@ export interface DecodedPng {
   rgb: Uint8Array;
 }
 
+export interface PngLuminance {
+  width: number;
+  height: number;
+  /** Mean relative luminance in the sampled region, 0..255. */
+  mean: number;
+  /** Standard deviation in the sampled region. A blank canvas is near zero. */
+  stdDev: number;
+  /** Brightest sampled pixel, 0..255. */
+  max: number;
+  sampledPixels: number;
+}
+
+/**
+ * Mean, spread and peak luminance of a rectangle inside a PNG.
+ *
+ * `decodePng` below reads only what this module writes. Screenshots are not written by this
+ * module -- they come from the Windows capture helper, which uses the platform encoder and
+ * therefore every PNG filter type. This reader supports the eight-bit colour types and all
+ * five filters, because the question it answers ("is this game window a black rectangle")
+ * is asked about someone else's file, and a decoder that refuses the file cannot answer it.
+ *
+ * The region is given in fractions, so the caller can ask about the centre of a window
+ * without knowing its pixel size. `stdDev` is the useful number: a black viewport and a
+ * nearly-black render differ in spread, not in mean, and the panel chrome around a dead
+ * canvas keeps the mean up.
+ */
+export function pngLuminance(
+  buf: Buffer,
+  region: { x0: number; y0: number; x1: number; y1: number } = { x0: 0, y0: 0, x1: 1, y1: 1 },
+): PngLuminance {
+  if (!buf.subarray(0, 8).equals(SIGNATURE)) throw new Error("not a PNG: bad signature");
+
+  let at = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 8;
+  let colorType = 2;
+  let interlace = 0;
+  const idat: Buffer[] = [];
+  while (at < buf.length) {
+    const length = buf.readUInt32BE(at);
+    const type = buf.toString("ascii", at + 4, at + 8);
+    const data = buf.subarray(at + 8, at + 8 + length);
+    if (type === "IHDR") {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8]!;
+      colorType = data[9]!;
+      interlace = data[12]!;
+    } else if (type === "IDAT") {
+      idat.push(Buffer.from(data));
+    } else if (type === "IEND") {
+      break;
+    }
+    at += 12 + length;
+  }
+  if (width === 0 || height === 0) throw new Error("PNG has no IHDR");
+  if (bitDepth !== 8) throw new Error(`only 8-bit PNGs are measured here, not ${bitDepth}`);
+  if (interlace !== 0) throw new Error("interlaced PNGs are not measured here");
+  const channels =
+    colorType === 0 ? 1 : colorType === 2 ? 3 : colorType === 4 ? 2 : colorType === 6 ? 4 : 0;
+  if (channels === 0) throw new Error(`unsupported PNG colour type ${colorType}`);
+
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const pixels = new Uint8Array(stride * height);
+  let prev = new Uint8Array(stride);
+  for (let y = 0; y < height; y++) {
+    const from = y * (stride + 1);
+    const filter = raw[from]!;
+    const row = pixels.subarray(y * stride, (y + 1) * stride);
+    const src = raw.subarray(from + 1, from + 1 + stride);
+    for (let x = 0; x < stride; x++) {
+      const left = x >= channels ? row[x - channels]! : 0;
+      const up = prev[x]!;
+      const upLeft = x >= channels ? prev[x - channels]! : 0;
+      let value = src[x]!;
+      if (filter === 1) value += left;
+      else if (filter === 2) value += up;
+      else if (filter === 3) value += (left + up) >> 1;
+      else if (filter === 4) {
+        const p = left + up - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - up);
+        const pc = Math.abs(p - upLeft);
+        value += pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
+      } else if (filter !== 0) throw new Error(`scanline ${y} uses unknown filter ${filter}`);
+      row[x] = value & 0xff;
+    }
+    prev = row;
+  }
+
+  const x0 = Math.max(0, Math.min(width - 1, Math.floor(region.x0 * width)));
+  const x1 = Math.max(x0 + 1, Math.min(width, Math.ceil(region.x1 * width)));
+  const y0 = Math.max(0, Math.min(height - 1, Math.floor(region.y0 * height)));
+  const y1 = Math.max(y0 + 1, Math.min(height, Math.ceil(region.y1 * height)));
+  let sum = 0;
+  let sumSq = 0;
+  let max = 0;
+  let count = 0;
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * width + x) * channels;
+      const lum =
+        channels === 1 || channels === 2
+          ? pixels[i]!
+          : 0.2126 * pixels[i]! + 0.7152 * pixels[i + 1]! + 0.0722 * pixels[i + 2]!;
+      sum += lum;
+      sumSq += lum * lum;
+      if (lum > max) max = lum;
+      count++;
+    }
+  }
+  const mean = sum / count;
+  const variance = Math.max(0, sumSq / count - mean * mean);
+  return { width, height, mean, stdDev: Math.sqrt(variance), max, sampledPixels: count };
+}
+
 /**
  * Reads back a PNG this module wrote, for the test that proves it wrote one.
  *

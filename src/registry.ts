@@ -56,6 +56,8 @@ import { pakfileTools } from "./packages/typescript/tools/pakfile.js";
 import { planTools } from "./maps/typescript/tools/plan.js";
 import { prefabTools } from "./maps/typescript/tools/prefab.js";
 import { qcTools } from "./models/typescript/tools/qc.js";
+import { previewModelTools } from "./models/typescript/tools/preview.js";
+import { fbxTools } from "./models/typescript/tools/fbx.js";
 import { sequencesTools } from "./maps/typescript/tools/sequences.js";
 import { previewTools } from "./assets/typescript/tools/preview.js";
 import { renameTools } from "./maps/typescript/tools/rename.js";
@@ -126,6 +128,8 @@ export const allTools: AnyToolDef[] = [
   ...bspLumpTools,
   ...staticPropTools,
   ...qcTools,
+  ...previewModelTools,
+  ...fbxTools,
   ...smdTools,
   ...dmxSmdTools,
   ...gltfTools,

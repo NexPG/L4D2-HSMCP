@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **158 tools**.
+Last checked against the tool list on 19/11/2026: **161 tools**.
 
 ## The file itself
 
@@ -117,7 +117,8 @@ getting `ENOENT` on the first call.
 | Preview a model | `run_hlmv` | Launches HLMV, optionally captures the window; the screenshot comes back as a real image block |
 | See a GUI | `capture_window` | Captures any window by process id or name; PrintWindow works while occluded, screen mode is the 3D fallback |
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
-| Look at a model or texture | `preview_asset` | Material: base VTF decoded to a PNG. Model: HLMV viewport captured |
+| Look at a model or texture | `preview_asset` | Material: base VTF decoded to a PNG. Model: HLMV viewport captured
+| Look at a model in the engine | `preview_model` | When HLMV's 3D canvas is blank, builds a sealed room, compiles it, generates a nav and captures the real game view; the model's lowest point is placed on the pedestal |
 | Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Rotating door | `place_door` | Origin is the hinge; model hull read with `read_model_info`; checkpoint names checked |
@@ -253,7 +254,9 @@ map and looking, or by not happening at all.
 | `dmx_to_smd` | nothing: no editor converts a model datamodel to a compiler source |
 | `read_gltf` | nothing: the editor never opens a glTF/GLB scene |
 | `gltf_to_smd` | nothing: Hammer does not compile a model, and studiomdl cannot read glTF |
-| `gltf_to_dmx` | nothing: shape keys/flexes are not an editor concept |
+| `gltf_to_dmx` | nothing: shape keys/flexes are not an editor concept
+| `read_fbx` | nothing: the editor never opens an FBX, and neither does studiomdl |
+| `fbx_to_smd` | nothing: Hammer cannot compile a model, and studiomdl cannot read FBX |
 | `brush_to_model` | Propper++ turns a brush into a model; Hammer itself has no such command |
 | `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
 | `read_wav` | nothing: the editor never opens a sound |

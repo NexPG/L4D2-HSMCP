@@ -405,7 +405,339 @@ export function parseQc(
   file.diagnostics.push(...macroExpansion.diagnostics, ...expansion.diagnostics);
   const local = validateStatements(statements, path);
   file.diagnostics.push(...local);
+  file.diagnostics.push(...validateGrammar(statements, path));
   return file;
+}
+
+/**
+ * The commands a QC may contain, and the shape of their arguments.
+ *
+ * This is deliberately a catalogue of *structure*, not of every semantic: a QC that uses a
+ * command correctly must not be warned about, and a command the catalogue does not know is a
+ * warning rather than an error. The alternative -- pretending to know all 137 studiomdl
+ * commands and rejecting a valid one because it was not on a list -- is worse than the
+ * occasional unknown-command note.
+ */
+const QC_COMMANDS = new Set([
+  "$modelname", "$body", "$bodygroup", "$model", "$cdmaterials", "$cdtexture",
+  "$surfaceprop", "$sequence", "$animation", "$attachment", "$definebone", "$hbox",
+  "$hboxset", "$ikchain", "$jigglebone", "$keyvalues", "$texturegroup", "$poseparameter",
+  "$bbox", "$cbox", "$contents", "$illumposition", "$eyeposition", "$staticprop",
+  "$mostlyopaque", "$bonemerge", "$unlockdefinebones", "$opaque", "$translucent",
+  "$cliptotextures", "$scale", "$include", "$pushd", "$popd", "$cd", "$definevariable",
+  "$definemacro", "$maxeyedeflection", "$forcephonemecrossfade", "$eyeball",
+  "$eyelid", "$mouth", "$flexcontroller", "$flexrule", "$flex", "$flexpair",
+  "$animation", "$animblocksize", "$sectionframes", "$bonesaveframe", "$skyname",
+  "$flags", "$contents", "$mass", "$concave", "$maxconvexpieces", "$rootbone",
+  "$jointmerge", "$jointconstrain", "$jointrules", "$sequence", "$weightlist",
+]);
+
+/** The command names the structural validator knows; exported for `read_qc` to report. */
+export const qcKnownCommands: ReadonlySet<string> = QC_COMMANDS;
+
+function grammarDiagnostic(
+  severity: QcSeverity,
+  rule: string,
+  message: string,
+  file: string,
+  line: number | null,
+): QcDiagnostic {
+  return { severity, rule, message, file, line };
+}
+
+function isNumber(value: string | undefined): boolean {
+  return value !== undefined && value.trim() !== "" && Number.isFinite(Number(value));
+}
+
+function checkNumbers(
+  statement: QcStatement,
+  args: readonly string[],
+  count: number,
+  rule: string,
+  message: string,
+  file: string,
+  diagnostics: QcDiagnostic[],
+): void {
+  if (args.length !== count || !args.every(isNumber)) {
+    diagnostics.push(grammarDiagnostic("error", rule, message, file, statement.line));
+  }
+}
+
+function checkSequenceBlock(
+  statement: QcStatement,
+  file: string,
+  diagnostics: QcDiagnostic[],
+): void {
+  const numeric = new Set(["fps", "predelay", "weight", "fadein", "fadeout", "transition"]);
+  for (const inner of statement.block ?? []) {
+    const command = inner.command.toLowerCase();
+    if (numeric.has(command) && inner.args.length > 0 && !isNumber(inner.args[0])) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "error",
+          "qc-sequence-number",
+          `$sequence "${statement.args[0] ?? ""}" block: ${inner.command} needs a number`,
+          file,
+          inner.line,
+        ),
+      );
+    }
+    if (command === "event" && inner.args.length < 1) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "warning",
+          "qc-sequence-event",
+          `$sequence "${statement.args[0] ?? ""}" block: event has no type`,
+          file,
+          inner.line,
+        ),
+      );
+    }
+    if (command === "node" && inner.args.length < 1) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "warning",
+          "qc-sequence-node",
+          `$sequence "${statement.args[0] ?? ""}" block: node has no attachment name`,
+          file,
+          inner.line,
+        ),
+      );
+    }
+  }
+}
+
+function validateCommand(
+  statement: QcStatement,
+  file: string,
+  diagnostics: QcDiagnostic[],
+): void {
+  const command = statement.command.toLowerCase();
+  const args = statement.args;
+  const fail = (rule: string, message: string, severity: QcSeverity = "error") => {
+    diagnostics.push(grammarDiagnostic(severity, rule, message, file, statement.line));
+  };
+
+  if (!command.startsWith("$")) {
+    // A bare command is meaningful only inside a block; the block owner checked it.
+    return;
+  }
+  if (!QC_COMMANDS.has(command)) {
+    fail(
+      "qc-unknown-command",
+      `unknown QC command ${statement.command}; this reader validates structure, not every ` +
+        "studiomdl command, so check the spelling before assuming it is wrong",
+      "warning",
+    );
+    return;
+  }
+
+  switch (command) {
+    case "$modelname":
+      if (args.length !== 1) fail("qc-command-args", "$modelname needs exactly one path");
+      break;
+    case "$body":
+      if (args.length !== 2) fail("qc-command-args", "$body needs a name and an SMD/DMX file");
+      break;
+    case "$bodygroup":
+      if (args.length < 1) fail("qc-command-args", "$bodygroup needs a name");
+      if (!statement.block) {
+        fail("qc-command-block", "$bodygroup needs a { studio/blank ... } block", "warning");
+      }
+      for (const inner of statement.block ?? []) {
+        const innerCommand = inner.command.toLowerCase();
+        if (innerCommand === "studio" && inner.args.length < 1) {
+          fail("qc-bodygroup-studio", "studio needs a model file", "warning");
+        }
+        if (innerCommand === "blank" && inner.args.length !== 1) {
+          fail("qc-bodygroup-blank", "blank needs exactly one body index", "warning");
+        }
+      }
+      break;
+    case "$model":
+      if (args.length < 2) fail("qc-command-args", "$model needs a name and a file");
+      break;
+    case "$cdmaterials":
+    case "$cdtexture":
+      if (args.length < 1) fail("qc-command-args", `${statement.command} needs at least one directory`);
+      break;
+    case "$surfaceprop":
+      if (args.length !== 1) fail("qc-command-args", "$surfaceprop needs exactly one name");
+      break;
+    case "$sequence":
+    case "$animation":
+      if (args.length < 1) {
+        fail("qc-command-args", `${statement.command} needs a name`);
+        break;
+      }
+      if (args.length < 2 && !statement.block) {
+        fail(
+          "qc-sequence-source",
+          `${statement.command} "${args[0]}" has no SMD/DMX file and no block`,
+          "warning",
+        );
+      }
+      if (command === "$sequence") checkSequenceBlock(statement, file, diagnostics);
+      break;
+    case "$attachment":
+      if (args.length < 2) {
+        fail("qc-attachment-incomplete", "$attachment needs a name and a bone", "warning");
+        break;
+      }
+      for (let index = 2; index < args.length; index += 1) {
+        const key = args[index]!.toLowerCase();
+        if (key === "position" || key === "rotate") {
+          if (!args.slice(index + 1, index + 4).every(isNumber)) {
+            fail("qc-attachment-number", `$attachment ${key} needs three numbers`, "warning");
+          }
+        }
+      }
+      break;
+    case "$definebone":
+      if (args.length < 2) {
+        fail("qc-command-args", "$definebone needs a bone and a parent");
+        break;
+      }
+      if (args.length > 2 && !args.slice(2).every(isNumber)) {
+        fail("qc-definebone-number", "$definebone values after the parent must be numbers", "warning");
+      }
+      break;
+    case "$bbox":
+    case "$cbox":
+      checkNumbers(
+        statement,
+        args,
+        6,
+        "qc-bbox-number",
+        `${statement.command} needs six numbers (min xyz and max xyz)`,
+        file,
+        diagnostics,
+      );
+      break;
+    case "$eyeposition":
+    case "$illumposition":
+      checkNumbers(
+        statement,
+        args,
+        3,
+        "qc-position-number",
+        `${statement.command} needs three numbers`,
+        file,
+        diagnostics,
+      );
+      break;
+    case "$contents":
+      if (args.length !== 1) fail("qc-command-args", "$contents needs one value", "warning");
+      break;
+    case "$hbox":
+      if (args.length < 2) {
+        fail("qc-command-args", "$hbox needs a group and a bone", "warning");
+      } else if (!args.slice(2).every(isNumber)) {
+        fail("qc-hbox-number", "$hbox bounds must be numbers", "warning");
+      }
+      break;
+    case "$hboxset":
+      if (args.length !== 1) fail("qc-command-args", "$hboxset needs a name", "warning");
+      break;
+    case "$ikchain":
+      if (args.length < 1) fail("qc-command-args", "$ikchain needs a name", "warning");
+      break;
+    case "$jigglebone":
+      if (args.length < 1) fail("qc-command-args", "$jigglebone needs a bone", "warning");
+      if (!statement.block) fail("qc-command-block", "$jigglebone needs a block", "warning");
+      break;
+    case "$keyvalues":
+      if (!statement.block) fail("qc-command-block", "$keyvalues needs a block", "warning");
+      break;
+    case "$texturegroup":
+      if (args.length < 1) fail("qc-command-args", "$texturegroup needs a name", "warning");
+      if (!statement.block) fail("qc-command-block", "$texturegroup needs a block", "warning");
+      break;
+    case "$poseparameter":
+      if (args.length < 1) fail("qc-command-args", "$poseparameter needs a name", "warning");
+      break;
+    case "$scale":
+    case "$maxeyedeflection":
+    case "$forcephonemecrossfade":
+      checkNumbers(
+        statement,
+        args,
+        1,
+        "qc-number",
+        `${statement.command} needs one number`,
+        file,
+        diagnostics,
+      );
+      break;
+    case "$include":
+      if (args.length < 1) fail("qc-command-args", "$include needs a file", "warning");
+      break;
+    case "$pushd":
+    case "$cd":
+      if (args.length !== 1) fail("qc-command-args", `${statement.command} needs one directory`, "warning");
+      break;
+    case "$popd":
+      if (args.length !== 0) fail("qc-command-args", "$popd takes no arguments", "warning");
+      break;
+    case "$definevariable":
+      if (args.length < 2) fail("qc-command-args", "$definevariable needs a name and a value");
+      break;
+    case "$definemacro":
+      if (args.length < 2) fail("qc-command-args", "$definemacro needs a name and a closing \\\\");
+      break;
+    case "$staticprop":
+    case "$mostlyopaque":
+    case "$unlockdefinebones":
+    case "$opaque":
+    case "$translucent":
+    case "$cliptotextures":
+      if (args.length !== 0) {
+        fail("qc-command-args", `${statement.command} takes no arguments`, "warning");
+      }
+      break;
+    case "$bonemerge":
+      if (args.length > 1) fail("qc-command-args", "$bonemerge takes at most one name", "warning");
+      break;
+    default:
+      break;
+  }
+}
+
+/**
+ * Walks the statement tree and checks command structure.
+ *
+ * `$keyvalues` is deliberately opaque: its block is KeyValues, not QC, and flagging
+ * `prop_data` as an unknown QC command was the first version's most common false positive.
+ * Blocks owned by `$jigglebone`, `$texturegroup` and `$model` are likewise left to the
+ * compiler: their inner vocabulary is large and version-specific.
+ */
+function validateGrammar(statements: readonly QcStatement[], file: string): QcDiagnostic[] {
+  const diagnostics: QcDiagnostic[] = [];
+  // These blocks have their own vocabulary (KeyValues, the sequence block, a bodygroup's
+  // studio/blank, jigglebone constants). The owner validates what it understands and the
+  // rest is left to studiomdl; treating every inner token as a QC command is the false
+  // positive this list exists to prevent.
+  const SKIP_INNER = new Set([
+    "$keyvalues",
+    "$sequence",
+    "$bodygroup",
+    "$jigglebone",
+    "$texturegroup",
+    "$model",
+    "$animation",
+    "$eyeball",
+    "$eyelid",
+    "$mouth",
+  ]);
+  const walk = (items: readonly QcStatement[], parent: string | null): void => {
+    for (const statement of items) {
+      if (parent !== null && SKIP_INNER.has(parent)) continue;
+      validateCommand(statement, file, diagnostics);
+      if (statement.block) walk(statement.block, statement.command.toLowerCase());
+    }
+  };
+  walk(statements, null);
+  return diagnostics;
 }
 
 /** Collects every statement, including those inside blocks. */
@@ -472,11 +804,15 @@ function validateStatements(statements: readonly QcStatement[], file: string): Q
     }
   }
 
-  if (byCommand("$body").length === 0 && byCommand("$bodygroup").length === 0) {
+  if (
+    byCommand("$body").length === 0 &&
+    byCommand("$bodygroup").length === 0 &&
+    byCommand("$model").length === 0
+  ) {
     diagnostics.push({
       severity: "error",
       rule: "qc-no-body",
-      message: "no $body and no $bodygroup; the model has no geometry",
+      message: "no $body, $model or $bodygroup; the model has no geometry",
       file,
       line: null,
     });

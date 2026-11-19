@@ -96,4 +96,8 @@ full conventions are in [Brush → model](../references/mapping/brush-to-model.m
   shape keys goes through `gltf_to_dmx` instead: L4D2's `studiomdl` turns the DMX shape keys
   into flexes without `$flex` in the QC. See
   [glTF and GLB → SMD](../references/mapping/gltf-import.md).
-- FBX is still not read: `studiomdl` does not read it either. Export SMD/DMX, or install
+- An `.fbx` is converted directly: `read_fbx` reports the units, axis and meshes, and
+  `fbx_to_smd` writes the SMD with the bind pose from the skin clusters. Pass `scale:
+  0.3937` for a centimetre export unless the DCC already wrote Source-sized numbers.
+  Animations and blend shapes are counted, not exported; use the glTF path for those.
+  See [FBX -> SMD](../references/mapping/fbx-import.md).

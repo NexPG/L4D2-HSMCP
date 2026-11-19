@@ -5,10 +5,12 @@
  * MIT License, Copyright (c) 2026 EpicMorg. The shell-channel command and menu ids are
  * adapted to this project's tool contracts. The full notice is in third_party/NOTICES.md.
  */
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
-import { CONFIRM } from "../../../core/typescript/tools/paths.js";
+import { CONFIRM, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
+import { readEntities } from "../../../maps/typescript/vmf/edit.js";
 
 const VEC3 = z.array(z.number()).length(3);
 
@@ -145,16 +147,87 @@ export function shellCommandsFor(op: z.infer<typeof OP>): string[] {
   ];
 }
 
+/**
+ * Why the shell channel's address cannot be used, or null when it is unambiguous.
+ *
+ * The channel has no entity ids: every command is `class + origin`. That is only a
+ * selector when exactly one entity is there, so the same check the upstream tool makes is
+ * made here before anything reaches the editor: a create must land on an empty address,
+ * and an edit must land on exactly one entity. The count covers the saved `.vmf` plus the
+ * ops earlier in this same call (create/delete), because nothing is saved between them.
+ *
+ * What it cannot see is an unsaved edit someone made in Hammer since the last save. That
+ * is reported in the tool's description; the check is a guard against the common mistake,
+ * not a substitute for the editor's own state.
+ */
+export function checkLiveAddresses(
+  vmfText: string,
+  ops: readonly z.infer<typeof OP>[],
+): string | null {
+  const saved = readEntities(vmfText).entities;
+  const counts = new Map<string, number>();
+  for (const entity of saved) {
+    const origin = parseLiveOrigin(entity.keyvalues.origin);
+    if (!origin) continue;
+    const key = liveAddressKey(entity.classname, origin);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  for (const [index, op] of ops.entries()) {
+    const key = liveAddressKey(op.classname, op.origin);
+    const count = counts.get(key) ?? 0;
+    const at = `${op.classname} at ${op.origin.join(" ")}`;
+    if (op.op === "create" && count > 0) {
+      return (
+        `op ${index + 1}: ${count} ${at} already exist(s); the channel addresses by ` +
+        "class + origin, so a second one could not be selected afterwards. Use other " +
+        "coordinates or edit the VMF."
+      );
+    }
+    if (op.op !== "create" && count === 0) {
+      return (
+        `op ${index + 1}: no ${at} in the saved map or in this call's earlier ops; ` +
+        "save the map in Hammer first and check the origin."
+      );
+    }
+    if (op.op !== "create" && count > 1) {
+      return (
+        `op ${index + 1}: ${count} ${at} share the origin; the channel can only address ` +
+        "class + origin and cannot choose which one. Move or rename one, or edit the VMF."
+      );
+    }
+    if (op.op === "create") counts.set(key, count + 1);
+    else if (op.op === "delete") counts.set(key, count - 1);
+  }
+  return null;
+}
+
+function parseLiveOrigin(value: string | undefined): [number, number, number] | null {
+  const parts = (value ?? "").trim().split(/\s+/).map(Number);
+  if (parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) return null;
+  return [parts[0]!, parts[1]!, parts[2]!];
+}
+
+function liveAddressKey(classname: string, origin: readonly number[]): string {
+  return `${classname.toLowerCase()}|${origin
+    .slice(0, 3)
+    .map((value) => value.toFixed(2))
+    .join(" ")}`;
+}
+
 export const hammerLiveEditTool = defineTool({
   name: "hammer_live_edit",
   description:
     "Edits the map that is open in Hammer / Hammer++ through the editor's shell channel: " +
     "create a point entity (and set its keyvalues), set a keyvalue, delete an entity, or " +
-    "rotate it. The commands land in Hammer's undo history, so Ctrl+Z works. The channel " +
-    "addresses entities by class + origin and cannot create brushes or move entities; use " +
-    "the VMF writers for geometry. `vmf` must be the saved map that is open in the editor; " +
-    "it is used only to open the shell session. `save: true` runs Hammer's Save command " +
-    "afterwards, which is what makes the change visible to the file readers. Guarded.",
+    "rotate it. The channel addresses entities by class + origin, so the saved VMF is read " +
+    "first and an ambiguous address is refused: a create must land where no entity of that " +
+    "class sits, and an edit must land on exactly one. Create, delete and rotate are in " +
+    "Hammer's undo history; a keyvalue change is not, so read the old value first. The " +
+    "channel cannot create brushes or move entities, and stock Hammer's rotate applies to " +
+    "entities with a model (prop_*), not to a bare info_target. `vmf` must be the saved map " +
+    "open in the editor; it is read for the address check and used to open the shell " +
+    "session. `save: true` runs Hammer's Save command afterwards, which is what makes the " +
+    "change visible to the file readers. Guarded.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -200,7 +273,9 @@ export const hammerLiveEditTool = defineTool({
           "one; this build does not. Writing the VMF is still available.",
       );
     }
-    const vmf = args.vmf;
+    const vmf = resolveVmfInput(args.vmf, ctx.config);
+    const refusal = checkLiveAddresses(readFileSync(vmf, "utf8"), args.ops);
+    if (refusal) throw new Error(refusal);
     const commands = args.ops.flatMap(shellCommandsFor);
     const reply = (await callSidecar(
       "hammer_live",
@@ -239,8 +314,9 @@ export const hammerLiveEditTool = defineTool({
       saved,
       note:
         "The shell channel is entity-level. A rejected command means Hammer could not find " +
-        "the class+origin, or the build does not support that command. Save is a menu " +
-        "command; if `saved` is false the in-memory edit is still in Hammer's undo history.",
+        "the class+origin, or the build does not support that command. Create/delete/rotate " +
+        "are undoable; a keyvalue change is not. Save is a menu command; if `saved` is " +
+        "false the change is only in the editor's memory.",
     };
   },
 });

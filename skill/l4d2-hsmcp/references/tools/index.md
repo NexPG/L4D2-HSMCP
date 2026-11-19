@@ -1,6 +1,6 @@
 # Tool catalogue
 
-158 tools. This page groups them by the job you are doing; each tool's own description is the
+161 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -82,6 +82,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_game_content` | find installed materials and models by name; an empty pattern browses a kind, paged with `offset` |
 | `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |
 | `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
+| `preview_model` | **look at** a model when HLMV's canvas is blank: renders it in a sealed engine room and captures the game window |
 | `read_model_info` | bounds, skins, sequences, materials, attachments, body parts and hitbox sets of one `.mdl` |
 
 ## Build and edit
@@ -141,7 +142,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_text_file` | read UTF-8 source text (QC, SMD, VMT, mission) with a byte cap and line window |
 | `read_vmt` | material shader, parameters, `Proxies`/`patch` blocks, `%compile*` flags, textures |
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
-| `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials and structural faults |
+| `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials, structural faults and a command catalogue that checks argument shapes |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |
@@ -150,7 +151,9 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `dmx_to_smd` | convert a static DMX mesh export to SMD (transform + UV flip; one root bone) |
 | `read_gltf` | inspect a glTF/GLB: nodes, meshes, primitives, materials, skins, animations, buffers |
 | `gltf_to_smd` | convert glTF/GLB geometry, skeleton, animations and a box or convex-hull collision model to SMD; optionally write the QC |
-| `gltf_to_dmx` | convert glTF/GLB shape keys to a DMX model source with Source flexes; writes the QC optionally |
+| `gltf_to_dmx` | convert glTF/GLB shape keys to a DMX model source with Source flexes; writes the QC optionally
+| `read_fbx` | inspect a binary 7.x or ASCII FBX: axes, units, models, geometries, materials, bones, skins, animations |
+| `fbx_to_smd` | convert FBX geometry, skeleton and skin weights to SMD, with the bind pose from the clusters; optionally write the QC |
 | `brush_to_model` | convert VMF brush solids to SMD + QC, with VMF UVs and a brush or box collision model |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |

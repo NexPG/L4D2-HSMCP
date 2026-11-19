@@ -12,7 +12,15 @@ import { dirname } from "node:path";
 import { z } from "zod";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
-import { buildQc, flattenQc, loadQc, qcModelName, qcSequences, walkQc } from "../../../formats/typescript/formats/qc.js";
+import {
+  buildQc,
+  flattenQc,
+  loadQc,
+  qcKnownCommands,
+  qcModelName,
+  qcSequences,
+  walkQc,
+} from "../../../formats/typescript/formats/qc.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 
@@ -45,8 +53,10 @@ export const readQcTool = defineTool({
     "outside models/. $definevariable and $definemacro are expanded at token level (bare " +
     "tokens only, first definition wins, `\\\\` continues a macro body). Include cycles and " +
     "missing .qci files are reported rather than followed, and the depth limit is " +
-    "scriplib's 16. Use it before run_studiomdl: studiomdl's own errors are terser and arrive " +
-    "after a compile.",
+    "scriplib's 16. The command catalogue checks the structure of the common QC commands: " +
+    "argument counts, numeric bounds, $bodygroup/studio, $sequence block numbers and " +
+    "events, and reports unknown commands as warnings instead of guessing. Use it before " +
+    "run_studiomdl: studiomdl's own errors are terser and arrive after a compile.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .qc, absolute or relative to the repo root."),
@@ -58,6 +68,7 @@ export const readQcTool = defineTool({
     includeCount: z.number(),
     statementCount: z.number(),
     commands: z.array(z.object({ command: z.string(), count: z.number() })),
+    unknownCommands: z.array(z.string()),
     sequences: z.array(
       z.object({
         name: z.string(),
@@ -101,6 +112,17 @@ export const readQcTool = defineTool({
     }
 
     const diagnostics = files.flatMap((f) => f.diagnostics);
+    const unknownCommands = [
+      ...new Set(
+        all
+          .filter(
+            (statement) =>
+              statement.command.startsWith("$") &&
+              !qcKnownCommands.has(statement.command.toLowerCase()),
+          )
+          .map((statement) => statement.command),
+      ),
+    ];
     return {
       path: root.path,
       modelName: qcModelName(root),
@@ -114,6 +136,7 @@ export const readQcTool = defineTool({
       commands: [...counts]
         .map(([command, count]) => ({ command, count }))
         .sort((a, b) => b.count - a.count || (a.command < b.command ? -1 : 1)),
+      unknownCommands,
       sequences: qcSequences(root),
       materials: materialsOf(files),
       bodyParts,

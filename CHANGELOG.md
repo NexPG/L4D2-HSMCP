@@ -5,7 +5,39 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
-## 0.0.100-alpha — 2026-11-19
+## 0.0.101-alpha - 2026-11-19
+
+- **FBX is read natively, both encodings.** `read_fbx` describes a binary 7.x or ASCII file
+  (axes and units, models, geometries, materials, bones, skins, clusters, animation stacks)
+  and `fbx_to_smd` writes the SMD `studiomdl` accepts. The parser is ours: the 7.x record
+  layout, the zlib-compressed property arrays, the polygon-index sign bit and the ASCII
+  grammar are read directly, with no SDK or third-party importer.
+- **The conventions are the ones that make a rig correct.** The bind pose comes from each
+  cluster's `TransformLink` rather than node TRS (the rest pose), the hierarchy is written
+  parent-first, weights that do not sum to 1 are normalised, and UVs are flipped to cancel
+  SMD's own inversion. `axis: "auto"` follows `UpAxis`; `scale` is a deliberate flag because
+  FBX centimetres and Source inches are not the same number, and `UnitScaleFactor` is
+  reported either way.
+- **Omissions are reported, not hidden.** Animation stacks and blend-shape deformers are
+  counted and named; SMD has no morph target and this path writes the bind pose only.
+  Binary 7.5's 64-bit records are attempted with a warning rather than guessed at.
+- **`preview_model` closes the blank-HLMV gap.** It tries HLMV, measures the luminance
+  spread of the captured viewport, and when the canvas is a flat rectangle it builds a
+  sealed dev-textured room sized from the model, places the model's lowest point on a
+  pedestal, compiles it, generates a nav and captures the real game window. The measurement
+  is a new PNG reader on the TypeScript side: all five filters, grey/RGB/RGBA.
+- **Live Hammer edits check their address before touching the editor.** The shell channel
+  addresses an entity by class + origin, with no id, so `hammer_live_edit` now reads the
+  saved VMF first and refuses a create where that class already sits, or an edit where the
+  address is empty or shared by several entities. It also states the undo truth: create,
+  delete and rotate are in Hammer's history, a keyvalue change is not.
+- **`read_qc` checks command structure.** A catalogue of the common QC commands validates
+  argument counts, numeric bounds, `$bodygroup`/`studio`/`blank`, `$sequence` block numbers
+  and events, and reports unknown commands as warnings. It was run over 49 real viewmodel
+  QCs from the wild: zero errors and zero unknown commands.
+- **Tool count: 161.** Tests: 146 files, 1402 passed, 33 skipped.
+
+## 0.0.100-alpha â€” 2026-11-19
 
 - **Convex-hull collision for glTF.** `gltf_to_smd` now takes `collision: "hull"` beside
   `"box"`: the model's vertices go through `srctools.math.quickhull`, every face is checked
@@ -20,7 +52,7 @@ with a line here.
   warning. Tool count stays 158.
 - Tests: 143 files, 1378 passed, 33 skipped.
 
-## 0.0.99-alpha — 2026-11-19
+## 0.0.99-alpha â€” 2026-11-19
 
 - **Particle files can be written, not only read.** `write_particle` builds a binary `.pcf`
   from JSON systems, or rewrites an existing loose/game-relative file through `source`.
@@ -37,7 +69,7 @@ with a line here.
   `verified` reports whether the system set survived. In-game rendering is not yet judged.
 - **Tool count: 158.** Tests: 143 files, 1376 passed, 33 skipped.
 
-## 0.0.98-alpha — 2026-11-19
+## 0.0.98-alpha â€” 2026-11-19
 
 - **glTF shape keys now become Source flexes.** `gltf_to_dmx` writes a DMX model source with
   one `DmeVertexDeltaData` per morph target and the `DmeCombinationInputControl` /
@@ -55,11 +87,11 @@ with a line here.
   `flexcontrollerCount` and `flexruleCount`, so a compiled morph model can be checked
   without parsing the MDL by hand.
 - **Scope, stated honestly.** Position deltas only; normal deltas are legal but empty arrays
-  compile. A delta beyond ±8 is clamped by studiomdl and reported. Animations remain the SMD
+  compile. A delta beyond Â±8 is clamped by studiomdl and reported. Animations remain the SMD
   path (`gltf_to_smd`): a DMX animation log is a separate piece of work.
 - **Tool count: 157.** Tests: 143 files, 1374 passed, 33 skipped.
 
-## 0.0.97-alpha — 2026-11-19
+## 0.0.97-alpha â€” 2026-11-19
 
 - **`brush_to_model`: the Propper++ path without the plugin.** A VMF brush is already a
   closed convex volume; `checkVmfSolids` rebuilds its hull and `orderedLoop` winds each
@@ -68,18 +100,18 @@ with a line here.
   for SMD), the material directories become `$cdmaterials`, and the origin can stay in
   world space or move to the brush's centre/base. `collision: "brush"` uses the brush
   itself (`$concave` for several solids), `box` writes an AABB, `none` omits the `.phy`.
-- **The whole path is proven.** The test writes a 64×64×64 box through the repository's
+- **The whole path is proven.** The test writes a 64Ã—64Ã—64 box through the repository's
   own VMF writer, converts it, checks the UVs against the `uaxis` formula, compiles it with
   the game's `studiomdl.exe`, and reads back one bone, one skin and `hasPhysics: true`.
   Displacements are refused rather than flattened.
 - **Tool count: 156.** Docs: `references/mapping/brush-to-model.md`; the coverage table's
   Propper++ row is no longer a gap. Tests: 142 files, 1371 passed, 33 skipped.
 
-## 0.0.96-alpha — 2026-11-19
+## 0.0.96-alpha â€” 2026-11-19
 
 - **The licence is GPL-3.0-only again, and the README says it plainly.** At the owner's
   request the `or-later` grant was removed; the front page now carries only
-  `GPL-3.0 — Copyright (C) 2026 NexPG`, the link to `LICENSE`, and the Valve disclaimer.
+  `GPL-3.0 â€” Copyright (C) 2026 NexPG`, the link to `LICENSE`, and the Valve disclaimer.
   The upstream MIT notices are untouched and remain compatible with GPLv3. `package.json`,
   `third_party/NOTICE`, `NOTICES.md`, `CONTRIBUTING.md`, `third_party/README.md` and the
   skill all state the same licence.
@@ -103,14 +135,14 @@ with a line here.
 - **Tool count: 155** (no new tool names; the new work is in the existing glTF and QC
   tools). Tests: 141 files, 1366 passed, 33 skipped.
 
-## 0.0.95-alpha — 2026-11-19
+## 0.0.95-alpha â€” 2026-11-19
 
 - **glTF/GLB is now a model source.** `studiomdl.exe` has no glTF loader (its extension
   probe chain is `fbx xml obj vta phys sma smd mpp dmx vrm`), so a Blender `.glb` used to
   mean a DCC re-export or a separate compiler. `read_gltf` describes the document without
-  converting it; `gltf_to_smd` reads `.gltf` and `.glb` itself — JSON, GLB chunks, external
+  converting it; `gltf_to_smd` reads `.gltf` and `.glb` itself â€” JSON, GLB chunks, external
   and `data:` buffers, interleaved and sparse accessors, triangle lists/strips/fans, node
-  TRS or matrices, skins with `inverseBindMatrices` and `JOINTS_0`/`WEIGHTS_0` — and writes
+  TRS or matrices, skins with `inverseBindMatrices` and `JOINTS_0`/`WEIGHTS_0` â€” and writes
   the SMD through the same writer the rest of the toolkit uses. The optional `qc` block
   writes the QC in the same call.
 - **The conventions are the ones a Source model needs.** Geometry stays in mesh space by
@@ -124,7 +156,7 @@ with a line here.
   runs the game's own `studiomdl.exe`, and reads the result back with `read_model_info`
   (the skinned model keeps both bones). That test also documented an official behaviour
   that looks like a bug: `$staticprop` rotates the geometry by studiomdl's default
-  `Rz(90°)`, so a compiled static prop's hull is rotated relative to its SMD.
+  `Rz(90Â°)`, so a compiled static prop's hull is rotated relative to its SMD.
 - **`$modelname` convention fixed.** `studiomdl` resolves `$modelname` inside the game's
   `models/` directory, as the stock QC prefabs do (`props_junk/box.mdl`). `write_qc` now
   strips a leading `models/`, the QC reader warns about that prefix instead of warning
@@ -133,7 +165,7 @@ with a line here.
 - **Tool count: 155.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
-## 0.0.94-alpha — 2026-11-19
+## 0.0.94-alpha â€” 2026-11-19
 
 - **The project is now GPL-3.0-or-later.** The `only` was removed at the owner's request.
   Everything still borrowed is MIT (Sycatle, EpicMorg, sourcepp), which is compatible with an
@@ -149,7 +181,7 @@ with a line here.
 - **Tool count: 153.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
-## 0.0.93-alpha — 2026-11-19
+## 0.0.93-alpha â€” 2026-11-19
 
 - **A second pass over the upstream projects, this time module by module, not
   tool by tool.** The first pass removed the trees and kept the tool surface. This pass
@@ -161,8 +193,8 @@ with a line here.
   - **VTF compression and conversion.** Our own DXT1/DXT5 range-fit encoder fills the gap
     srctools leaves (`Saving DXT1 not implemented`); `write_vtf` now takes DXT, and
     `convert_vtf` rebuilds an existing texture in another format or size, verified by
-    measured error. `extract_vtf` turns any `.vtf` into a PNG — including a texture no VMT
-    names, and a chosen face of a cubemap — which the material preview could not do.
+    measured error. `extract_vtf` turns any `.vtf` into a PNG â€” including a texture no VMT
+    names, and a chosen face of a cubemap â€” which the material preview could not do.
     `write_cubemap_vtf` assembles six named PNG faces into one cubemap and verifies each.
     `write_vtf` sets the one-bit/eight-bit alpha flag and average reflectivity, so a
     transparent texture is not left flagged opaque and a bright one does not light its
@@ -174,7 +206,7 @@ with a line here.
     are mdlpp's structs, not a label list. `dmx_to_smd` converts a DMX model export to
     SMD with its skeleton: node hierarchy, local bone transforms as XYZ Euler angles and
     per-vertex joint weights. The convention is verified against BlenderSourceTools' own
-    cube export — node names, parents, all four rotations, twelve triangles, UVs and
+    cube export â€” node names, parents, all four rotations, twelve triangles, UVs and
     weights match. A file without a joint list falls back to one root bone and says so.
   - **Soundscripts.** `read_soundscript` reads one file or the whole game through
     `scripts/game_sounds_manifest.txt`, follows `#base`/`#include`, reports first-definition
@@ -216,29 +248,29 @@ with a line here.
 - **Tool count: 152.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
-## 0.0.92-alpha — 2026-11-19
+## 0.0.92-alpha â€” 2026-11-19
 
 - **The project is TypeScript, Python and PowerShell only.** The four vendored source trees
   runtime, so no tool was lost with them; the toolchain that ships is the same `dist/` plus
   the Python sidecar.
 - **What replaced the trees is capability, not a gap.** Seven new tools close the work the
   libraries made possible but the toolkit could not do:
-  - `read_dmx` / `write_dmx` — the Blender/Crowbar datamodel, binary v4 and KeyValues2, as
+  - `read_dmx` / `write_dmx` â€” the Blender/Crowbar datamodel, binary v4 and KeyValues2, as
     a JSON tree with element references kept as references (a model graph is cyclic).
-  - `read_smd` / `write_smd` — skeleton, frames, materials, triangles, per-vertex weights and
+  - `read_smd` / `write_smd` â€” skeleton, frames, materials, triangles, per-vertex weights and
     the diagnostics studiomdl otherwise reports only as a failed compile. With `write_qc`
     and `run_studiomdl`, a simple prop can be authored without a DCC.
-  - `write_vtf` — PNG → VTF 7.4 with a full mip chain, no VTFCmd. PNG decoding is our own
+  - `write_vtf` â€” PNG â†’ VTF 7.4 with a full mip chain, no VTFCmd. PNG decoding is our own
     (every filter and colour type is tested), and the pixels are compared after a round-trip.
-  - `read_wav` / `convert_wav` — a sound's format, duration and loop, and a conversion to the
+  - `read_wav` / `convert_wav` â€” a sound's format, duration and loop, and a conversion to the
     16-bit PCM mono/stereo at 22050/44100 Hz that L4D2 actually decodes. Peak and RMS are
     reported, so a silent or clipped source is visible before it ships.
   either remains. sourcepp and EpicMorg stay, narrowed to the files that are genuinely
-  translations — deleting a vendored tree removes the copy, not the obligation.
+  translations â€” deleting a vendored tree removes the copy, not the obligation.
 - **The registry is data, not code.** `src/hammer/data/hammers.json` stays where it is and
   the sidecar reads it directly.
 
-## 0.0.91-alpha — 2026-11-19
+## 0.0.91-alpha â€” 2026-11-19
 
 
   remaining C++ trees now use `include/` + `source/` instead of `src/` inside `src/`, with the
@@ -251,7 +283,7 @@ with a line here.
 - **Nothing was built here and nothing pretends otherwise.** No CMake or dotnet is
   installed; `build/`, `target/` and `obj/` stay ignored.
 
-## 0.0.90-alpha — 2026-11-18
+## 0.0.90-alpha â€” 2026-11-18
 
 - **`run_pakfile_add`: the pakfile is written here, not by `bspzip`.** A map's embedded
   archive is a plain ZIP, so adding a material, model or sound no longer needs the game's
@@ -263,10 +295,10 @@ with a line here.
   through the shared header reader, so it cannot patch the wrong slot and leave a map that
   reads from nowhere. Verified on the probe map, which is L4D2-layout.
 - **The ZIP reader and writer are ours.** Stored and deflated entries, a fixed timestamp and
-  sorted names, so the same input produces the same bytes; anything else — encryption,
-  ZIP64, a data descriptor — is refused rather than written wrong.
+  sorted names, so the same input produces the same bytes; anything else â€” encryption,
+  ZIP64, a data descriptor â€” is refused rather than written wrong.
 
-## 0.0.89-alpha — 2026-11-18
+## 0.0.89-alpha â€” 2026-11-18
 
 - **The four useful upstream implementations are now in the project.** They are filed by
   module, not by repository: `src/formats/cpp/` (sourcepp: bsppp, vpkpp, vtfpp, mdlpp,
@@ -288,7 +320,7 @@ with a line here.
   trees is built on this machine (no CMake or dotnet), and the TypeScript server does
   not import them.
 
-## 0.0.88-alpha — 2026-11-18
+## 0.0.88-alpha â€” 2026-11-18
 
 - **Nav areas: read and edit.** `read_nav_areas` lists every area of a `.nav` with its
   attributes, L4D2 spawn attributes, place, centre, size and connection counts;
@@ -305,17 +337,17 @@ with a line here.
   redistributed, so `third_party/NOTICES.md` no longer lists it and its licence file is gone.
   The notices now cover only what was taken into the source tree.
 
-## 0.0.87-alpha — 2026-11-18
+## 0.0.87-alpha â€” 2026-11-18
 
-- **One project, modules by meaning.** `src/` is now eleven semantic modules — `hammer/`,
+- **One project, modules by meaning.** `src/` is now eleven semantic modules â€” `hammer/`,
   `maps/`, `models/`, `textures/`, `nav/`, `scripts/`, `campaigns/`, `assets/`, `packages/`,
-  `formats/`, `core/` — and a module that holds more than one language splits by language
+  `formats/`, `core/` â€” and a module that holds more than one language splits by language
   underneath (`typescript/`, `python/`). Those directories carry source only: no assets, no
   licences, no upstream trees.
   Everything used from them is ported into the module it serves and credited in
   `third_party/NOTICES.md` with the upstream file name; the trees could not be built here and
   nothing imported them.
-- **`third_party/` is the paperwork.** `NOTICES.md`, `NOTICE` and `licenses/` — one verbatim
+- **`third_party/` is the paperwork.** `NOTICES.md`, `NOTICE` and `licenses/` â€” one verbatim
   licence file per borrowed work, linked from the notices. No code, no build files, no READMEs
   from upstream.
 - **Credits live in the notices.** The README's credits table is a single link to
@@ -328,15 +360,15 @@ with a line here.
   exports from `space/rooms.ts` and left 295 type errors; the tree now compiles with none and
   the full suite passes (120 files, 1 263 tests).
 
-## 0.0.86-alpha — 2026-11-18
+## 0.0.86-alpha â€” 2026-11-18
 
 - **VPK without `vpk.exe`.** `read_vpk`, `run_vpk_extract` and `run_vpk_build` read and write
   Valve Pak directly: version 1 is written, versions 1 and 2 are read, numbered archives
-  (`_000.vpk` …) are followed, and every entry's CRC is checked against the bytes on request.
+  (`_000.vpk` â€¦) are followed, and every entry's CRC is checked against the bytes on request.
   Verified against the real `pak01_dir.vpk`: eight sampled entries read with matching CRCs.
   `run_vpk_pack` still drives `vpk.exe` so the two writers can be compared.
-- **`read_vtf`.** A `.vtf` header as data — version, size, flags, frames, format and whether
-  it is a cubemap — from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
+- **`read_vtf`.** A `.vtf` header as data â€” version, size, flags, frames, format and whether
+  it is a cubemap â€” from 80 bytes. The format table is the full `IMAGE_FORMAT_*` enum from
   sourcepp/vtfpp, not the six entries that turn up in map content.
 - **`read_compile_sequences`.** What the user's editor does when they press F9: the binary
   `CmdSeq.wc` (804-byte records), Hammer++'s KeyValues `hammerplusplus_sequences.cfg`, and
@@ -346,8 +378,8 @@ with a line here.
   half-read.
 - **`read_model_info` gains the parts of a model that placement depends on.** Attachments
   with the bone each follows, body parts and hitbox sets, read from the header the way
-  `mdlpp` documents it. `mstudioattachment_t` is 92 bytes in L4D2 — not the 60 of the older
-  SDK — and the name index is relative to the entry itself; verified against
+  `mdlpp` documents it. `mstudioattachment_t` is 92 bytes in L4D2 â€” not the 60 of the older
+  SDK â€” and the name index is relative to the entry itself; verified against
   `v_models/v_rifle.mdl`, which reports 7 attachments over 65 bones with the muzzle 35 units
   forward of the origin.
 - **`read_qc` / `write_qc`.** The model source file, the gap between `run_studiomdl` and
@@ -372,10 +404,10 @@ with a line here.
   build commands, so the algorithm reference survives the removal of the temporary
   `.3d-projects` folder. Nothing there is compiled or published. `THIRD-PARTY-NOTICES.md`
   records the copyright lines and moves the three projects to the used table, and adds three
-  SourceMod navigation repositories as reference-only — including why `sourcepawn-navmesh`'s
+  SourceMod navigation repositories as reference-only â€” including why `sourcepawn-navmesh`'s
   GPL cannot cover the parser it credits to an unlicensed upstream.
 
-## 0.0.85-alpha — 2026-11-18
+## 0.0.85-alpha â€” 2026-11-18
 
 - **Live Hammer / Hammer++ editing.** The editor's built-in shell channel
   (`Worldcraft_ShellMessageWnd`) is now available as `hammer_status`, `hammer_live_edit` and
@@ -404,13 +436,13 @@ with a line here.
   QC/SMD, `studiomdl`, physics, viewmodels and player models; `references/nav/editing.md`
   is the console command set for repairing a generated mesh, with the manual steps named.
 
-## 0.0.84-alpha — 2026-11-18
+## 0.0.84-alpha â€” 2026-11-18
 
 - **Hammer++ complete reference.** `docs/reference/hammerpp-complete-reference.md`
   inventories build 8873: every editor feature, the settings that change output
   (`IOParamNewDelimiter`, `vertices_plus`, HDR preview, instance collapse), the Tools++
   flags and limits (`-l4d2`, `-staticpropformat 9`, `-simpleladders`, AO, texture shadows,
-  `-both`), the VMF blocks Hammer++ adds, and a feature → tool matrix.
+  `-both`), the VMF blocks Hammer++ adds, and a feature â†’ tool matrix.
 - **L4D2 complete reference.** `docs/reference/l4d2-complete-reference.md` covers mission
   fields and modes, map flow, nav defaults and the 18 checks, Director defaults and
   `DirectorOptions`, the custom-finale stage machine (PANIC/TANK/DELAY/ONSLAUGHT), escape
@@ -431,10 +463,10 @@ with a line here.
   the I/O delimiter, precise vertex data, HDR preview or 4-way blends are wrong for L4D2.
 - **Nav flags completed.** `read_nav_dump` decodes `no-threat` (0x80000) and `lying-down`
   (0x100000); the L4D2 `func_nav_attribute_region` list is in the references.
-- **Honest gaps recorded.** Propper++ (brush → model), hotspot `.rect` lookup, 4-way blend
+- **Honest gaps recorded.** Propper++ (brush â†’ model), hotspot `.rect` lookup, 4-way blend
   verification and the preview-map fallback for HLMV remain open.
 
-## 0.0.83-alpha — 2026-11-18
+## 0.0.83-alpha â€” 2026-11-18
 
 - **`run_campaign_gate`.** One guarded tool runs the campaign through mission check, VMF
   lint, compile, nav generation with the dictionary baked, static-prop collision, the
@@ -463,7 +495,7 @@ with a line here.
   for the map test, nav generation and the trouble report, instead of three copies that
   could disagree about what they had installed.
 
-## 0.0.82-alpha — 2026-11-18
+## 0.0.82-alpha â€” 2026-11-18
 
 - **Deep research pass.** `docs/reference/l4d2-modding-research-2026.md` collects Hammer/
   Hammer++ setup, campaign/mission contracts, checkpoint/nav/finale rules, Director and
@@ -480,7 +512,7 @@ with a line here.
 - **FGD note.** The stock FGD omits `logic_script`; the lint tolerates it. The Tools++ FGD
   (`toolsplusplus.fgd` / `L4D2-FGD-Edits`) is the source for its extra entries.
 
-## 0.0.81-alpha — 2026-11-18
+## 0.0.81-alpha â€” 2026-11-18
 
 - **Checkpoint doors use the names the engine looks up.** `checkpoint_exit` on the safe room
   being left and `checkpoint_entrance` on the one being entered. `checkpoint_exit_door` was
@@ -504,7 +536,7 @@ with a line here.
   `references/campaign/authoring-checklist.md` distil the campaign/addon, checkpoint/nav,
   finale, boundary, terrain, water and optimization advice, with the sources.
 
-## 0.0.80-alpha — 2026-11-18
+## 0.0.80-alpha â€” 2026-11-18
 
 - **`preview_asset`: the eye.** A material is read through its VMT to the `$basetexture`
   VTF, decoded by the sidecar and returned as a real PNG over a checkerboard (no Pillow).
@@ -524,7 +556,7 @@ with a line here.
   trash cans, street lamps, grass, a deeper swamp basin and a tree line at both map edges;
   the escalator is the stock `mall_escalator` on the 23-degree shaft, not four flat panels.
 
-## 0.0.79-alpha — 2026-11-18
+## 0.0.79-alpha â€” 2026-11-18
 
 - **A rotating door's origin is its hinge.** `placeDoor` (`src/maps/typescript/vmf/door.ts`) turns
   `read_model_info` bounds plus an opening into the hinge origin and floor height. Both
@@ -542,7 +574,7 @@ with a line here.
 - `read_vmf_lint`'s solid probe converts points to `srctools.math.Vec`; a list made every
   probe raise and return `None`, which is why the door/landmark rules silently passed.
 
-## 0.0.78-alpha — 2026-11-18
+## 0.0.78-alpha â€” 2026-11-18
 
 - **Nav is generated on a dictionary-bearing BSP.** `run_nav_generate` now bakes the
   engine's string-table dictionary with a `-stringtables` changelevel *before* generating,
@@ -586,7 +618,7 @@ with a line here.
   panels on the 23-degree shaft, 16-unit stairs instead of a 51-degree wedge, 64x112 door
   openings around 58-unit doors, and a FINALE nav area at the BTR.
 
-## 0.0.77-alpha — 2026-11-18
+## 0.0.77-alpha â€” 2026-11-18
 
 - **Nav generation now stages the BSP and nav mesh it actually produced.** The engine
   rewrites the BSP stringtable before writing the nav; the old tool returned only the nav,
@@ -598,7 +630,7 @@ with a line here.
 - Full findings from the first wish-to-campaign build are in
   `docs/reports/2026-11-18-wish-build-findings.md`.
 
-## 0.0.76-alpha — 2026-11-17
+## 0.0.76-alpha â€” 2026-11-17
 
 - **The three new Hammer++ helpers were proven end to end.** A sealed probe map was built
   with `merge_solids` (two adjacent brushes to one), `move_to_surface` (a floating brush to
@@ -606,7 +638,7 @@ with a line here.
   `func_instance`). Stock vbsp then compiled it with exit 0; the only warning was the
   deliberately absent test material. The coverage table marks all three verified.
 
-## 0.0.75-alpha — 2026-11-17
+## 0.0.75-alpha â€” 2026-11-17
 
 - **`references/mapping/level-design.md`.** Room and doorway sizes against the standing
   hull, one decision per room, cover heights, sightlines, verticality, lighting/weather and
@@ -614,7 +646,7 @@ with a line here.
   between a wish and geometry: the tools measure, this page decides.
 - The wish workflow and `SKILL.md` route a new build through it.
 
-## 0.0.74-alpha — 2026-11-17
+## 0.0.74-alpha â€” 2026-11-17
 
 - **A wish-first campaign workflow.** `workflows/from-a-wish.md` turns a user's description
   into a spec (chapters, flow, mechanics, assets, done-means), then hands the spec to the
@@ -624,7 +656,7 @@ with a line here.
   "map loads" cannot stand in for "the tank and the finale work". `SKILL.md` and README
   route a description through the new page first.
 
-## 0.0.73-alpha — 2026-11-17
+## 0.0.73-alpha â€” 2026-11-17
 
 - **Three Hammer++ editing operations became one call each.** `merge_solids` replaces
   convex brushes with the one brush around them and refuses a non-convex or overlapping
@@ -633,7 +665,7 @@ with a line here.
   an instance and leaves a `func_instance`, taking a brush entity whole.
 - These were reachable through primitives before; they are helpers now, not new limits.
 
-## 0.0.72-alpha — 2026-11-17
+## 0.0.72-alpha â€” 2026-11-17
 
 - **New troubleshooting page for mapping edits.** `troubleshooting/mapping-edits.md` covers
   a prefab pasted in the wrong place or invisible, a skewed texture, a moved brush that
@@ -643,7 +675,7 @@ with a line here.
   are tools, and the unsupported list now names two-team rounds, a full Survival wave, the
   headless HLMV canvas and the genuinely manual design work.
 
-## 0.0.71-alpha — 2026-11-17
+## 0.0.71-alpha â€” 2026-11-17
 
 - **Hammer++'s `vertices_plus` stays in step with geometry edits.** `transform_solids` and
   `move_vertices` move the exact face loop through the same matrix as the plane;
@@ -652,7 +684,7 @@ with a line here.
 - Unknown Hammer++ root blocks still survive byte-for-byte; the coverage page now documents
   both behaviours.
 
-## 0.0.70-alpha — 2026-11-17
+## 0.0.70-alpha â€” 2026-11-17
 
 - **`insert_prefab` now turns as well as moves.** It takes `rotate` (yaw degrees) and
   `pivot`; the whole fragment is transformed, including solids owned by brush entities.
@@ -661,14 +693,14 @@ with a line here.
   nested `func_instance` still return warnings.
 - The previous warning about brush-entity geometry not moving is gone because it now moves.
 
-## 0.0.69-alpha — 2026-11-17
+## 0.0.69-alpha â€” 2026-11-17
 
 - **`insert_prefab` and `set_face_uv` were proven end to end.** A prefab brush plus an
   `info_target` was pasted into a copy of the test campaign, a face was given a skewed U/V
   pair, and vbsp compiled the map with no errors; the compiled BSP then loaded in game and
   was captured. The coverage table marks both verified.
 
-## 0.0.68-alpha — 2026-11-17
+## 0.0.68-alpha â€” 2026-11-17
 
 - **`set_face_uv`: the face sheet's U/V vectors by hand.** `align_faces` derives axes from a
   mode, so it cannot make a deliberately skewed pair. The new tool writes the U and V
@@ -677,20 +709,20 @@ with a line here.
   same reader rules (no axis along the normal, no zero scale, no degenerate pair) before
   the write.
 
-## 0.0.67-alpha — 2026-11-17
+## 0.0.67-alpha â€” 2026-11-17
 
 - **Coverage docs stopped claiming HLMV launch is missing.** `run_hlmv` launches the editor
   and `capture_window` returns its UI; only the 3D canvas needs an interactive desktop. The
   "genuinely missing" list now names that environment limit instead of an absent operation,
   and the mechanics table says the same.
 
-## 0.0.66-alpha — 2026-11-17
+## 0.0.66-alpha â€” 2026-11-17
 
 - **`insert_prefab` validates what it appended.** A fragment pasted into a file without a
   trailing newline now starts on its own line, and the write is refused unless the target
   ends up with exactly the old entity count plus the prefab's root entities.
 
-## 0.0.65-alpha — 2026-11-17
+## 0.0.65-alpha â€” 2026-11-17
 
 - **`insert_prefab`: paste a saved Hammer prefab into a map.** A prefab is a `.vmf`
   fragment, not a live `func_instance`. World brushes and root entities are inserted, every
@@ -700,7 +732,7 @@ with a line here.
   entities without an origin cannot move; the tool returns a warning instead of pretending
   the whole fragment moved. The Hammer coverage table no longer has a `Prefabs` gap.
 
-## 0.0.64-alpha — 2026-11-17
+## 0.0.64-alpha â€” 2026-11-17
 
 - **Split-screen was researched and tested.** The PC build has an unsupported
   `ss_enable 1` / `ss_splitmode 2` mode, usually driven by a community `split-screen.txt`,
@@ -711,7 +743,7 @@ with a line here.
   Infected, and a second Steam account. Split-screen bypasses `No Steam logon` but does not
   by itself prove a Versus/Scavenge two-team round.
 
-## 0.0.63-alpha — 2026-11-17
+## 0.0.63-alpha â€” 2026-11-17
 
 - **Multi-client testing was attempted and its limit documented.** Two clients start with
   `-multirun -windowed` (the second fails D3D in fullscreen), connect to the local listen
@@ -721,7 +753,7 @@ with a line here.
   (survivor bots, client on Infected), a second Steam account, or split-screen; and says a
   single client only proves mode load/HUD, not a two-team round.
 
-## 0.0.62-alpha — 2026-11-17
+## 0.0.62-alpha â€” 2026-11-17
 
 - **Survival's setup phase is documented.** Loading the map in `survival` gives the HUD but
   leaves the timer at `00:00.00`; the round needs a `trigger_finale` / `ForcePanicEvent`.
@@ -730,7 +762,7 @@ with a line here.
   map or a finished wave.
 - No functional changes.
 
-## 0.0.61-alpha — 2026-11-17
+## 0.0.61-alpha â€” 2026-11-17
 
 - **Versus is verified to load.** The mission lists `hsmcp_test_m1` under `versus`, and
   `run_map_test` with `extraArgs: ["+mp_gamemode", "versus"]` loaded it in 33 s and ran
@@ -740,7 +772,7 @@ with a line here.
 - New reference `mechanics/versus.md`: mission block, launch argument, the mode-script
   evidence, and the pitfall that Scavenge gas cans are map entities and show in Versus too.
 
-## 0.0.60-alpha — 2026-11-17
+## 0.0.60-alpha â€” 2026-11-17
 
 - **Scavenge is verified.** The mission lists `hsmcp_test_m1` under `scavenge`, and the map
   has 16 `weapon_scavenge_item_spawn` points. `run_map_test` with
@@ -750,7 +782,7 @@ with a line here.
 - New reference `mechanics/scavenge.md`: mission block, the 16 gas-can points, the launch
   argument, HUD evidence, and the leak pitfall when a spawn sits outside the hull.
 
-## 0.0.59-alpha — 2026-11-17
+## 0.0.59-alpha â€” 2026-11-17
 
 - **Survival mode is verified.** The mission file now lists `hsmcp_test_m1` under a
   `survival` mode, and `run_map_test` with `extraArgs: ["+mp_gamemode", "survival"]` loaded
@@ -759,7 +791,7 @@ with a line here.
 - New reference `mechanics/survival.md`: mission block, the launch argument, the HUD proof,
   and the pitfalls (`NAV ERRORS`, mission fallback, harmless `survival_record`).
 
-## 0.0.58-alpha — 2026-11-17
+## 0.0.58-alpha â€” 2026-11-17
 
 - **Tanks and witches are verified.** Test timers at 12 s and 22 s issued
   `sv_cheats 1; z_spawn tank` / `z_spawn witch` from a `point_servercommand`.
@@ -770,20 +802,20 @@ with a line here.
 - New reference `mechanics/tanks-and-witches.md`: commands, the log lines that prove each
   entity, and the small-arena warning.
 
-## 0.0.57-alpha — 2026-11-17
+## 0.0.57-alpha â€” 2026-11-17
 
 - **Crescendo/panic is verified in game.** The test map starts a panic event ten seconds
   after spawn with `director,PanicEvent`; the Director logs
-  `STAGE_INITIAL_DELAY → STAGE_MEGA_MOB → STAGE_WAIT_FOR_COMBAT_TO_END → STAGE_DONE` and
+  `STAGE_INITIAL_DELAY â†’ STAGE_MEGA_MOB â†’ STAGE_WAIT_FOR_COMBAT_TO_END â†’ STAGE_DONE` and
   `run_map_test({ waitFor: "STAGE_DONE" })` matched in **51 s**. `ForcePanicEvent` produced
   the same stages.
 - `OnPanicEventFinished` did not fire on this map, with either input, so the docs no longer
   present it as the only proof; the stage transition is the reliable evidence.
 
-## 0.0.56-alpha — 2026-11-17
+## 0.0.56-alpha â€” 2026-11-17
 
 - **PANIC and TANK finale stages are verified in game.** The test finale runs
-  PANIC → DELAY → TANK → DELAY → DELAY, then `HSMCP_ESCAPE_STARTED`,
+  PANIC â†’ DELAY â†’ TANK â†’ DELAY â†’ DELAY, then `HSMCP_ESCAPE_STARTED`,
   `HSMCP_ESCAPE_TOUCHED`, `Host_Changelevel` and the credits map in **137 s**. A final PANIC
   stage was replaced by DELAY: its commons did not clear and the stage hung. The TANK stage
   transitioned, but bots killing a tank is not proven.
@@ -791,7 +823,7 @@ with a line here.
   `Map: credits` did not. The old wait caused a false timeout after the campaign had already
   reached credits.
 
-## 0.0.55-alpha — 2026-11-17
+## 0.0.55-alpha â€” 2026-11-17
 
 - **`run_map_test` can install the BSP too.** `bsp` and `nav` are now both optional: the tool
   copies them beside the map, reports `bspInstalled`/`navInstalled`, and restores any
@@ -803,10 +835,10 @@ with a line here.
   weather defect. The distinction is documented in `troubleshooting/nav-stale.md`.
 - Fog was compiled and loaded but is not separately judged; the coverage says so.
 
-## 0.0.54-alpha — 2026-11-17
+## 0.0.54-alpha â€” 2026-11-17
 
 - **`run_map_test` can install the nav with the map.** A loose BSP copied for a test does
-  not bring its `.nav`, and the game opens on `NAV ERRORS — Map is unplayable!`. The new
+  not bring its `.nav`, and the game opens on `NAV ERRORS â€” Map is unplayable!`. The new
   `nav` argument copies the mesh beside the map and restores the previous one in a
   `finally`; the result reports `navInstalled`.
 - Found in the weather test: the first screenshot of the arena was an unplayable map with
@@ -815,7 +847,7 @@ with a line here.
 - Weather entities were added and compiled, but the closed brick arena cannot prove rain or
   fog visually; that check needs an open-sky map and remains pending.
 
-## 0.0.53-alpha — 2026-11-17
+## 0.0.53-alpha â€” 2026-11-17
 
 - **`write_skybox_copy`** (97th tool): the copy/scale/move half of a 3D skybox. It copies
   selected brushes at 1/16 scale around the map origin and moves them so the origin lands at
@@ -825,19 +857,19 @@ with a line here.
 - With this, the only remaining limitation in the skill is 3D-skybox design; every Hammer
   operation has a tool.
 
-## 0.0.52-alpha — 2026-11-17
+## 0.0.52-alpha â€” 2026-11-17
 
 - **`run_map_test` can show the agent the running game.** With `screenshot: true` it waits
   for the marker, lets the frame settle, captures the game window and returns a real MCP
   image block. The default method is `screen` because the game canvas is 3D; `window`
   (`PrintWindow`) produces a black canvas for the game renderer.
 - Verified live: `run_map_test` matched `Host_NewGame on map hsmcp_test_m1`, captured a
-  2560×1440 frame after 2.5 s and returned a 2.7 MB PNG image block showing the campaign
+  2560Ã—1440 frame after 2.5 s and returned a 2.7 MB PNG image block showing the campaign
   loading screen. The game process was stopped afterwards.
 - The screenshot workflow is documented with the marker advice: match a post-load line such
   as `Loading: [0-9]`, not the first map-name line, before asking for a picture.
 
-## 0.0.51-alpha — 2026-11-17
+## 0.0.51-alpha â€” 2026-11-17
 
 - **The agent can see a GUI.** `run_hlmv` now optionally captures the HLMV window and
   returns it as a real MCP image block; `capture_window` (96th tool) captures any window by
@@ -849,7 +881,7 @@ with a line here.
   real PNG image block came back. The 3D canvas is black on this sandbox desktop; that is an
   environment limit and is documented rather than claimed as a rendered model.
 
-## 0.0.50-alpha — 2026-11-17
+## 0.0.50-alpha â€” 2026-11-17
 
 - **`run_hlmv`** (95th tool): launches the game's HLMV on one compiled model, after resolving
   it against the game's `models/` tree and refusing a missing file. It returns the process id
@@ -859,7 +891,7 @@ with a line here.
   test model directory was removed after the process was closed. Model preview is no longer
   a gap; only 3D-skybox layout remains in the skill's limitation list.
 
-## 0.0.49-alpha — 2026-11-17
+## 0.0.49-alpha â€” 2026-11-17
 
 - **`export_vmf_map`** (94th tool): exports a `.vmf` to Valve's `.map` format 220. Every
   brush face keeps its three points, material, `uaxis`/`vaxis` and scale; every entity keeps
@@ -869,9 +901,9 @@ with a line here.
   in the skill coverage: HLMV preview, 3D-skybox layout and the checks that need a person at
   the screen.
 
-## 0.0.48-alpha — 2026-11-17
+## 0.0.48-alpha â€” 2026-11-17
 
-- **Model authoring primitives** (91–93): `read_text_file` and `write_text_file` handle
+- **Model authoring primitives** (91â€“93): `read_text_file` and `write_text_file` handle
   arbitrary QC/SMD/VMT source text with no template, and `run_studiomdl` compiles a QC with
   the game's own `studiomdl.exe`, reads `$modelname`, and proves the `.mdl`, `.vvd`, `.vtx`
   and `.phy` exist instead of trusting the exit code.
@@ -881,7 +913,7 @@ with a line here.
 - Model authoring is no longer a gap: the remaining model-related gap is launching HLMV to
   preview a compiled model.
 
-## 0.0.47-alpha — 2026-11-17
+## 0.0.47-alpha â€” 2026-11-17
 
 - **`run_build_cubemaps` can pack the result into a copy of the map.** `pack: true` with
   `outBsp` writes a new `.bsp` containing the built `.vtf` files and reports the pakfile
@@ -891,10 +923,10 @@ with a line here.
   pakfile entries (five `.vtf`, one `.dct`). The generated copy and the materials directory
   were removed after the check.
 
-## 0.0.46-alpha — 2026-11-17
+## 0.0.46-alpha â€” 2026-11-17
 
 - **`run_build_cubemaps`** (90th tool): builds a map's cubemaps with the engine's own
-  `-buildcubemaps` launch mode — load the map, capture every sample, write `.vtf`, quit.
+  `-buildcubemaps` launch mode â€” load the map, capture every sample, write `.vtf`, quit.
   Supports HDR, LDR or both, copies the files out, and restores the map, materials
   directory and hidden add-ons in a `finally`. Verified on the test campaign: HDR in 29 s
   (`c0_0_64_hdr.pwl.vtf`, 76,536 bytes), LDR in 24 s (`c0_0_64.pwl.vtf`, 4,968 bytes), both
@@ -905,7 +937,7 @@ with a line here.
 - The test campaign now compiles one `env_cubemap` at the arena centre, so the map has a
   non-empty CUBEMAPS lump to build.
 
-## 0.0.45-alpha — 2026-11-17
+## 0.0.45-alpha â€” 2026-11-17
 
 - **README rewritten for readers, not maintainers.** It now answers what the project is,
   what an agent can do with it, what is required, how to install it, a typical campaign
@@ -915,7 +947,7 @@ with a line here.
   as alpha only, without a list of what is proven or finished.
 - No functional changes.
 
-## 0.0.44-alpha — 2026-11-17
+## 0.0.44-alpha â€” 2026-11-17
 
 - **The repository root is now a documented, tested set.** README lists the job of every
   tracked root file, and `test/support/structure.test.ts` fails when a new tracked file
@@ -925,11 +957,11 @@ with a line here.
 - Audit result: no redundant tracked root files. The config, tsconfig, lockfile, licence and
   history files all have a job; nothing was deleted.
 
-## 0.0.43-alpha — 2026-11-17
+## 0.0.43-alpha â€” 2026-11-17
 
 - **Every experiment now has to leave a document for the agent.** The diary records the
   process; `skill/l4d2-hsmcp/troubleshooting/` and `references/` are what the agent reads
-  while working: symptom → cause → check → fix, what each error means, what it affects, and
+  while working: symptom â†’ cause â†’ check â†’ fix, what each error means, what it affects, and
   what is verified in game versus static-only. Rule 14 in the diary and CONTRIBUTING.
 - **The game install is cleaned after every run.** Test maps, `materials/maps/<test>/`,
   `.nav`, VPKs and backups are removed; modified originals are restored and checked. Rule 15
@@ -942,7 +974,7 @@ with a line here.
   `troubleshooting/cubemaps-do-not-build.md`. A complete `.vtf` build is still **not
   verified**; no test artefact was left in the game.
 
-## 0.0.42-alpha — 2026-11-17
+## 0.0.42-alpha â€” 2026-11-17
 
 - **`edit_bsp_entities`** (89th tool): adds, updates or removes entities in a compiled
   `.bsp`. The new entity text is appended and only lump 0's directory entry moves, so the
@@ -954,7 +986,7 @@ with a line here.
 - The compiled entity lump leaves `primitives.md`'s gap list. The remaining real gaps are
   the engine cubemap step and model authoring.
 
-## 0.0.41-alpha — 2026-11-17
+## 0.0.41-alpha â€” 2026-11-17
 
 - **`subdivide_displacements`** (88th tool): Hammer's Subdivide. Raises a displacement's
   power from 2 or 3 to 3 or 4, samples the old grid bilinearly so the silhouette survives,
@@ -967,7 +999,7 @@ with a line here.
   game checks is pending for weather, clone/skybox, exact alignment, mission extras and
   subdivision; none of them is called verified yet.
 
-## 0.0.40-alpha — 2026-11-17
+## 0.0.40-alpha â€” 2026-11-17
 
 - **`copy_face_alignment`** (87th tool): Hammer's copy alignment. Copies one face's exact
   `uaxis`/`vaxis` -- direction, offset and scale -- onto selected faces, optionally with the
@@ -980,7 +1012,7 @@ with a line here.
 - This is the third named gap closed under the no-templates rule, after `set_worldspawn`
   and arbitrary mission keys.
 
-## 0.0.39-alpha — 2026-11-17
+## 0.0.39-alpha â€” 2026-11-17
 
 - **`write_campaign` accepts arbitrary keyvalues at mission, mode and chapter level.** Its
   structured fields covered `Name`, the title, the author and the convar block, and nothing
@@ -991,7 +1023,7 @@ with a line here.
   gaps are the engine cubemap step, writing a compiled BSP's entity lump, model authoring and
   exact face-alignment copying.
 
-## 0.0.38-alpha — 2026-11-17
+## 0.0.38-alpha â€” 2026-11-17
 
 - **The project rule is now written down: hands untied, not a menu.** An agent must be able
   to do everything Hammer++ can and more through general operations, not choose from
@@ -1006,7 +1038,7 @@ with a line here.
 - `set_map_properties` is now explicitly a shortcut over `set_worldspawn`, not the limit of
   what can be set.
 
-## 0.0.37-alpha — 2026-11-17
+## 0.0.37-alpha â€” 2026-11-17
 
 - **`clone_solids`** (85th tool): Hammer's copy/paste. Copies selected brushes with fresh
   solid and side ids while keeping materials, texture axes and smoothing groups byte for
@@ -1019,7 +1051,7 @@ with a line here.
   two different things in two tools.
 - The parity table covers Copy/Paste; the 3D skybox moves from "copy gap" to "layout gap".
 
-## 0.0.36-alpha — 2026-11-17
+## 0.0.36-alpha â€” 2026-11-17
 
 - **`write_weather`** (84th tool): adds rain, snow, ash or a particle variant as a
   `func_precipitation` volume, and distance fog as an `env_fog_controller`. The precipitation
@@ -1031,9 +1063,9 @@ with a line here.
   gap. The instances row now mentions `write_instance`, and a duplicate weapons row is gone.
 - **The Hammer parity page stopped naming machines this project does not use.** It said the
   compilers run under Wine, cubemaps need `gmod-mcp`, and the server never talks to a live
-  engine — all false for a Windows-only L4D2 toolkit that already runs the game.
+  engine â€” all false for a Windows-only L4D2 toolkit that already runs the game.
 
-## 0.0.35-alpha — 2026-11-17
+## 0.0.35-alpha â€” 2026-11-17
 
 - **Conventional Commits are a written project rule.** `CONTRIBUTING.md` and diary rule 11
   spell out the format: `type(scope): imperative summary`, allowed types, an optional scope,
@@ -1042,7 +1074,7 @@ with a line here.
 - Two decisions shared the ID D33; the language decision is now D61 and the correction is
   recorded as D60.
 
-## 0.0.34-alpha — 2026-11-17
+## 0.0.34-alpha â€” 2026-11-17
 
 - **CI runs on the machine the project targets.** The workflow moved from `ubuntu-latest`
   to `windows-latest` and from Node 20/22 to 22/24, and the pass-floor check is a `pwsh`
@@ -1055,7 +1087,7 @@ with a line here.
   file in `docs/`, a `docs/` directory without an index, or a broken relative link in the
   README, `docs/` or the skill.
 
-## 0.0.33-alpha — 2026-11-17
+## 0.0.33-alpha â€” 2026-11-17
 
 - **`write_sky_camera`** (83rd tool): places the single `sky_camera` a 3D skybox needs, with
   its scale, refuses a second one, and warns when the map has no `skyname`. The 3D skybox is
@@ -1069,56 +1101,56 @@ with a line here.
 - The diary rules now say it for every future change: a flat dump of files is a structural
   defect, and moving a file includes updating every link in the same commit.
 
-## 0.0.32-alpha — 2026-11-17
+## 0.0.32-alpha â€” 2026-11-17
 
 - **`write_instance`** (82nd tool): places a `func_instance` from an instance `.vmf`, with
-  origin, angles and fixup style. The file is resolved next to the target map and read first —
-  a missing instance is an error, not an empty object — and nested instances are reported.
+  origin, angles and fixup style. The file is resolved next to the target map and read first â€”
+  a missing instance is an error, not an empty object â€” and nested instances are reported.
   Tested on the fixture: one solid, one entity, the entity appears in `read_vmf` with
   `fixup_style "1"`; a missing file is refused.
 - Instances leave the Hammer gap list: reading (`collapseInstances`) and writing both exist.
   The remaining gaps are 3D skybox, engine cubemap building, arch/torus and model authoring.
 
-## 0.0.31-alpha — 2026-11-17
+## 0.0.31-alpha â€” 2026-11-17
 
 - **`write_overlay`** (81st tool): puts an `info_overlay` decal on a brush face from a side id,
   a point on the face, a material and a size. The format is read from Valve's own
   `sdk_content/mapsrc/styleguide_urban.vmf`; the tool computes the basis normal/U/V, checks
   that the point is on the plane, and adds the entity. Tested on the campaign VMF: `side 3`,
-  `decals/blood1`, 64×64 → normal `0 0 1`, four corners, `lint 0`.
+  `decals/blood1`, 64Ã—64 â†’ normal `0 0 1`, four corners, `lint 0`.
 - Hammer's overlay tool is no longer a gap in `hammer-coverage.md`; an in-game look at the
   decal is still pending. The skill's Hammer-tab map gained the overlay row.
 
-## 0.0.30-alpha — 2026-11-17
+## 0.0.30-alpha â€” 2026-11-17
 
 - The project goal is recorded in the charter and the diary: the agent must have **all** of
   Hammer++ and more. `references/mapping/hammer-coverage.md` is the scorecard: every feature,
   its tool, and an honest `verified` / `tool` / `gap` status.
-- `read_game_content` gains `kind: "sound"` — the sound browser (635 `ambient` files on this
+- `read_game_content` gains `kind: "sound"` â€” the sound browser (635 `ambient` files on this
   install), alongside materials, models with sizes, and particles.
 - The coverage page names the real gaps: overlays/decals, instances/prefabs writing, 3D
   skybox, building cubemaps in the engine, arch/torus primitives, and model authoring.
 
-## 0.0.29-alpha — 2026-11-17
+## 0.0.29-alpha â€” 2026-11-17
 
 - The skill gains `references/mechanics/crescendo-and-panic.md`: the `func_button` /
-  `trigger_once` → `director ForcePanicEvent` wiring, `OnPanicEventFinished`, and the nav
+  `trigger_once` â†’ `director ForcePanicEvent` wiring, `OnPanicEventFinished`, and the nav
   Battlefield (256) / Battlestation (32) split, with the automated test recipe. Entity names
   are read from the installed FGD; the play test is still pending.
 - A project rule now says the agent's documentation is part of the product: every error,
   command, self-test recipe, asset and mechanic needs a page, and a question the agent had to
   ask is a documentation gap to close the same day.
 
-## 0.0.28-alpha — 2026-11-17
+## 0.0.28-alpha â€” 2026-11-17
 
 - The skill gains `references/mechanics/weapons-and-items.md`: all 37 `weapon_*` spawn classes
-  read from the installed FGD, grouped by tier and use, plus the placement rules — spawn on a
+  read from the installed FGD, grouped by tier and use, plus the placement rules â€” spawn on a
   nav area, not inside the floor, and do not give `Must Exist` to safe-room items because it
   duplicates them after a transition.
 - The mechanics table records the class list as verified and the placement as documented but
   not yet play-tested.
 
-## 0.0.27-alpha — 2026-11-17
+## 0.0.27-alpha â€” 2026-11-17
 
 - **The finale is a real custom finale now.** `trigger_finale` type 2 loads
   `scripts/vscripts/<mapname>_finale.nut` automatically; the script declares an
@@ -1126,8 +1158,8 @@ with a line here.
   `OnBeginCustomFinaleStage`. After the last stage the trigger fires `FinaleEscapeStarted`,
   which opens the escape point.
 - The test campaign's script runs two DELAY stages (a shipping finale would use PANIC and
-  TANK), and the verification passes: `[HSMCP] finale stage 1/2` → `HSMCP_ESCAPE_STARTED` →
-  escape touch → `Map: credits` at 70 s.
+  TANK), and the verification passes: `[HSMCP] finale stage 1/2` â†’ `HSMCP_ESCAPE_STARTED` â†’
+  escape touch â†’ `Map: credits` at 70 s.
 - Type 0 is gone from the test map: it starts but has no stage list and never reaches the
   escape phase.
 - `FinaleEscapeFinished` alone still does not end the campaign even after the escape phase, so
@@ -1136,7 +1168,7 @@ with a line here.
 - The skill gains `references/campaign/custom-finale.md` with the stage table, the callback,
   the escape wiring and the type-0 warning.
 
-## 0.0.26-alpha — 2026-11-17
+## 0.0.26-alpha â€” 2026-11-17
 
 - The skill gains `references/testing/live-debugging.md`: how an agent runs the game itself
   (`run_map_test`, `-condebug`, `+sv_pausable 0`, `+sv_cheats 1`), moves survivors
@@ -1145,9 +1177,9 @@ with a line here.
   transition, a finale, nav attributes and spawning. It also names the false passes: a stale
   log, `Mission credits` at startup, and `Host_NewGame` versus `Map:`.
 
-## 0.0.25-alpha — 2026-11-17
+## 0.0.25-alpha â€” 2026-11-17
 
-- **The campaign is completable again, and this time it is verified.** A 768×768 arena with
+- **The campaign is completable again, and this time it is verified.** A 768Ã—768 arena with
   four cover pillars was added south of the main room; nav grew from 12 to 38 areas per map,
   and `MOB SPAWN ERROR` / special-spawn failures dropped to zero once the Director's safety
   range was lowered. The safety ranges are per-chapter mission convars, and `write_campaign`
@@ -1161,7 +1193,7 @@ with a line here.
 - `verify-finale.mjs` waits for `Map: credits`. The mechanics table marks the finale victory
   verified with a scripted end, and the Director-driven escape phase still `not yet`.
 
-## 0.0.24-alpha — 2026-11-17
+## 0.0.24-alpha â€” 2026-11-17
 
 - The nav-attribute trap is documented and fixed in the test map: FINALE must be applied
   liberally, while BATTLEFIELD stops infected spawning for as long as survivors stand in it.
@@ -1176,11 +1208,11 @@ with a line here.
 - `read_nav_dump` decodes the full spawn-attribute set (empty, battlestation, battlefield,
   rescue vehicle, rescue closet, no-mobs) instead of only checkpoint/finale.
 - Victory is still not automated: the finale starts and the escape trigger fires, but the
-  campaign does not reach the credits map. The user's observation stands — a stats crawl or
+  campaign does not reach the credits map. The user's observation stands â€” a stats crawl or
   credits means the survivors escaped; the correct marker is `Host_NewGame on map credits`,
   not `Mission credits`.
 
-## 0.0.23-alpha — 2026-11-17
+## 0.0.23-alpha â€” 2026-11-17
 
 - **Correction: the finale victory is not verified.** 0.0.20 claimed it from
   `Mission credits ver 1 loading...`, but the engine loads every mission file at startup,
@@ -1197,11 +1229,11 @@ with a line here.
 - `verify-finale.mjs` now waits for `Host_NewGame on map credits`, not `Mission credits`.
   The mechanics coverage table marks the finale as start/escape verified, victory not yet.
 
-## 0.0.22-alpha — 2026-11-17
+## 0.0.22-alpha â€” 2026-11-17
 
 - `read_game_content` now browses assets the way Hammer's tabs do, with the numbers that
-  matter: `details: true` on a model returns its hull bounds (`mins`, `maxs`, `size`) — the
-  size the model viewer shows and the number needed before placing a building — and
+  matter: `details: true` on a model returns its hull bounds (`mins`, `maxs`, `size`) â€” the
+  size the model viewer shows and the number needed before placing a building â€” and
   `kind: "particle"` lists `.pcf` files for the Particle Browser. Verified against the
   install: 246 `props_urban` models with sizes, 52 particle systems.
 - The skill gains `references/mapping/hammer-tabs.md` (every Hammer++ tab mapped to the tool
@@ -1209,11 +1241,11 @@ with a line here.
   `references/mechanics/coverage.md`, an honest table of which L4D2 mechanics are verified and
   which are still `not yet`.
 - Mechanics coverage is now the project's definition of done: a row moves to verified only
-  with in-game evidence. The open rows are the next blocks — spawn areas and waves, weapons
+  with in-game evidence. The open rows are the next blocks â€” spawn areas and waves, weapons
   and items, crescendos, tanks and witches, Scavenge/Survival/Versus, weather, VScript waves,
   displacements and instances.
 
-## 0.0.21-alpha — 2026-11-17
+## 0.0.21-alpha â€” 2026-11-17
 
 - **`write_vscript`** (80th tool) writes a L4D2 `.nut`, refuses unbalanced braces, warns
   about Lua habits (`local`, `end`, `--[[`) and about a missing `printl`/`Msg` banner, and
@@ -1222,7 +1254,7 @@ with a line here.
 - The scripting reference now points at the tool, so an agent can ship a script and attach it
   without hand-editing the VMF.
 
-## 0.0.20-alpha — 2026-11-17
+## 0.0.20-alpha â€” 2026-11-17
 
 - **The finale is verified end to end.** `verify-finale.mjs` deploys a self-test build, starts
   the finale (`Finale started`), warps the team into the corridor, and the escape trigger
@@ -1237,7 +1269,7 @@ with a line here.
   (`Director failed to spawn a special`), so waves and specials are the next block, not a
   completion blocker.
 
-## 0.0.19-alpha — 2026-11-17
+## 0.0.19-alpha â€” 2026-11-17
 
 - **`run_nav_generate`** (78th tool) wraps the whole nav loop: loose copies, the VPK moved
   aside, `sv_cheats 1` + `nav_edit 1`, launch, wait for the mesh, collect `.nav` and the
@@ -1249,7 +1281,7 @@ with a line here.
   half of a play test.
 - The finale starts without a human: `trigger_finale` **type 0** plus `ForceFinaleStart`
   produces `Finale started`; type 2 without a finale script starts nothing. A finale map also
-  needs the disabled arrival `info_changelevel` — without it the Director reports
+  needs the disabled arrival `info_changelevel` â€” without it the Director reports
   `No exit checkpoint could be found`. The lint gains
   `l4d2-finale-no-arrival-changelevel`, and the incorrect `l4d2-finale-type-standard` warning
   is gone.
@@ -1261,13 +1293,13 @@ with a line here.
   self-test uses `WarpAllSurvivorsToFinale()`. `run_map_test` accepts `extraArgs`, used with
   `+sv_pausable 0 +sv_cheats 1` so an unfocused game does not pause.
 
-## 0.0.18-alpha — 2026-11-17
+## 0.0.18-alpha â€” 2026-11-17
 
 - **The chapter transition is verified end to end without a human.** The engine needs two
   things, not one: every survivor inside the `info_changelevel` volume **and** the checkpoint
   door closed (`CheckpointDoorClosed`). `verify.ps1` builds with `HSMCP_SELFTEST=1`, the map's
   timer warps the team into the safe room and closes the door, and the game loads
-  `hsmcp_test_m2` — recorded as `transition: PASS`.
+  `hsmcp_test_m2` â€” recorded as `transition: PASS`.
 - `read_nav_dump` (77th tool) parses the engine's `<map>_nav.txt`, decodes CHECKPOINT,
   PLAYER_START, FINALE and the escape route, and returns a `playable` / `no-goal` / `no-flow`
   / `empty` verdict.
@@ -1286,21 +1318,21 @@ with a line here.
   `references/testing/console.md` (nav/entity commands, `-condebug`, and why `setpos` in a
   config silently does nothing).
 
-## 0.0.17-alpha — 2026-11-17
+## 0.0.17-alpha â€” 2026-11-17
 
 - The agent skill is added at `skill/l4d2-hsmcp/`, structured for progressive disclosure:
   a short `SKILL.md` router, then `references/` (campaign, nav, scripting, mapping,
   compiling, tools), `workflows/`, `troubleshooting/` and `checklists/`. `opencode.json`
   points at it so it is available in this repository.
-- The skill documents only what the project has verified — mission rules, the safe-room
-  transition, nav attributes and flow, the finale inputs, add-on VScript, the tool catalogue —
+- The skill documents only what the project has verified â€” mission rules, the safe-room
+  transition, nav attributes and flow, the finale inputs, add-on VScript, the tool catalogue â€”
   and names what is not built yet instead of inventing it.
 - Campaign 001: the checkpoint door stood on a solid wall. The corridor now ends in a real
   doorway and a safe room behind it, with the changelevel volume over the room floor. Nav was
   regenerated: 12 areas per map, CHECKPOINT on both safe rooms, FINALE in the radio corridor,
   and the flow path reaching the safe room.
 
-## 0.0.16-alpha — 2026-11-17
+## 0.0.16-alpha â€” 2026-11-17
 
 - A chapter transition needs more than `info_changelevel`: a `prop_door_rotating_checkpoint`
   must exist (without one the changelevel never spawns), and the nav areas must carry
@@ -1315,14 +1347,14 @@ with a line here.
 - `nav.ps1` captures each generation's console log and reports flow and checkpoint errors, so
   a mesh that exists but has no goal is caught without a play test.
 
-## 0.0.15-alpha — 2026-11-17
+## 0.0.15-alpha â€” 2026-11-17
 
 - An add-on VPK can carry VScript: `scripts/vscripts/hsmcp_finale.nut` is packed into the
-  campaign, attached through a `logic_script` entity and verified in the running game — the
+  campaign, attached through a `logic_script` entity and verified in the running game â€” the
   `[HSMCP] hsmcp_finale loaded` banner appears in `console.log` with `-condebug`.
 - The finale is now completable with entities: `trigger_finale` type 2 starts on **+use**,
   `FinaleStart` enables an escape `trigger_multiple` after ten seconds, and its `OnStartTouch`
-  fires `FinaleEscapeFinished` and the outtro stats — the same inputs the Authoring Tools'
+  fires `FinaleEscapeFinished` and the outtro stats â€” the same inputs the Authoring Tools'
   rescue template uses. Stock campaigns never use type 0, so the earlier standard-finale
   attempt was replaced rather than tuned.
 - `docs/campaigns.md` gains "The finale" and "VScript in an add-on", with the exact inputs and
@@ -1330,7 +1362,7 @@ with a line here.
 - Campaign 001: exit corridor and changelevel (0.0.14) plus this finale; both maps rebuilt,
   nav regenerated (1346 bytes, fresh) and the 7-entry archive redeployed.
 
-## 0.0.14-alpha — 2026-11-17
+## 0.0.14-alpha â€” 2026-11-17
 
 - Chapter transitions use L4D2's own mechanism: an `info_changelevel` brush with `map` and
   `landmark`, plus a matching `info_landmark` in both maps. Every stock chapter works this
@@ -1342,13 +1374,13 @@ with a line here.
 - `docs/campaigns.md` gains "Chapter transitions" and "The finale": all stock finales use
   `trigger_finale` type 2 (Custom) with a VScript, so a script-free finale is still open.
 
-## 0.0.13-alpha — 2026-11-17
+## 0.0.13-alpha â€” 2026-11-17
 
 - The upstream credit names the original developers' studio, **Project Society Studio**, and
   stops there: the README does not restate a copyright line, because `LICENSE-MIT` already
   carries the MIT notice verbatim.
 
-## 0.0.12-alpha — 2026-11-17
+## 0.0.12-alpha â€” 2026-11-17
 
 - README drops the "What works today" feature table. The project has only just entered
   development, and the page now says so plainly: the map and campaign pipeline is the first
@@ -1356,14 +1388,14 @@ with a line here.
 - Upstream credit names **Project Society Studio**, which is how the original authors identify
   themselves; the MIT notice in `LICENSE-MIT` is unchanged.
 
-## 0.0.11-alpha — 2026-11-17
+## 0.0.11-alpha â€” 2026-11-17
 
 - README gains a full Requirements section: L4D2 (app 550) and its Authoring Tools (app 563),
   Node, pnpm, Python/srctools, Windows, disk; recommended Hammer++ and standalone Tools++,
   the VTF tools, Steam for nav and testing; and the agent side (MCP client, skill,
   permission to run local tools and launch the game once per map for nav).
 
-## 0.0.10-alpha — 2026-11-17
+## 0.0.10-alpha â€” 2026-11-17
 
 - README rewritten around what this project is: an agent toolkit for Left 4 Dead 2 maps,
   campaigns, VScripts, models and addons. It states the early-development status, how the
@@ -1373,7 +1405,7 @@ with a line here.
 - Provenance points at `Sycatle/hammer-mcp`, the upstream this fork grew from; the MIT
   notice and copyright remain in `LICENSE-MIT`.
 
-## 0.0.9-alpha — 2026-11-17
+## 0.0.9-alpha â€” 2026-11-17
 
 - Gate F answered: `nav_generate` runs in the client's listen server, not a dedicated
   binary, and it requires `sv_cheats 1` **and** `nav_edit 1`; without `nav_edit` it does
@@ -1386,14 +1418,14 @@ with a line here.
 - A transition needs a landmark: both maps carry `info_landmark landmark_transition` and
   `trigger_changelevel.landmark` points at it.
 
-## 0.0.8-alpha — 2026-11-16
+## 0.0.8-alpha â€” 2026-11-16
 
 - The project moved to its own repository, `NexPG/L4D2-HSMCP`, with the full history. The
   old fork's remote is gone; metadata, clone URL and CI badge point at the new home.
 - The upstream MIT notice and the provenance in `NOTICE` stay exactly where the licences
   require them.
 
-## 0.0.7-alpha — 2026-11-16
+## 0.0.7-alpha â€” 2026-11-16
 
 - Campaign metadata is now shaped the way L4D2 matches it: the mission file's base name
   equals the VPK's (`hsmcp_campaign.txt` in `hsmcp_campaign.vpk`), `"Name"` is alphanumeric,
@@ -1402,7 +1434,7 @@ with a line here.
 - The staging tree is cleaned before a rebuild, so a renamed mission cannot survive and
   register a second campaign.
 
-## 0.0.6-alpha — 2026-11-16
+## 0.0.6-alpha â€” 2026-11-16
 
 - `campaigns/` is ignored as a directory (root-anchored `/campaigns/`), not merely for the
   files inside it.
@@ -1411,7 +1443,7 @@ with a line here.
   `hsmcp_campaign.vpk`. History stays in the numbered campaign directories, where any run
   can be rebuilt and deployed again.
 
-## 0.0.5-alpha — 2026-11-16
+## 0.0.5-alpha â€” 2026-11-16
 
 - Test campaigns are local only (`campaigns/` is ignored) and live in numbered directories:
   a README stating the date, project version, what was attempted and what came out, plus
@@ -1420,7 +1452,7 @@ with a line here.
   can be opened in the game directly.
 - `001-hsmcp-test` re-laid out under that convention.
 
-## 0.0.4-alpha — 2026-11-16
+## 0.0.4-alpha â€” 2026-11-16
 
 - First campaign built through the tools: two sealed chapters with a transition and a
   finale, a mission file, an addon manifest and a packed VPK. `check_campaign` passes on
@@ -1428,7 +1460,7 @@ with a line here.
 - `campaigns/hsmcp-test/` keeps the source `.vmf` files, the mission and a `build.mjs` that
   reproduces the build; compiled maps and the VPK are build output.
 
-## 0.0.3-alpha — 2026-11-16
+## 0.0.3-alpha â€” 2026-11-16
 
 - `run_vpk_pack`: packs a staging directory into an addon VPK with the game's own
   `vpk.exe`, writes the addon manifest when given one, and reads the archive back through
@@ -1436,7 +1468,7 @@ with a line here.
 - The pack output is an ordinary L4D2 addon tree: `addoninfo.txt`, `missions/`, `maps/`,
   `materials/vgui/maps/`.
 
-## 0.0.2-alpha — 2026-11-16
+## 0.0.2-alpha â€” 2026-11-16
 
 - Campaign files: `read_campaign`, `write_campaign` and `check_campaign`. The schema was
   read from the game's own `missions/campaign1.txt` inside `pak01_dir.vpk`; a campaign can
@@ -1452,7 +1484,7 @@ with a line here.
   skipped every game-content test on a normal checkout. With it fixed, 1020 tests pass on
   Windows against the real install.
 
-## 0.0.1-alpha — 2026-11-16
+## 0.0.1-alpha â€” 2026-11-16
 
 First version of the Left 4 Dead 2 fork.
 

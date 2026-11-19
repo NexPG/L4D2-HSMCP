@@ -406,6 +406,22 @@ def _gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
     return gltf_to_dmx(req)
 
 
+@verb("fbx_read")
+def _fbx_read(req: dict[str, Any]) -> dict[str, Any]:
+    """An FBX (binary 7.x or ASCII) as a JSON summary an agent can inspect."""
+    from fbx import fbx_read
+
+    return fbx_read(req)
+
+
+@verb("fbx_to_smd")
+def _fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
+    """Converts FBX geometry, skeleton and skin weights to the SMD studiomdl reads."""
+    from fbx import fbx_to_smd
+
+    return fbx_to_smd(req)
+
+
 @verb("vtf_write")
 def _vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     """PNG to VTF without VTFCmd: header, mip chain and a pixel round-trip."""

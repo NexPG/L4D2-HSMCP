@@ -57,6 +57,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
 | `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |
+| `references/mapping/fbx-import.md` | FBX (binary 7.x or ASCII) -> SMD: axes, units, bind pose from clusters, and what is not exported |
 | `references/mapping/brush-to-model.md` | a VMF brush → SMD/QC, with VMF UVs and a brush collision model |
 | `references/mapping/particles.md` | reading and writing `.pcf` systems, children, operators and materials |
 | `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, and the sound tools |
@@ -151,15 +152,18 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 - **A full Survival wave.** Setup and HUD are verified; the round still starts from the
   map's own `trigger_finale` or `ForcePanicEvent`, which the map author must place.
 - **HLMV's 3D canvas in a headless session.** The editor launches and its UI captures; the
-  viewport needs an interactive desktop. `read_model_info` bounds and `preview_asset` on
-  the model's materials are the reliable half until a preview-map fallback exists.
+  viewport needs an interactive desktop. `preview_model` is the fallback: it builds a sealed
+  dev-textured room, compiles it, generates a nav and captures the real game view, and it
+  uses the same blank-viewport measurement to decide whether HLMV is worth trying first.
 - **A player-driven finale start in `+map`.** `ForceFinaleStart` without a spawned player
   is not the player-facing path; the last proof is the campaign menu or a reachable +use
   button in a live round.
 - **A general VScript API wrapper.** Scripts are authored and attached, but what they call
   at runtime is the map's own logic.
-- **Model import from DCC formats.** QC/SMD compilation with `studiomdl` is covered;
-  exporting from Blender or Maya is not.
+- **Model import from DCC formats.** glTF/GLB and FBX (binary 7.x and ASCII) are read
+  natively, and QC/SMD compilation with `studiomdl` is covered. FBX animations and blend
+  shapes are reported, not exported: this path writes the bind pose, and flexes need the
+  glTF/DMX route.
 - **3D-skybox composition.** `write_sky_camera` places the camera and `write_skybox_copy`
   makes the scaled copy; choosing and sealing what to copy is design work.
 

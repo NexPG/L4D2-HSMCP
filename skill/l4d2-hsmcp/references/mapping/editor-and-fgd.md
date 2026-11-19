@@ -53,6 +53,29 @@ entities the game does not have, and a lint that accepts them approves a broken 
 - If an FGD pack changes Hammer's default new entity, set it back: swapping a model entity
   for one that newly gained a helper model can crash the editor.
 
+## When to drive the editor
+
+The live channel is a second way to change a map, and it is the wrong default. The rule:
+
+- **Write the VMF with the file tools** for brushes, geometry, materials and bulk entities.
+  The channel cannot create or move a brush, and a file write is deterministic, diffable and
+  testable.
+- **Open Hammer++ when the question is the editor's**: does this generated VMF open, are the
+  entities where the 2D views say, what does the 3D view look like, does Check for Problems
+  agree. `open_in_hammer` (with a capture) and `hammer_menu` answer that; a compile is slower
+  and answers a different question.
+- **Use `hammer_live_edit` for a small entity change in a session a person is working in**,
+  with `save: true`. Its address is `class + origin` because the channel has no ids, so the
+  saved VMF is checked first: a create must land on an empty address, an edit on exactly
+  one. Create/delete/rotate are undoable; a keyvalue change is not.
+- **Never make the live editor a dependency of an automated run.** It needs an interactive
+  desktop, a saved map open and a message loop that a modal dialog can block. CI and `run_*`
+  tests must not require it.
+
+A generated map's first check can therefore be: `open_in_hammer` and look at the capture,
+`hammer_menu checkForProblems`, `read_vmf_lint`, then `run_compile`. The game remains the
+only proof of runtime behaviour.
+
 ## Practical workflow
 
 1. Edit in Hammer++ with whatever FGD you work comfortably with.
