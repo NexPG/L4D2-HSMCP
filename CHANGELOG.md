@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.94-alpha — 2026-11-19
+
+- **The project is now GPL-3.0-or-later.** The `only` was removed at the owner's request.
+  Everything still borrowed is MIT (Sycatle, EpicMorg, sourcepp), which is compatible with an
+  from the notices. `package.json`, README, `CONTRIBUTING.md`, `third_party/NOTICE`,
+  `NOTICES.md`, `third_party/README.md` and the skill now state **GPL-3.0-or-later**, and
+  README carries the standard "either version 3, or any later version" grant. The MIT
+  notices are untouched and still govern the MIT portions.
+- **`edit_static_props`: baked props can be fixed without a recompile.** `read_static_props`
+  could only say what vbsp baked; this changes skin, solidity, tint, scaling, fade, renderfx
+  or flags, or adds/removes a prop. The BSP is rebuilt through srctools and read back. A
+  model/origin change or an addition is reported as leaving the compiled `visleafs` stale
+  until vbsp runs again; that is a culling warning, not a silent one.
+- **Tool count: 153.** Parity, the skill catalogue and the test layout are updated in the
+  same commit.
+
 ## 0.0.93-alpha — 2026-11-19
 
 - **A second pass over the upstream projects, this time module by module, not

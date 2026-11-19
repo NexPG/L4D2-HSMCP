@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.93--alpha-orange.svg)](CHANGELOG.md)
+[![License: GPL v3 or later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.0.94--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -162,7 +162,13 @@ this repository and tested here; no other project's source tree is kept alongsid
 
 ## License
 
-**GPL-3.0-only.** Copyright (C) 2026 **NexPG**.
+**GPL-3.0-or-later.** Copyright (C) 2026 **NexPG**.
+
+This is free software: you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version. It is distributed in the hope that it will be
+useful, but **without any warranty**; without even the implied warranty of merchantability or
+fitness for a particular purpose. See [`LICENSE`](LICENSE) for the full text.
 
 Provenance, the modification notice and the obligations the GPL places on anyone
 redistributing this work are in [`third_party/NOTICE`](third_party/NOTICE).

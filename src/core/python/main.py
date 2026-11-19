@@ -494,6 +494,14 @@ def _static_props(req: dict[str, Any]) -> dict[str, Any]:
     return static_props(req)
 
 
+@verb("static_props_edit")
+def _static_props_edit(req: dict[str, Any]) -> dict[str, Any]:
+    """Edits or adds static props in a compiled BSP."""
+    from staticprop_edit import static_props_edit
+
+    return static_props_edit(req)
+
+
 @verb("vmf_displacements")
 def _vmf_displacements(req: dict[str, Any]) -> dict[str, Any]:
     """Displacements as srctools reads them -- the oracle for our own reader."""

@@ -3,14 +3,14 @@
 > ## **LICENCE COMPLIANCE IS MANDATORY.**
 >
 > Every line of code, data file or asset borrowed from another project must have a licence
-> that permits use in this GPL-3.0-only repository. The copyright notice and permission
+> that permits use in this GPL-3.0-or-later repository. The copyright notice and permission
 > notice must travel with the borrowed work. If a project has no licence, **do not copy its
 > code or content**: read it to learn the behaviour and write our own implementation.
 >
 > Every import is recorded in this file, in the commit message, and in the source header.
 > `CONTRIBUTING.md` makes this the first rule of the project.
 
-This project is distributed as a whole under **GPL-3.0-only**. The components below remain
+This project is distributed as a whole under **GPL-3.0-or-later**. The components below remain
 under their own licences; the GPL applies to the combined work, not as a replacement for
 those notices.
 
@@ -73,7 +73,7 @@ compiled, and it blurs what this project actually is.
 1. **Licence first.** Identify the licence and the exact copyright holder from the
    repository's `LICENSE`. A repository with no licence is **all rights reserved** by
    default.
-2. **Compatible with GPL-3.0-only.** MIT, BSD, Apache-2.0 and GPL-3.0 are; GPL-2.0-only,
+2. **Compatible with GPL-3.0-or-later.** MIT, BSD, Apache-2.0 and GPL-3.0 are; GPL-2.0-only,
    proprietary and unlicensed code are not.
 3. **Permission notice.** Add `licenses/<work>-<SPDX>.txt` with the verbatim text and the
    copyright line, and link it from the table above.
@@ -82,7 +82,7 @@ compiled, and it blurs what this project actually is.
 5. **Commit message.** Say what was taken, from which repository and commit, and that the
    licence was checked.
 6. **No silent relicensing.** The imported part stays under its own licence; this project's
-   GPL-3.0-only applies to the combined work.
+   GPL-3.0-or-later applies to the combined work.
 7. **No code without a licence.** Use it as a reference, write the implementation, and do not
    add the file.
 8. **Record it here.** A component missing from this file is a compliance defect, even if the

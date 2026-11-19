@@ -14,7 +14,7 @@ Before taking code, data or an asset from another repository:
 1. **Identify the licence and the copyright holder.** Check the repository's `LICENSE`,
    `COPYING` or `NOTICE`. A repository with no licence is **all rights reserved** by default;
    do not copy its code or content.
-2. **Check compatibility with GPL-3.0-only.** MIT, BSD, Apache-2.0 and GPL-3.0 are compatible;
+2. **Check compatibility with GPL-3.0-or-later.** MIT, BSD, Apache-2.0 and GPL-3.0 are compatible;
    GPL-2.0-only, proprietary and unlicensed code are not. If you are unsure, stop and ask.
 3. **Keep the notice.** Put the upstream copyright and permission notice in
    [`third_party/NOTICES.md`](third_party/NOTICES.md) and the verbatim licence in [`third_party/licenses/`](third_party/licenses), and keep the upstream `LICENSE` text
@@ -141,7 +141,7 @@ in a directory.
 | `config.example.json` | template for the local `.hammer-mcp/config.json` |
 | `opencode.json` | registers the repository skill with OpenCode |
 | `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md` | front page, rules, version history |
-| `LICENSE` | GPL-3.0-only, the licence of the combined work |
+| `LICENSE` | GPL-3.0-or-later, the licence of the combined work |
 | `.gitattributes`, `.gitignore` | line endings and local/generated files |
 
 `.mcp.json`, `config.json`, `dist/`, `node_modules/`, `campaigns/`, `.develop-diary/` and
@@ -189,7 +189,7 @@ still being measured and the campaign pipeline does not exist yet, releases stay
 
 ## Licence
 
-The repository ships under **GPL-3.0-only** ([`LICENSE`](LICENSE)). The work it grew out of,
+The repository ships under **GPL-3.0-or-later** ([`LICENSE`](LICENSE)). The work it grew out of,
 and everything else it borrows, is recorded in [`third_party/`](third_party/README.md): the
 provenance in [`third_party/NOTICE`](third_party/NOTICE), the record in
 [`third_party/NOTICES.md`](third_party/NOTICES.md), and the verbatim licence of each work in

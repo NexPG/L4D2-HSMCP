@@ -1,6 +1,6 @@
 # Tool catalogue
 
-152 tools. This page groups them by the job you are doing; each tool's own description is the
+153 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -46,6 +46,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `nav_trouble_report` | the engine's own nav checks, as findings with the selected areas' coordinates |
 | `read_map_dependencies` | every asset the map references and where it will come from |
 | `read_prop_survey` | props by model and class, including unnamed `prop_dynamic` |
+| `edit_static_props` | change or remove a baked prop's skin, solidity, tint, fade, flags |
 | `read_static_props` | static-prop collision audit: missing `.phy`, models the player walks through |
 | `read_pakfile` | files embedded in the map (lump 40 is a ZIP) |
 | `read_materials` | material table and reuse |

@@ -24,8 +24,8 @@ we own.** If a component cannot be ported yet, it is not added at all.
 
 1. **Licence first.** Identify the licence and the copyright holder from the repository's
    `LICENSE`. No licence means all rights reserved: read it, do not copy it.
-2. **Compatible with GPL-3.0-only.** MIT, BSD and Apache-2.0 are; GPL-2.0-only and
-   unlicensed code are not. The project's own code is GPL-3.0-only, so GPL-3.0 code is
+2. **Compatible with GPL-3.0-or-later.** MIT, BSD and Apache-2.0 are; GPL-2.0-only and
+   unlicensed code are not. The project's own code is GPL-3.0-or-later, so GPL-3.0 code is
    compatible too.
 3. **A new licence is a new file.** `licenses/<work>-<SPDX>.txt`, verbatim text plus the
    copyright line, linked from `NOTICES.md`.

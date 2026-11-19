@@ -7,7 +7,7 @@ answers "where is the test for this file" without a search.
 |---|---|
 | [`assets/`](assets/) | content-derived data: particle systems and their materials |
 | [`audio/`](audio/) | sound: WAV reading/conversion, soundscripts and soundscapes |
-| [`bsp/`](bsp/) | compiled-map readers: header, lumps (including LZMA), geometry, entities, nav, limits, materials, pakfile |
+| [`bsp/`](bsp/) | compiled-map readers/writers: header, lumps (including LZMA), geometry, entities, static props, nav, limits, materials, pakfile |
 | [`vmf/`](vmf/) | source maps: create, edit, splice, brushes, faces, displacements, fittings, wiring, lint |
 | [`space/`](space/) | offline measurement: traces, rooms, clearance, visibility, dimensions |
 | [`render/`](render/) | offline views, plans, tours |

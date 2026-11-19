@@ -5,6 +5,7 @@ import { wavTools } from "./audio/typescript/tools/wav.js";
 import { bspTools } from "./maps/typescript/tools/bsp.js";
 import { bspEditTools } from "./maps/typescript/tools/bspedit.js";
 import { bspLumpTools } from "./maps/typescript/tools/bsplump.js";
+import { staticPropTools } from "./maps/typescript/tools/staticprops.js";
 import { buildCubemapTools } from "./textures/typescript/tools/buildcubemaps.js";
 import { buildTools } from "./maps/typescript/tools/build.js";
 import { captureTools } from "./hammer/typescript/tools/capture.js";
@@ -120,6 +121,7 @@ export const allTools: AnyToolDef[] = [
   ...planTools,
   ...prefabTools,
   ...bspLumpTools,
+  ...staticPropTools,
   ...qcTools,
   ...smdTools,
   ...dmxSmdTools,
