@@ -69,7 +69,8 @@ the absence instead of hiding it.
 - `read_fbx` / `fbx_to_smd` — an FBX (binary 7.x or ASCII) read natively, with the bind pose
   taken from the skin clusters' `TransformLink`, the axis from `UpAxis`, and V flipped for
   SMD. Units are a flag, not a guess: centimetres need `scale: 0.3937` unless the DCC wrote
-  Source-sized numbers. Animation stacks and blend shapes are reported, not exported. See
+  Source-sized numbers. Every animation stack is resampled into its own SMD with a
+  `$sequence` in the QC; blend shapes are counted, not exported. See
   [FBX -> SMD](fbx-import.md).
 - `gltf_to_dmx` — shape keys become a DMX model source with Source flexes. The compiler
   reads the `DmeVertexDeltaData` and `DmeCombinationOperator` without a `$flex` command, and
@@ -103,7 +104,7 @@ the absence instead of hiding it.
 | Convert glTF/GLB shape keys to Source flexes | `gltf_to_dmx` |
 | Generate a `$collisionmodel` box for a solid prop | `gltf_to_smd` with `collision: "box"` |
 | Inspect an FBX (binary 7.x or ASCII) | `read_fbx` |
-| Convert FBX geometry, skeleton and weights | `fbx_to_smd` (optionally with a `qc` block) |
+| Convert FBX geometry, skeleton, weights and animations | `fbx_to_smd` (optionally with a `qc` block) |
 | Turn a VMF brush into a model | `brush_to_model` (Propper++ path) |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |

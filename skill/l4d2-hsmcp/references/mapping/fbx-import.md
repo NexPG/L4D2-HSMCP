@@ -10,6 +10,7 @@ Both binary 7.x and ASCII are read; no SDK, Blender or third-party importer is i
 |---|---|
 | Inspect a `.fbx` | `read_fbx` |
 | Convert geometry, skeleton and weights | `fbx_to_smd` |
+| Export every animation stack as an SMD + `$sequence` | `fbx_to_smd` (default) with the `qc` block |
 | Write the QC in the same call | `fbx_to_smd` with the `qc` block |
 | Compile | `run_studiomdl` |
 | Look at the result | `preview_model` (engine fallback) or `preview_asset` (HLMV) |
@@ -53,11 +54,35 @@ see there than after a compile.
 - **Polygons are fan-triangulated.** The last index of an FBX polygon is stored negative
   (`~index`); that sign bit is the polygon boundary, not a vertex.
 
+## Animations
+
+Every `AnimationStack` becomes its own SMD (`<name>_<animation>.smd`), with the bind SMD's
+node table, sampled at `animationFps` (default 30). `$sequence` lines are added to the QC
+when the `qc` block is used and `animationSequences` is not false; `animationArgs` appends
+flags such as `loop`. `animations: ["Take 001"]` limits the export to named stacks;
+`exportAnimations: false` writes the bind pose only.
+
+What the path does with the curves:
+
+- **The stack → layer → curve node → curve chain is followed.** A curve node targets a
+  Model through an `OP` link (`Lcl Translation`, `Lcl Rotation`, `Lcl Scaling`); its `X`/`Y`/
+  `Z` curves are the other `OP` links (`d|X`, `d|Y`, `d|Z`).
+- **Frame data is relative to the bind parent, not the rest parent.** A cluster bind pose
+  and the node rest pose can differ; writing rest-space locals would make the model jump at
+  frame zero. The same conversion the bind frames use is applied at every key.
+- **Cubic tangents are sampled linearly.** FBX stores tangents in `KeyAttrFlags`; this
+  reader does not evaluate the cubic. The sampled pose follows the key values; the shape
+  between them is a straight line. That is the documented fallback, not a silent fault.
+- **Time is KTime ticks** (46,186,158,000 per second) or seconds in an ASCII export; the
+  range decides, so a file with times above a million is treated as ticks.
+- **A stack with no curves is skipped** with `fbx-animation-empty`; a target outside the
+  SMD skeleton is skipped with `fbx-animation-target`. Multiple layers are merged in order
+  and reported.
+
 ## What is reported, not exported
 
 | Present in the file | Result |
 |---|---|
-| `AnimationStack` | Counted and named; this path writes the bind pose only. Use a DCC sequence export or the glTF path for animation SMDs |
 | `BlendShape` | Counted; SMD has no morph target. Use `gltf_to_dmx` for flexes |
 | Several mesh models | Merged into one SMD, with a note: `$bodygroup` is a QC decision |
 | No material connection | `material` (default `debug/debugempty`), which compiles as the pink checkerboard, not an error |

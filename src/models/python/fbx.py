@@ -40,6 +40,7 @@ used; this is an independent reader.
 
 from __future__ import annotations
 
+import bisect
 import math
 import re
 import struct
@@ -405,6 +406,8 @@ class Scene:
         self.skin_of_geometry: dict[int, int] = {}
         self.clusters_of_skin: dict[int, list[int]] = {}
         self.material_name: dict[int, str] = {}
+        # (child, parent, property) links; animation curve nodes target models through these.
+        self.op_links: list[tuple[int, int, str]] = []
 
         objects = root.find("Objects")
         if objects is None:
@@ -421,11 +424,18 @@ class Scene:
 
         connections = root.find("Connections")
         for connection in connections.all("C") if connections else []:
-            if len(connection.props) < 3 or str(connection.props[0]) != "OO":
+            if len(connection.props) < 3:
                 continue
+            kind = str(connection.props[0])
             child = self._as_id(connection.props[1])
             parent = self._as_id(connection.props[2])
             if child is None or parent is None:
+                continue
+            if kind == "OP":
+                if len(connection.props) >= 4:
+                    self.op_links.append((child, parent, str(connection.props[3])))
+                continue
+            if kind != "OO":
                 continue
             self.parent[child] = parent
             self.parents.setdefault(child, []).append(parent)
@@ -530,11 +540,26 @@ def _rot_xyz(degrees: Sequence[float], order: int = 0) -> Mat4:
     return mat4_mul(first, mat4_mul(second, third))
 
 
-def _local_transform(model: Node, diagnostics: list[dict[str, Any]]) -> Mat4:
+def _local_transform(
+    model: Node,
+    diagnostics: list[dict[str, Any]],
+    translation: Sequence[float] | None = None,
+    rotation: Sequence[float] | None = None,
+    scale: Sequence[float] | None = None,
+) -> Mat4:
     props = _properties70(model)
-    translation = _vec3(props.get("Lcl Translation", []), (0.0, 0.0, 0.0))
-    rotation = _vec3(props.get("Lcl Rotation", []), (0.0, 0.0, 0.0))
-    scale = _vec3(props.get("Lcl Scaling", []), (1.0, 1.0, 1.0))
+    translation = _vec3(
+        list(translation) if translation is not None else props.get("Lcl Translation", []),
+        (0.0, 0.0, 0.0),
+    )
+    rotation = _vec3(
+        list(rotation) if rotation is not None else props.get("Lcl Rotation", []),
+        (0.0, 0.0, 0.0),
+    )
+    scale = _vec3(
+        list(scale) if scale is not None else props.get("Lcl Scaling", []),
+        (1.0, 1.0, 1.0),
+    )
     rotation_offset = _vec3(props.get("RotationOffset", []), (0.0, 0.0, 0.0))
     rotation_pivot = _vec3(props.get("RotationPivot", []), (0.0, 0.0, 0.0))
     pre_rotation = _vec3(props.get("PreRotation", []), (0.0, 0.0, 0.0))
@@ -889,6 +914,150 @@ def _bone_order(scene: Scene, roots: Sequence[int], wanted: set[int]) -> list[in
     return order
 
 
+# FBX time is stored as KTime ticks. 46186158000 ticks per second is the SDK's constant;
+# ASCII exporters may write seconds instead, so the range decides which unit this is.
+_FBX_TICKS_PER_SECOND = 46_186_158_000.0
+
+
+def _curve_keys(curve: Node) -> list[tuple[float, float]]:
+    times = _numbers(curve.find("KeyTime"))
+    values = _numbers(curve.find("KeyValueFloat"))
+    count = min(len(times), len(values))
+    if count == 0:
+        return []
+    scale = (
+        _FBX_TICKS_PER_SECOND
+        if max(abs(value) for value in times[:count]) > 1_000_000
+        else 1.0
+    )
+    return [(times[index] / scale, values[index]) for index in range(count)]
+
+
+def _sample_keys(keys: Sequence[tuple[float, float]], time: float, default: float) -> float:
+    """Piecewise-linear sample. FBX tangents are cubic; linear is the honest fallback."""
+    if not keys:
+        return default
+    if time <= keys[0][0]:
+        return keys[0][1]
+    if time >= keys[-1][0]:
+        return keys[-1][1]
+    starts = [key[0] for key in keys]
+    index = bisect.bisect_right(starts, time) - 1
+    index = max(0, min(index, len(keys) - 2))
+    t0, v0 = keys[index]
+    t1, v1 = keys[index + 1]
+    if t1 <= t0:
+        return v1
+    ratio = (time - t0) / (t1 - t0)
+    return v0 + (v1 - v0) * ratio
+
+
+def _scene_animations(scene: Scene) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Animation stacks as `{name, tracks, start, end}`, and the notes about what was lost.
+
+    A stack owns layers, a layer owns curve nodes, and a curve node is connected to the
+    Model it drives with an `OP` link whose property is `Lcl Translation`, `Lcl Rotation` or
+    `Lcl Scaling`. Its `X`/`Y`/`Z` curves are the other `OP` links, property `d|X`/`d|Y`/
+    `d|Z`. A file that only uses `OO` links loses the channel names; the curves are then
+    assigned in order X, Y, Z and the assumption is reported.
+    """
+    notes: list[dict[str, Any]] = []
+    stacks = [
+        identifier
+        for identifier, node in scene.objects.items()
+        if node.name == "AnimationStack"
+    ]
+    results: list[dict[str, Any]] = []
+    for stack in stacks:
+        layers = [
+            child
+            for child in scene.children.get(stack, [])
+            if scene.objects.get(child) is not None
+            and scene.objects[child].name == "AnimationLayer"
+        ]
+        if len(layers) > 1:
+            notes.append(
+                _diag(
+                    "warning",
+                    "fbx-animation-layers",
+                    f"{scene.names[stack]}: {len(layers)} layers; they are merged in order, "
+                    "later channels win",
+                )
+            )
+        tracks: dict[int, dict[str, dict[str, list[tuple[float, float]]]]] = {}
+        times: list[float] = []
+        for layer in layers:
+            for curve_node in scene.children.get(layer, []):
+                node = scene.objects.get(curve_node)
+                if node is None or node.name != "AnimationCurveNode":
+                    continue
+                target = next(
+                    (
+                        (parent, prop)
+                        for child, parent, prop in scene.op_links
+                        if child == curve_node
+                        and scene.objects.get(parent) is not None
+                        and scene.objects[parent].name == "Model"
+                    ),
+                    None,
+                )
+                if target is None:
+                    continue
+                model, prop = target
+                channels: dict[str, list[tuple[float, float]]] = {}
+                for child in scene.children.get(curve_node, []):
+                    curve = scene.objects.get(child)
+                    if curve is None or curve.name != "AnimationCurve":
+                        continue
+                    channel = next(
+                        (
+                            name[-1].upper()
+                            for source, parent, name in scene.op_links
+                            if source == child and parent == curve_node and name.startswith("d|")
+                        ),
+                        None,
+                    )
+                    if channel is None:
+                        channel = ["X", "Y", "Z"][len(channels)] if len(channels) < 3 else None
+                        if channel is not None:
+                            notes.append(
+                                _diag(
+                                    "warning",
+                                    "fbx-animation-channel",
+                                    f"{scene.names[stack]}: a curve has no d|X/d|Y/d|Z link; "
+                                    "its channel was assumed from the connection order",
+                                )
+                            )
+                    keys = _curve_keys(curve)
+                    if channel is None or not keys:
+                        continue
+                    channels[channel] = keys
+                    times.extend(key[0] for key in keys)
+                if channels:
+                    tracks.setdefault(model, {})[prop] = channels
+        if not times or not tracks:
+            notes.append(
+                _diag(
+                    "warning",
+                    "fbx-animation-empty",
+                    f"{scene.names[stack]}: no curve values; the stack is skipped",
+                )
+            )
+            continue
+        results.append(
+            {
+                "name": scene.names[stack],
+                "tracks": tracks,
+                "start": min(times),
+                "end": max(times),
+                "notes": [
+                    note for note in notes if scene.names[stack] in str(note.get("message", ""))
+                ],
+            }
+        )
+    return results, notes
+
+
 def _model_parent(scene: Scene, identifier: int) -> int | None:
     """The Model a cluster/geometry belongs to.
 
@@ -945,6 +1114,12 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     fallback_material = str(req.get("material") or "debug/debugempty")
     limit_vertices = int(req.get("limitVertices", 2_000_000))
     include = [str(name).lower() for name in (req.get("models") or [])]
+    export_animations = bool(req.get("exportAnimations", True))
+    animation_fps = float(req.get("animationFps", 30.0))
+    if not math.isfinite(animation_fps) or animation_fps <= 0.0:
+        raise FbxError("animationFps must be a positive finite number")
+    animation_filter = [str(name).lower() for name in (req.get("animations") or [])]
+    max_animation_frames = int(req.get("maxAnimationFrames", 20_000))
 
     unit = _unit_scale(root)
     if unit and abs(unit - 1.0) > 1e-6 and abs(unit - 2.54) > 1e-6:
@@ -1298,13 +1473,13 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
             )
         )
     animation_stacks = scene.of_class("AnimationStack")
-    if animation_stacks:
+    if animation_stacks and not export_animations:
         diagnostics.append(
             _diag(
                 "warning",
                 "fbx-animations",
-                f"{len(animation_stacks)} animation stack(s) were not exported; this path writes "
-                "the bind pose only",
+                f"{len(animation_stacks)} animation stack(s) were not exported because "
+                "exportAnimations is false; the bind pose is written",
             )
         )
     blend_shapes = [
@@ -1342,6 +1517,157 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     )
     diagnostics.extend(written.get("diagnostics", []))
 
+    # ---------------------------------------------------------------------
+    # Animation: one SMD per stack, with the same node table as the bind pose.
+    # ---------------------------------------------------------------------
+    animation_results: list[dict[str, Any]] = []
+    if export_animations and animation_stacks:
+        animations, animation_notes = _scene_animations(scene)
+        diagnostics.extend(animation_notes)
+        # A bind pose taken from a cluster is not always the node rest pose. The frames are
+        # written relative to the bind parent, not the rest parent, or the model jumps at
+        # frame zero; the same conversion the bind frames use is applied here.
+        bind_scene = {
+            identifier: mat4_mul(scene_matrix, bind_world[identifier])
+            for identifier in bone_order
+        }
+        used_names: set[str] = set()
+        for index, animation in enumerate(animations):
+            raw_name = str(animation.get("name") or f"animation{index}")
+            if animation_filter and raw_name.lower() not in animation_filter:
+                continue
+            tracks = animation["tracks"]
+            unknown = [model for model in tracks if model not in bone_of_model]
+            if unknown:
+                diagnostics.append(
+                    _diag(
+                        "warning",
+                        "fbx-animation-target",
+                        f"{raw_name}: {len(unknown)} animated model(s) are not in the SMD "
+                        "skeleton and their tracks were skipped",
+                    )
+                )
+                tracks = {
+                    model: channels
+                    for model, channels in tracks.items()
+                    if model in bone_of_model
+                }
+            if not tracks:
+                continue
+            start = float(animation["start"])
+            end = float(animation["end"])
+            if end <= start:
+                diagnostics.append(
+                    _diag(
+                        "warning",
+                        "fbx-animation-range",
+                        f"{raw_name}: the curve range is {start:g}..{end:g}; skipped",
+                    )
+                )
+                continue
+            frame_count = max(1, int(round((end - start) * animation_fps)) + 1)
+            if frame_count > max_animation_frames:
+                diagnostics.append(
+                    _diag(
+                        "warning",
+                        "fbx-animation-long",
+                        f"{raw_name}: {frame_count} frames at {animation_fps:g} fps exceeds "
+                        f"maxAnimationFrames ({max_animation_frames}); skipped",
+                    )
+                )
+                continue
+            rest = {identifier: _properties70(scene.objects[identifier]) for identifier in bone_order}
+            animation_frames: list[dict[str, Any]] = []
+            for frame_index in range(frame_count):
+                time = min(start + frame_index / animation_fps, end)
+                overrides: dict[int, dict[str, tuple[float, float, float]]] = {}
+                for model, props in tracks.items():
+                    base = rest.get(model, {})
+                    values: dict[str, tuple[float, float, float]] = {}
+                    for prop, axis in props.items():
+                        default = (
+                            (0.0, 0.0, 0.0)
+                            if prop != "Lcl Scaling"
+                            else (1.0, 1.0, 1.0)
+                        )
+                        rest_value = _vec3(base.get(prop, []), default)
+                        values[prop] = (
+                            _sample_keys(axis.get("X", []), time, rest_value[0]),
+                            _sample_keys(axis.get("Y", []), time, rest_value[1]),
+                            _sample_keys(axis.get("Z", []), time, rest_value[2]),
+                        )
+                    overrides[model] = values
+                worlds: dict[int, Mat4] = {}
+                for bone_index, identifier in enumerate(bone_order):
+                    values = overrides.get(identifier, {})
+                    local = _local_transform(
+                        scene.objects[identifier],
+                        diagnostics,
+                        values.get("Lcl Translation"),
+                        values.get("Lcl Rotation"),
+                        values.get("Lcl Scaling"),
+                    )
+                    parent_index = bone_parent[bone_index]
+                    worlds[identifier] = (
+                        local
+                        if parent_index is None
+                        else mat4_mul(worlds[bone_order[parent_index]], local)
+                    )
+                bones: list[dict[str, Any]] = []
+                for bone_index, identifier in enumerate(bone_order):
+                    current = mat4_mul(scene_matrix, worlds[identifier])
+                    parent_index = bone_parent[bone_index]
+                    if parent_index is None:
+                        transform = current
+                    else:
+                        inverse = mat4_inverse(bind_scene[bone_order[parent_index]])
+                        transform = (
+                            mat4_identity()
+                            if inverse is None
+                            else mat4_mul(inverse, current)
+                        )
+                    translation, quaternion, _bone_scale, _mirrored = mat4_decompose(transform)
+                    roll, pitch, yaw = euler_xyz(quaternion)
+                    bones.append(
+                        {
+                            "bone": bone_index,
+                            "position": [round(value, 6) for value in translation],
+                            "rotation": [round(roll, 6), round(pitch, 6), round(yaw, 6)],
+                        }
+                    )
+                animation_frames.append({"time": float(frame_index), "bones": bones})
+
+            safe = re.sub(r"[^A-Za-z0-9_]+", "_", raw_name).strip("_") or f"animation{index}"
+            if safe.lower() in used_names:
+                safe = f"{safe}_{index}"
+            used_names.add(safe.lower())
+            animation_path = output.with_name(f"{output.stem}_{safe}.smd")
+            if animation_path.exists() and not bool(req.get("overwrite", False)):
+                raise FbxError(
+                    f"{animation_path} already exists; pass overwrite:true to replace it"
+                )
+            animation_written = smd_write(
+                {
+                    "path": str(animation_path),
+                    "nodes": nodes,
+                    "frames": animation_frames,
+                    "triangles": [],
+                    "allowEmptyTriangles": True,
+                }
+            )
+            diagnostics.extend(animation_written.get("diagnostics", []))
+            animation_results.append(
+                {
+                    "name": safe,
+                    "path": str(animation_path),
+                    "frames": frame_count,
+                    "fps": round(animation_fps, 4),
+                    "duration": round(end - start, 4),
+                    "start": round(start, 4),
+                    "end": round(end, 4),
+                }
+            )
+
     points = [vertex["position"] for triangle in triangles for vertex in triangle["vertices"]]
     mins = [min(point[i] for point in points) for i in range(3)]
     maxs = [max(point[i] for point in points) for i in range(3)]
@@ -1365,7 +1691,9 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         "materials": sorted(materials_seen),
         "bounds": {"mins": [round(value, 6) for value in mins], "maxs": [round(value, 6) for value in maxs]},
         "unitScaleFactor": unit,
-        "animations": [scene.names[identifier] for identifier in animation_stacks],
+        "animations": animation_results,
+        "animationCount": len(animation_results),
+        "animationFps": animation_fps,
         "diagnostics": diagnostics,
         "warnings": [entry["message"] for entry in diagnostics if entry["severity"] == "warning"],
     }

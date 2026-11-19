@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.103-alpha - 2026-11-19
+
+- **FBX animations are exported.** `fbx_to_smd` follows `AnimationStack -> AnimationLayer
+  -> AnimationCurveNode -> AnimationCurve` (the channel links are `OP` with `d|X`/`d|Y`/
+  `d|Z`), samples the keys at `animationFps` and writes one SMD per stack beside the bind
+  SMD, with the same node table. The `qc` block adds a `$sequence` per animation.
+- **Frames are converted into the bind parent's space**, not the rest parent's:
+  `inverse(bind_world[parent]) * anim_world[bone]`. A cluster bind pose that differs from the
+  node rest pose therefore does not make the model jump at frame zero.
+- **Time is KTime ticks** (46,186,158,000 per second) or seconds for an ASCII export; the
+  range decides. Cubic tangents are sampled linearly, the same documented fallback the glTF
+  path uses for `CUBICSPLINE`. Multiple layers are merged and reported; a curve target
+  outside the skeleton is skipped with `fbx-animation-target`.
+- **Proven with the real compiler:** a two-key translation curve becomes a 31-frame SMD at
+  30 fps; bone 1 is at X=0 on frame 0 and X=10 on frame 30; `studiomdl` compiles the bind
+  SMD and the animation SMD through one QC and `read_model_info` reports `sequenceCount >= 2`.
+- **Blend shapes are still counted, not exported**: SMD has no morph target, and flexes
+  belong to the glTF/DMX path.
+- **Tool count stays 161.** Tests: 147 files, 1406 passed, 33 skipped.
+
 ## 0.0.102-alpha - 2026-11-19
 
 - **`run_map_test` now proves an ordered sequence, not one line.** `markers` is a list of

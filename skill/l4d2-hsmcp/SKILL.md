@@ -162,9 +162,9 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 - **A general VScript API wrapper.** Scripts are authored and attached, but what they call
   at runtime is the map's own logic.
 - **Model import from DCC formats.** glTF/GLB and FBX (binary 7.x and ASCII) are read
-  natively, and QC/SMD compilation with `studiomdl` is covered. FBX animations and blend
-  shapes are reported, not exported: this path writes the bind pose, and flexes need the
-  glTF/DMX route.
+  natively, and QC/SMD compilation with `studiomdl` is covered. FBX animations are exported
+  as one SMD per stack with `$sequence` lines; blend shapes are counted, not exported — SMD
+  has no morph target, so flexes need the glTF/DMX route.
 - **3D-skybox composition.** `write_sky_camera` places the camera and `write_skybox_copy`
   makes the scaled copy; choosing and sealing what to copy is design work.
 

@@ -27,7 +27,7 @@ import { config, ctx as sharedCtx, has } from "../support/env.js";
 const ctx = sharedCtx as unknown as ToolContext;
 
 /** The tool's schema defaults are applied by the MCP layer, not by a direct handler call. */
-function convert(path: string, out: string) {
+function convert(path: string, out: string, extra: Record<string, unknown> = {}) {
   return fbxToSmdTool.handler(
     {
       path,
@@ -39,15 +39,32 @@ function convert(path: string, out: string) {
       models: [],
       material: "debug/debugempty",
       limitVertices: 2_000_000,
+      exportAnimations: true,
+      animationFps: 30,
+      animations: [],
       overwrite: false,
       confirm: true,
-    },
-    ctx,
-  );
+      ...extra,
+      },
+      ctx,
+      );
 }
 
 const scratch = mkdtempSync(join(tmpdir(), "hammer-fbx-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+
+/** The X translation of one bone in one SMD `time` block. */
+function boneX(smd: string, frame: number, bone: number): number {
+  const lines = smd.split(/\r?\n/).map((line) => line.trim());
+  const start = lines.findIndex((line) => line.startsWith("time ") && Number(line.split(/\s+/)[1]) === frame);
+  if (start < 0) throw new Error(`no time ${frame} block`);
+  for (const line of lines.slice(start + 1)) {
+    if (line === "end" || line.startsWith("time ")) break;
+    const parts = line.split(/\s+/);
+    if (Number(parts[0]) === bone) return Number(parts[1]);
+  }
+  throw new Error(`no bone ${bone} at time ${frame}`);
+}
 
 const MAGIC = Buffer.from("Kaydara FBX Binary  \x00\x1a\x00", "binary");
 const VERSION = 7400;
@@ -100,6 +117,30 @@ const ints = (values: number[]): Value => {
   header.writeUInt32LE(deflateSync(payload).length, 9);
   return { bytes: Buffer.concat([header, deflateSync(payload)]) };
 };
+const longs = (values: number[]): Value => {
+  const payload = Buffer.alloc(values.length * 8);
+  values.forEach((value, index) => payload.writeBigInt64LE(BigInt(value), index * 8));
+  const header = Buffer.alloc(13);
+  header[0] = 0x6c; // l
+  header.writeUInt32LE(values.length, 1);
+  header.writeUInt32LE(1, 5);
+  header.writeUInt32LE(deflateSync(payload).length, 9);
+  return { bytes: Buffer.concat([header, deflateSync(payload)]) };
+};
+const floats = (values: number[]): Value => {
+  const payload = Buffer.alloc(values.length * 4);
+  values.forEach((value, index) => payload.writeFloatLE(value, index * 4));
+  const header = Buffer.alloc(13);
+  header[0] = 0x66; // f
+  header.writeUInt32LE(values.length, 1);
+  header.writeUInt32LE(1, 5);
+  header.writeUInt32LE(deflateSync(payload).length, 9);
+  return { bytes: Buffer.concat([header, deflateSync(payload)]) };
+};
+
+function opConnection(writer: Binary, child: number, parent: number, property: string): void {
+  writer.node("C", [str("OP"), i64(child), i64(parent), str(property)], []);
+}
 
 class Binary {
   private readonly parts: Buffer[] = [];
@@ -216,7 +257,7 @@ function staticTriangle(upAxis: number, translation: [number, number, number], u
 }
 
 /** Two LimbNode bones, a skinned triangle and a cluster binding bone 201. */
-function skinnedTriangle(): Buffer {
+function skinnedTriangle(animated = false): Buffer {
   const writer = new Binary();
   header(writer, 2, 1);
   const bind = [
@@ -247,6 +288,28 @@ function skinnedTriangle(): Buffer {
       ]),
     () => writer.node("Model", [i64(202), str("Model::Arm"), str("Mesh")], []),
     () => writer.node("Material", [i64(300), str("Material::skinmat"), str("")], []),
+    ...(animated
+      ? [
+          () =>
+            writer.node("AnimationStack", [i64(500), str("AnimStack::Take 001"), str("")], []),
+          () =>
+            writer.node("AnimationLayer", [i64(501), str("AnimLayer::BaseLayer"), str("")], []),
+          () =>
+            writer.node("AnimationCurveNode", [i64(502), str("AnimCurveNode::T"), str("")], [
+              () =>
+                writer.node("Properties70", [], [
+                  property("d|X", "Number", "", f64(0)),
+                  property("d|Y", "Number", "", f64(0)),
+                  property("d|Z", "Number", "", f64(0)),
+                ]),
+            ]),
+          () =>
+            writer.node("AnimationCurve", [i64(503), str("AnimCurve::"), str("")], [
+              () => writer.node("KeyTime", [longs([0, 46_186_158_000])], []),
+              () => writer.node("KeyValueFloat", [floats([0, 10])], []),
+            ]),
+        ]
+      : []),
     () =>
       writer.node("Deformer", [i64(400), str("Deformer::Skin"), str("Skin")], [
         () => writer.node("Indexes", [ints([0, 1, 2])], []),
@@ -266,7 +329,16 @@ function skinnedTriangle(): Buffer {
     () => connection(writer, 401, 400),
     // A real cluster has two connections: to the skin and to the bone it belongs to.
     () => connection(writer, 401, 201),
-  ]);
+    ...(animated
+      ? [
+          () => connection(writer, 501, 500),
+          () => connection(writer, 502, 501),
+          () => opConnection(writer, 502, 201, "Lcl Translation"),
+          () => connection(writer, 503, 502),
+          () => opConnection(writer, 503, 502, "d|X"),
+        ]
+      : []),
+    ]);
   return writer.finish();
 }
 
@@ -392,6 +464,47 @@ describe.skipIf(!has.sidecar)("FBX", () => {
     expect(smd.match(/ 1 1 1\.000000/g)?.length).toBe(3);
   });
 
+  it("resamples an AnimationStack into one SMD with the bind node table", async () => {
+    const path = join(scratch, "anim.fbx");
+    writeFileSync(path, skinnedTriangle(true));
+    const out = join(scratch, "anim.smd");
+    const qc = join(scratch, "anim.qc");
+    const result = (await convert(path, out, {
+      exportAnimations: true,
+      animationFps: 30,
+      animations: [],
+      qc: {
+        path: qc,
+        modelname: "test/anim.mdl",
+        cdmaterials: ["models/test"],
+        surfaceprop: "metal",
+        staticprop: false,
+        sequence: "idle",
+        fps: 30,
+        animationSequences: true,
+        animationArgs: ["loop"],
+        overwrite: false,
+      },
+    })) as {
+      animations: Array<{ name: string; path: string; frames: number; fps: number }>;
+      animationCount: number;
+    };
+    expect(result.animationCount).toBe(1);
+    expect(result.animations[0]!.name).toBe("Take_001");
+    expect(result.animations[0]!.frames).toBe(31);
+    expect(result.animations[0]!.fps).toBe(30);
+
+    const animation = readFileSync(result.animations[0]!.path, "utf8");
+    // The curve drives the child bone's Lcl Translation from 0 to 10 over one second.
+    expect(boneX(animation, 0, 1)).toBeCloseTo(0, 5);
+    expect(boneX(animation, 30, 1)).toBeCloseTo(10, 5);
+
+    const qcText = readFileSync(qc, "utf8");
+    expect(qcText).toContain('$sequence "Take_001"');
+    expect(qcText).toContain("anim_Take_001.smd");
+    expect(qcText).toContain("loop");
+  });
+
   it("reads and converts an ASCII file", async () => {
     const path = join(scratch, "ascii.fbx");
     writeFileSync(path, ASCII);
@@ -427,14 +540,14 @@ describe.skipIf(!has.sidecar)("FBX", () => {
     const out = join(scratch, "reports.smd");
     const result = (await convert(path, out)) as {
       unitScaleFactor: number;
-      animations: string[];
+      animations: Array<{ name: string; path: string }>;
       diagnostics: Array<{ rule: string }>;
     };
     expect(result.unitScaleFactor).toBe(100);
-    expect(result.animations).toEqual(["Take"]);
+    expect(result.animations).toEqual([]);
     const rules = result.diagnostics.map((d) => d.rule);
     expect(rules).toContain("fbx-units");
-    expect(rules).toContain("fbx-animations");
+    expect(rules).toContain("fbx-animation-empty");
     expect(rules).toContain("fbx-blend-shapes");
   });
 
@@ -445,7 +558,7 @@ describe.skipIf(!has.sidecar)("FBX", () => {
       const dir = join(scratch, "compile");
       const path = join(dir, "compile.fbx");
       mkdirSync(dir, { recursive: true });
-      writeFileSync(path, staticTriangle(2, [0, 0, 0]));
+      writeFileSync(path, skinnedTriangle(true));
       const qc = join(dir, "compile.qc");
       const unique = `hsmcp_fbx_test_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6)}`;
       let compiledModel: string | null = null;
@@ -461,15 +574,20 @@ describe.skipIf(!has.sidecar)("FBX", () => {
             models: [],
             material: "debug/debugempty",
             limitVertices: 2_000_000,
+            exportAnimations: true,
+            animationFps: 30,
+            animations: [],
             qc: {
               path: qc,
               // No `models/`: studiomdl adds the game's models/ directory itself.
               modelname: `${unique}/probe.mdl`,
               cdmaterials: [`models/${unique}`],
               surfaceprop: "metal",
-              staticprop: true,
+              staticprop: false,
               sequence: "idle",
               fps: 30,
+              animationSequences: true,
+              animationArgs: [],
               overwrite: false,
             },
             overwrite: false,
@@ -500,11 +618,12 @@ describe.skipIf(!has.sidecar)("FBX", () => {
         const info = (await readModelInfoTool.handler(
           { model: `models/${unique}/probe.mdl` },
           ctx,
-        )) as { found: boolean; size: number[] | null; boneCount: number };
+        )) as { found: boolean; size: number[] | null; boneCount: number; sequenceCount: number };
         expect(info.found).toBe(true);
         expect(info.size![0]).toBeGreaterThanOrEqual(64);
         expect(info.size![1]).toBeGreaterThanOrEqual(64);
-        expect(info.boneCount).toBeGreaterThanOrEqual(1);
+        expect(info.boneCount).toBeGreaterThanOrEqual(2);
+        expect(info.sequenceCount).toBeGreaterThanOrEqual(2);
       } finally {
         const folder = compiledModel
           ? dirname(compiledModel)

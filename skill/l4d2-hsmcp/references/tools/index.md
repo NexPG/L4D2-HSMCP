@@ -153,7 +153,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `gltf_to_smd` | convert glTF/GLB geometry, skeleton, animations and a box or convex-hull collision model to SMD; optionally write the QC |
 | `gltf_to_dmx` | convert glTF/GLB shape keys to a DMX model source with Source flexes; writes the QC optionally
 | `read_fbx` | inspect a binary 7.x or ASCII FBX: axes, units, models, geometries, materials, bones, skins, animations |
-| `fbx_to_smd` | convert FBX geometry, skeleton and skin weights to SMD, with the bind pose from the clusters; optionally write the QC |
+| `fbx_to_smd` | convert FBX geometry, skeleton, skin weights and animation stacks to SMD, with the bind pose from the clusters; optionally write the QC with one `$sequence` per animation |
 | `brush_to_model` | convert VMF brush solids to SMD + QC, with VMF UVs and a brush or box collision model |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |

@@ -122,6 +122,14 @@ const QC_BLOCK = z.object({
     .optional()
     .describe("If set, add `$sequence \"<name>\"` over the same SMD (one frame at `fps`)."),
   fps: z.number().positive().default(30).describe("Sequence fps, when `sequence` is set."),
+  animationSequences: z
+    .boolean()
+    .default(true)
+    .describe("Add a `$sequence` for every exported animation SMD."),
+  animationArgs: z
+    .array(z.string())
+    .default([])
+    .describe("Extra arguments appended to every animation sequence, e.g. `loop`."),
   overwrite: z.boolean().default(false),
 });
 
@@ -134,9 +142,10 @@ export const fbxToSmdTool = defineTool({
     "Source units are inches, so a 180 cm character needs `scale: 0.3937` unless the DCC " +
     "already wrote Source-sized numbers. The bind pose comes from the skin clusters' " +
     "`TransformLink`; a file without clusters uses the node hierarchy and says so. UVs are " +
-    "flipped because SMD inverts V. Animations and blend shapes are counted, not exported: " +
-    "this writes the bind pose, and flexes belong to the DMX path. The optional `qc` block " +
-    "writes a QC naming the SMD in the same call.",
+    "flipped because SMD inverts V. Every AnimationStack is resampled at `animationFps` " +
+    "into its own SMD with the bind SMD's node table; cubic tangents are sampled linearly " +
+    "and that is reported. Blend shapes are counted, not exported: SMD has no morph target. " +
+    "The optional `qc` block writes a QC naming the SMD and a `$sequence` per animation.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .fbx, absolute or relative to the repo root."),
@@ -172,6 +181,22 @@ export const fbxToSmdTool = defineTool({
       .positive()
       .default(2_000_000)
       .describe("Refuse a conversion that would write more vertices than this."),
+    exportAnimations: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Write one SMD per AnimationStack beside the bind SMD (`<name>_<animation>.smd`). " +
+          "Each frame carries every bone; the bind SMD's node table is reused.",
+      ),
+    animationFps: z
+      .number()
+      .positive()
+      .default(30)
+      .describe("Resample rate. SMD frame times are indices; fps turns them into seconds."),
+    animations: z
+      .array(z.string())
+      .default([])
+      .describe("Only these animation names (case-insensitive). Empty means every stack."),
     qc: QC_BLOCK.optional().describe("Also write a QC that names the SMD."),
     overwrite: z.boolean().default(false),
     confirm: CONFIRM,
@@ -195,7 +220,19 @@ export const fbxToSmdTool = defineTool({
     materials: z.array(z.string()),
     bounds: z.object({ mins: z.array(z.number()), maxs: z.array(z.number()) }),
     unitScaleFactor: z.number().nullable(),
-    animations: z.array(z.string()),
+    animations: z.array(
+      z.object({
+        name: z.string(),
+        path: z.string(),
+        frames: z.number(),
+        fps: z.number(),
+        duration: z.number(),
+        start: z.number(),
+        end: z.number(),
+      }),
+    ),
+    animationCount: z.number(),
+    animationFps: z.number(),
     diagnostics: z.array(DIAGNOSTIC),
     warnings: z.array(z.string()),
     qc: z
@@ -204,6 +241,7 @@ export const fbxToSmdTool = defineTool({
         written: z.boolean(),
         modelname: z.string(),
         body: z.string(),
+        animations: z.array(z.object({ name: z.string(), path: z.string() })),
         diagnostics: z.array(
           z.object({
             severity: z.enum(["error", "warning"]),
@@ -244,6 +282,9 @@ export const fbxToSmdTool = defineTool({
         models: args.models,
         material: args.material,
         limitVertices: args.limitVertices,
+        exportAnimations: args.exportAnimations,
+        animationFps: args.animationFps,
+        animations: args.animations,
         overwrite: args.overwrite,
       },
       ctx.config,
@@ -258,10 +299,27 @@ export const fbxToSmdTool = defineTool({
       }
       const qcDir = dirname(qcPath);
       const smdName = qcRelative(qcDir, output);
-      const sequences =
+      const animationFiles = (result.animations ?? []) as Array<{
+        name: string;
+        path: string;
+        fps: number;
+      }>;
+      const sequences: Array<{ name: string; smd: string; fps?: number; args?: string[] }> =
         args.qc.sequence === undefined
           ? []
           : [{ name: args.qc.sequence, smd: smdName, fps: args.qc.fps }];
+      const animationArgs = args.qc.animationArgs ?? [];
+      if (args.qc.animationSequences !== false) {
+        for (const animation of animationFiles) {
+          if (sequences.some((sequence) => sequence.name === animation.name)) continue;
+          sequences.push({
+            name: animation.name,
+            smd: qcRelative(qcDir, animation.path),
+            fps: animation.fps,
+            ...(animationArgs.length > 0 ? { args: animationArgs } : {}),
+          });
+        }
+      }
       const text = buildQc({
         modelname: args.qc.modelname,
         body: [{ name: "Body", smd: smdName }],
@@ -279,6 +337,10 @@ export const fbxToSmdTool = defineTool({
         written: written.written,
         modelname: qcModelName(parsed) ?? args.qc.modelname,
         body: smdName,
+        animations: animationFiles.map((animation) => ({
+          name: animation.name,
+          path: qcRelative(qcDir, animation.path),
+        })),
         diagnostics: parsed.diagnostics,
       };
     }
