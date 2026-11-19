@@ -15,7 +15,8 @@ when it has all four:
 | Finale: waves, tanks, specials | spawn areas, Director state machine | custom finale stages verified on `hsmcp_test_m2`: PANIC → DELAY → TANK → DELAY → DELAY, escape and credits (137 s). TANK stage transitioned; bots killing a tank is not proven |
 | Director flow, goal area | nav CHECKPOINT/FINALE, info_director | **verified** (dump + bots) |
 | Nav generation and attributes | run_nav_generate, func_nav_attribute_region, read_nav_dump | **verified** |
-| Assets: textures, models, sizes, skyboxes, particles | read_game_content (details), read_model_info | **verified** |
+| Assets: textures, models, sizes, skyboxes, particles | `read_game_content`, `read_model_info`, `read_particle`, `extract_vtf`, `read_soundscape` | **verified** against the stock game: model hulls/sequences/events, VTF decode, particle systems and soundscape waves |
+| Sound: WAV, soundscripts, soundscapes | `read_wav`/`convert_wav`, `read_soundscript`/`write_soundscript`, `read_soundscape`/`write_soundscape` | tools + stock-game verification (13k soundscript names, 577 soundscapes); in-game audio mix not judged |
 | Compile, pack, deploy | run_compile, run_vpk_pack, check_campaign | **verified** |
 | Automated play test | run_map_test, `-condebug` | **verified** |
 | VScript: ship and attach | write_vscript, logic_script, printl banner | **verified (load only)** |
@@ -33,13 +34,15 @@ when it has all four:
 | Cubemaps | `env_cubemap` in the VMF, `run_build_cubemaps` | verified HDR and LDR on the test campaign (29 s / 24 s); `both` verified |
 | Displacements | displacement tools | tools exist, not L4D2-tested |
 | Instances | `write_instance`, `read_vmf` with `collapseInstances` | tool (fixture-tested); in-game visual pending |
-| Model/material authoring | QC/SMD source, `studiomdl`, `run_vtf_convert` | tool: sample model compiled; HLMV launches and its UI captures, the 3D canvas needs an interactive desktop |
+| Model/material authoring | QC/SMD source, `studiomdl`, `write_smd`/`write_qc`/`dmx_to_smd`, `write_vtf`/`convert_vtf` | tools: a sample model compiles; SMD/DMX sources can be written and converted, VTF/DXT is native; HLMV launches and its UI captures, the 3D canvas needs an interactive desktop. A full MDL compiler is still absent (`studiomdl` compiles) |
 | Non-campaign add-ons | other addon types | not yet |
 | Director defaults and `DirectorOptions` | cvar/read from the game, stage types from stock scripts | **documented and read from the install**; `director_*` defaults and `z_*` health/speed are in `docs/reference/l4d2-complete-reference.md` |
 | Special infected stats | `z_*` cvars | **documented** (common 50, boomer 50, hunter/smoker 250, spitter 100, jockey 325, charger 600, tank 4000, witch 1000); behaviours still need a live test |
 | Weapon/item stats | `scripts/weapon_*.txt`, `info_map_parameters` | **documented**; placement is tool-checked, balance is a play-test judgement |
 | Hammer++ editor-only previews | lighting/fog/sky/particles/ropes | **view-only**; `render_vmf_*` and `run_map_test` are the agent's eyes |
-| Propper++ brush → model | model authoring | **gap** (no SMD/QC writer) |
+| Propper++ brush → model | model authoring | **partial:** `write_smd`/`write_qc` and `dmx_to_smd` can produce the source, but brush→mesh conversion itself is still a gap |
+| Static props in a compiled BSP | `read_static_props`, `edit_static_props` | **structural:** add/set/remove and re-read verified; changing model/origin leaves compiled visleafs stale until vbsp |
+| Nav connections | `edit_nav_connections` | **structural:** add/remove/set, mirroring and re-read verified; the bot path over the new link is a play-test check |
 
 ## Order of work
 
