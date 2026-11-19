@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **146 tools**.
+Last checked against the tool list on 19/11/2026: **147 tools**.
 
 ## The file itself
 
@@ -229,6 +229,7 @@ map and looking, or by not happening at all.
 | `run_tga2skybox` | nothing offline: six TGAs into LDR and HDR cubemap `.vtf` files |
 | `run_vtf_convert` | nothing: Hammer browses textures, it does not make them |
 | `convert_vtf` | nothing: reformat or resize a shipped .vtf, without VTFCmd |
+| `write_cubemap_vtf` | nothing offline: six named faces into one cubemap .vtf |
 | `extract_vtf` | the texture browser shows the image, but not at a size or as a file the agent can keep |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `write_soundscript` | nothing: sound scripts are edited by hand |

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-146 tools. This page groups them by the job you are doing; each tool's own description is the
+147 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -178,6 +178,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |
 | `write_vtf` | PNG to `.vtf` natively, with mipmaps and a pixel round-trip; no VTFCmd needed |
 | `convert_vtf` | reformat/resize an existing `.vtf` (DXT included) and verify the result |
+| `write_cubemap_vtf` | six named PNG faces into a cubemap VTF, every face verified |
 | `extract_vtf` | decode any `.vtf` to a PNG the agent can look at |
 | `read_soundscript` | named sounds, channels and resolved wave paths from one file or the game |
 | `write_soundscript` | add one sound block, appending to the file |

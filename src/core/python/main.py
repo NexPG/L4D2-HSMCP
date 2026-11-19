@@ -390,6 +390,14 @@ def _vtf_extract(req: dict[str, Any]) -> dict[str, Any]:
     return vtf_extract(req)
 
 
+@verb("vtf_cubemap_write")
+def _vtf_cubemap_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a six-face cubemap VTF and verifies every face."""
+    from vtfgen import vtf_cubemap_write
+
+    return vtf_cubemap_write(req)
+
+
 @verb("wav_read")
 def _wav_read(req: dict[str, Any]) -> dict[str, Any]:
     """Format, duration, loop and whether a WAV is ready for L4D2."""

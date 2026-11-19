@@ -6,7 +6,7 @@
  * compression claim is the one that matters: a BGRA texture must actually become smaller,
  * and the decoded image must be within the stated error.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
@@ -119,6 +119,59 @@ describe.skipIf(!installed)("convert_vtf / extract_vtf", () => {
     expect(converted.mipCount).toBe(5);
     expect(converted.verified).toBe(true);
     expect(converted.meanError).toBe(0);
+  });
+
+  it("builds a six-face cubemap and verifies every face", async () => {
+    const dir = join(scratch, "cube-build");
+    const colors: Record<string, [number, number, number]> = {
+      right: [255, 0, 0],
+      left: [0, 255, 0],
+      back: [0, 0, 255],
+      front: [255, 255, 0],
+      up: [255, 0, 255],
+      down: [0, 255, 255],
+    };
+    const faces: Record<string, string> = {};
+    for (const [name, [r, g, b]] of Object.entries(colors)) {
+      const rgba = Buffer.alloc(8 * 8 * 4);
+      for (let i = 0; i < 8 * 8; i += 1) {
+        rgba[i * 4] = r;
+        rgba[i * 4 + 1] = g;
+        rgba[i * 4 + 2] = b;
+        rgba[i * 4 + 3] = 255;
+      }
+      const path = join(dir, `${name}.png`);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(path, png(8, 8, rgba));
+      faces[name] = path;
+    }
+    const out = join(dir, "sky.vtf");
+    const result = await callSidecar<{
+      written: boolean;
+      width: number;
+      height: number;
+      cubemap: boolean;
+      faces: { name: string; verified: boolean }[];
+      verified: boolean;
+    }>("vtf_cubemap_write", { out, faces, format: "BGRA8888" }, config);
+
+    expect(result.written).toBe(true);
+    expect(result.cubemap).toBe(true);
+    expect(result.width).toBe(8);
+    expect(result.faces.map((f) => f.name).sort()).toEqual(
+      ["back", "down", "front", "left", "right", "up"],
+    );
+    expect(result.verified).toBe(true);
+
+    const extract = join(scratch, "cube-face.png");
+    const face = await callSidecar<{ face: string; width: number; pngBytes: number }>(
+      "vtf_extract",
+      { path: out, out: extract, face: "right", maxSize: 32 },
+      config,
+    );
+    expect(face.face).toBe("right");
+    expect(face.width).toBe(8);
+    expect(readFileSync(extract).length).toBe(face.pngBytes);
   });
 
   it("extracts a cubemap face instead of refusing the file", async () => {

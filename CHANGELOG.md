@@ -19,6 +19,7 @@ with a line here.
     `convert_vtf` rebuilds an existing texture in another format or size, verified by
     measured error. `extract_vtf` turns any `.vtf` into a PNG — including a texture no VMT
     names, and a chosen face of a cubemap — which the material preview could not do.
+    `write_cubemap_vtf` assembles six named PNG faces into one cubemap and verifies each.
   - **Deep model data.** `read_model_info` now returns per-sequence activities, flags,
     events (type, cycle, options) and bounds; hitbox geometry on the bone each box
     follows; the model name inside each body part; per-skin material tables; `$cdmaterials`,
@@ -44,7 +45,7 @@ with a line here.
 - **The licence record is unchanged and still honest.** No new upstream tree was copied;
   these are implementations in TypeScript and Python. sourcepp and EpicMorg remain credited
   for the translations that predate this pass.
-- **Tool count: 146.** Parity, the skill catalogue and the test layout are updated in the
+- **Tool count: 147.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
 ## 0.0.92-alpha — 2026-11-19

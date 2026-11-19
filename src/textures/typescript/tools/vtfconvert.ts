@@ -131,4 +131,84 @@ export const extractVtfTool = defineTool({
   },
 });
 
-export const vtfConvertTools = [convertVtfTool, extractVtfTool];
+export const writeCubemapVtfTool = defineTool({
+  name: "write_cubemap_vtf",
+  description:
+    "Builds a six-face cubemap .vtf from six PNGs, with the VTF CubeSide order stated " +
+    "explicitly (right, left, back, front, up, down). This is the native path for an " +
+    "env_cubemap or a custom skybox when run_tga2skybox is not installed: each face is " +
+    "decoded, resized to one power-of-two square, encoded in the chosen format (DXT " +
+    "included) and written; every face is then read back and compared. A 7.4 sphere face " +
+    "copies the front unless `sphere` is given. Faces must be PNG because that is what this " +
+    "server decodes without VTFCmd.",
+  realm: "local",
+  guarded: true,
+  inputSchema: {
+    output: z.string().describe("Destination .vtf. The suffix is added if missing."),
+    faces: z.object({
+      right: z.string(),
+      left: z.string(),
+      back: z.string(),
+      front: z.string(),
+      up: z.string(),
+      down: z.string(),
+      sphere: z.string().optional(),
+    }),
+    format: FORMAT.default("BGRA8888"),
+    version: z.string().default("7.4"),
+    resize: z.enum(["nearest", "bilinear"]).default("bilinear"),
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    bytes: z.number(),
+    version: z.string(),
+    width: z.number(),
+    height: z.number(),
+    format: z.string(),
+    mipCount: z.number(),
+    cubemap: z.boolean(),
+    faces: z.array(
+      z.object({
+        name: z.string(),
+        meanError: z.number(),
+        maxError: z.number(),
+        verified: z.boolean(),
+      }),
+    ),
+    verified: z.boolean(),
+    note: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const requested = resolveInput(args.output, ctx.config);
+    const output = requested.toLowerCase().endsWith(".vtf") ? requested : `${requested}.vtf`;
+    assertWritable(output, ctx.config);
+    const faces: Record<string, string> = {};
+    for (const [name, value] of Object.entries(args.faces)) {
+      if (value === undefined) continue;
+      const path = resolveInput(value, ctx.config);
+      if (!existsSync(path)) throw new Error(`${path} does not exist`);
+      faces[name] = path;
+    }
+    const result = (await callSidecar(
+      "vtf_cubemap_write",
+      {
+        out: output,
+        faces,
+        format: args.format,
+        version: args.version,
+        resize: args.resize,
+      },
+      ctx.config,
+      300_000,
+    )) as Record<string, unknown>;
+    ctx.audit.record({
+      kind: "file_write",
+      data: { path: output, created: true, bytes: statSync(output).size },
+    });
+    return result;
+  },
+});
+
+export const vtfConvertTools = [convertVtfTool, extractVtfTool, writeCubemapVtfTool];

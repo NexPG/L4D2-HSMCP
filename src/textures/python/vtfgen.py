@@ -353,6 +353,127 @@ def vtf_convert(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def vtf_cubemap_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a six-face cubemap VTF, then reads every face back."""
+    from array import array
+
+    from srctools.vtf import CubeSide, ImageFormats, VTF, VTFFlags
+
+    faces_req = req.get("faces")
+    if not isinstance(faces_req, dict):
+        raise ValueError("faces must be an object with right/left/back/front/up/down")
+    names = ("right", "left", "back", "front", "up", "down")
+    missing = [name for name in names if not faces_req.get(name)]
+    if missing:
+        raise ValueError("missing cubemap faces: " + ", ".join(missing))
+
+    resize = str(req.get("resize", "nearest")).lower()
+    if resize not in {"nearest", "bilinear"}:
+        raise ValueError("resize must be nearest or bilinear")
+
+    decoded: dict[str, tuple[int, int, bytes]] = {}
+    for name in names:
+        path = Path(str(faces_req[name])).resolve()
+        if not path.is_file():
+            raise ValueError(f"{path} does not exist")
+        try:
+            png = decode_png(path.read_bytes())
+        except ImageError as exc:
+            raise ValueError(f"{path.name}: {exc}") from exc
+        decoded[name] = (int(png["width"]), int(png["height"]), png["rgba"])
+
+    side = max(max(w, h) for w, h, _ in decoded.values())
+    side = _next_pot(side)
+    images = {
+        name: _resize(rgba, width, height, side, side, resize)
+        for name, (width, height, rgba) in decoded.items()
+    }
+
+    fmt_name = str(req.get("format", "BGRA8888")).upper()
+    if fmt_name not in _WRITABLE:
+        raise ValueError(
+            f"format {fmt_name!r} is not writable. Choose one of " + ", ".join(sorted(_WRITABLE))
+        )
+    if fmt_name in {"DXT1", "DXT5"}:
+        dxt.install()
+    version_text = str(req.get("version", "7.4"))
+    major, minor = (int(part) for part in version_text.split(".", 1))
+    if major != 7 or not 2 <= minor <= 5:
+        raise ValueError("VTF version must be 7.2 through 7.5")
+
+    vtf = VTF(
+        side,
+        side,
+        version=(major, minor),
+        flags=VTFFlags.ENVMAP,
+        fmt=ImageFormats[fmt_name],
+        thumb_fmt=ImageFormats.NONE,
+    )
+    for name in names:
+        vtf.get(side=CubeSide[name.upper()])._data = array("B", images[name])  # noqa: SLF001
+
+    sphere_path = faces_req.get("sphere")
+    if sphere_path:
+        try:
+            png = decode_png(Path(str(sphere_path)).read_bytes())
+        except (OSError, ImageError) as exc:
+            raise ValueError(f"{sphere_path}: {exc}") from exc
+        sphere = _resize(
+            png["rgba"], int(png["width"]), int(png["height"]), side, side, resize
+        )
+    else:
+        # Version 7.4 has a seventh "sphere" face. Leaving it blank is legal but makes
+        # spheremapped reflections black; the front face is a better default than nothing.
+        sphere = images["front"]
+    vtf.get(side=CubeSide.SPHERE)._data = array("B", sphere)  # noqa: SLF001
+    vtf.mipmap_count = max(key[2] for key in vtf._frames) + 1
+
+    path = Path(str(req.get("out", "") or req.get("output", ""))).resolve()
+    if path.suffix.lower() != ".vtf":
+        path = path.with_suffix(".vtf")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("wb") as fh:
+        vtf.save(fh, version=(major, minor))
+
+    from srctools.vtf import VTF as Reader
+
+    with path.open("rb") as fh:
+        back = Reader.read(fh)
+        read_frames: dict[str, bytes] = {}
+        for name in names:
+            frame = back.get(side=CubeSide[name.upper()])
+            frame.load()
+            read_frames[name] = bytes(frame._data)  # noqa: SLF001
+
+    lossy = fmt_name in {"DXT1", "DXT5"}
+    checks = {name: _compare_rgba(images[name], read_frames[name], lossy) for name in names}
+    return {
+        "path": str(path),
+        "written": True,
+        "bytes": path.stat().st_size,
+        "version": f"{back.version[0]}.{back.version[1]}",
+        "width": back.width,
+        "height": back.height,
+        "format": back.format.name,
+        "mipCount": back.mipmap_count,
+        "cubemap": True,
+        "faces": [
+            {
+                "name": name,
+                "meanError": checks[name][1],
+                "maxError": checks[name][2],
+                "verified": checks[name][0],
+            }
+            for name in names
+        ],
+        "verified": all(check[0] for check in checks.values()),
+        "note": (
+            "Faces are written by name in the VTF CubeSide order (right, left, back, front, "
+            "up, down); the engine's order is the enum's, not a guess. The 7.4 sphere face "
+            "copies the front unless one is supplied. DXT is verified by measured error."
+        ),
+    }
+
 def vtf_extract(req: dict[str, Any]) -> dict[str, Any]:
     source = Path(str(req.get("path", ""))).resolve()
     if not source.is_file():
