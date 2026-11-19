@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.114-alpha - 2026-11-21
+
+- **`read_qc` reads `$definebone` as a graph.** A parent no `$definebone` declares, a bone
+  declared twice and a parent cycle are reported with the bone that caused them; the compiler
+  only complains late and vaguely about these. `$sequence` now also checks that an `activity`
+  weight is numeric and that `loop`/`snap` are used as flags, not with a value.
+- **The test campaign has a scavenge goal.** `game_scavenge_progress_display`
+  (`progress_display`), the gascan `model`, `spawnflags`, `disableshadows`, `glowstate`, the
+  `OnItemPickedUp` output and per-can targetnames went into the VMF and the map was recompiled.
+  It did not make the cans usable: after `ForceScavengeStart` the map still has only the
+  `weapon_scavenge_item_spawn` entities, `ent_teleport` moves one but its `Use`/`Touch` inputs
+  do not count a pickup, and a synthetic mouse click does not reach the game (its UI uses raw
+  input) -- keyboard navigation does, but the campaign flyout is pointer-only.
+- **Campaign-menu start is blocked on input, not on the game.** The main menu is reachable and
+  keyboard-navigable (`PLAY CAMPAIGN` -> screens open with Enter), but flyouts such
+  as `Quick Match / Single Player` need a real pointer. Keyboard-only automation cannot pick a
+  chapter yet.
+- **Tool count stays 164.** Tests: 151 files, 1437 passed, 33 skipped.
+
 ## 0.0.113-alpha - 2026-11-21
 
 - **`run_map_test` can run commands minutes into a match.** `schedule` takes

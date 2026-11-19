@@ -309,6 +309,40 @@ $Loop
     expect(parsed.diagnostics.map((d) => d.rule)).not.toContain("qc-no-body");
   });
 
+  it("checks the sequence activity weight and flags", () => {
+    const parsed = parseQc(
+      [
+        '$modelname "props/a.mdl"',
+        '$body "a.smd"',
+        '$sequence "idle" "a.smd" { activity ACT_IDLE nope }',
+        '$sequence "run" "a.smd" {\n\tloop 1\n\tsnap x\n}',
+      ].join("\n"),
+    );
+    const rules = parsed.diagnostics.map((d) => d.rule);
+    expect(rules).toContain("qc-sequence-activity-weight");
+    expect(parsed.diagnostics.find((d) => d.rule === "qc-sequence-activity-weight")?.severity).toBe(
+      "error",
+    );
+    expect(rules.filter((rule) => rule === "qc-sequence-flag").length).toBe(2);
+  });
+
+  it("reads $definebone as a graph and reports a missing parent and a cycle", () => {
+    const parsed = parseQc(
+      [
+        '$modelname "props/a.mdl"',
+        '$body "a.smd"',
+        '$definebone "root" "" 0 0 0 0 0 0',
+        '$definebone "arm" "shoulder" 0 0 0 0 0 0',
+        '$definebone "a" "b" 0 0 0 0 0 0',
+        '$definebone "b" "a" 0 0 0 0 0 0',
+      ].join("\n"),
+    );
+    const rules = parsed.diagnostics.map((d) => d.rule);
+    expect(rules).toContain("qc-definebone-parent");
+    expect(rules).toContain("qc-definebone-cycle");
+    expect(parsed.diagnostics.find((d) => d.rule === "qc-definebone-cycle")?.severity).toBe("error");
+  });
+
   it("reports unknown commands through read_qc as well", async () => {
     const path = join(scratch, "unknown.qc");
     writeFileSync(path, '$modelname "a.mdl"\n$body "b" "b.smd"\n$nonsense 1\n');

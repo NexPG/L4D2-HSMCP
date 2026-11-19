@@ -493,6 +493,40 @@ function checkSequenceBlock(
         ),
       );
     }
+    if (command === "activity") {
+      if (inner.args.length < 1) {
+        diagnostics.push(
+          grammarDiagnostic(
+            "warning",
+            "qc-sequence-activity",
+            `$sequence "${statement.args[0] ?? ""}" block: activity has no name`,
+            file,
+            inner.line,
+          ),
+        );
+      } else if (inner.args.length > 1 && !isNumber(inner.args[1])) {
+        diagnostics.push(
+          grammarDiagnostic(
+            "error",
+            "qc-sequence-activity-weight",
+            `$sequence "${statement.args[0] ?? ""}" block: activity ${inner.args[0]} needs a numeric weight, got ${inner.args[1]}`,
+            file,
+            inner.line,
+          ),
+        );
+      }
+    }
+    if ((command === "loop" || command === "snap") && inner.args.length > 0) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "warning",
+          "qc-sequence-flag",
+          `$sequence "${statement.args[0] ?? ""}" block: ${inner.command} is a flag and takes no value`,
+          file,
+          inner.line,
+        ),
+      );
+    }
     if (command === "node" && inner.args.length < 1) {
       diagnostics.push(
         grammarDiagnostic(
@@ -737,7 +771,77 @@ function validateGrammar(statements: readonly QcStatement[], file: string): QcDi
     }
   };
   walk(statements, null);
+  checkSkeleton(statements, file, diagnostics);
   return diagnostics;
+}
+
+/**
+ * `$definebone` is a graph, and the compiler only complains late and vaguely. A parent that
+ * is not declared and a cycle are the two mistakes that turn into an unhelpful studiomdl
+ * failure, so they are reported here with the bone that caused them.
+ */
+function checkSkeleton(
+  statements: readonly QcStatement[],
+  file: string,
+  diagnostics: QcDiagnostic[],
+): void {
+  const bones = walkQc(statements).filter(
+    (statement) => statement.command.toLowerCase() === "$definebone" && statement.args.length >= 2,
+  );
+  if (bones.length === 0) return;
+  const parentOf = new Map<string, string>();
+  for (const bone of bones) {
+    const name = bone.args[0]!;
+    const parent = bone.args[1]!;
+    if (parentOf.has(name)) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "warning",
+          "qc-definebone-duplicate",
+          `$definebone ${name} is declared more than once; the later one wins`,
+          file,
+          bone.line,
+        ),
+      );
+    }
+    parentOf.set(name, parent);
+  }
+  for (const bone of bones) {
+    const name = bone.args[0]!;
+    const parent = bone.args[1]!;
+    if (parent !== "" && !parentOf.has(parent)) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "warning",
+          "qc-definebone-parent",
+          `$definebone ${name} names parent ${parent}, which no $definebone in this file declares`,
+          file,
+          bone.line,
+        ),
+      );
+    }
+  }
+  for (const bone of bones) {
+    const start = bone.args[0]!;
+    const seen = new Set<string>([start]);
+    let current = parentOf.get(start) ?? "";
+    while (current !== "") {
+      if (seen.has(current)) {
+        diagnostics.push(
+          grammarDiagnostic(
+            "error",
+            "qc-definebone-cycle",
+            `$definebone ${start} climbs into a parent cycle through ${current}`,
+            file,
+            bone.line,
+          ),
+        );
+        break;
+      }
+      seen.add(current);
+      current = parentOf.get(current) ?? "";
+    }
+  }
 }
 
 /** Collects every statement, including those inside blocks. */

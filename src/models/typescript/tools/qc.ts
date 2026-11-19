@@ -54,8 +54,10 @@ export const readQcTool = defineTool({
     "tokens only, first definition wins, `\\\\` continues a macro body). Include cycles and " +
     "missing .qci files are reported rather than followed, and the depth limit is " +
     "scriplib's 16. The command catalogue checks the structure of the common QC commands: " +
-    "argument counts, numeric bounds, $bodygroup/studio, $sequence block numbers and " +
-    "events, and reports unknown commands as warnings instead of guessing. Use it before " +
+    "argument counts, numeric bounds, $bodygroup/studio, $sequence block numbers, " +
+    "activity weights and flags, the $definebone parent graph (a missing parent, a " +
+    "duplicate, a cycle), and reports unknown commands as warnings instead of guessing. " +
+    "Use it before " +
     "run_studiomdl: studiomdl's own errors are terser and arrive after a compile.",
   realm: "map",
   inputSchema: {
