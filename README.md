@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.100--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.104--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -15,6 +15,10 @@ actually works.
 > have a compatible licence and keep its copyright/permission notice. All borrowed code,
 > licences and obligations live in [`third_party/`](third_party/README.md) — read
 > [`third_party/NOTICES.md`](third_party/NOTICES.md) before importing anything.
+
+<p align="center">
+  <img src="docs/media/mascot-HSMCP.jpg" alt="1980s Japanese anime VHS-style mascot for L4D2-HSMCP" width="70%">
+</p>
 
 ## What it is
 
