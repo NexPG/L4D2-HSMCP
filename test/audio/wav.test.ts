@@ -22,6 +22,7 @@ interface WavSpec {
   bits: 8 | 16;
   frames: number;
   tag?: number;
+  loop?: [number, number];
 }
 
 function wav(spec: WavSpec): Buffer {
@@ -39,9 +40,19 @@ function wav(spec: WavSpec): Buffer {
       }
     }
   }
+  let smpl = Buffer.alloc(0);
+  if (spec.loop) {
+    smpl = Buffer.alloc(8 + 60);
+    smpl.write("smpl", 0, "latin1");
+    smpl.writeUInt32LE(60, 4);
+    smpl.writeUInt32LE(1, 8 + 28); // one sample loop
+    smpl.writeUInt32LE(spec.loop[0], 8 + 44); // start
+    smpl.writeUInt32LE(spec.loop[1], 8 + 48); // end
+  }
+
   const header = Buffer.alloc(44);
   header.write("RIFF", 0, "latin1");
-  header.writeUInt32LE(36 + dataBytes, 4);
+  header.writeUInt32LE(36 + dataBytes + smpl.length, 4);
   header.write("WAVE", 8, "latin1");
   header.write("fmt ", 12, "latin1");
   header.writeUInt32LE(16, 16);
@@ -53,7 +64,7 @@ function wav(spec: WavSpec): Buffer {
   header.writeUInt16LE(bits, 34);
   header.write("data", 36, "latin1");
   header.writeUInt32LE(dataBytes, 40);
-  return Buffer.concat([header, data]);
+  return Buffer.concat([header, data, smpl]);
 }
 
 interface ReadResult {
@@ -148,6 +159,44 @@ describe.skipIf(!installed)("read_wav / convert_wav", () => {
     await expect(
       callSidecar("wav_convert", { path, output: join(scratch, "adpcm_out.wav") }, config),
     ).rejects.toThrow(/compressed/);
+  });
+
+  it("scales a smpl loop with the sample rate and can drop it", async () => {
+    const path = join(scratch, "looped.wav");
+    writeFileSync(
+      path,
+      wav({ channels: 1, rate: 44100, bits: 16, frames: 4410, loop: [1000, 2000] }),
+    );
+    const source = await callSidecar<ReadResult & { loop: { start: number; end: number } | null }>(
+      "wav_read",
+      { path },
+      config,
+    );
+    expect(source.loop).toEqual({ start: 1000, end: 2000 });
+
+    const out = join(scratch, "looped_22.wav");
+    const converted = await callSidecar<{
+      loop: { start: number; end: number } | null;
+      frames: number;
+      verified: boolean;
+    }>("wav_convert", { path, output: out, sampleRate: 22050, channels: 1 }, config);
+    expect(converted.verified).toBe(true);
+    expect(converted.frames).toBe(2205);
+    expect(converted.loop).toEqual({ start: 500, end: 1000 });
+
+    const back = await callSidecar<{ loop: { start: number; end: number } | null }>(
+      "wav_read",
+      { path: out },
+      config,
+    );
+    expect(back.loop).toEqual({ start: 500, end: 1000 });
+
+    const dropped = await callSidecar<{ loop: { start: number; end: number } | null }>(
+      "wav_convert",
+      { path, output: join(scratch, "looped_drop.wav"), keepLoop: false },
+      config,
+    );
+    expect(dropped.loop).toBeNull();
   });
 
   it("reports a truncated chunk rather than reading past it", async () => {

@@ -55,9 +55,10 @@ defines is found before an addon shadows it. It reports the first definition tha
 the later ones ignored, and checks each `wave` under `sound/`. The writer appends rather
 than re-exporting, so comments and other entries survive.
 
-`read_wav` reports a `smpl` loop chunk when one exists, but `convert_wav` does not write one:
-looping in L4D2 is a property of the soundscript or of the entity playing it, not of the
-file. A converted file keeps its samples and loses a chunk the game does not read.
+`read_wav` reports a `smpl` loop chunk when one exists, and `convert_wav` scales it to the
+new rate and writes it back. L4D2 gameplay loops are usually a property of the soundscript
+or the entity playing the sound, but keeping the chunk means a converted file does not lose
+information. `keepLoop: false` drops it deliberately.
 
 ## Checking it
 

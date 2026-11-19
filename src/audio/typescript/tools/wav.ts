@@ -62,7 +62,8 @@ export const convertWavTool = defineTool({
     "Converts a WAV to the shape L4D2 expects: 16-bit PCM, mono or stereo, at a chosen " +
     "rate (22050 or 44100 are the safe ones). Decodes PCM 8/16/24/32 and IEEE float, " +
     "downmixes or duplicates channels, resamples linearly and writes a canonical file. " +
-    "Reports peak and RMS so a silent or clipped source is visible, and reads the result " +
+    "Reports peak and RMS so a silent or clipped source is visible, scales an existing " +
+    "`smpl` loop to the new rate (or drops it with keepLoop:false), and reads the result " +
     "back to confirm the frame count. A compressed source is refused with its format name. " +
     "This is a format conversion, not a mastering chain.",
   realm: "local",
@@ -79,6 +80,10 @@ export const convertWavTool = defineTool({
       .describe("Target rate. L4D2 sounds are usually 22050; music is often 44100."),
     channels: z.number().int().min(1).max(2).default(1).describe("1 for mono, 2 for stereo."),
     bitDepth: z.literal(16).default(16).describe("Only 16 is accepted: it is what the game decodes."),
+    keepLoop: z
+      .boolean()
+      .default(true)
+      .describe("Scale and keep an existing smpl loop. false drops it."),
     overwrite: z.boolean().default(false),
     confirm: CONFIRM,
   },

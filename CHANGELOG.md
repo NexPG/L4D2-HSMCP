@@ -32,7 +32,9 @@ with a line here.
     `scripts/game_sounds_manifest.txt`, follows `#base`/`#include`, reports first-definition
     duplicates, strips sound characters and says whether each wave exists (13k names in the
     stock game). `write_soundscript` appends one block without rewriting the file, and
-    refuses a name already defined.
+    refuses a name already defined. `convert_wav` now scales an existing `smpl` loop to the
+    new sample rate and writes it back (`keepLoop: false` drops it), so conversion is not
+    lossy for looped ambience.
   - **QC variables and macros.** `read_qc` expands `$definevariable` and `$definemacro` at
     token level: bare tokens only, first definition wins (as studiomdl does), `\\` continues
     a macro body, and definitions in an included `.qci` are visible to the file that included

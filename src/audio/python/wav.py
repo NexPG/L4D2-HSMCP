@@ -147,6 +147,24 @@ def _loop(chunks: dict[bytes, list[bytes]]) -> dict[str, int] | None:
     return {"start": start, "end": end}
 
 
+def _smpl_chunk(rate: int, start: int, end: int) -> bytes:
+    """A one-loop `smpl` chunk: sample period in ns, MIDI note 60, one forward loop."""
+    body = struct.pack(
+        "<9I",
+        0,  # manufacturer
+        0,  # product
+        max(1, round(1_000_000_000 / max(1, rate))),
+        60,  # MIDI unity note
+        0,  # pitch fraction
+        0,  # SMPTE format
+        0,  # SMPTE offset
+        1,  # one loop
+        0,  # sampler data
+    )
+    body += struct.pack("<6I", 0, 0, start, end, 0, 0)
+    return b"smpl" + struct.pack("<I", len(body)) + body
+
+
 def read_wav(req: dict[str, Any]) -> dict[str, Any]:
     path = Path(str(req.get("path", ""))).resolve()
     if not path.is_file():
@@ -230,14 +248,33 @@ def convert_wav(req: dict[str, Any]) -> dict[str, Any]:
     rms = (energy / (frames * target_channels)) ** 0.5
 
     block_align = target_channels * 2
-    header = b"RIFF" + struct.pack("<I", 36 + len(pcm)) + b"WAVE"
+    source_loop = _loop(chunks)
+    loop: dict[str, int] | None = None
+    if req.get("keepLoop", True) is not False and frames > 0:
+        requested = req.get("loop")
+        if isinstance(requested, dict):
+            loop = {
+                "start": max(0, min(frames - 1, int(requested.get("start", 0)))),
+                "end": max(0, min(frames - 1, int(requested.get("end", frames - 1)))),
+            }
+        elif source_loop:
+            ratio = target_rate / max(1, int(fmt["sampleRate"]))
+            loop = {
+                "start": max(0, min(frames - 1, round(source_loop["start"] * ratio))),
+                "end": max(0, min(frames - 1, round(source_loop["end"] * ratio))),
+            }
+        if loop and loop["end"] <= loop["start"]:
+            loop = None
+    smpl = _smpl_chunk(target_rate, loop["start"], loop["end"]) if loop else b""
+
+    header = b"RIFF" + struct.pack("<I", 36 + len(pcm) + len(smpl)) + b"WAVE"
     header += b"fmt " + struct.pack(
         "<IHHIIHH", 16, _PCM, target_channels, target_rate, target_rate * block_align, block_align, 16
     )
     header += b"data" + struct.pack("<I", len(pcm))
 
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(header + bytes(pcm))
+    target.write_bytes(header + bytes(pcm) + smpl)
 
     # Read back the way a consumer would, and compare the shape rather than trusting the
     # writer: a WAV whose header disagrees with its data clicks or is silent.
@@ -257,10 +294,12 @@ def convert_wav(req: dict[str, Any]) -> dict[str, Any]:
         "duration": round(frames / target_rate, 4),
         "peak": round(peak, 4),
         "rms": round(rms, 4),
+        "loop": loop,
         "verified": bool(back.get("read")) and back.get("frames") == frames,
         "note": (
             "Resampling is linear and channel mixing is an average; that is enough to make "
             "a sound game-ready, not a mastering chain. A clipped peak of 1.0 means the "
-            "source was already at full scale."
+            "source was already at full scale. A `smpl` loop is scaled to the new rate and "
+            "kept unless keepLoop is false."
         ),
     }
