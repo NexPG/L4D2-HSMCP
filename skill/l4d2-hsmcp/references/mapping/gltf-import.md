@@ -11,8 +11,9 @@ you convert it.
 |---|---|
 | Inspect a `.gltf`/`.glb` | `read_gltf` |
 | Convert geometry, skeleton and animations | `gltf_to_smd` |
+| Convert shape keys to flexes | `gltf_to_dmx` |
 | Make a solid prop | `gltf_to_smd` with `collision: "box"` |
-| Write the QC in the same call | `gltf_to_smd` with the `qc` block |
+| Write the QC in the same call | `gltf_to_smd` / `gltf_to_dmx` with the `qc` block |
 | Compile | `run_studiomdl` on the QC |
 
 A minimal prop path from a Blender `.glb`:
@@ -105,10 +106,34 @@ $collisionmodel "crate_phys.smd"
 - The compiled hull is the mesh AABB unioned with the physics AABB plus its margin, so
   `read_model_info` bounds are slightly larger than the mesh alone.
 
+## Morph targets → flexes
+
+SMD has no per-vertex morph target, so `gltf_to_smd` reports shape keys and leaves them out.
+The DMX path does carry them:
+
+```
+gltf_to_dmx { path: "face.glb", output: "face.dmx",
+              qc: { path: "face.qc", modelname: "props_myaddon/face.mdl" } }
+run_studiomdl { qc: "face.qc" }
+```
+
+L4D2's `studiomdl` reads the DMX directly and registers `flexdesc`, `flexcontroller` and
+`flexrule` records. The QC needs **no `$flex` command**: the shape keys and the
+`DmeCombinationOperator` are the source. `read_model_info` reports the three counts, so a
+compiled model can be checked (`flexruleCount >= 1`).
+
+The non-obvious part is `DmeMesh.deltaStateWeights`: it needs one `(0, 0)` per control.
+Without those entries the compiler writes the flex payload but `flexruleCount` is 0, so
+nothing drives the flex. The exporter writes them; the probe that found the difference is in
+`test/models/gltfdmx.test.ts`.
+
+Only position deltas are exported. Normal deltas are legal in DMX but empty arrays work
+(the BlenderSourceTools fixture proves it). A delta component beyond ±8 is clamped by
+studiomdl and reported. Animations are not written into the DMX; use `gltf_to_smd` for one
+SMD per animation.
+
 ## What is not exported
 
-- **Morph targets.** SMD has no per-vertex morph target. `read_gltf` returns
-  `mesh.extras.targetNames` and `gltf_to_smd` lists the ignored names; each expression needs
 - **Compressed geometry.** `KHR_draco_mesh_compression` and `EXT_meshopt_compression` are
   required extensions the importer does not decode. It refuses with a message that says to
   export without compression; `read_gltf` still describes the rest of the file.
@@ -123,11 +148,13 @@ $collisionmodel "crate_phys.smd"
 - Node TRS or a 4x4 matrix, a hierarchy whose parent is not guaranteed to come first, skins
   with `inverseBindMatrices`, and multiple mesh instances.
 - Animations with translation, rotation and scale channels; collision as a box.
+- Shape keys as Source flexes through `gltf_to_dmx`.
 
-The fixtures in `test/models/gltf.test.ts` build all of these byte by byte, including the
-GLB container, a sparse accessor, an animation and a collision box. Static and animated
-models are compiled with the real `studiomdl.exe`; the static one is checked for a `.phy`
-and `hasPhysics`, the animated one for both sequences. The axis and bind-pose conventions
+The fixtures in `test/models/gltf.test.ts` and `gltfdmx.test.ts` build all of these byte by
+byte, including the GLB container, a sparse accessor, an animation, a collision box and a
+shape key. Static, animated and morph models are compiled with the real `studiomdl.exe`; the
+static one is checked for a `.phy` and `hasPhysics`, the animated one for both sequences, and
+the morph one for `flexdesc`/`flexcontroller`/`flexrule`. The axis and bind-pose conventions
 
 ## Pitfalls
 
@@ -139,6 +166,9 @@ and `hasPhysics`, the animated one for both sequences. The axis and bind-pose co
 - **Animations need the same bone table.** Use one `gltf_to_smd` call for the bind pose and
   all animations; do not convert the bind and the animation separately, or the bone numbers
   can differ.
+- **A morph model is DMX, not SMD.** Use `gltf_to_dmx` when the file has shape keys; the SMD
+  path reports and drops them. The two paths are both compiled by `studiomdl`, but a single
+  model cannot be half SMD and half DMX.
 - **A static prop collapses animation.** `$staticprop` makes studiomdl throw away all but
   one frame; do not mark an animated character or prop `$staticprop`.
 - **Node transforms ignored by default.** If two objects in the file sit at the same place

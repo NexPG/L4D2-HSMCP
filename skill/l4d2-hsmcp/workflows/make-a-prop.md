@@ -92,7 +92,8 @@ full conventions are in [Brush → model](../references/mapping/brush-to-model.m
   geometry, node transforms ignored, bind pose from `inverseBindMatrices`. Pass
   `axis: "y"` only for hand-written Y-up data, and `useNodeTransforms: true` for a
   multi-object scene. Each animation becomes its own SMD and sequence;
-  `collision: "box"` adds a `$collisionmodel` so the compiled prop is solid. Morph targets
-  are reported by name, not exported. See
+  `collision: "box"` adds a `$collisionmodel` so the compiled prop is solid. A file with
+  shape keys goes through `gltf_to_dmx` instead: L4D2's `studiomdl` turns the DMX shape keys
+  into flexes without `$flex` in the QC. See
   [glTF and GLB → SMD](../references/mapping/gltf-import.md).
 - FBX is still not read: `studiomdl` does not read it either. Export SMD/DMX, or install

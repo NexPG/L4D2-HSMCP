@@ -754,6 +754,13 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
     attachments: list[dict[str, Any]] = []
     body_parts: list[dict[str, Any]] = []
     hitbox_sets: list[dict[str, Any]] = []
+    flexdesc_count = 0
+    flexcontroller_count = 0
+    flexrule_count = 0
+    if len(raw) >= 280:
+        flexdesc_count, _flexdesc_index = struct.unpack_from("<ii", raw, 260)
+        flexcontroller_count, _flexcontroller_index = struct.unpack_from("<ii", raw, 268)
+        flexrule_count, _flexrule_index = struct.unpack_from("<ii", raw, 276)
     if len(raw) >= 248:
         bone_count, bone_index = struct.unpack_from("<ii", raw, 156)
         hitbox_count, hitbox_index = struct.unpack_from("<ii", raw, 172)
@@ -796,6 +803,9 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         "hasPhysics": _present(fsys, phy),
         "physicsPath": phy,
         "boneCount": len(bones),
+        "flexdescCount": flexdesc_count,
+        "flexcontrollerCount": flexcontroller_count,
+        "flexruleCount": flexrule_count,
         "attachments": attachments,
         "bodyParts": body_parts,
         "hitboxSets": hitbox_sets,

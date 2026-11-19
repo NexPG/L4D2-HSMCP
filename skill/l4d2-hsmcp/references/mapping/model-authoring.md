@@ -65,6 +65,10 @@ the absence instead of hiding it.
   `parts` and an optional `qc` block cover the rest. Each animation is sampled into its own
   SMD and sequence; `collision: "box"` writes a `$collisionmodel` so the compiled prop has a
   `.phy`. See [glTF and GLB → SMD](gltf-import.md) for the conventions and the limits.
+- `gltf_to_dmx` — shape keys become a DMX model source with Source flexes. The compiler
+  reads the `DmeVertexDeltaData` and `DmeCombinationOperator` without a `$flex` command, and
+  `read_model_info` reports `flexdescCount`/`flexcontrollerCount`/`flexruleCount`. Use it
+  when the glTF has morph targets; `gltf_to_smd` is the path for geometry and animations.
 - `brush_to_model` — a VMF brush becomes an SMD/QC without a DCC. The brush's own planes are
   the geometry, `uaxis`/`vaxis` become UVs (divided by `textureSize`), the origin can move to
   the centre/base, and the collision model defaults to the brush itself. This is the
@@ -90,6 +94,7 @@ the absence instead of hiding it.
 | Build a DMX from JSON | `write_dmx` |
 | Inspect a glTF/GLB | `read_gltf` |
 | Convert glTF/GLB geometry, skeleton and animations | `gltf_to_smd` |
+| Convert glTF/GLB shape keys to Source flexes | `gltf_to_dmx` |
 | Generate a `$collisionmodel` box for a solid prop | `gltf_to_smd` with `collision: "box"` |
 | Turn a VMF brush into a model | `brush_to_model` (Propper++ path) |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |

@@ -5,6 +5,28 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.98-alpha — 2026-11-19
+
+- **glTF shape keys now become Source flexes.** `gltf_to_dmx` writes a DMX model source with
+  one `DmeVertexDeltaData` per morph target and the `DmeCombinationInputControl` /
+  `DmeCombinationOperator` that pair them. L4D2's `studiomdl` reads the DMX directly and
+  registers `flexdesc`, `flexcontroller` and `flexrule` records; the QC needs **no `$flex`
+  command**. The bind skeleton comes from `inverseBindMatrices`, the mesh is one body with
+  face sets per material, and the optional QC block points `$body`/`$sequence` at the DMX.
+- **The rule trigger was found by A/B compiling.** `DmeMesh.deltaStateWeights` and
+  `deltaStateWeightsLagged` must carry one `(0, 0)` per control. With empty arrays the
+  compiler writes the flex payload but `flexruleCount` is 0, so nothing drives the flex;
+  with the weights it writes one rule per control. `controlValues` use the
+  BlenderSourceTools `(0, 0, 0.5)` triple. The test compiles the generated DMX with the real
+  `studiomdl.exe` and asserts all three header counts.
+- **The result is inspectable.** `read_model_info` now reports `flexdescCount`,
+  `flexcontrollerCount` and `flexruleCount`, so a compiled morph model can be checked
+  without parsing the MDL by hand.
+- **Scope, stated honestly.** Position deltas only; normal deltas are legal but empty arrays
+  compile. A delta beyond ±8 is clamped by studiomdl and reported. Animations remain the SMD
+  path (`gltf_to_smd`): a DMX animation log is a separate piece of work.
+- **Tool count: 157.** Tests: 143 files, 1374 passed, 33 skipped.
+
 ## 0.0.97-alpha — 2026-11-19
 
 - **`brush_to_model`: the Propper++ path without the plugin.** A VMF brush is already a

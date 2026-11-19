@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **156 tools**.
+Last checked against the tool list on 19/11/2026: **157 tools**.
 
 ## The file itself
 
@@ -252,6 +252,7 @@ map and looking, or by not happening at all.
 | `dmx_to_smd` | nothing: no editor converts a model datamodel to a compiler source |
 | `read_gltf` | nothing: the editor never opens a glTF/GLB scene |
 | `gltf_to_smd` | nothing: Hammer does not compile a model, and studiomdl cannot read glTF |
+| `gltf_to_dmx` | nothing: shape keys/flexes are not an editor concept |
 | `brush_to_model` | Propper++ turns a brush into a model; Hammer itself has no such command |
 | `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
 | `read_wav` | nothing: the editor never opens a sound |

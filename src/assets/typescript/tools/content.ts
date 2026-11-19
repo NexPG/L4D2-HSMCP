@@ -142,7 +142,8 @@ export const readModelInfoTool = defineTool({
     "Bounds, skins, sequences and materials of one .mdl -- what Hammer's model viewer " +
     "shows before you place a prop, plus what the viewer does not: per-sequence events and " +
     "activities, per-skin material tables, hitbox geometry, body-part model names, " +
-    "$cdmaterials, surfaceprop, mass, eye/illumination positions and $includemodel. The " +
+    "$cdmaterials, surfaceprop, mass, flex descriptor/controller/rule counts, eye/illumination " +
+    "positions and $includemodel. The " +
     "bounds are the reason this exists: a model's origin is wherever the artist put it, so " +
     "a prop placed at floor height sinks by however far its origin sits above its lowest " +
     "point, and nothing downstream reports that. A barrel measured here is 52 units tall " +
@@ -191,6 +192,12 @@ export const readModelInfoTool = defineTool({
     physicsPath: z.string().optional(),
     /** Bones in the skeleton. */
     boneCount: z.number().optional(),
+    /** Shape-key descriptors compiled into the model. */
+    flexdescCount: z.number().optional(),
+    /** Flex controllers; a morph target normally creates one. */
+    flexcontrollerCount: z.number().optional(),
+    /** Flex rules; without at least one, a flex is not driven. */
+    flexruleCount: z.number().optional(),
     /**
      * `$attachment`-equivalent points in the model's own space, with the bone each follows.
      * 92 bytes per record in L4D2 (the SDK's older struct is 60).

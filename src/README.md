@@ -49,7 +49,7 @@ directory beside its language directories.
 |---|---|
 | `hammer/` | the live editor channel, Hammer++ settings, autosaves, Run Map sequences, and `data/` (the build registry) |
 | `maps/` | VMF and BSP reading and writing, every lump including LZMA-compressed ones, geometry, entities, displacements, spatial queries, renders, compile, and the map-facing tools |
-| `models/` | QC, SMD, DMX and glTF/GLB model sources, VMF brush → model, studiomdl, HLMV, and deep model reporting (sequences, events, hitboxes, skins) |
+| `models/` | QC, SMD, DMX and glTF/GLB model sources (including shape keys → flexes), VMF brush → model, studiomdl, HLMV, and deep model reporting (sequences, events, hitboxes, skins, flex counts) |
 | `textures/` | VTF and VMT, PNG decoding, native VTF writing/conversion and image extraction |
 | `nav/` | the navigation mesh: reading, generation, editing, trouble reports |
 | `scripts/` | VScript |

@@ -21,6 +21,7 @@ import { depsTools } from "./maps/typescript/tools/deps.js";
 import { dmxTools } from "./formats/typescript/tools/dmx.js";
 import { dmxSmdTools } from "./models/typescript/tools/dmxsmd.js";
 import { gltfTools } from "./models/typescript/tools/gltf.js";
+import { gltfDmxTools } from "./models/typescript/tools/gltfdmx.js";
 import { brushTools } from "./models/typescript/tools/brush.js";
 import { displacementTools } from "./maps/typescript/tools/displacement.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
@@ -128,6 +129,7 @@ export const allTools: AnyToolDef[] = [
   ...smdTools,
   ...dmxSmdTools,
   ...gltfTools,
+  ...gltfDmxTools,
   ...brushTools,
   ...sequencesTools,
   ...previewTools,
