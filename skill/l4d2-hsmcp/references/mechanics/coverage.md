@@ -20,7 +20,7 @@ when it has all four:
 | Particles: `.pcf` read and write | `read_particle`, `write_particle` | **verified structurally:** a stock `fire_01l4d.pcf` (59 systems) round-trips through the writer and parses back with the same systems, children, materials and operator counts; a new system is built from JSON. In-game render not judged |
 | Collision models (`$collisionmodel`) | glTF `collision: "box"`/`"hull"`, `brush_to_model` brush collision | **verified with the real compiler:** box and convex hull both produce a `.phy` and `hasPhysics: true`; a flat hull falls back to the box with a warning; a brush collision is convex (or `$concave` for several solids) |
 | Compile, pack, deploy | run_compile, run_vpk_pack, check_campaign | **verified** |
-| Automated play test | run_map_test, `-condebug` | **verified** |
+| Automated play test | `run_map_test`, `-condebug` | **verified** for single-pattern waits. Ordered `markers` (timeline + missing steps) and `via: "steam"` are implemented and unit-tested; a run reached a spawned survivor with `sb_add`/`director_start`, then the client dropped with `No Steam logon` before the 90 s finale could finish. Long finales/rounds are blocked by the Steam account on this machine, not by the harness |
 | VScript: ship and attach | write_vscript, logic_script, printl banner | **verified (load only)** |
 | VScript: finale waves, Director hooks | ScriptedMode/DirectorScript API | not yet |
 | Common infected, hordes | spawn areas, population, nav | not yet |

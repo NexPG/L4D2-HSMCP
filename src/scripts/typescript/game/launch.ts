@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -6,6 +6,71 @@ import { dirname, join } from "node:path";
 /** The game executable sits next to `left4dead2/`, not inside it. */
 export function gameExecutable(gameDir: string): string {
   return join(dirname(gameDir), "left4dead2.exe");
+}
+
+/**
+ * The Steam client, which knows the install and the logged-on account.
+ *
+ * A direct `left4dead2.exe` launch works for short tests and then reaches `No Steam logon`
+ * after about a minute; a finale or a full round outlives that. Steam is found through the
+ * per-user registry first, then the two default install paths.
+ */
+export function steamExecutable(): string | null {
+  const candidates = [
+    process.env.STEAM_PATH,
+    "C:\\Program Files (x86)\\Steam\\steam.exe",
+    "C:\\Program Files\\Steam\\steam.exe",
+    "D:\\Steam\\steam.exe",
+  ].filter((path): path is string => Boolean(path));
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/** The pid of a running `left4dead2.exe`, or null. */
+export function findGamePid(): number | null {
+  try {
+    const out = execFileSync(
+      "tasklist",
+      ["/FI", "IMAGENAME eq left4dead2.exe", "/FO", "CSV", "/NH"],
+      { encoding: "utf8", windowsHide: true },
+    );
+    for (const line of out.split(/\r?\n/)) {
+      const parts = line.split('","').map((part) => part.replace(/^"|"$/g, ""));
+      const pid = Number(parts[1]);
+      if (Number.isInteger(pid) && pid > 0) return pid;
+    }
+  } catch {
+    // tasklist missing or refused; the caller reports that the game never appeared.
+  }
+  return null;
+}
+
+/** Waits for Steam to start the game and returns its pid, or null. */
+export async function waitForGamePid(
+  timeoutMs: number,
+  intervalMs = 500,
+): Promise<number | null> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const pid = findGamePid();
+    if (pid !== null) return pid;
+    await sleep(intervalMs);
+  }
+  return null;
+}
+
+/** Terminates the game by image name, including a process Steam started for us. */
+export function stopGameProcess(): void {
+  try {
+    execFileSync("taskkill", ["/IM", "left4dead2.exe", "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+  } catch {
+    // Not running is the desired state.
+  }
 }
 
 export interface LaunchHandle {
@@ -68,6 +133,98 @@ export async function waitForLog(
     await sleep(intervalMs);
   }
   return "timeout";
+}
+
+export interface LogMarker {
+  /** A name for the step, used in the timeline and in `missing`. */
+  name: string;
+  /** Regular expression, matched against new log lines only. */
+  pattern: string;
+  /** Seconds from the previous marker (or from launch). Defaults to the whole run. */
+  withinSeconds?: number;
+}
+
+export interface MarkerHit {
+  name: string;
+  pattern: string;
+  matched: boolean;
+  /** Seconds since launch, one decimal. */
+  atSeconds: number;
+  /** The log line the pattern matched, trimmed. */
+  line: string | null;
+}
+
+/**
+ * Polls the log for an ordered sequence of patterns.
+ *
+ * A single `waitFor` answers "did this happen"; a play test usually asks "did these happen,
+ * in this order" -- finale started, escape unlocked, credits. Each marker is searched from
+ * the end of the previous match, so a pattern that also appears earlier (a `Loading:` line
+ * per map) cannot satisfy a later step, and the cursor makes the order a fact rather than
+ * an assumption.
+ *
+ * `withinSeconds` is measured from the previous marker: a step that should follow in 20
+ * seconds fails in 20 seconds, not at the end of the whole run.
+ */
+export async function waitForMarkers(
+  path: string,
+  markers: readonly LogMarker[],
+  timeoutMs: number,
+  alive: () => boolean,
+  intervalMs = 500,
+): Promise<{ hits: MarkerHit[]; missing: string[]; reason: WaitReason }> {
+  const started = Date.now();
+  const deadline = started + timeoutMs;
+  const hits: MarkerHit[] = [];
+  let cursor = 0;
+
+  for (const [index, marker] of markers.entries()) {
+    const pattern = new RegExp(marker.pattern, "i");
+    const stepDeadline = Math.min(
+      deadline,
+      Date.now() + (marker.withinSeconds ?? Math.ceil(timeoutMs / 1000)) * 1000,
+    );
+    let matched = false;
+    let text = "";
+    while (Date.now() < stepDeadline) {
+      text = existsSync(path) ? readFileSync(path, "utf8") : "";
+      const fresh = text.slice(cursor);
+      const match = fresh.match(pattern);
+      if (match && match.index !== undefined) {
+        const from = fresh.lastIndexOf("\n", match.index) + 1;
+        const to = fresh.indexOf("\n", match.index + match[0].length);
+        const line = fresh
+          .slice(from, to === -1 ? undefined : to)
+          .trim();
+        hits.push({
+          name: marker.name,
+          pattern: marker.pattern,
+          matched: true,
+          atSeconds: Math.round((Date.now() - started) / 100) / 10,
+          line,
+        });
+        cursor += match.index + match[0].length;
+        matched = true;
+        break;
+      }
+      if (!alive()) {
+        return {
+          hits,
+          missing: markers.slice(index).map((entry) => entry.name),
+          reason: "exited",
+        };
+      }
+      await sleep(intervalMs);
+    }
+    if (!matched) {
+      return {
+        hits,
+        missing: markers.slice(index).map((entry) => entry.name),
+        reason: "timeout",
+      };
+    }
+  }
+  return { hits, missing: [], reason: "matched" };
 }
 
 /** Polls until a file appears, the process exits, or the timeout passes. */

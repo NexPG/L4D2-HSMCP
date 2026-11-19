@@ -560,6 +560,8 @@ export const runCampaignGate = defineTool({
             ...(result.shippingNav ? { nav: result.shippingNav } : {}),
             ...(scriptsDir ? { scriptsDir } : {}),
             waitFor: spec.waitFor ?? "Loading: [0-9]",
+            markers: [],
+            via: "direct",
             timeoutSeconds: args.testTimeoutSeconds,
             extraArgs: [],
             addonsToHide: [],

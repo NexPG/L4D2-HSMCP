@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.102-alpha - 2026-11-19
+
+- **`run_map_test` now proves an ordered sequence, not one line.** `markers` is a list of
+  `{name, pattern, withinSeconds}` assertions searched one after another from the end of the
+  previous match. The result carries a `timeline` (the line and time for each step) and
+  `missing` (the first step that did not happen and everything after it). A `Loading:` line
+  can no longer satisfy a later finale step.
+- **The commands trap is documented and worked around.** `cfg/listenserver.cfg` runs at
+  server start, before the map's entities exist, so `ent_fire finale ForceFinaleStart` there
+  does nothing. A probe installed with `scriptsDir` and started by `script_execute` uses
+  VScript `EntFire(..., delay)` to act after spawn; `point_servercommand` runs `sb_add` and
+  `director_start` the same way. The probe must be written without a BOM.
+- **`via: "steam"` launches through `steam.exe -applaunch 550` without `-insecure`**, waits
+  for the game process and captures it. That is the normal-client path; on this machine it
+  still drops at about two minutes with `STEAMAUTH failure code 8` / `No Steam logon`, so a
+  long finale remains blocked by the Steam account rather than by the launcher.
+- **Evidence from the live run:** with a probe adding survivor bots and starting the
+  Director, `Allowing spawning` appeared at 93 s with the survivor in the finale area; the
+  client dropped before the 90 s finale could finish. The marker harness reported exactly
+  that timeline and the missing finale steps.
+- **Tool count stays 161.** Tests: 147 files, 1405 passed, 33 skipped.
 ## 0.0.101-alpha - 2026-11-19
 
 - **FBX is read natively, both encodings.** `read_fbx` describes a binary 7.x or ASCII file

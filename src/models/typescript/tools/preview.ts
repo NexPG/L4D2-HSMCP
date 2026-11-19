@@ -496,6 +496,8 @@ export const previewModelTool = defineTool({
         bsp: compile.bsp,
         nav: generated.nav,
         waitFor: "Loading: [0-9]",
+        markers: [],
+        via: "direct",
         timeoutSeconds: Math.min(300, args.timeoutSeconds ?? 300),
         extraArgs: ["-console"],
         addonsToHide: [],

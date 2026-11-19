@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { z } from "zod";
 import {
   copyFileSync,
@@ -21,9 +21,14 @@ import {
   navGenerateConfig,
   readLog,
   sleep,
+  steamExecutable,
+  stopGameProcess,
   waitForFile,
+  waitForGamePid,
   waitForLog,
+  waitForMarkers,
 } from "../game/launch.js";
+import type { MarkerHit } from "../game/launch.js";
 import {
   findShadowingVpks,
   hideFiles,
@@ -405,7 +410,8 @@ export const runNavGenerate = defineTool({
 export const runMapTest = defineTool({
   name: "run_map_test",
   description:
-    "Launches an installed map and watches the engine's console log for a pattern, then " +
+    "Launches an installed map and watches the engine's console log for an ordered sequence of " +
+    "patterns (or one), then " +
     "closes the game. This is the automated half of a play test: 'did the next chapter " +
     "load', 'did the finale script run', 'did the map finish loading at all'. The map must " +
     "already be installed in `left4dead2/maps` or a mounted add-on VPK. Returns the match, " +
@@ -433,8 +439,48 @@ export const runMapTest = defineTool({
       ),
     waitFor: z
       .string()
-      .describe("Regular expression to find in the console log, e.g. a map name or a banner."),
+      .optional()
+      .describe(
+        "Regular expression to find in the console log, e.g. a map name or a banner. " +
+          "Required unless `markers` is given.",
+      ),
+    markers: z
+      .array(
+        z.object({
+          name: z.string().describe("Step name for the timeline and `missing`."),
+          pattern: z.string().describe("Regular expression, searched in new log lines only."),
+          withinSeconds: z
+            .number()
+            .int()
+            .min(1)
+            .max(600)
+            .optional()
+            .describe(
+              "Seconds from the previous marker (or from launch for the first). Defaults to " +
+                "the whole run. A step that should follow in 20 s fails in 20 s.",
+            ),
+        }),
+      )
+      .default([])
+      .describe(
+        "An ordered sequence of assertions, searched one after another from the end of the " +
+          "previous match. This is what turns 'did the map load' into 'did the finale start, " +
+          "then the escape unlock, then the credits'. A `Loading:` line cannot satisfy a " +
+          "later step because the cursor moves past each match.",
+      ),
     timeoutSeconds: z.number().int().min(10).max(600).default(120),
+    via: z
+      .enum(["direct", "steam"])
+      .default("direct")
+      .describe(
+        "'direct' starts left4dead2.exe: fast, and a direct launch outside Steam reaches " +
+          "'No Steam logon' after about a minute. 'steam' launches the same map through " +
+          "`steam.exe -applaunch 550` without `-insecure`, waits for its process and " +
+          "captures it. That is the normal-client path, but it only outlives the minute when " +
+          "Steam authenticates the session: on this machine it still drops with `STEAMAUTH " +
+          "failure code 8` / `No Steam logon`, so a long finale is blocked by the account, " +
+          "not by the launcher.",
+      ),
     extraArgs: z.array(z.string()).default([]).describe("Extra game command-line arguments."),
     addonsToHide: z
       .array(z.string())
@@ -456,7 +502,10 @@ export const runMapTest = defineTool({
       .array(z.string())
       .default([])
       .describe(
-        "Console commands to run after the map loads, written to `cfg/listenserver.cfg` with " +
+        "Console commands written to `cfg/listenserver.cfg`, which the engine executes at server " +
+        "start -- before the map's entities exist. `ent_fire` at that moment finds nothing; for " +
+        "a delayed action use a VScript probe (`script_execute`) with `EntFire(..., delay)`, or " +
+        "the map's own timer. The file is restored afterwards, and `sv_cheats 1` is prepended. " +
           "the previous file restored afterwards. This is how a test forces a finale " +
           "(`ent_fire finale ForceFinaleStart`) or fires a named entity without a player " +
           "walking there. `sv_cheats 1` is prepended.",
@@ -491,6 +540,7 @@ export const runMapTest = defineTool({
   },
   outputSchema: {
     map: z.string(),
+    via: z.enum(["direct", "steam"]),
     matched: z.boolean(),
     reason: z.enum(["matched", "exited", "timeout"]),
     elapsedSeconds: z.number(),
@@ -502,6 +552,18 @@ export const runMapTest = defineTool({
     bspInstalled: z.boolean(),
     scriptsInstalled: z.number(),
     commandsRun: z.array(z.string()),
+    /** One entry per marker reached, in order, with the line that matched and its time. */
+    timeline: z.array(
+      z.object({
+        name: z.string(),
+        pattern: z.string(),
+        matched: z.boolean(),
+        atSeconds: z.number(),
+        line: z.string().nullable(),
+      }),
+    ),
+    /** Steps that were not reached; empty when the run matched. */
+    missing: z.array(z.string()),
     logTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
@@ -509,6 +571,9 @@ export const runMapTest = defineTool({
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
+    if (!args.waitFor && (args.markers?.length ?? 0) === 0) {
+      throw new Error("pass waitFor or at least one marker; a test with no assertion is a launch");
+    }
     // A previous client still running is a launch that goes to the old process: the new
     // command line is ignored and the wait sees no new log. The nav generator already did
     // this; the map test did not, and a compile immediately before a test could hit it.
@@ -570,32 +635,85 @@ export const runMapTest = defineTool({
     }
 
     const started = Date.now();
-    const handle = launchGame(exe, [
+    const gameArgs = [
       "-novid",
       "-console",
       "-allowdebug",
-      "-insecure",
+      // `-insecure` is for a direct launch's cheats and loose content. Through Steam it is
+      // also what the client reports as `No Steam logon`, so the normal-client path keeps
+      // its authentication; a listen server still accepts `sv_cheats 1`.
+      ...(args.via === "direct" ? ["-insecure"] : []),
       "-condebug",
       "-stringtables",
       ...(args.extraArgs ?? []),
       "+map",
       args.map,
-    ]);
+    ];
+    let direct: ReturnType<typeof launchGame> | null = null;
+    let gamePid: number | null = null;
+    if (args.via === "steam") {
+      const steam = steamExecutable();
+      if (!steam) {
+        throw new Error(
+          "Steam was not found at the registry or the default install paths; pass " +
+            "via:'direct' for a short test, or set STEAM_PATH",
+        );
+      }
+      spawn(steam, ["-applaunch", "550", ...gameArgs], {
+        detached: true,
+        stdio: "ignore",
+        windowsHide: false,
+      });
+      const pid = await waitForGamePid(45_000);
+      if (pid === null) {
+        throw new Error(
+          "Steam did not start left4dead2.exe within 45 s; check that Steam is running and " +
+            "logged in, then retry",
+        );
+      }
+      gamePid = pid;
+    } else {
+      direct = launchGame(exe, gameArgs);
+      gamePid = direct.child.pid ?? null;
+    }
+    const runPid = gamePid;
+    if (runPid === null) throw new Error("the game process has no pid");
+    const alive = (): boolean => {
+      try {
+        process.kill(runPid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
     let reason: "matched" | "exited" | "timeout" = "timeout";
     let screenshotPath: string | null = null;
     let screenshotWidth: number | null = null;
     let screenshotHeight: number | null = null;
     let image: { data: string; mimeType: string } | null = null;
+    let timeline: MarkerHit[] = [];
+    let missing: string[] = [];
     try {
-      reason = await waitForLog(
-        consoleLog,
-        new RegExp(args.waitFor),
-        args.timeoutSeconds * 1000,
-        () => handle.child.exitCode === null,
-      );
+      if ((args.markers?.length ?? 0) > 0) {
+        const result = await waitForMarkers(
+          consoleLog,
+          args.markers,
+          args.timeoutSeconds * 1000,
+          alive,
+        );
+        reason = result.reason;
+        timeline = result.hits;
+        missing = result.missing;
+      } else {
+        reason = await waitForLog(
+          consoleLog,
+          new RegExp(args.waitFor!),
+          args.timeoutSeconds * 1000,
+          alive,
+        );
+      }
       if (args.screenshot && reason === "matched") {
-        const pid = handle.child.pid;
-        if (pid === undefined) throw new Error("the game process has no pid to capture");
+        const pid = runPid;
         await sleep(args.waitAfterMatchMs ?? 1200);
         const out = args.out
           ? resolveInput(args.out, ctx.config)
@@ -615,7 +733,7 @@ export const runMapTest = defineTool({
         };
       }
     } finally {
-      handle.stop();
+      if (direct) direct.stop(); else stopGameProcess();
       await sleep(1000);
       staged.restore();
       restoreFiles(hidden);
@@ -634,10 +752,11 @@ export const runMapTest = defineTool({
     const log = readLog(consoleLog);
     return {
       map: args.map,
+      via: args.via,
       matched: reason === "matched",
       reason,
       elapsedSeconds: Math.round((Date.now() - started) / 1000),
-      processId: handle.child.pid ?? null,
+      processId: runPid,
       screenshotPath,
       screenshotWidth,
       screenshotHeight,
@@ -645,6 +764,8 @@ export const runMapTest = defineTool({
       bspInstalled: staged.bspInstalled,
       scriptsInstalled: scriptBackups.length,
       commandsRun: commands,
+      timeline,
+      missing,
       logTail: log
         .split(/\r?\n/)
         .map((line) => line.trim())
