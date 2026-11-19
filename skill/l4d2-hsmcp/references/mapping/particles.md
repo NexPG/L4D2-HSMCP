@@ -58,6 +58,22 @@ What is **not** proven: in one in-game run the renamed copy registered (no unkno
 line) but did not visibly draw, while the stock system did. Until that is explained, treat a
 renamed effect as unverified and check it with `run_map_test`.
 
+## Children are `DmeParticleChild` wrappers
+
+The engine reads a system's `children` as an array of `DmeParticleChild` elements, each with a
+`name` and a `child` element reference. `srctools`' `Particle.export` writes the system elements
+themselves there instead. A file written that way **registers** — `info_particle_system` finds
+the name and no `unknown particle system` line appears — but **nothing is drawn**.
+
+`write_particle` now rebuilds every `children` array as wrappers. Verified in game: a stock
+`fire_01l4d.pcf` copied through `source`, shipped in an addon with a `particles_manifest.txt`
+line and with the stock file removed from that manifest, drew fire from five
+`info_particle_system` entities. Before the fix the same run was empty. The writer returns
+`childWrappers` so a test can assert every child was wrapped.
+
+A loose `.pcf` dropped into `left4dead2/particles/` is still not registered at all; ship it in
+an addon with the manifest line.
+
 ## Naming a system in the map
 
 `info_particle_system.effect_name` is the **bare system name**. Valve's own entities on

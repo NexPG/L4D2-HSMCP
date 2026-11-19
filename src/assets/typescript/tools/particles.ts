@@ -214,6 +214,7 @@ export const writeParticleTool = defineTool({
     verified: z.boolean(),
     warnings: z.array(z.string()),
     renames: z.record(z.string(), z.string()).optional(),
+    childWrappers: z.number().optional(),
     note: z.string(),
   },
   handler: async (args, ctx) => {

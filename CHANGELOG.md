@@ -5,6 +5,28 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.112-alpha - 2026-11-21
+
+- **A written `.pcf` renders now.** The bug was the child graph: the engine reads
+  `children` as `DmeParticleChild` wrappers carrying `name` and a `child` element reference,
+  while `Particle.export` wrote the system elements themselves. Such a file registers (no
+  `unknown particle system`) and draws nothing. `write_particle` rebuilds every `children`
+  array as wrappers and returns `childWrappers`. Proven in game: a stock `fire_01l4d.pcf`
+  copied through `source`, shipped in an addon whose manifest excludes the stock file, drew
+  fire from five `info_particle_system` entities -- the same run was empty before the fix.
+- **Renamed copies render too.** `renames` and the wrapper fix together produce a system that
+  draws; the earlier "registers but does not draw" report was this bug.
+- **Stock survival maps start with a direct call.** `EntFire("director", ...)` only works on a
+  map with an entity named `director` (the test map has one, stock maps do not);
+  `ForceSurvivalStart()` called from the script starts the round on `c1m4_atrium` at once
+  (`OnSurvivalRoundStarted: Survival started`). The `survival_*` wave convars are unknown
+  commands in this build, and `director_stop 1` before the start prevents the round, so a
+  4-minute bronze capture still needs a scheduled marker.
+- **Scavenge on a stock map:** the player joined team 3 (infected) and
+  `GetScavengeItemsRemaining()` returned 0, so a can pickup is still unproven; the test map's
+  16/16 accounting remains the evidence for the mode.
+- **Tool count stays 164.** Tests: 150 files, 1431 passed, 33 skipped.
+
 ## 0.0.111-alpha - 2026-11-20
 
 - **`write_particle` can rename systems.** `renames: { "fire_barrel_big": "my_barrel" }` with

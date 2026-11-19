@@ -210,6 +210,8 @@ describe.skipIf(!installed)("read_particle", () => {
       systemCount: number;
       verified: boolean;
       warnings: string[];
+      childWrappers: number;
+      systems: Array<{ name: string; children: string[] }>;
     }>(
       "particle_write",
       {
@@ -225,6 +227,11 @@ describe.skipIf(!installed)("read_particle", () => {
     expect(written.systemCount).toBeGreaterThan(20);
     expect(written.verified).toBe(true);
     expect(written.warnings).toEqual([]);
+    // The engine reads children as DmeParticleChild wrappers; a direct element reference
+    // registers the names but draws nothing.
+    expect(written.childWrappers).toBeGreaterThan(0);
+    const declaredChildren = written.systems.reduce((n, s) => n + s.children.length, 0);
+    expect(written.childWrappers).toBe(declaredChildren);
 
     const original = await callSidecar<ReadResult>(
       "particle_read",

@@ -445,6 +445,28 @@ def particle_write(req: dict[str, Any]) -> dict[str, Any]:
         renames = {present[old]: new for old, new in plan.items()}
 
     root = Particle.export(particles)
+    # `Particle.export` puts the system elements themselves into `children`. The engine (and
+    # the stock files) store a `DmeParticleChild` wrapper per child, carrying `name` and a
+    # `child` element reference. Without the wrapper the file parses and the names register,
+    # but nothing is drawn.
+    from srctools.dmx import Attribute, Element, ValueType
+
+    definitions = root["particleSystemDefinitions"]
+    wrapped_children = 0
+    for part_elem in definitions.iter_elem():
+        kids = part_elem.get("children")
+        if kids is None or not kids.is_array:
+            continue
+        children = list(kids.iter_elem())
+        wrapped = Attribute.array("children", ValueType.ELEMENT)
+        for child_elem in children:
+            wrapper = Element(child_elem.name, "DmeParticleChild")
+            wrapper["name"] = Attribute("name", ValueType.STRING, child_elem.name)
+            wrapper["child"] = Attribute("child", ValueType.ELEMENT, child_elem)
+            wrapped.append(wrapper)
+            wrapped_children += 1
+        part_elem["children"] = wrapped
+
     buffer = io.BytesIO()
     try:
         root.export_binary(buffer, version=4, fmt_name="pcf", fmt_ver=format_version)
@@ -498,6 +520,7 @@ def particle_write(req: dict[str, Any]) -> dict[str, Any]:
         ],
         "verified": verified,
         "warnings": warnings,
+        "childWrappers": wrapped_children,
         "renames": renames,
         "note": (
             "A binary PCF (DMX format `pcf`, version 1 or 2) written through srctools' "
