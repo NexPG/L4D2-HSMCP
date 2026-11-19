@@ -20,6 +20,9 @@ with a line here.
     measured error. `extract_vtf` turns any `.vtf` into a PNG — including a texture no VMT
     names, and a chosen face of a cubemap — which the material preview could not do.
     `write_cubemap_vtf` assembles six named PNG faces into one cubemap and verifies each.
+    `write_vtf` sets the one-bit/eight-bit alpha flag and average reflectivity, so a
+    transparent texture is not left flagged opaque and a bright one does not light its
+    surroundings as black.
   - **Deep model data.** `read_model_info` now returns per-sequence activities, flags,
     events (type, cycle, options) and bounds; hitbox geometry on the bone each box
     follows; the model name inside each body part; per-skin material tables; `$cdmaterials`,

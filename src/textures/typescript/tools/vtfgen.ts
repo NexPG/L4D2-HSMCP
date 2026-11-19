@@ -18,10 +18,12 @@ export const writeVtfTool = defineTool({
     "Turns a PNG into a .vtf the engine can load, without VTFCmd or vtex. Decodes the PNG " +
     "itself (non-interlaced, 8/16-bit, grey/RGB/palette/RGBA), scales a non-power-of-two " +
     "image to the next power of two when asked, builds the full mip chain, and writes VTF " +
-    "7.4 — the version every L4D2 material uses, measured on the stock pak. Formats are " +
-    "the uncompressed ones (BGRA8888 by default): DXT needs a compressor, and an " +
-    "uncompressed VTF is exact rather than approximate. The file is read back and pixels " +
-    "are compared, so `verified` means the round-trip matched. Needs the Python sidecar.",
+    "7.4 - the version every L4D2 material uses, measured on the stock pak. Formats are " +
+    "BGRA8888/RGBA8888 (lossless), BGRX8888 (opaque) and DXT1/DXT5 (this server's encoder). " +
+    "The alpha flag (one-bit for DXT1, eight-bit otherwise) and the average reflectivity are " +
+    "set, so transparency and bounced light are not left at zero. The file is read back and " +
+    "pixels are compared - exactly for lossless, by measured error for DXT - so `verified` " +
+    "means the round-trip matched. Needs the Python sidecar.",
   realm: "local",
   guarded: true,
   inputSchema: {

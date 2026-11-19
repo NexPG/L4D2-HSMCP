@@ -136,12 +136,35 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     if bool(req.get("clampT", False)):
         flags |= VTFFlags.CLAMP_T
 
+    # VTFEdit/sourcepp set the alpha flag so the engine knows the texture has transparency.
+    # Without it an alpha-tested material can render opaque on some shaders. BGRX stores no
+    # alpha, so it is never flagged; DXT1 keeps one bit, DXT5 and the 32-bit formats eight.
+    has_alpha = fmt_name != "BGRX8888" and any(rgba[at] < 255 for at in range(3, len(rgba), 4))
+    alpha_mode = "none"
+    if has_alpha:
+        if fmt_name == "DXT1":
+            flags |= VTFFlags.ONEBITALPHA
+            alpha_mode = "oneBit"
+        else:
+            flags |= VTFFlags.EIGHTBITALPHA
+            alpha_mode = "eightBit"
+
+    # Reflectivity is the average colour the engine uses for bounced light. Zero is legal
+    # but makes a bright texture light its surroundings as if it were black.
+    pixels = max(1, len(rgba) // 4)
+    reflectivity = (
+        round(sum(rgba[at] for at in range(0, len(rgba), 4)) / (255 * pixels), 4),
+        round(sum(rgba[at] for at in range(1, len(rgba), 4)) / (255 * pixels), 4),
+        round(sum(rgba[at] for at in range(2, len(rgba), 4)) / (255 * pixels), 4),
+    )
+
     if fmt_name in {"DXT1", "DXT5"}:
         dxt.install()
     vtf = VTF(
         width,
         height,
         version=(major, minor),
+        ref=reflectivity,
         flags=flags,
         fmt=ImageFormats[fmt_name],
         thumb_fmt=ImageFormats.NONE,
@@ -243,6 +266,8 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         "flags": int(back.flags.value),
         "clampS": bool(back.flags & VTFFlags.CLAMP_S),
         "clampT": bool(back.flags & VTFFlags.CLAMP_T),
+        "alphaMode": alpha_mode,
+        "reflectivity": [round(v, 4) for v in back.reflectivity],
         "verified": verified,
         "meanError": mean_error,
         "maxError": max_error,

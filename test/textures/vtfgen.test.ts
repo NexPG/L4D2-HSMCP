@@ -157,6 +157,36 @@ describe.skipIf(!installed)("write_vtf", () => {
     expect(result.verified).toBe(true);
   });
 
+  it("sets the alpha flag and reflectivity the engine reads", async () => {
+    const image = join(scratch, "alpha.png");
+    const rgba = Buffer.alloc(8 * 8 * 4);
+    for (let i = 0; i < 8 * 8; i += 1) {
+      rgba[i * 4] = 200;
+      rgba[i * 4 + 1] = 100;
+      rgba[i * 4 + 2] = 50;
+      rgba[i * 4 + 3] = i < 8 ? 40 : 255;
+    }
+    writeFileSync(image, png(8, 8, rgba));
+
+    const full = await callSidecar<WriteResult & { alphaMode: string; reflectivity: number[]; flags: number }>(
+      "vtf_write",
+      { path: join(scratch, "alpha.vtf"), image, format: "BGRA8888", resize: "none" },
+      config,
+    );
+    expect(full.alphaMode).toBe("eightBit");
+    expect(full.flags & 0x2000).toBe(0x2000);
+    expect(full.reflectivity[0]).toBeGreaterThan(0);
+    expect(full.reflectivity[0]).toBeLessThanOrEqual(1);
+
+    const dxt1 = await callSidecar<WriteResult & { alphaMode: string; flags: number }>(
+      "vtf_write",
+      { path: join(scratch, "alpha_dxt1.vtf"), image, format: "DXT1", resize: "none" },
+      config,
+    );
+    expect(dxt1.alphaMode).toBe("oneBit");
+    expect(dxt1.flags & 0x1000).toBe(0x1000);
+  });
+
   it("compresses to DXT1 and DXT5 and measures the loss instead of hiding it", async () => {
     const image = join(scratch, "dxt.png");
     writeFileSync(image, png(64, 64, gradient(64, 64)));
