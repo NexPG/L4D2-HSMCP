@@ -15,8 +15,9 @@ when it has all four:
 | Finale: waves, tanks, specials | spawn areas, Director state machine | custom finale stages verified on `hsmcp_test_m2`: PANIC → DELAY → TANK → DELAY → DELAY, escape and credits (137 s). TANK stage transitioned; bots killing a tank is not proven |
 | Director flow, goal area | nav CHECKPOINT/FINALE, info_director | **verified** (dump + bots) |
 | Nav generation and attributes | run_nav_generate, func_nav_attribute_region, read_nav_dump | **verified** |
-| Assets: textures, models, sizes, skyboxes, particles | `read_game_content`, `read_model_info`, `read_particle`, `extract_vtf`, `read_soundscape` | **verified** against the stock game: model hulls/sequences/events, VTF decode, particle systems and soundscape waves |
+| Assets: textures, models, sizes, skyboxes, particles | `read_game_content`, `read_model_info`, `read_particle`, `write_particle`, `extract_vtf`, `read_soundscape` | **verified** against the stock game: model hulls/sequences/events, VTF decode, particle systems and soundscape waves |
 | Sound: WAV, soundscripts, soundscapes | `read_wav`/`convert_wav`, `read_soundscript`/`write_soundscript`, `read_soundscape`/`write_soundscape` | tools + stock-game verification (13k soundscript names, 577 soundscapes); in-game audio mix not judged |
+| Particles: `.pcf` read and write | `read_particle`, `write_particle` | **verified structurally:** a stock `fire_01l4d.pcf` (59 systems) round-trips through the writer and parses back with the same systems, children, materials and operator counts; a new system is built from JSON. In-game render not judged |
 | Compile, pack, deploy | run_compile, run_vpk_pack, check_campaign | **verified** |
 | Automated play test | run_map_test, `-condebug` | **verified** |
 | VScript: ship and attach | write_vscript, logic_script, printl banner | **verified (load only)** |

@@ -58,6 +58,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
 | `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |
 | `references/mapping/brush-to-model.md` | a VMF brush → SMD/QC, with VMF UVs and a brush collision model |
+| `references/mapping/particles.md` | reading and writing `.pcf` systems, children, operators and materials |
 | `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, and the sound tools |
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |

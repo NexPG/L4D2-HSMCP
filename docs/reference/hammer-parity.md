@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **157 tools**.
+Last checked against the tool list on 19/11/2026: **158 tools**.
 
 ## The file itself
 
@@ -225,6 +225,7 @@ map and looking, or by not happening at all.
 | `read_static_props` | nothing: Hammer shows a static prop as solid even when its model has no `.phy` |
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |
 | `read_particle` | Hammer lists `.pcf` files, not the systems inside them or their materials |
+| `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
 | `run_pakfile_add` | nothing: Hammer cannot put a file into a compiled map |

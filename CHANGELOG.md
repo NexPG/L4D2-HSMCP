@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.99-alpha — 2026-11-19
+
+- **Particle files can be written, not only read.** `write_particle` builds a binary `.pcf`
+  from JSON systems, or rewrites an existing loose/game-relative file through `source`.
+  Systems carry options, renderers, initializers, emitters, forces, constraints, operators
+  and child references; options are plain JSON scalars or `{type, value}` for an explicit DMX
+  type. Child names must exist in the same file; the writer points at the same elements
+  rather than copying them.
+- **The writer is checked by a stock file, not only by its own fixture.** The test rewrites
+  `particles/fire_01l4d.pcf` (59 systems) and parses the result back; every system keeps its
+  children, materials and operator counts. A dangling child in a stock file cannot be
+  referenced, so it is dropped and named in `warnings`.
+- **Format.** A PCF is a DMX with `format=pcf`; version 2 is the L4D2 default, version 1 is
+  accepted. The file is parsed back with the PCF reader before the call returns, and
+  `verified` reports whether the system set survived. In-game rendering is not yet judged.
+- **Tool count: 158.** Tests: 143 files, 1376 passed, 33 skipped.
+
 ## 0.0.98-alpha — 2026-11-19
 
 - **glTF shape keys now become Source flexes.** `gltf_to_dmx` writes a DMX model source with

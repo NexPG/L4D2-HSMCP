@@ -63,4 +63,106 @@ describe.skipIf(!installed)("read_particle", () => {
     expect(read.read).toBe(false);
     expect(read.readError).toBeTruthy();
   });
+
+  it("writes a new PCF and reads back its systems, children and operators", async () => {
+    const path = join(scratch, "new.pcf");
+    const written = await callSidecar<{
+      written: boolean;
+      bytes: number;
+      systemCount: number;
+      verified: boolean;
+    }>(
+      "particle_write",
+      {
+        path,
+        systems: [
+          {
+            name: "smoke_test",
+            options: { material: "particle/smoke_test", max_particles: 64 },
+            renderers: [
+              {
+                name: "render",
+                function: "render_animated_sprites",
+                options: { texture: "particle/smoke_test" },
+              },
+            ],
+            initializers: [
+              {
+                name: "life",
+                function: "init_life_time",
+                options: { min_life_time: 1.0, max_life_time: 2.0 },
+              },
+            ],
+            children: ["smoke_child"],
+          },
+          {
+            name: "smoke_child",
+            options: { material: "particle/smoke_child" },
+          },
+        ],
+      },
+      config,
+    );
+    expect(written.written).toBe(true);
+    expect(written.bytes).toBeGreaterThan(0);
+    expect(written.systemCount).toBe(2);
+    expect(written.verified).toBe(true);
+
+    const read = await callSidecar<ReadResult>("particle_read", { path }, config);
+    expect(read.read).toBe(true);
+    expect(read.total).toBe(2);
+    const smoke = read.systems!.find((system) => system.name === "smoke_test")!;
+    expect(smoke.children).toEqual(["smoke_child"]);
+    expect(smoke.materials).toContain("particle/smoke_test");
+    expect((smoke.renderers[0] as { function: string }).function).toBe("render_animated_sprites");
+    expect((smoke.initializers[0] as { function: string }).function).toBe("init_life_time");
+  });
+
+  it.skipIf(!has.gameContent)("rewrites a stock PCF through the writer without losing systems", async () => {
+    const copy = join(scratch, "fire_copy.pcf");
+    const written = await callSidecar<{
+      written: boolean;
+      source: string | null;
+      systemCount: number;
+      verified: boolean;
+      warnings: string[];
+    }>(
+      "particle_write",
+      {
+        path: copy,
+        source: "particles/fire_01l4d.pcf",
+        gameDir: config.gameDir,
+      },
+      config,
+      300_000,
+    );
+    expect(written.written).toBe(true);
+    expect(written.source).toBe("particles/fire_01l4d.pcf");
+    expect(written.systemCount).toBeGreaterThan(20);
+    expect(written.verified).toBe(true);
+    expect(written.warnings).toEqual([]);
+
+    const original = await callSidecar<ReadResult>(
+      "particle_read",
+      { gameDir: config.gameDir, filePattern: "fire_01l4d.pcf", limit: 10_000 },
+      config,
+      300_000,
+    );
+    const rewritten = await callSidecar<ReadResult>(
+      "particle_read",
+      { path: copy, limit: 10_000 },
+      config,
+      300_000,
+    );
+    expect(rewritten.total).toBe(original.total);
+    const byName = new Map(original.systems!.map((system) => [system.name, system]));
+    for (const system of rewritten.systems!) {
+      const before = byName.get(system.name);
+      expect(before, `system ${system.name} disappeared`).toBeDefined();
+      expect(system.children).toEqual(before!.children);
+      expect(system.materials).toEqual(before!.materials);
+      expect(system.renderers.length).toBe(before!.renderers.length);
+      expect(system.initializers.length).toBe(before!.initializers.length);
+    }
+  });
 });

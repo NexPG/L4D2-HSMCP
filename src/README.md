@@ -54,7 +54,7 @@ directory beside its language directories.
 | `nav/` | the navigation mesh: reading, generation, editing, trouble reports |
 | `scripts/` | VScript |
 | `campaigns/` | mission files, finales, campaign gates |
-| `assets/` | content search, material preview |
+| `assets/` | content search, material preview, particle-system read/write |
 | `audio/` | WAV reading/conversion and soundscripts (names, waves, #base, wave existence) |
 | `packages/` | addon packaging (VPK), pakfile writing |
 | `formats/` | file-format primitives shared by the rest: KeyValues, VPK, VMT, QC, DMX |

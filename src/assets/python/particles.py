@@ -9,6 +9,7 @@ choice can be checked before it ships.
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import Any
 
@@ -158,5 +159,261 @@ def particle_read(req: dict[str, Any]) -> dict[str, Any]:
             "`children` are other systems in the same file; an `info_particle_system` uses "
             "`cpoint1`..`cpoint8` for child control points. `materials` are the VMT names "
             "the systems draw."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Writing
+# ---------------------------------------------------------------------------
+
+
+def _attribute(name: str, spec: Any) -> Any:
+    """One option value, inferred from JSON or stated with an explicit `type`."""
+    from srctools.dmx import Attribute, Color, Quaternion, ValueType, Vec2, Vec4
+    from srctools.math import FrozenVec
+
+    if isinstance(spec, dict) and "type" in spec:
+        kind = str(spec["type"]).lower()
+        value = spec.get("value")
+        aliases = {"vec2": "vector2", "vec3": "vector3", "vec4": "vector4", "matrix": "vmatrix"}
+        kind = aliases.get(kind, kind)
+        try:
+            value_type = ValueType(kind)
+        except ValueError as exc:
+            raise ValueError(
+                f"particle option {name!r} has type {kind!r}; known types are "
+                + ", ".join(sorted(item.value for item in ValueType))
+            ) from exc
+        if value_type is ValueType.VEC2:
+            value = Vec2(*value)
+        elif value_type is ValueType.VEC3:
+            value = FrozenVec(value)
+        elif value_type is ValueType.VEC4:
+            value = Vec4(*value)
+        elif value_type is ValueType.QUATERNION:
+            value = Quaternion(*value)
+        elif value_type is ValueType.COLOR:
+            value = Color(*value)
+        return Attribute(name, value_type, value)
+
+    if isinstance(spec, bool):
+        return Attribute(name, ValueType.BOOL, spec)
+    if isinstance(spec, int):
+        return Attribute(name, ValueType.INT, spec)
+    if isinstance(spec, float):
+        return Attribute(name, ValueType.FLOAT, spec)
+    if isinstance(spec, str):
+        return Attribute(name, ValueType.STRING, spec)
+    if isinstance(spec, list) and len(spec) in {2, 3, 4} and all(
+        isinstance(item, (int, float)) for item in spec
+    ):
+        if len(spec) == 2:
+            return Attribute(name, ValueType.VEC2, Vec2(*spec))
+        if len(spec) == 3:
+            return Attribute(name, ValueType.VEC3, FrozenVec(spec))
+        return Attribute(name, ValueType.VEC4, Vec4(*spec))
+    raise ValueError(
+        f"particle option {name!r} is not a string, number, bool or numeric vector; "
+        "use {type, value} for an explicit DMX type"
+    )
+
+
+def _operator(spec: dict[str, Any], where: str) -> Any:
+    from srctools.particles import Operator
+
+    if not isinstance(spec, dict):
+        raise ValueError(f"{where}: an operator must be an object")
+    name = str(spec.get("name") or "").strip()
+    function = str(spec.get("function") or spec.get("functionName") or "").strip()
+    if not name:
+        raise ValueError(f"{where}: an operator needs a name")
+    if not function:
+        raise ValueError(f"{where}: operator {name!r} needs a function")
+    options = {
+        key: _attribute(key, value)
+        for key, value in (spec.get("options") or {}).items()
+        if key not in {"name", "function", "functionName"}
+    }
+    return Operator(name, function, options)
+
+
+def particle_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a binary PCF from JSON, then parses it back with the PCF reader.
+
+    The PCF format is a DMX (`format=pcf`), and `srctools.particles.Particle.export`
+    reconstructs the element graph with the child references pointing at the same system
+    elements. Writing the file is therefore a tree build, not a byte layout reimplementation.
+    """
+    from srctools.particles import Child, Particle
+
+    path = Path(str(req.get("path", ""))).resolve()
+    systems_spec = req.get("systems")
+    source_text = str(req.get("source", "")).strip()
+    format_version = int(req.get("formatVersion", 2))
+    if format_version not in {1, 2}:
+        raise ValueError("formatVersion must be 1 or 2")
+    overwrite = bool(req.get("overwrite", False))
+    if path.exists() and not overwrite:
+        raise ValueError(f"{path} already exists; pass overwrite:true to replace it")
+    if source_text and isinstance(systems_spec, list) and systems_spec:
+        raise ValueError("give either `source` (rewrite an existing PCF) or `systems`, not both")
+
+    particles: list[Any] = []
+    source_label: str | None = None
+    if source_text:
+        source_path = Path(source_text).resolve()
+        if source_path.is_file():
+            with source_path.open("rb") as fh:
+                parsed_source = Particle.parse(fh)
+            source_label = str(source_path)
+        else:
+            game_dir = str(req.get("gameDir", "")).strip()
+            if not game_dir:
+                raise ValueError(
+                    f"{source_path} does not exist and no gameDir was given to look for "
+                    f"{source_text!r} in the game's particles/"
+                )
+            from srctools.game import Game
+
+            fsys = Game(game_dir).get_filesystem()
+            rel = source_text.replace("\\", "/").lstrip("/")
+            if not rel.lower().startswith("particles/"):
+                rel = f"particles/{rel}"
+            try:
+                with fsys[rel].open_bin() as fh:
+                    parsed_source = Particle.parse(fh)
+            except Exception as exc:  # noqa: BLE001
+                raise ValueError(f"{source_text}: {type(exc).__name__}: {exc}") from exc
+            source_label = rel
+        particles = list(parsed_source.values())
+    else:
+        if not isinstance(systems_spec, list) or not systems_spec:
+            raise ValueError("systems must be a non-empty list (or give `source`)")
+        names: set[str] = set()
+        children_spec: dict[str, list[str]] = {}
+        for index, spec in enumerate(systems_spec):
+            if not isinstance(spec, dict):
+                raise ValueError(f"system {index} must be an object")
+            name = str(spec.get("name") or "").strip()
+            if not name:
+                raise ValueError(f"system {index} needs a name")
+            folded = name.casefold()
+            if folded in names:
+                raise ValueError(f"system {name!r} appears twice; PCF names are case-insensitive")
+            names.add(folded)
+            options = {
+                key: _attribute(key, value)
+                for key, value in (spec.get("options") or {}).items()
+                if key.casefold() != "name"
+            }
+            operators = {
+                kind: [
+                    _operator(item, f"system {name!r} {kind}")
+                    for item in (spec.get(kind) or [])
+                ]
+                for kind in ("renderers", "operators", "initializers", "emitters", "forces", "constraints")
+            }
+            children_spec[folded] = [str(value) for value in (spec.get("children") or [])]
+            particles.append(
+                Particle(
+                    name=name,
+                    options=options,
+                    renderers=operators["renderers"],
+                    operators=operators["operators"],
+                    initializers=operators["initializers"],
+                    emitters=operators["emitters"],
+                    forces=operators["forces"],
+                    constraints=operators["constraints"],
+                    children=[],
+                )
+            )
+
+        for particle in particles:
+            folded = particle.name.casefold()
+            for child in children_spec.get(folded, []):
+                if child.casefold() not in names:
+                    raise ValueError(
+                        f"system {particle.name!r} names child {child!r}, which is not in this file"
+                    )
+                particle.children.append(Child(child))
+
+    warnings: list[str] = []
+    if source_text:
+        # A stock file can point at a system that is not in it (the engine silently shows
+        # nothing). `Particle.export` cannot reference a non-existent element, so the
+        # dangling child is dropped and named rather than turning the whole rewrite into a
+        # KeyError.
+        present = {particle.name.casefold() for particle in particles}
+        for particle in particles:
+            kept = []
+            for child in particle.children:
+                if child.particle.casefold() in present:
+                    kept.append(child)
+                else:
+                    warnings.append(
+                        f"{particle.name}: child {child.particle!r} is not in this file and was dropped"
+                    )
+            particle.children = kept
+
+    root = Particle.export(particles)
+    buffer = io.BytesIO()
+    try:
+        root.export_binary(buffer, version=4, fmt_name="pcf", fmt_ver=format_version)
+    except Exception as exc:  # noqa: BLE001 -- the boundary reports the reason
+        raise ValueError(f"{type(exc).__name__}: {exc}") from exc
+    data = buffer.getvalue()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+
+    with path.open("rb") as fh:
+        parsed = Particle.parse(fh)
+    expected = {particle.name.casefold(): particle for particle in particles}
+    verified = set(parsed) == set(expected)
+    if verified:
+        for folded, particle in expected.items():
+            actual = parsed[folded]
+            if (
+                actual.name != particle.name
+                or len(actual.children) != len(particle.children)
+                or len(actual.renderers) != len(particle.renderers)
+                or len(actual.operators) != len(particle.operators)
+                or len(actual.initializers) != len(particle.initializers)
+                or len(actual.emitters) != len(particle.emitters)
+                or len(actual.forces) != len(particle.forces)
+                or len(actual.constraints) != len(particle.constraints)
+            ):
+                verified = False
+                break
+
+    return {
+        "path": str(path),
+        "written": True,
+        "source": source_label,
+        "bytes": len(data),
+        "format": "pcf",
+        "formatVersion": format_version,
+        "systemCount": len(particles),
+        "systems": [
+            {
+                "name": particle.name,
+                "optionKeys": sorted(particle.options),
+                "children": [child.particle for child in particle.children],
+                "renderers": len(particle.renderers),
+                "initializers": len(particle.initializers),
+                "emitters": len(particle.emitters),
+                "forces": len(particle.forces),
+                "constraints": len(particle.constraints),
+                "operators": len(particle.operators),
+            }
+            for particle in particles
+        ],
+        "verified": verified,
+        "warnings": warnings,
+        "note": (
+            "A binary PCF (DMX format `pcf`, version 1 or 2) written through srctools' "
+            "Particle.export and read back with its own parser. Child references point at "
+            "the same system elements, not copies. Option values may be plain JSON scalars "
+            "or {type, value} for an explicit DMX type."
         ),
     }

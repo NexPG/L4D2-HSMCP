@@ -334,6 +334,14 @@ def _particle_read(req: dict[str, Any]) -> dict[str, Any]:
     return particle_read(req)
 
 
+@verb("particle_write")
+def _particle_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a binary .pcf from JSON and reads it back with the PCF reader."""
+    from particles import particle_write
+
+    return particle_write(req)
+
+
 @verb("dmx_read")
 def _dmx_read(req: dict[str, Any]) -> dict[str, Any]:
     """A .dmx model source as a JSON tree an agent can inspect."""
