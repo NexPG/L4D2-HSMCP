@@ -13,7 +13,7 @@ import { deflateSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
 import { crc32 } from "../../src/formats/typescript/formats/vpk.js";
 import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
-import { config, has } from "../support/env.js";
+import { config, FIXTURES, has } from "../support/env.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "hammer-vtfconv-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -119,6 +119,35 @@ describe.skipIf(!installed)("convert_vtf / extract_vtf", () => {
     expect(converted.mipCount).toBe(5);
     expect(converted.verified).toBe(true);
     expect(converted.meanError).toBe(0);
+  });
+
+  it("extracts a cubemap face instead of refusing the file", async () => {
+    const extracted = await callSidecar<{
+      written: { name: string; path: string }[];
+    }>("pakfile_extract", {
+      path: join(FIXTURES, "hmcp_probe.bsp"),
+      into: join(scratch, "cube"),
+      pattern: "*cubemapdefault.vtf",
+    }, config);
+    expect(extracted.written.length).toBe(1);
+    const vtf = extracted.written[0]!.path;
+    const out = join(scratch, "cube_down.png");
+
+    const face = await callSidecar<{
+      format: string;
+      width: number;
+      height: number;
+      face: string;
+      pngBytes: number;
+    }>("vtf_extract", { path: vtf, out, maxSize: 256, face: "down" }, config);
+
+    expect(face.face).toBe("down");
+    expect(face.width).toBe(32);
+    expect(face.height).toBe(32);
+    expect(face.pngBytes).toBeGreaterThan(0);
+    expect(readFileSync(out).subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
   });
 
   it("extracts a PNG the decoder reads back at the requested size", async () => {

@@ -18,7 +18,7 @@ with a line here.
     srctools leaves (`Saving DXT1 not implemented`); `write_vtf` now takes DXT, and
     `convert_vtf` rebuilds an existing texture in another format or size, verified by
     measured error. `extract_vtf` turns any `.vtf` into a PNG — including a texture no VMT
-    names — which the material preview could not do.
+    names, and a chosen face of a cubemap — which the material preview could not do.
   - **Deep model data.** `read_model_info` now returns per-sequence activities, flags,
     events (type, cycle, options) and bounds; hitbox geometry on the bone each box
     follows; the model name inside each body part; per-skin material tables; `$cdmaterials`,

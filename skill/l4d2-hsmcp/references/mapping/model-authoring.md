@@ -83,7 +83,7 @@ the absence instead of hiding it.
 | Open in HLMV | `run_hlmv`; capture the window with `capture_window` |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
 | Reformat or resize a shipped VTF | `convert_vtf` — decode, resize, re-encode, verify |
-| Look at a texture directly | `extract_vtf` — any VTF to a PNG, no VMT needed |
+| Look at a texture directly | `extract_vtf` — any VTF to a PNG, no VMT needed; `face` selects a cubemap side |
 | Look at a material | `preview_asset` (VTF → PNG) |
 | Find a stock model or material | `read_game_content`, `read_asset_catalog` |
 | Place the model | `edit_vmf` (`prop_static` / `prop_dynamic`) |

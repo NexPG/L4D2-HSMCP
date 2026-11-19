@@ -85,14 +85,18 @@ export const extractVtfTool = defineTool({
   description:
     "Decodes a .vtf's first mip to a PNG the agent can look at, optionally downscaled and " +
     "written to `out`. This is the direct texture view: `preview_asset` resolves a material " +
-    "first and only shows its base texture, while this works on any VTF — a decal, a sky " +
-    "face, a UI sprite, a texture that no VMT names. Returns the format, dimensions and mip " +
-    "count with the image, so 'is this DXT1 and is it the size I asked for' is answered in " +
-    "the same reply.",
+    "first and only shows its base texture, while this works on any VTF - a decal, a UI " +
+    "sprite, a texture that no VMT names. A cubemap takes `face` (right, left, back, front, " +
+    "up, down) instead of being refused. Returns the format, dimensions and mip count with " +
+    "the image, so 'is this DXT1 and is it the size I asked for' is answered in the same reply.",
   realm: "local",
   inputSchema: {
     path: z.string().describe("Source .vtf."),
     out: z.string().optional().describe("Write the PNG here instead of returning base64."),
+    face: z
+      .enum(["right", "left", "back", "front", "up", "down", "sphere"])
+      .optional()
+      .describe("Cubemap face to extract. Defaults to the first face; ignored for a 2D texture."),
     maxSize: z.number().int().min(32).max(4096).default(512),
   },
   outputSchema: {
@@ -113,7 +117,7 @@ export const extractVtfTool = defineTool({
     const out = args.out ? assertWritable(resolveInput(args.out, ctx.config), ctx.config) : undefined;
     const result = (await callSidecar(
       "vtf_extract",
-      { path, out, maxSize: args.maxSize },
+      { path, out, maxSize: args.maxSize, face: args.face },
       ctx.config,
       300_000,
     )) as Record<string, unknown> & { pngBase64?: string };

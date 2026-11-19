@@ -250,13 +250,13 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         "note": note,
     }
 
-def _read_vtf_frame(path: Path):
-    from srctools.vtf import VTF
+def _read_vtf_frame(path: Path, face: str | None = None):
+    from srctools.vtf import CubeSide, VTF
     data = path.read_bytes()
     import io
     stream = io.BytesIO(data)
     vtf = VTF.read(stream)
-    frame = vtf.get()
+    frame = vtf.get(side=CubeSide[face.upper()]) if face else vtf.get()
     frame.load()
     return vtf, frame, bytes(frame._data)
 
@@ -357,9 +357,10 @@ def vtf_extract(req: dict[str, Any]) -> dict[str, Any]:
     source = Path(str(req.get("path", ""))).resolve()
     if not source.is_file():
         raise ValueError(f"{source} does not exist")
-    vtf, frame, rgba = _read_vtf_frame(source)
-    if int(vtf.flags.value) & 0x4000:  # TEXTUREFLAGS_ENVMAP
-        raise ValueError("this is a cubemap; use run_cubemap2hdr or VTFCmd to extract a face")
+    face = str(req.get("face", "")).strip().lower() or None
+    if face is not None and face not in {"right", "left", "back", "front", "up", "down", "sphere"}:
+        raise ValueError("face must be right, left, back, front, up, down or sphere")
+    vtf, frame, rgba = _read_vtf_frame(source, face)
 
     max_size = max(32, min(int(req.get("maxSize", 512)), 4096))
     width, height = frame.width, frame.height
@@ -387,6 +388,7 @@ def vtf_extract(req: dict[str, Any]) -> dict[str, Any]:
         "previewWidth": out_w,
         "previewHeight": out_h,
         "mipCount": vtf.mipmap_count,
+        "face": face,
         "pngBytes": len(png),
     }
     if out:
