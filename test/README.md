@@ -7,6 +7,7 @@ answers "where is the test for this file" without a search.
 |---|---|
 | [`assets/`](assets/) | content-derived data: particle systems and their materials |
 | [`core/`](core/) | process control: which windows a tool opened, and the ledger the next start sweeps |
+| [`scripts/`](scripts/) | Squirrel/VScript: Lua habits, DirectorOptions stage lists and include paths |
 | [`audio/`](audio/) | sound: WAV reading/conversion, soundscripts and soundscapes |
 | [`bsp/`](bsp/) | compiled-map readers/writers: header, lumps (including LZMA), geometry, entities, static props, nav, limits, materials, pakfile |
 | [`vmf/`](vmf/) | source maps: create, edit, splice, brushes, faces, displacements, fittings, wiring, lint |

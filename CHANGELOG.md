@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.107-alpha - 2026-11-19
+
+- **`read_vscript` checks a `.nut` as Squirrel without running it.** The source is stripped
+  of comments and string literals first, so `printl("the end")` is not a Lua terminator. Lua
+  habits (`end`, `elseif`, `then`, `nil`, `~=`, `--[[`) are errors; unbalanced
+  `{}`/`()`/`[]` name the line the delimiter opened on; `IncludeScript` with a `.nut`
+  extension or a `scripts/vscripts/` prefix is a warning, as is a missing load banner.
+- **The DirectorOptions custom-finale table is checked.** `A_CustomFinale_StageCount` must
+  be positive; every stage up to it must exist (an error when missing); a stage beyond it or
+  a stage type the file never defines is a warning; a missing `OnBeginCustomFinaleStage` is
+  information. An unknown DirectorOptions key is information, not an error, because the
+  catalogue is not the engine's full set.
+- **`write_vscript` uses the same checker** and refuses a script that would not compile.
+  The old `local` warning was wrong — `local` is valid Squirrel — and is gone.
+- **Tool count: 163.** Tests: 149 files, 1425 passed, 33 skipped.
+
 ## 0.0.106-alpha - 2026-11-19
 
 - **FBX shape keys become Source flexes.** `fbx_to_dmx` reads `BlendShapeChannel` and its

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **162 tools**.
+Last checked against the tool list on 19/11/2026: **163 tools**.
 
 ## The file itself
 
@@ -214,6 +214,7 @@ map and looking, or by not happening at all.
 | `check_finale` | nothing: no editor checks the finale contract — type, script, stage list, nav area, escape outputs |
 | `run_campaign_gate` | nothing: lint, compile, nav, collision, finale, trouble report and map test are separate manual acts |
 | `run_map_test` | nothing: loading a map and watching the console is a manual act |
+| `read_vscript` | nothing: the editor never reads a `.nut` |
 | `write_vscript` | nothing: Hammer cannot author or attach a Squirrel script |
 | `write_overlay` | the overlay tool, driven by a side id and a point instead of a drag |
 | `write_instance` | the instance tool, without the GUI or the file dialog |
