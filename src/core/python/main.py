@@ -326,6 +326,14 @@ def _model_info(req: dict[str, Any]) -> dict[str, Any]:
     return model_info(req)
 
 
+@verb("particle_read")
+def _particle_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Systems, children, operators and materials inside a .pcf."""
+    from particles import particle_read
+
+    return particle_read(req)
+
+
 @verb("dmx_read")
 def _dmx_read(req: dict[str, Any]) -> dict[str, Any]:
     """A .dmx model source as a JSON tree an agent can inspect."""

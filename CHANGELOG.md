@@ -64,7 +64,12 @@ with a line here.
     looping beds, random one-shots, child scapes, DSP, fadetime and soundmixer, with every
     wave checked under `sound/`. `write_soundscape` appends one definition for an
     `env_soundscape`, refuses a duplicate name, and parses the result back.
-- **Tool count: 151.** Parity, the skill catalogue and the test layout are updated in the
+  - **Particles.** `read_particle` opens a `.pcf` and lists every system with its child
+    references, operator functions and the materials it draws. `read_game_content` only
+    named files; a map pointing `info_particle_system` at a missing system renders nothing,
+    and the compiler never complains. Verified against `fire_fx.pcf`: `fire_medium_01`
+    carries the expected three children and material.
+- **Tool count: 152.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
 ## 0.0.92-alpha — 2026-11-19

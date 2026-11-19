@@ -7,7 +7,7 @@ This page is the map from one to the other, and the recipes for browsing a city'
 |---|---|
 | Texture Browser | `read_game_content(kind: "material", pattern: "...")`; `details: true` checks that every texture the material names exists |
 | Model Browser | `read_game_content(kind: "model", pattern: "...", details: true)` for names **and hull sizes**; `read_model_info` for skins, sequences and materials of one model |
-| Particle Browser | `read_game_content(kind: "particle", pattern: "*")` |
+| Particle Browser | `read_game_content(kind: "particle", pattern: "*")` for files; `read_particle` for the systems inside one |
 | Entity Report / Entity Tool | `read_entity_report` shows what the map has; `read_fgd_class` with no classname lists classes by prefix, and with a classname returns every keyvalue, input and output |
 | Face Edit Sheet | `set_face_material`, `align_faces`, `set_face_uv`, `copy_face_alignment`, `set_smoothing_groups`, `set_lightmap_scale` |
 | Overlay tool (decals) | `write_overlay(sideId, origin, material, width, height)` — the target face's id from `read_vmf_surfaces` |
@@ -34,7 +34,7 @@ purple checkerboard at load.
 | skyboxes | `read_game_content(pattern: "skybox", kind: "material")`, then `"sky_l4d"` |
 | buildings and urban props, with sizes | `read_game_content(pattern: "props_urban", kind: "model", details: true)` |
 | street furniture | `"props_street"`, `"props_fairgrounds"`, `"props_mall"` |
-| particle effects | `read_game_content(kind: "particle", pattern: "*")` |
+| particle effects | `read_particle` on a `.pcf`: system names, children, materials |
 
 `details: true` on a model returns `mins`, `maxs` and `size` in Hammer units — the same
 numbers the model viewer shows. A house is placed by its size and its origin: a model whose

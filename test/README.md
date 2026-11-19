@@ -5,6 +5,7 @@ answers "where is the test for this file" without a search.
 
 | Directory | Covers |
 |---|---|
+| [`assets/`](assets/) | content-derived data: particle systems and their materials |
 | [`audio/`](audio/) | sound: WAV reading/conversion, soundscripts and soundscapes |
 | [`bsp/`](bsp/) | compiled-map readers: header, lumps (including LZMA), geometry, entities, nav, limits, materials, pakfile |
 | [`vmf/`](vmf/) | source maps: create, edit, splice, brushes, faces, displacements, fittings, wiring, lint |
