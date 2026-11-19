@@ -6,13 +6,13 @@
  * round, and a coop campaign whose last map has neither a finale nor a changelevel has no
  * ending. A map that exists only in a VPK is skipped with information, never passed.
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { checkModesTool } from "../../src/campaigns/typescript/tools/modes.js";
-import { ctx as sharedCtx } from "../support/env.js";
+import { ctx as sharedCtx, REPO } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hsmcp-modes-"));
@@ -20,6 +20,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 const MISSION = "campaigns/001-hsmcp-test/addon/missions/hsmcp_campaign.txt";
 const MAPS = "campaigns/001-hsmcp-test/addon/maps";
+const LOCAL_CAMPAIGN = existsSync(join(REPO, MISSION));
 
 type Result = {
   overall: string;
@@ -28,7 +29,7 @@ type Result = {
 };
 
 describe("check_modes", () => {
-  it("passes the scavenge items and warns that survival has no trigger", async () => {
+  it.skipIf(!LOCAL_CAMPAIGN)("passes the scavenge items and warns that survival has no trigger", async () => {
     const result = (await checkModesTool.handler(
       { path: MISSION, mapsDirs: [MAPS] },
       ctx,
