@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.100-alpha — 2026-11-19
+
+- **Convex-hull collision for glTF.** `gltf_to_smd` now takes `collision: "hull"` beside
+  `"box"`: the model's vertices go through `srctools.math.quickhull`, every face is checked
+  against the centroid and its winding flipped until it points outward, and the result is
+  written as the `<name>_phys.smd` for `$collisionmodel`. A shape a box would approximate
+  with a lot of empty space now has a hull that follows it.
+- **Flat models fall back, loudly.** A triangle or any coplanar cloud cannot bound a volume;
+  the converter writes the box instead and reports why. The result's `mode` says `"hull"` or
+  `"box"`, so a caller never has to guess which physics shape it got.
+- **Proven with the real compiler.** A tetrahedron produces a four-face hull and compiles to
+  a `.phy` with `hasPhysics: true`; the flat case is checked for the box fallback and its
+  warning. Tool count stays 158.
+- Tests: 143 files, 1378 passed, 33 skipped.
+
 ## 0.0.99-alpha — 2026-11-19
 
 - **Particle files can be written, not only read.** `write_particle` builds a binary `.pcf`

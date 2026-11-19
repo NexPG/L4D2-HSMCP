@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.99--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.100--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -51,7 +51,7 @@ clear description, and anything that writes asks for confirmation.
   a copy of the map.
 - **Compile models** from QC/SMD sources with the game's `studiomdl`, including a
   `.gltf`/`.glb` converted by `gltf_to_smd` (geometry, skeleton, weights, one SMD per
-  animation, and an optional collision box for a solid prop), shape keys converted to
+  animation, and an optional box or convex-hull collision model for a solid prop), shape keys converted to
   flexes by `gltf_to_dmx`, and a Hammer brush converted by `brush_to_model` (Propper++
   without the plugin); open a model in HLMV, and capture the window as an image the agent
   can see.

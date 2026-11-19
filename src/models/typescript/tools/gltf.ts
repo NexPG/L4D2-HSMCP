@@ -324,12 +324,13 @@ export const gltfToSmdTool = defineTool({
       .default([])
       .describe("Only these animation names (case-insensitive). Empty means every animation."),
     collision: z
-      .enum(["none", "box"])
+      .enum(["none", "box", "hull"])
       .default("none")
       .describe(
-        "Write a `<name>_phys.smd` box for `$collisionmodel`. Without one, a prop_static " +
-          "from this model has no .phy and is not solid. 'box' is the model's AABB, with " +
-          "collisionThickness as a minimum on flat axes.",
+        "Write a `<name>_phys.smd` for `$collisionmodel`. Without one, a prop_static from " +
+          "this model has no .phy and is not solid. 'box' is the model's AABB, with " +
+          "collisionThickness as a minimum on flat axes; 'hull' is the convex hull of the " +
+          "model's vertices, which follows a non-box shape much more closely.",
       ),
     mass: z
       .number()
@@ -385,6 +386,7 @@ export const gltfToSmdTool = defineTool({
     collision: z
       .object({
         path: z.string(),
+        mode: z.enum(["box", "hull"]),
         triangles: z.number(),
         mins: z.array(z.number()),
         maxs: z.array(z.number()),

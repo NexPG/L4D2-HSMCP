@@ -87,8 +87,7 @@ is what `studiomdl` reads for `$sequence`.
 
 ## Collision
 
-`collision: "box"` writes `<name>_phys.smd`, a closed box around the model, and the QC block
-adds:
+`collision: "box"` or `"hull"` writes `<name>_phys.smd` and the QC block adds:
 
 ```
 $collisionmodel "crate_phys.smd"
@@ -97,6 +96,10 @@ $collisionmodel "crate_phys.smd"
 }
 ```
 
+- `collision: "hull"` takes the convex hull of the model's vertices through
+  `srctools.math.quickhull`, checks each face against the centroid and flips the winding
+  until it points outward. A flat or degenerate model cannot bound a volume, so it falls
+  back to the box with a warning; the result's `mode` says which one was written.
 - `mass` defaults to 10; `collisionThickness` (default 1) is the minimum size on a flat
   axis, so a sign still gets a solid slab instead of a zero-volume hull.
 - The physics SMD uses the material name `phys`, not `debug/debugempty`: with the debug

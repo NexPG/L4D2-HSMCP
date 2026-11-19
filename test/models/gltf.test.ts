@@ -273,6 +273,44 @@ function animatedScene() {
   return { document, bin: bin.bytes() };
 }
 
+/** A tetrahedron: four non-coplanar points, so a convex hull has four faces. */
+function tetraScene() {
+  const bin = new Bin();
+  const positions = bin.add(floats([0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0, 10]));
+  const normals = bin.add(floats([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]));
+  const uvs = bin.add(floats([0, 0, 1, 0, 0, 1, 1, 1]));
+  const indices = bin.add(
+    Buffer.from(new Uint16Array([0, 1, 2, 0, 3, 1, 1, 3, 2, 2, 3, 0]).buffer),
+  );
+  const document = {
+    asset: { version: "2.0" },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ name: "body", mesh: 0 }],
+    meshes: [
+      {
+        name: "body",
+        primitives: [
+          {
+            attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 },
+            indices: 3,
+            material: 0,
+          },
+        ],
+      },
+    ],
+    materials: [{ name: "hull/mat" }],
+    bufferViews: bin.views,
+    accessors: [
+      accessor(positions, 5126, 4, "VEC3", { min: [0, 0, 0], max: [10, 10, 10] }),
+      accessor(normals, 5126, 4, "VEC3"),
+      accessor(uvs, 5126, 4, "VEC2"),
+      accessor(indices, 5123, 12, "SCALAR"),
+    ],
+  };
+  return { document, bin: bin.bytes() };
+}
+
 interface SmdRead {
   nodes: { id: number; name: string; parent: number }[];
   boneCount: number;
@@ -496,6 +534,27 @@ describe.skipIf(!installed)("gltf_to_smd", () => {
     expect(disabled.animationCount).toBe(0);
     expect(disabled.ignoredAnimations).toBe(1);
     expect(existsSync(join(dir, "disabled_wave.smd"))).toBe(false);
+  });
+
+  it("builds a convex hull collision model and falls back to a box when flat", async () => {
+    const dir = join(scratch, "hull");
+    const tetra = tetraScene();
+    const tetraPath = writeGltf(dir, "tetra", tetra.document, tetra.bin);
+    const hull = await callSidecar<{
+      collision: { mode: string; triangles: number; verified: boolean } | null;
+      warnings: string[];
+    }>("gltf_to_smd", { path: tetraPath, out: join(dir, "tetra.smd"), collision: "hull" }, config);
+    expect(hull.collision).toMatchObject({ mode: "hull", triangles: 4, verified: true });
+    expect(hull.warnings).toEqual([]);
+
+    const flat = staticScene();
+    const flatPath = writeGltf(dir, "flat", flat.document, flat.bin);
+    const fallback = await callSidecar<{
+      collision: { mode: string; triangles: number } | null;
+      warnings: string[];
+    }>("gltf_to_smd", { path: flatPath, out: join(dir, "flat.smd"), collision: "hull" }, config);
+    expect(fallback.collision).toMatchObject({ mode: "box", triangles: 12 });
+    expect(fallback.warnings.join(" ")).toMatch(/falls back/);
   });
 
   it("applies axis conversion and node transforms only when asked", async () => {
@@ -908,6 +967,82 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
           } catch {
             // Not empty, or already gone: leave it.
           }
+        }
+      }
+    },
+    120_000,
+  );
+
+  it(
+    "compiles a convex hull collision model",
+    async () => {
+      const dir = join(scratch, "compile-hull");
+      const { document, bin } = tetraScene();
+      const source = writeGltf(dir, "hull", document, bin);
+      const smd = join(dir, "hull.smd");
+      const qc = join(dir, "hull.qc");
+      const unique = `hsmcp_hull_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6)}`;
+      let compiledModel: string | null = null;
+
+      try {
+        const converted = (await gltfToSmdTool.handler(
+          {
+            path: source,
+            output: smd,
+            scale: 1,
+            axis: "z",
+            useNodeTransforms: false,
+            flipV: true,
+            parts: [],
+            material: "debug/debugempty",
+            limitVertices: 2_000_000,
+            exportAnimations: true,
+            animationFps: 30,
+            animations: [],
+            collision: "hull",
+            mass: 10,
+            collisionThickness: 1,
+            qc: {
+              path: qc,
+              modelname: `${unique}/hull.mdl`,
+              cdmaterials: [`models/${unique}`],
+              surfaceprop: "metal",
+              staticprop: true,
+              sequence: "idle",
+              fps: 30,
+              animationSequences: true,
+              animationArgs: [],
+              overwrite: false,
+            },
+            overwrite: false,
+            confirm: true,
+          },
+          ctx,
+        )) as { collision: { mode: string; triangles: number } | null };
+        expect(converted.collision).toMatchObject({ mode: "hull", triangles: 4 });
+
+        const compile = (await runStudiomdlTool.handler(
+          { qc, timeoutMinutes: 2, confirm: true },
+          ctx,
+        )) as { ok: boolean; model: string | null; warning: string | null };
+        compiledModel = compile.model;
+        expect(compile.ok).toBe(true);
+        expect(compile.warning).toBeNull();
+
+        const info = (await readModelInfoTool.handler(
+          { model: `models/${unique}/hull.mdl` },
+          ctx,
+        )) as { found: boolean; hasPhysics: boolean };
+        expect(info.found).toBe(true);
+        expect(info.hasPhysics).toBe(true);
+      } finally {
+        const folder = compiledModel
+          ? dirname(compiledModel)
+          : config.gameDir
+            ? join(config.gameDir, "models", unique)
+            : null;
+        if (folder && existsSync(folder) && folder.toLowerCase().includes(unique.toLowerCase())) {
+          rmSync(folder, { recursive: true, force: true });
         }
       }
     },

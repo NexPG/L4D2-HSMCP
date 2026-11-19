@@ -947,6 +947,61 @@ def _box_triangles(
     return triangles
 
 
+def _hull_triangles(
+    points: Sequence[Sequence[float]], material: str
+) -> list[dict[str, Any]]:
+    """The convex hull of the model's vertices, outward-wound.
+
+    `srctools.math.quickhull` returns triangles in an order that is not guaranteed to be
+    outward for the model; each normal is checked against the centroid and the winding is
+    flipped when it points inward. A coplanar or degenerate cloud raises, and the caller
+    falls back to the AABB with a warning rather than writing an open hull.
+    """
+    from srctools.math import Vec, quickhull
+
+    unique = sorted({(round(float(p[0]), 4), round(float(p[1]), 4), round(float(p[2]), 4)) for p in points})
+    if len(unique) < 4:
+        raise ValueError(f"only {len(unique)} unique point(s); a hull needs four")
+    vectors = [Vec(*point) for point in unique]
+    faces = quickhull(vectors)
+    if not faces:
+        raise ValueError("quickhull returned no faces")
+
+    centroid = Vec(
+        sum(point[0] for point in unique) / len(unique),
+        sum(point[1] for point in unique) / len(unique),
+        sum(point[2] for point in unique) / len(unique),
+    )
+    triangles: list[dict[str, Any]] = []
+    for a, b, c in faces:
+        normal = Vec.cross(b - a, c - a)
+        if normal.dot(a - centroid) < 0:
+            b, c = c, b
+            normal = -normal
+        length = normal.mag()
+        if length < 1e-9:
+            continue
+        normal = normal.norm()
+        corners = [a, b, c]
+        triangles.append(
+            {
+                "material": material,
+                "vertices": [
+                    {
+                        "position": [round(float(corner.x), 6), round(float(corner.y), 6), round(float(corner.z), 6)],
+                        "normal": [round(float(normal.x), 6), round(float(normal.y), 6), round(float(normal.z), 6)],
+                        "uv": [0.0, 0.0],
+                        "links": [{"bone": 0, "weight": 1.0}],
+                    }
+                    for corner in corners
+                ],
+            }
+        )
+    if not triangles:
+        raise ValueError("every hull face was degenerate")
+    return triangles
+
+
 # ---------------------------------------------------------------------------
 # read_gltf
 # ---------------------------------------------------------------------------
@@ -1283,8 +1338,8 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         raise GltfError("animationFps must be a positive finite number")
     animation_filter = [str(value).lower() for value in (req.get("animations") or [])]
     collision = str(req.get("collision", "none")).lower()
-    if collision not in {"none", "box"}:
-        raise GltfError("collision must be 'none' or 'box'")
+    if collision not in {"none", "box", "hull"}:
+        raise GltfError("collision must be 'none', 'box' or 'hull'")
     mass = float(req.get("mass", 10.0))
     if not math.isfinite(mass) or mass <= 0.0:
         raise GltfError("mass must be a positive finite number")
@@ -1692,7 +1747,7 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         ignored_animations = len(animations)
 
     collision_result: dict[str, Any] | None = None
-    if collision == "box":
+    if collision in {"box", "hull"}:
         box_mins = [float(value) for value in mins]
         box_maxs = [float(value) for value in maxs]
         for axis_index in range(3):
@@ -1700,6 +1755,19 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
                 center = (box_mins[axis_index] + box_maxs[axis_index]) * 0.5
                 box_mins[axis_index] = center - collision_thickness * 0.5
                 box_maxs[axis_index] = center + collision_thickness * 0.5
+        mode = "box"
+        if collision == "hull":
+            try:
+                physics_triangles = _hull_triangles(points, "phys")
+                mode = "hull"
+            except Exception as exc:  # noqa: BLE001 -- a flat model has no hull
+                warnings.append(
+                    f"convex hull failed ({type(exc).__name__}: {exc}); the collision model "
+                    "falls back to the bounding box"
+                )
+                physics_triangles = _box_triangles(box_mins, box_maxs, "phys")
+        else:
+            physics_triangles = _box_triangles(box_mins, box_maxs, "phys")
         physics_path = output.with_name(f"{output.stem}_phys.smd")
         ensure_new(physics_path)
         physics_written = smd_write(
@@ -1715,15 +1783,16 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
                 # A collision SMD still carries a material name, and `debug/debugempty`
                 # makes studiomdl print "Collision model volume" but write a 0-byte .phy.
                 # `phys` is the conventional name; no VMT is needed for the hull itself.
-                "triangles": _box_triangles(box_mins, box_maxs, "phys"),
+                "triangles": physics_triangles,
             }
         )
         diagnostics.extend(physics_written.get("diagnostics", []))
         collision_result = {
             "path": str(physics_path),
-            "triangles": 12,
-            "mins": [round(v, 4) for v in box_mins],
-            "maxs": [round(v, 4) for v in box_maxs],
+            "mode": mode,
+            "triangles": len(physics_triangles),
+            "mins": [round(v, 4) for v in (box_mins if mode == "box" else mins)],
+            "maxs": [round(v, 4) for v in (box_maxs if mode == "box" else maxs)],
             "thickness": collision_thickness,
             "mass": mass,
             "verified": bool(physics_written.get("verified")),
