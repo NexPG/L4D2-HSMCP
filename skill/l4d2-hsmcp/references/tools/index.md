@@ -1,6 +1,6 @@
 # Tool catalogue
 
-161 tools. This page groups them by the job you are doing; each tool's own description is the
+162 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -153,6 +153,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `gltf_to_smd` | convert glTF/GLB geometry, skeleton, animations and a box or convex-hull collision model to SMD; optionally write the QC |
 | `gltf_to_dmx` | convert glTF/GLB shape keys to a DMX model source with Source flexes; writes the QC optionally
 | `read_fbx` | inspect a binary 7.x or ASCII FBX: axes, units, models, geometries, materials, bones, skins, animations |
+| `fbx_to_dmx` | convert FBX shape keys to a DMX model source with Source flexes; the QC needs no `$flex` |
 | `fbx_to_smd` | convert FBX geometry, skeleton, skin weights, animation stacks and a box/hull collision model to SMD, with the bind pose from the clusters; optionally write the QC with one `$sequence` per animation |
 | `brush_to_model` | convert VMF brush solids to SMD + QC, with VMF UVs and a brush or box collision model |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |

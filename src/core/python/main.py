@@ -422,6 +422,14 @@ def _fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     return fbx_to_smd(req)
 
 
+@verb("fbx_to_dmx")
+def _fbx_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
+    """Converts FBX shape keys and a skeleton to a DMX model source with flexes."""
+    from fbxdmx import fbx_to_dmx
+
+    return fbx_to_dmx(req)
+
+
 @verb("vtf_write")
 def _vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     """PNG to VTF without VTFCmd: header, mip chain and a pixel round-trip."""

@@ -34,6 +34,7 @@ const COUNTS = z.object({
   materials: z.number(),
   skins: z.number(),
   clusters: z.number(),
+  blendShapes: z.number(),
   animations: z.number(),
 });
 
@@ -94,6 +95,7 @@ export const readFbxTool = defineTool({
       .optional(),
     materials: z.array(z.string()).optional(),
     bones: z.array(z.object({ name: z.string(), type: z.string() })).optional(),
+    blendShapeChannels: z.array(z.string()).optional(),
     animations: z.array(z.string()).optional(),
     diagnostics: z.array(DIAGNOSTIC).optional(),
   },
@@ -380,4 +382,154 @@ export const fbxToSmdTool = defineTool({
   },
 });
 
-export const fbxTools = [readFbxTool, fbxToSmdTool];
+export const fbxToDmxTool = defineTool({
+  name: "fbx_to_dmx",
+  description:
+    "Converts an FBX with shape keys into a DMX model source, the form L4D2's `studiomdl` " +
+    "turns into flexes. A `BlendShapeChannel` owns one or more Shape geometries; the delta " +
+    "is that shape's vertices minus the base mesh at the control points its `Indexes` names. " +
+    "The result carries a DmeVertexDeltaData and DmeCombinationInputControl per channel, the " +
+    "combination operator, and the `deltaStateWeights` that make the compiler write a flex " +
+    "rule. The skeleton and bind pose are the same as `fbx_to_smd`; `axis`, `scale` and " +
+    "`flipV` have the same meaning. A channel with several in-between shapes exports the " +
+    "largest `FullWeights` entry and warns. The optional `qc` block writes a QC naming the " +
+    "DMX; no `$flex` command is needed.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .fbx, absolute or relative to the repo root."),
+    output: z.string().describe("Where to write the .dmx."),
+    axis: z
+      .enum(["auto", "y", "z"])
+      .default("auto")
+      .describe("'auto' follows GlobalSettings.UpAxis; 'y'/'z' override a wrong global setting."),
+    scale: z
+      .number()
+      .positive()
+      .default(1)
+      .describe("Uniform scale. 0.3937 for a centimetre FBX; 1 when the export is already inches."),
+    useNodeTransforms: z
+      .boolean()
+      .default(true)
+      .describe("Apply the model hierarchy to the geometry; off reads raw mesh-space vertices."),
+    flipV: z.boolean().default(true).describe("Write 1 - v, cancelling SMD's own V inversion."),
+    models: z
+      .array(z.string())
+      .default([])
+      .describe("Only these mesh model names (case-insensitive). Empty means every mesh model."),
+    material: z
+      .string()
+      .default("debug/debugempty")
+      .describe("Material name for a mesh that has none connected."),
+    qc: QC_BLOCK.optional().describe("Also write a QC naming the DMX."),
+    overwrite: z.boolean().default(false),
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    source: z.string(),
+    format: z.string(),
+    encoding: z.string(),
+    encodingVersion: z.number(),
+    formatVersion: z.number(),
+    triangles: z.number(),
+    vertices: z.number(),
+    positions: z.number(),
+    materials: z.array(z.object({ name: z.string(), mtlName: z.string(), faceSets: z.number() })),
+    morphTargets: z.array(
+      z.object({ name: z.string(), deltas: z.number(), maxDelta: z.number() }),
+    ),
+    morphTargetCount: z.number(),
+    boneCount: z.number(),
+    skinned: z.boolean(),
+    warnings: z.array(z.string()),
+    diagnostics: z.array(DIAGNOSTIC),
+    verified: z.boolean(),
+    note: z.string(),
+    qc: z
+      .object({
+        path: z.string(),
+        written: z.boolean(),
+        modelname: z.string(),
+        body: z.string(),
+        diagnostics: z.array(
+          z.object({
+            severity: z.enum(["error", "warning"]),
+            rule: z.string(),
+            message: z.string(),
+            file: z.string(),
+            line: z.number().nullable(),
+          }),
+        ),
+      })
+      .optional(),
+  },
+  handler: async (args, ctx) => {
+    const source = resolveInput(args.path, ctx.config);
+    if (!existsSync(source)) throw new Error(`${source} does not exist`);
+    if (!/\.fbx$/i.test(source)) throw new Error(`${source} is not a .fbx`);
+    const requested = resolveInput(args.output, ctx.config);
+    const output = requested.toLowerCase().endsWith(".dmx") ? requested : `${requested}.dmx`;
+    if (existsSync(output) && !args.overwrite) {
+      throw new Error(`${output} already exists; pass overwrite: true to replace it`);
+    }
+    if (args.qc) {
+      const qcPath = resolveInput(args.qc.path, ctx.config);
+      if (existsSync(qcPath) && !args.qc.overwrite) {
+        throw new Error(`${qcPath} already exists; pass qc.overwrite: true to replace it`);
+      }
+    }
+
+    const result = (await callSidecar(
+      "fbx_to_dmx",
+      {
+        path: source,
+        out: output,
+        axis: args.axis,
+        scale: args.scale,
+        useNodeTransforms: args.useNodeTransforms,
+        flipV: args.flipV,
+        models: args.models,
+        material: args.material,
+        overwrite: args.overwrite,
+      },
+      ctx.config,
+      600_000,
+    )) as Record<string, unknown>;
+    ctx.audit.record({ kind: "file_write", data: { path: output, created: true } });
+
+    if (args.qc) {
+      const qcPath = resolveInput(args.qc.path, ctx.config);
+      if (!qcPath.toLowerCase().endsWith(".qc")) {
+        throw new Error(`${qcPath} is not a .qc path; studiomdl only reads that extension`);
+      }
+      const qcDir = dirname(qcPath);
+      const dmxName = qcRelative(qcDir, output);
+      const text = buildQc({
+        modelname: args.qc.modelname,
+        body: [{ name: "Body", smd: dmxName }],
+        ...(args.qc.cdmaterials === undefined ? {} : { cdmaterials: args.qc.cdmaterials }),
+        ...(args.qc.surfaceprop === undefined ? {} : { surfaceprop: args.qc.surfaceprop }),
+        staticprop: args.qc.staticprop,
+        sequences:
+          args.qc.sequence === undefined
+            ? []
+            : [{ name: args.qc.sequence, smd: dmxName, fps: args.qc.fps }],
+      });
+      mkdirSync(dirname(qcPath), { recursive: true });
+      const written = writeGuarded(qcPath, text, ctx.config);
+      ctx.audit.record({ kind: "file_write", data: { path: written.path, created: true } });
+      const parsed = loadQc(written.path);
+      result.qc = {
+        path: written.path,
+        written: written.written,
+        modelname: qcModelName(parsed) ?? args.qc.modelname,
+        body: dmxName,
+        diagnostics: parsed.diagnostics,
+      };
+    }
+    return result as never;
+  },
+});
+
+export const fbxTools = [readFbxTool, fbxToSmdTool, fbxToDmxTool];

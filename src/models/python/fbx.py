@@ -19,8 +19,8 @@ What is read and what is not, stated plainly:
   Cubic tangents are sampled linearly, the documented fallback.
 * **Collision is optional.** `collision: "box"` writes the AABB and `"hull"` the convex
   hull as a `_phys.smd` for `$collisionmodel`; a flat model falls back to the box loudly.
-* **Blend shapes are counted, not exported.** SMD has no morph target; that is the DMX
-  path's job.
+* **Blend shapes are counted by this path, not exported.** SMD has no morph target; use
+  `fbx_to_dmx`, which writes the DMX flex graph from the same scene reader.
 * **Units are a flag, not a guess.** FBX is commonly in centimetres and Source is in
   inches, so a 180 cm character is 3x too tall unless `scale: 0.3937` is passed. The reader
   reports the file's `UnitScaleFactor` instead of silently rescaling.
@@ -411,6 +411,7 @@ class Scene:
         self.geometry_of: dict[int, int] = {}
         self.materials_of: dict[int, list[int]] = {}
         self.skin_of_geometry: dict[int, int] = {}
+        self.blend_shapes_of_geometry: dict[int, list[int]] = {}
         self.clusters_of_skin: dict[int, list[int]] = {}
         self.material_name: dict[int, str] = {}
         # (child, parent, property) links; animation curve nodes target models through these.
@@ -456,8 +457,11 @@ class Scene:
             elif child_node.name == "Material" and parent_node.name == "Model":
                 self.materials_of.setdefault(parent, []).append(child)
             elif child_node.name == "Deformer" and parent_node.name == "Geometry":
-                if _object_type(child_node) == "Skin":
+                kind = _object_type(child_node)
+                if kind == "Skin":
                     self.skin_of_geometry[parent] = child
+                elif kind == "BlendShape":
+                    self.blend_shapes_of_geometry.setdefault(parent, []).append(child)
             elif child_node.name == "Deformer" and parent_node.name == "Deformer":
                 if _object_type(parent_node) == "Skin":
                     self.clusters_of_skin.setdefault(parent, []).append(child)
@@ -794,6 +798,18 @@ def _scene_summary(root: Node, version: int, fmt: str) -> dict[str, Any]:
     clusters = [identifier for identifier in scene.of_class("Deformer") if _object_type(scene.objects[identifier]) == "Cluster"]
     animations = scene.of_class("AnimationStack")
     bones = [identifier for identifier in models if scene.model_type(identifier) in ("LimbNode", "Null")]
+    blend_shapes = [
+        identifier
+        for identifier in scene.of_class("Deformer")
+        if _object_type(scene.objects[identifier]) == "BlendShape"
+    ]
+    blend_shape_channels = [
+        scene.names[child]
+        for blend_shape in blend_shapes
+        for child in scene.children.get(blend_shape, [])
+        if scene.objects.get(child) is not None
+        and _object_type(scene.objects[child]) == "BlendShapeChannel"
+    ]
     return {
         "format": fmt,
         "version": version,
@@ -808,6 +824,7 @@ def _scene_summary(root: Node, version: int, fmt: str) -> dict[str, Any]:
             "skins": len(skins),
             "clusters": len(clusters),
             "animations": len(animations),
+            "blendShapes": len(blend_shapes),
         },
         "models": [
             {
@@ -820,6 +837,7 @@ def _scene_summary(root: Node, version: int, fmt: str) -> dict[str, Any]:
         ],
         "materials": [scene.material_name[identifier] for identifier in materials],
         "animations": [scene.names[identifier] for identifier in animations],
+        "blendShapeChannels": blend_shape_channels,
         "scene": scene,
     }
 
@@ -1079,91 +1097,19 @@ def _model_parent(scene: Scene, identifier: int) -> int | None:
     return None
 
 
-def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
-    from smd import smd_write
+def _bone_plan(
+    scene: Scene,
+    mesh_models: Sequence[int],
+    axis_y: bool,
+    scale: float,
+    diagnostics: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Bones, their parent indices and bind worlds, shared by the SMD and DMX writers.
 
-    source = Path(str(req.get("path", ""))).resolve()
-    if not source.is_file():
-        raise FbxError(f"{source} does not exist")
-    root, version, fmt, diagnostics = _load(source)
-    scene = Scene(root)
-
-    axis_option = str(req.get("axis", "auto")).lower()
-    if axis_option not in ("auto", "y", "z"):
-        raise FbxError("axis must be 'auto', 'y' or 'z'")
-    file_up = _up_axis(root)
-    if axis_option == "auto":
-        axis_y = file_up == 1
-    else:
-        axis_y = axis_option == "y"
-        if axis_y and file_up != 1:
-            diagnostics.append(
-                _diag(
-                    "warning",
-                    "fbx-axis-override",
-                    f"the file says UpAxis {file_up} but axis:'y' was requested",
-                )
-            )
-        if not axis_y and file_up == 1 and req.get("axis") is not None:
-            diagnostics.append(
-                _diag(
-                    "warning",
-                    "fbx-axis-override",
-                    "the file is Y-up but axis:'z' was requested; geometry stays as authored",
-                )
-            )
-
-    scale = float(req.get("scale", 1.0))
-    if not math.isfinite(scale) or scale <= 0.0:
-        raise FbxError("scale must be a positive finite number")
-    flip_v = bool(req.get("flipV", True))
-    use_transforms = bool(req.get("useNodeTransforms", True))
-    fallback_material = str(req.get("material") or "debug/debugempty")
-    limit_vertices = int(req.get("limitVertices", 2_000_000))
-    include = [str(name).lower() for name in (req.get("models") or [])]
-    export_animations = bool(req.get("exportAnimations", True))
-    animation_fps = float(req.get("animationFps", 30.0))
-    if not math.isfinite(animation_fps) or animation_fps <= 0.0:
-        raise FbxError("animationFps must be a positive finite number")
-    animation_filter = [str(name).lower() for name in (req.get("animations") or [])]
-    max_animation_frames = int(req.get("maxAnimationFrames", 20_000))
-    collision = str(req.get("collision", "none")).lower()
-    if collision not in {"none", "box", "hull"}:
-        raise FbxError("collision must be 'none', 'box' or 'hull'")
-    mass = float(req.get("mass", 10.0))
-    if not math.isfinite(mass) or mass <= 0.0:
-        raise FbxError("mass must be a positive finite number")
-    collision_thickness = float(req.get("collisionThickness", 1.0))
-    if not math.isfinite(collision_thickness) or collision_thickness <= 0.0:
-        raise FbxError("collisionThickness must be a positive finite number")
-
-    unit = _unit_scale(root)
-    if unit and abs(unit - 1.0) > 1e-6 and abs(unit - 2.54) > 1e-6:
-        diagnostics.append(
-            _diag(
-                "warning",
-                "fbx-units",
-                f"UnitScaleFactor is {unit:g}: FBX is often centimetres while Source units are "
-                "inches. Pass scale:0.3937 for a 1:1 centimetre file, or scale:1 if the DCC "
-                "already wrote Source-sized units",
-            )
-        )
-
-    # Every mesh model, optionally filtered by name.
-    mesh_models: list[int] = []
-    for identifier in scene.models():
-        if identifier not in scene.geometry_of:
-            continue
-        if include and scene.names[identifier].lower() not in include:
-            continue
-        mesh_models.append(identifier)
-    if not mesh_models:
-        raise FbxError(
-            f"{source}: no mesh model is selected"
-            + (f" by models {include!r}" if include else " (no Model has a connected Geometry)")
-        )
-
-    # Parent map and world transforms.
+    The SMD path needs this for its node table and frames, the DMX path for its joints.
+    Keeping one implementation is what stops the two outputs from disagreeing on which
+    models are bones and which pose is the bind pose.
+    """    # Parent map and world transforms.
     world_cache: dict[int, Mat4] = {}
     local_cache: dict[int, Mat4] = {}
 
@@ -1253,7 +1199,110 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     for identifier in bone_order:
         if identifier not in bind_world:
             bind_world[identifier] = world(identifier)
+    return {
+        "bone_order": bone_order,
+        "bone_names": bone_names,
+        "bone_parent": bone_parent,
+        "bone_of_model": bone_of_model,
+        "bind_world": bind_world,
+        "cluster_bone": cluster_bone,
+        "scene_matrix": scene_matrix,
+        "world": world,
+    }
 
+def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
+    from smd import smd_write
+
+    source = Path(str(req.get("path", ""))).resolve()
+    if not source.is_file():
+        raise FbxError(f"{source} does not exist")
+    root, version, fmt, diagnostics = _load(source)
+    scene = Scene(root)
+
+    axis_option = str(req.get("axis", "auto")).lower()
+    if axis_option not in ("auto", "y", "z"):
+        raise FbxError("axis must be 'auto', 'y' or 'z'")
+    file_up = _up_axis(root)
+    if axis_option == "auto":
+        axis_y = file_up == 1
+    else:
+        axis_y = axis_option == "y"
+        if axis_y and file_up != 1:
+            diagnostics.append(
+                _diag(
+                    "warning",
+                    "fbx-axis-override",
+                    f"the file says UpAxis {file_up} but axis:'y' was requested",
+                )
+            )
+        if not axis_y and file_up == 1 and req.get("axis") is not None:
+            diagnostics.append(
+                _diag(
+                    "warning",
+                    "fbx-axis-override",
+                    "the file is Y-up but axis:'z' was requested; geometry stays as authored",
+                )
+            )
+
+    scale = float(req.get("scale", 1.0))
+    if not math.isfinite(scale) or scale <= 0.0:
+        raise FbxError("scale must be a positive finite number")
+    flip_v = bool(req.get("flipV", True))
+    use_transforms = bool(req.get("useNodeTransforms", True))
+    fallback_material = str(req.get("material") or "debug/debugempty")
+    limit_vertices = int(req.get("limitVertices", 2_000_000))
+    include = [str(name).lower() for name in (req.get("models") or [])]
+    export_animations = bool(req.get("exportAnimations", True))
+    animation_fps = float(req.get("animationFps", 30.0))
+    if not math.isfinite(animation_fps) or animation_fps <= 0.0:
+        raise FbxError("animationFps must be a positive finite number")
+    animation_filter = [str(name).lower() for name in (req.get("animations") or [])]
+    max_animation_frames = int(req.get("maxAnimationFrames", 20_000))
+    collision = str(req.get("collision", "none")).lower()
+    if collision not in {"none", "box", "hull"}:
+        raise FbxError("collision must be 'none', 'box' or 'hull'")
+    mass = float(req.get("mass", 10.0))
+    if not math.isfinite(mass) or mass <= 0.0:
+        raise FbxError("mass must be a positive finite number")
+    collision_thickness = float(req.get("collisionThickness", 1.0))
+    if not math.isfinite(collision_thickness) or collision_thickness <= 0.0:
+        raise FbxError("collisionThickness must be a positive finite number")
+
+    unit = _unit_scale(root)
+    if unit and abs(unit - 1.0) > 1e-6 and abs(unit - 2.54) > 1e-6:
+        diagnostics.append(
+            _diag(
+                "warning",
+                "fbx-units",
+                f"UnitScaleFactor is {unit:g}: FBX is often centimetres while Source units are "
+                "inches. Pass scale:0.3937 for a 1:1 centimetre file, or scale:1 if the DCC "
+                "already wrote Source-sized units",
+            )
+        )
+
+    # Every mesh model, optionally filtered by name.
+    mesh_models: list[int] = []
+    for identifier in scene.models():
+        if identifier not in scene.geometry_of:
+            continue
+        if include and scene.names[identifier].lower() not in include:
+            continue
+        mesh_models.append(identifier)
+    if not mesh_models:
+        raise FbxError(
+            f"{source}: no mesh model is selected"
+            + (f" by models {include!r}" if include else " (no Model has a connected Geometry)")
+        )
+
+    plan = _bone_plan(scene, mesh_models, axis_y, scale, diagnostics)
+    bone_order = plan["bone_order"]
+    bone_names = plan["bone_names"]
+    bone_parent = plan["bone_parent"]
+    bone_of_model = plan["bone_of_model"]
+    bind_world = plan["bind_world"]
+    cluster_bone = plan["cluster_bone"]
+    scene_matrix = plan["scene_matrix"]
+    world = plan["world"]
     # The bind pose must be a consistent hierarchy: a cluster world is absolute, so a bone's
     # local is inverse(parent world) * bone world. Bones without clusters use node TRS.
     bone_world: dict[int, Mat4] = {}

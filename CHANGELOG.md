@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.106-alpha - 2026-11-19
+
+- **FBX shape keys become Source flexes.** `fbx_to_dmx` reads `BlendShapeChannel` and its
+  `Shape` geometries, computes the delta as the shape's `Vertices` minus the base mesh at
+  the control points its `Indexes` names, and writes a DMX model source with one
+  `DmeVertexDeltaData` and `DmeCombinationInputControl` per channel plus the combination
+  operator. A channel with several in-between shapes exports the largest `FullWeights`
+  entry and reports the others.
+- **The DMX graph is now shared, not copied.** `dmxmodel.py` holds the Scene/joint/mesh/
+  delta/operator assembly and the `deltaStateWeights` detail that makes `studiomdl` write a
+  rule; both `gltf_to_dmx` and `fbx_to_dmx` build the same neutral data and call it.
+- **Proven with the real compiler:** a skinned triangle with one `BlendShapeChannel` "Smile"
+  and three +4 deltas produces a DMX with `DmeMesh`/`DmeVertexDeltaData`/
+  `DmeCombinationInputControl`/`DmeCombinationOperator`, and `studiomdl` reports
+  `flexdesc`, `flexcontroller` and `flexrule` all at least 1. The QC needs no `$flex`.
+- **Tool count: 162.** Tests: 148 files, 1416 passed, 33 skipped.
+
 ## 0.0.105-alpha - 2026-11-19
 
 - **FBX collision models.** `fbx_to_smd` takes `collision: "box"` or `"hull"`, the same

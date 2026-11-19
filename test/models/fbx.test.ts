@@ -19,8 +19,9 @@ import { dirname, join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
 import { readModelInfoTool } from "../../src/assets/typescript/tools/content.js";
-import { fbxToSmdTool, readFbxTool } from "../../src/models/typescript/tools/fbx.js";
+import { fbxToDmxTool, fbxToSmdTool, readFbxTool } from "../../src/models/typescript/tools/fbx.js";
 import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";
 import { config, ctx as sharedCtx, has } from "../support/env.js";
 
@@ -281,7 +282,7 @@ function tetrahedron(): Buffer {
 }
 
 /** Two LimbNode bones, a skinned triangle and a cluster binding bone 201. */
-function skinnedTriangle(animated = false): Buffer {
+function skinnedTriangle(animated = false, morph = false): Buffer {
   const writer = new Binary();
   header(writer, 2, 1);
   const bind = [
@@ -334,6 +335,23 @@ function skinnedTriangle(animated = false): Buffer {
             ]),
         ]
       : []),
+    ...(morph
+      ? [
+          () =>
+            writer.node("Deformer", [i64(600), str("Deformer::Blend"), str("BlendShape")], []),
+          () =>
+            writer.node(
+              "Deformer",
+              [i64(601), str("BlendShapeChannel::Smile"), str("BlendShapeChannel")],
+              [() => writer.node("FullWeights", [floats([100])], [])],
+            ),
+          () =>
+            writer.node("Geometry", [i64(602), str("Geometry::SmileShape"), str("Shape")], [
+              () => writer.node("Indexes", [ints([0, 1, 2])], []),
+              () => writer.node("Vertices", [doubles([4, 0, 0, 68, 0, 0, 4, 64, 0])], []),
+            ]),
+        ]
+      : []),
     () =>
       writer.node("Deformer", [i64(400), str("Deformer::Skin"), str("Skin")], [
         () => writer.node("Indexes", [ints([0, 1, 2])], []),
@@ -360,6 +378,13 @@ function skinnedTriangle(animated = false): Buffer {
           () => opConnection(writer, 502, 201, "Lcl Translation"),
           () => connection(writer, 503, 502),
           () => opConnection(writer, 503, 502, "d|X"),
+        ]
+      : []),
+    ...(morph
+      ? [
+          () => connection(writer, 600, 100),
+          () => connection(writer, 601, 600),
+          () => connection(writer, 602, 601),
         ]
       : []),
     ]);
@@ -592,6 +617,125 @@ describe.skipIf(!has.sidecar)("FBX", () => {
         )) as { found: boolean; hasPhysics: boolean };
         expect(info.found).toBe(true);
         expect(info.hasPhysics).toBe(true);
+      } finally {
+        const folder = compiledModel
+          ? dirname(compiledModel)
+          : config.gameDir
+            ? join(config.gameDir, "models", unique)
+            : null;
+        if (folder && existsSync(folder) && folder.toLowerCase().includes(unique.toLowerCase())) {
+          rmSync(folder, { recursive: true, force: true });
+        }
+      }
+    },
+    120_000,
+  );
+
+  it("writes one flex per BlendShapeChannel into a DMX", async () => {
+    const path = join(scratch, "morph.fbx");
+    writeFileSync(path, skinnedTriangle(false, true));
+    const out = join(scratch, "morph.dmx");
+    const result = (await fbxToDmxTool.handler(
+      {
+        path,
+        output: out,
+        axis: "auto",
+        scale: 1,
+        useNodeTransforms: true,
+        flipV: true,
+        models: [],
+        material: "debug/debugempty",
+        overwrite: false,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as {
+      verified: boolean;
+      morphTargetCount: number;
+      morphTargets: Array<{ name: string; deltas: number; maxDelta: number }>;
+      boneCount: number;
+    };
+    expect(result.verified).toBe(true);
+    expect(result.boneCount).toBe(2);
+    expect(result.morphTargetCount).toBe(1);
+    expect(result.morphTargets[0]).toMatchObject({ name: "Smile", deltas: 3, maxDelta: 4 });
+
+    const read = (await callSidecar(
+      "dmx_read",
+      { path: out, maxDepth: 2 },
+      config,
+    )) as { read: boolean; elementTypes: Record<string, number> };
+    expect(read.read).toBe(true);
+    expect(read.elementTypes.DmeVertexDeltaData).toBe(1);
+    expect(read.elementTypes.DmeCombinationInputControl).toBe(1);
+    expect(read.elementTypes.DmeCombinationOperator).toBe(1);
+    expect(read.elementTypes.DmeMesh).toBe(1);
+  });
+
+  it(
+    "compiles the FBX DMX to a model with flex rules",
+    async () => {
+      if (!has.toolchain) return;
+      const dir = join(scratch, "dmx-compile");
+      mkdirSync(dir, { recursive: true });
+      const path = join(dir, "morph.fbx");
+      writeFileSync(path, skinnedTriangle(false, true));
+      const dmx = join(dir, "morph.dmx");
+      const qc = join(dir, "morph.qc");
+      const unique = `hsmcp_fbx_flex_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6)}`;
+      let compiledModel: string | null = null;
+      try {
+        await fbxToDmxTool.handler(
+          {
+            path,
+            output: dmx,
+            axis: "auto",
+            scale: 1,
+            useNodeTransforms: true,
+            flipV: true,
+            models: [],
+            material: "debug/debugempty",
+            qc: {
+              path: qc,
+              modelname: `${unique}/morph.mdl`,
+              cdmaterials: [`models/${unique}`],
+              surfaceprop: "flesh",
+              staticprop: false,
+              sequence: "idle",
+              fps: 30,
+              animationSequences: false,
+              animationArgs: [],
+              overwrite: false,
+            },
+            overwrite: false,
+            confirm: true,
+          } as never,
+          ctx,
+        );
+        const compile = (await runStudiomdlTool.handler(
+          { qc, timeoutMinutes: 2, confirm: true },
+          ctx,
+        )) as {
+          ok: boolean;
+          model: string | null;
+          warning: string | null;
+        };
+        compiledModel = compile.model;
+        expect(compile.warning).toBeNull();
+        expect(compile.ok).toBe(true);
+        const info = (await readModelInfoTool.handler(
+          { model: `models/${unique}/morph.mdl` },
+          ctx,
+        )) as {
+          found: boolean;
+          flexdescCount: number;
+          flexcontrollerCount: number;
+          flexruleCount: number;
+        };
+        expect(info.found).toBe(true);
+        expect(info.flexdescCount).toBeGreaterThanOrEqual(1);
+        expect(info.flexcontrollerCount).toBeGreaterThanOrEqual(1);
+        expect(info.flexruleCount).toBeGreaterThanOrEqual(1);
       } finally {
         const folder = compiledModel
           ? dirname(compiledModel)

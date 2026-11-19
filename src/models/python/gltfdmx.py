@@ -27,12 +27,17 @@ animation. A DMX can carry animation logs too, but that is a separate piece of w
 
 from __future__ import annotations
 
-import io
 import math
 import re
 from pathlib import Path
 from typing import Any, Sequence
 
+from dmxmodel import (
+    DmxBone,
+    DmxLoop,
+    DmxMeshData,
+    write_model_dmx,
+)
 from modelmath import (
     Mat4,
     mat3_normal,
@@ -77,149 +82,12 @@ def _safe_name(name: str) -> str:
     return cleaned or "shape"
 
 
-class _Dmx:
-    """The small set of `srctools.dmx` calls the model graph needs."""
-
-    def __init__(self) -> None:
-        from srctools.dmx import Element
-
-        self.Element = Element
-
-    def element(self, name: str, kind: str) -> Any:
-        return self.Element(name, kind)
-
-    def string(self, element: Any, name: str, value: str) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute(name, ValueType.STRING, str(value))
-
-    def boolean(self, element: Any, name: str, value: bool) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute(name, ValueType.BOOL, bool(value))
-
-    def integer(self, element: Any, name: str, value: int) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute(name, ValueType.INT, int(value))
-
-    def number(self, element: Any, name: str, value: float) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute(name, ValueType.FLOAT, float(value))
-
-    def vec3(self, element: Any, name: str, value: Sequence[float]) -> None:
-        from srctools.dmx import Attribute, ValueType
-        from srctools.math import FrozenVec
-
-        element[name] = Attribute(name, ValueType.VEC3, FrozenVec(value))
-
-    def quat(self, element: Any, name: str, value: Sequence[float]) -> None:
-        from srctools.dmx import Attribute, Quaternion, ValueType
-
-        element[name] = Attribute(name, ValueType.QUATERNION, Quaternion(*value))
-
-    def ref(self, element: Any, name: str, value: Any) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute(name, ValueType.ELEMENT, value)
-
-    def refs(self, element: Any, name: str, values: Sequence[Any]) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute.array(name, ValueType.ELEMENT, list(values))
-
-    def ints(self, element: Any, name: str, values: Sequence[int]) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute.array(name, ValueType.INT, [int(v) for v in values])
-
-    def floats(self, element: Any, name: str, values: Sequence[float]) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute.array(name, ValueType.FLOAT, [float(v) for v in values])
-
-    def strings(self, element: Any, name: str, values: Sequence[str]) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute.array(name, ValueType.STRING, [str(v) for v in values])
-
-    def vec3s(self, element: Any, name: str, values: Sequence[Sequence[float]]) -> None:
-        from srctools.dmx import Attribute, ValueType
-        from srctools.math import FrozenVec
-
-        element[name] = Attribute.array(name, ValueType.VEC3, [FrozenVec(value) for value in values])
-
-    def vec2s(self, element: Any, name: str, values: Sequence[Sequence[float]]) -> None:
-        from srctools.dmx import Attribute, ValueType
-
-        element[name] = Attribute.array(name, ValueType.VEC2, [tuple(value) for value in values])
-
-
-def _transform(dmx: _Dmx, name: str, position: Sequence[float], quat: Sequence[float]) -> Any:
-    element = dmx.element(name, "DmeTransform")
-    dmx.string(element, "name", name)
-    dmx.vec3(element, "position", position)
-    dmx.quat(element, "orientation", quat)
-    return element
-
-
 def _translation_and_quaternion(local: Mat4) -> tuple[tuple[float, float, float], tuple[float, float, float, float], bool]:
     translation, quaternion, scale, mirrored = mat4_decompose(local)
     return translation, quaternion, mirrored or any(abs(value - 1.0) > 1e-3 for value in scale)
 
 
-def _skeleton(
-    dmx: _Dmx,
-    document: dict[str, Any],
-    kept: Sequence[int],
-    parents: Sequence[int],
-    names: dict[int, str],
-    pose_world: dict[int, Mat4],
-) -> tuple[Any, list[Any], list[Any], list[dict[str, Any]], int]:
-    """DmeModel joint elements, transforms, base transforms, and the root children."""
-    joints: dict[int, Any] = {}
-    transforms: dict[int, Any] = {}
-    base_transforms: dict[int, Any] = {}
-    scale_notes = 0
-    for node in kept:
-        local = pose_world[node]
-        parent = parents[node]
-        if parent in pose_world:
-            inverse_parent = mat4_inverse(pose_world[parent])
-            # A singular parent bind pose is rare; keep the world rather than writing NaN.
-            local = mat4_mul(inverse_parent, pose_world[node]) if inverse_parent else pose_world[node]
-        elif parent >= 0:
-            # The parent is not a kept bone, so this is a root of the output skeleton.
-            local = pose_world[node]
-        translation, quaternion, questionable = _translation_and_quaternion(local)
-        if parent in pose_world and questionable:
-            scale_notes += 1
-        joint = dmx.element(names[node], "DmeJoint")
-        dmx.string(joint, "name", names[node])
-        transform = _transform(dmx, names[node], translation, quaternion)
-        base = _transform(dmx, names[node], translation, quaternion)
-        dmx.ref(joint, "transform", transform)
-        dmx.refs(joint, "children", [])
-        joints[node] = joint
-        transforms[node] = transform
-        base_transforms[node] = base
-        # Children are attached in a second pass, once every joint element exists.
-    for node in kept:
-        children = [joints[child] for child in kept if parents[child] == node]
-        dmx.refs(joints[node], "children", children)
-
-    roots: list[dict[str, Any]] = []
-    for node in kept:
-        if parents[node] not in joints:
-            roots.append({"node": node, "joint": joints[node], "transform": transforms[node]})
-    return roots, [joints[node] for node in kept], [transforms[node] for node in kept], [
-        {"node": node, "base": base_transforms[node]} for node in kept
-    ], scale_notes
-
-
 def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
-    from srctools.dmx import Element
 
     source = Path(str(req.get("path", ""))).resolve()
     if not source.is_file():
@@ -264,10 +132,19 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
     }
 
     warnings: list[str] = []
-    dmx = _Dmx()
-    skeleton_roots, joint_elements, joint_transforms, base_transforms, scale_notes = _skeleton(
-        dmx, document, kept, parents, names, pose_world
-    )
+    bones: list[DmxBone] = []
+    scale_notes = 0
+    for node in kept:
+        local = pose_world[node]
+        parent = parents[node]
+        parent_index = bone_of.get(parent)
+        if parent_index is not None:
+            inverse_parent = mat4_inverse(pose_world[parent])
+            local = mat4_mul(inverse_parent, pose_world[node]) if inverse_parent else pose_world[node]
+        translation, quaternion, questionable = _translation_and_quaternion(local)
+        if parent_index is not None and questionable:
+            scale_notes += 1
+        bones.append(DmxBone(names[node], parent_index, translation, quaternion))
     if scale_notes:
         warnings.append(
             f"{scale_notes} bone(s) carry a scale other than 1; a DMX DmeTransform has no "
@@ -505,135 +382,27 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
             "studiomdl accepts this but the vertex then behaves unlike either bone"
         )
 
-    # The fixture's DS weights are one (0, 0) per control; without them studiomdl writes
-    # the flex payload but no rules, and a flex that is not driven does nothing in game.
-    controls: list[Any] = []
-    delta_states: list[Any] = []
-    for name in morph_order:
-        deltas = morphs[name]
-        indices = sorted(deltas)
-        delta = dmx.element(name, "DmeVertexDeltaData")
-        dmx.string(delta, "name", name)
-        dmx.strings(delta, "vertexFormat", ["positions", "normals"])
-        dmx.vec3s(delta, "positions", [deltas[index] for index in indices])
-        dmx.ints(delta, "positionsIndices", indices)
-        dmx.vec3s(delta, "normals", [])
-        dmx.ints(delta, "normalsIndices", [])
-        delta_states.append(delta)
-
-        control = dmx.element(name, "DmeCombinationInputControl")
-        dmx.string(control, "name", name)
-        dmx.strings(control, "rawControlNames", [name])
-        dmx.boolean(control, "stereo", False)
-        dmx.boolean(control, "eyelid", False)
-        dmx.number(control, "flexMax", 1.0)
-        dmx.number(control, "flexMin", 0.0)
-        dmx.floats(control, "wrinkleScales", [0.0])
-        controls.append(control)
-    warnings.extend(dict.fromkeys(morph_notes))
-
-    joint_count = max((len(links) for links in position_links), default=1)
-    if joint_count < 1:
-        joint_count = 1
-    position_indices = [loop["position"] for loop in loops]
-    joint_weights: list[float] = []
-    joint_indices: list[int] = []
-    for links in position_links:
-        padded = list(links) + [{"bone": 0, "weight": 0.0}] * (joint_count - len(links))
-        for link in padded[:joint_count]:
-            joint_indices.append(int(link["bone"]))
-            joint_weights.append(float(link["weight"]))
-
-    bind = dmx.element("bind", "DmeVertexData")
-    dmx.string(bind, "name", "bind")
-    dmx.strings(
-        bind,
-        "vertexFormat",
-        ["positions", "normals", "textureCoordinates", "jointWeights", "jointIndices", "balance"],
+    mesh_data = DmxMeshData(
+        positions=positions,
+        position_links=position_links,
+        loops=[DmxLoop(**loop) for loop in loops],
+        faces_by_material=faces_by_material,
+        materials=materials,
+        morphs=morphs,
+        morph_order=morph_order,
+        morph_notes=list(morph_notes),
     )
-    dmx.boolean(bind, "flipVCoordinates", True)
-    dmx.integer(bind, "jointCount", joint_count)
-    dmx.vec3s(bind, "positions", positions)
-    dmx.ints(bind, "positionsIndices", position_indices)
-    dmx.vec3s(bind, "normals", [loop["normal"] for loop in loops])
-    dmx.ints(bind, "normalsIndices", list(range(len(loops))))
-    dmx.vec2s(bind, "textureCoordinates", [loop["uv"] for loop in loops])
-    dmx.ints(bind, "textureCoordinatesIndices", list(range(len(loops))))
-    dmx.floats(bind, "jointWeights", joint_weights)
-    dmx.ints(bind, "jointIndices", joint_indices)
-    dmx.floats(bind, "balance", [1.0] * len(positions))
-    dmx.ints(bind, "balanceIndices", position_indices)
-
-    mesh = dmx.element("body", "DmeMesh")
-    dmx.string(mesh, "name", "body")
-    dmx.boolean(mesh, "visible", True)
-    dmx.ref(mesh, "bindState", bind)
-    dmx.ref(mesh, "currentState", bind)
-    dmx.refs(mesh, "baseStates", [bind])
-    face_sets: list[Any] = []
-    for material, faces in faces_by_material.items():
-        face_set = dmx.element(material.rsplit("/", 1)[-1] or "material", "DmeFaceSet")
-        dmx.string(face_set, "name", material.rsplit("/", 1)[-1] or "material")
-        dmx.ints(face_set, "faces", faces)
-        material_element = dmx.element(material.rsplit("/", 1)[-1] or "material", "DmeMaterial")
-        dmx.string(material_element, "name", material.rsplit("/", 1)[-1] or "material")
-        dmx.string(material_element, "mtlName", materials[material])
-        dmx.ref(face_set, "material", material_element)
-        face_sets.append(face_set)
-    dmx.refs(mesh, "faceSets", face_sets)
-    if controls:
-        dmx.refs(mesh, "deltaStates", delta_states)
-        dmx.vec2s(mesh, "deltaStateWeights", [[0.0, 0.0] for _ in controls])
-        dmx.vec2s(mesh, "deltaStateWeightsLagged", [[0.0, 0.0] for _ in controls])
-
-    mesh_transform = _transform(dmx, "body", [0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0])
-    mesh_base_transform = _transform(dmx, "body", [0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0])
-    mesh_dag = dmx.element("body", "DmeDag")
-    dmx.string(mesh_dag, "name", "body")
-    dmx.ref(mesh_dag, "transform", mesh_transform)
-    dmx.ref(mesh_dag, "shape", mesh)
-    dmx.refs(mesh_dag, "children", [])
-
-    root = dmx.element("rig", "DmeModel")
-    dmx.string(root, "name", "rig")
-    dmx.refs(root, "children", [entry["joint"] for entry in skeleton_roots] + [mesh_dag])
-    base_list = dmx.element("base", "DmeTransformList")
-    dmx.string(base_list, "name", "base")
-    dmx.refs(base_list, "transforms", [entry["base"] for entry in base_transforms] + [mesh_base_transform])
-    dmx.refs(root, "baseStates", [base_list])
-    identity = _transform(dmx, "model", [0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0])
-    dmx.ref(root, "transform", identity)
-    dmx.refs(root, "jointList", joint_elements + [mesh_dag])
-    dmx.refs(root, "jointTransforms", joint_transforms + [mesh_transform])
-
-    scene = dmx.element("Scene", "DmElement")
-    dmx.string(scene, "name", "Scene")
-    dmx.ref(scene, "skeleton", root)
-    dmx.ref(scene, "model", root)
-    if controls:
-        operator = dmx.element("combinationOperator", "DmeCombinationOperator")
-        dmx.string(operator, "name", "combinationOperator")
-        dmx.refs(operator, "controls", controls)
-        dmx.vec3s(operator, "controlValues", [[0.0, 0.0, 0.5] for _ in controls])
-        dmx.vec3s(operator, "controlValuesLagged", [[0.0, 0.0, 0.5] for _ in controls])
-        dmx.boolean(operator, "usesLaggedValues", False)
-        dmx.refs(operator, "dominators", [])
-        dmx.refs(operator, "targets", [mesh])
-        dmx.ref(scene, "combinationOperator", operator)
 
     output = Path(str(req.get("out", "") or req.get("output", ""))).resolve()
     if output.suffix.lower() != ".dmx":
         output = output.with_suffix(".dmx")
     overwrite = bool(req.get("overwrite", False))
-    if output.exists() and not overwrite:
-        raise GltfError(f"{output} already exists; pass overwrite:true to replace it")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    buffer = io.BytesIO()
-    scene.export_binary(buffer, version=4, fmt_name="model", fmt_ver=15)
-    data = buffer.getvalue()
-    output.write_bytes(data)
-    with output.open("rb") as fh:
-        back, back_fmt, back_version = Element.parse(fh)
+    try:
+        written = write_model_dmx(output, bones, mesh_data, overwrite=overwrite)
+    except ValueError as error:
+        raise GltfError(str(error)) from error
+    warnings.extend(written.get("warnings", []))
+    warnings = list(dict.fromkeys(warnings))
 
     return {
         "path": str(output),
@@ -665,7 +434,7 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
         "ignoredAnimations": ignored_animations,
         "warnings": warnings,
         "diagnostics": diagnostics,
-        "verified": back.name == "Scene" and back.type == "DmElement",
+        "verified": written["verified"],
         "note": (
             "A DMX model with shape keys. L4D2's studiomdl reads it directly and writes "
             "flexdesc/controller/rule records; the QC needs no $flex command. The mesh is "

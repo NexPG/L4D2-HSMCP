@@ -10,6 +10,7 @@ Both binary 7.x and ASCII are read; no SDK, Blender or third-party importer is i
 |---|---|
 | Inspect a `.fbx` | `read_fbx` |
 | Convert geometry, skeleton and weights | `fbx_to_smd` |
+| Convert shape keys to Source flexes | `fbx_to_dmx` |
 | Export every animation stack as an SMD + `$sequence` | `fbx_to_smd` (default) with the `qc` block |
 | Make a solid prop | `fbx_to_smd` with `collision: "box"` or `"hull"` |
 | Write the QC in the same call | `fbx_to_smd` with the `qc` block |
@@ -84,9 +85,28 @@ What the path does with the curves:
 
 | Present in the file | Result |
 |---|---|
-| `BlendShape` | Counted; SMD has no morph target. Use `gltf_to_dmx` for flexes |
+| `BlendShape` | Exported by `fbx_to_dmx`; `fbx_to_smd` counts it because SMD has no morph target |
 | Several mesh models | Merged into one SMD, with a note: `$bodygroup` is a QC decision |
 | No material connection | `material` (default `debug/debugempty`), which compiles as the pink checkerboard, not an error |
+
+## Shape keys and flexes
+
+An SMD has no morph target, so a face with shape keys goes through `fbx_to_dmx` instead of
+`fbx_to_smd`. It writes a DMX model source: the same skeleton and bind pose, the geometry as
+one `DmeMesh`, and one flex per `BlendShapeChannel`.
+
+- A `BlendShapeChannel` owns one or more `Shape` geometries. The delta is that shape's
+  `Vertices` minus the base mesh at the control points its `Indexes` names; both are in the
+  same mesh space, so the same node transform that places the geometry places the delta.
+- A channel with several shapes is an in-between chain. The shape with the largest
+  `FullWeights` entry becomes the flex; the others are named in `warnings`.
+- The graph is shared with the glTF path (`dmxmodel.py`), including the detail that makes
+  flexes work: `DmeMesh.deltaStateWeights` and `deltaStateWeightsLagged` carry one `(0, 0)`
+  per control. Without them the compiler writes the payload and `flexrule = 0`.
+- The QC names the DMX as `$body` and needs no `$flex` command. `studiomdl` writes
+  `flexdesc`, `flexcontroller` and `flexrule` from the graph.
+- A delta beyond ±8 is clamped by `studiomdl` and reported. Animations are not written to
+  the DMX; use `fbx_to_smd` when the model needs sequences.
 
 ## Collision
 

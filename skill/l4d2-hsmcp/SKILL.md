@@ -164,8 +164,8 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 - **Model import from DCC formats.** glTF/GLB and FBX (binary 7.x and ASCII) are read
   natively, and QC/SMD compilation with `studiomdl` is covered. FBX animations are exported
   as one SMD per stack with `$sequence` lines, and `collision: "box"`/`"hull"` writes the
-  `_phys.smd`; blend shapes are counted, not exported — SMD has no morph target, so flexes
-  need the glTF/DMX route.
+  `_phys.smd`; shape keys go through `fbx_to_dmx` as DMX flexes, while `fbx_to_smd` counts
+  them because SMD has no morph target.
 - **3D-skybox composition.** `write_sky_camera` places the camera and `write_skybox_copy`
   makes the scaled copy; choosing and sealing what to copy is design work.
 
