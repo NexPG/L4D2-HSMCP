@@ -52,6 +52,31 @@ EntFire("finale", "ForceFinaleStart", "", 50, null);
   adds a survivor bot and `director_start` starts the Director when a stock map does not
   spawn the team by itself.
 
+## When the assertion is minutes away
+
+`EntFire` schedules in seconds and the harness only waits 15 s after the last marker, so a
+four-minute survival round or a slow boss needs a different clock: a map entity's.
+
+`schedule` writes `scripts/vscripts/hsmcp_schedule.nut` for the run. It spawns a
+`point_servercommand` and one `logic_timer` per entry, whose `OnTimer` output runs the command
+on the server at that second:
+
+```json
+{
+  "schedule": [
+    { "atSeconds": 60, "command": "echo HSMCP_TICK_60" },
+    { "atSeconds": 240, "command": "echo HSMCP_TICK_240" },
+    { "atSeconds": 300, "command": "director_stop 1" }
+  ]
+}
+```
+
+A marker can then match `HSMCP_TICK_240` four minutes in, and the screenshot follows it.
+`AddOutput` carries its parameter comma-separated, so a scheduled command cannot contain a
+comma, a double quote or a newline; the generator refuses those instead of writing a broken
+timer.
+
+
 ## The environment limit
 
 A direct `left4dead2.exe` launch reaches `Disconnect: No Steam logon` after about a minute.

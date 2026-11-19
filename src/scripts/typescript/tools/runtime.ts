@@ -40,6 +40,7 @@ import {
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { captureWindow } from "../../../maps/typescript/screenshot/window.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { SCHEDULE_FILE, scheduleScript } from "../vscript/schedule.js";
 
 const VEC3 = z.array(z.number()).length(3);
 
@@ -504,12 +505,25 @@ export const runMapTest = defineTool({
       .default([])
       .describe(
         "Console commands written to `cfg/listenserver.cfg`, which the engine executes at server " +
-        "start -- before the map's entities exist. `ent_fire` at that moment finds nothing; for " +
-        "a delayed action use a VScript probe (`script_execute`) with `EntFire(..., delay)`, or " +
-        "the map's own timer. The file is restored afterwards, and `sv_cheats 1` is prepended. " +
-          "the previous file restored afterwards. This is how a test forces a finale " +
-          "(`ent_fire finale ForceFinaleStart`) or fires a named entity without a player " +
-          "walking there. `sv_cheats 1` is prepended.",
+          "start -- before the map's entities exist. `ent_fire` at that moment finds nothing; " +
+          "for an action seconds later use `schedule`. The file is restored afterwards and " +
+          "`sv_cheats 1` is prepended.",
+      ),
+    schedule: z
+      .array(
+        z.object({
+          atSeconds: z.number().int().min(1).max(600),
+          command: z.string().min(1),
+        }),
+      )
+      .default([])
+      .describe(
+        "Server console commands at fixed seconds after the map loads, e.g. " +
+          "`{ \"atSeconds\": 240, \"command\": \"echo HSMCP_TICK_240\" }`. A generated " +
+          "`hsmcp_schedule.nut` spawns a `logic_timer` per entry and runs the command through " +
+          "`point_servercommand`, so a marker can match at four minutes instead of seconds. " +
+          "A command cannot contain a comma, a double quote or a newline: `AddOutput` passes " +
+          "it comma-separated.",
       ),
     screenshot: z
       .boolean()
@@ -555,6 +569,7 @@ export const runMapTest = defineTool({
     bspInstalled: z.boolean(),
     scriptsInstalled: z.number(),
     commandsRun: z.array(z.string()),
+    scheduleArmed: z.number(),
     /** One entry per marker reached, in order, with the line that matched and its time. */
     timeline: z.array(
       z.object({
@@ -625,7 +640,21 @@ export const runMapTest = defineTool({
     // previous file is restored, because this is a test harness, not a server config.
     const cfgPath = join(gameDir, "cfg", "listenserver.cfg");
     const cfgBackup = `${cfgPath}.hsmcp-backup`;
-    const commands = args.commands ?? [];
+    let commands = args.commands ?? [];
+    if (args.schedule.length > 0) {
+      // Time moves only for map entities, so a test that looks four minutes in is driven by
+      // a generated `logic_timer` script rather than by the harness.
+      const target = join(gameDir, "scripts", "vscripts", SCHEDULE_FILE);
+      mkdirSync(dirname(target), { recursive: true });
+      const had = existsSync(target);
+      if (had) {
+        rmSync(`${target}.hsmcp-backup`, { force: true });
+        copyFileSync(target, `${target}.hsmcp-backup`);
+      }
+      writeFileSync(target, scheduleScript(args.schedule), "utf8");
+      scriptBackups.push({ path: target, had });
+      commands = ["script_execute hsmcp_schedule", ...commands];
+    }
     let cfgWritten = false;
     if (commands.length > 0) {
       mkdirSync(dirname(cfgPath), { recursive: true });
@@ -784,6 +813,7 @@ export const runMapTest = defineTool({
       bspInstalled: staged.bspInstalled,
       scriptsInstalled: scriptBackups.length,
       commandsRun: commands,
+      scheduleArmed: args.schedule.length,
       timeline,
       missing,
       logTail: log

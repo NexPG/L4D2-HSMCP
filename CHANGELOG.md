@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.113-alpha - 2026-11-21
+
+- **`run_map_test` can run commands minutes into a match.** `schedule` takes
+  `{ atSeconds, command }` entries; the harness writes `hsmcp_schedule.nut`, which spawns a
+  `point_servercommand` and one `logic_timer` per entry, and `script_execute`s it. A command
+  cannot contain a comma, a double quote or a newline, because `AddOutput` carries it
+  comma-separated -- the generator refuses instead of writing a broken timer. Verified in
+  game: four entries armed, markers at 62.7 s, 78 s and 92.8 s, `scheduleArmed: 4`.
+- **Survival passed the Bronze threshold.** With `director_stop 1` applied 20 s after the
+  start (waves stop, the timer keeps running) the round reached `04:50.24` against a
+  `07:00.00` Silver Standard -- the Bronze bar is crossed, with the caveat that the last
+  4.5 minutes had no waves. Tank waves were proven separately (tank at 65 s, wipe, restart).
+- **Scavenge pickup is still open, and now it is clear why.** After `ForceScavengeStart` the
+  dev map has only its 16 `weapon_scavenge_item_spawn` entities; no `weapon_scavenge_item`
+  exists to be used, and a player has no `UseTarget` method, while `EntFire` on the classname
+  does nothing. A pickup needs a map with a real scavenge goal.
+- **Tool count stays 164.** Tests: 150 files, 1435 passed, 33 skipped.
+
 ## 0.0.112-alpha - 2026-11-21
 
 - **A written `.pcf` renders now.** The bug was the child graph: the engine reads

@@ -182,7 +182,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_vpk` | list a `.vpk` (directory or numbered archive), optionally verifying every CRC |
 | `run_vpk_extract` | extract a `.vpk` into a directory, refusing names that escape it |
 | `run_nav_generate` | launch the game and generate `.nav` + `<map>_nav.txt` for loose maps, with the add-on archives moved aside |
-| `run_map_test` | launch an installed map (directly or through Steam), wait for one pattern or an ordered list of `markers`, optionally install a bsp/nav/scripts and capture the window |
+| `run_map_test` | launch an installed map (directly or through Steam), wait for one pattern or an ordered list of `markers`, install a bsp/nav/scripts, run `schedule` commands at fixed seconds and capture the window |
 | `run_build_cubemaps` | build a map's cubemaps with the engine's `-buildcubemaps` mode, and optionally pack them into a copy |
 | `read_nav` | nav header and freshness against the `.bsp` |
 | `run_bsp_rename` | rename a `.bsp` and the content packed inside it |
