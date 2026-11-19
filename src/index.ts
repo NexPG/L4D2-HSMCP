@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { loadConfig } from "./core/typescript/config.js";
 import { runInstall } from "./core/typescript/install.js";
 import { AuditLog } from "./core/typescript/logger.js";
+import { sweepWindows } from "./core/typescript/process/windows.js";
 import { ToolRegistry } from "./core/typescript/mcp/registry.js";
 import type { ToolContext } from "./core/typescript/mcp/registry.js";
 import { createMcpServer } from "./core/typescript/mcp/server.js";
@@ -50,6 +51,12 @@ async function main(): Promise<void> {
   }
 
   const audit = new AuditLog(config.stateDir);
+  // A previous run can leave an HLMV or Hammer behind when the server is stopped mid-call.
+  // The ledger is written before the launch and cleared only after a verified close.
+  const swept = await sweepWindows(config.stateDir);
+  if (swept.length > 0) {
+    audit.record({ kind: "process_kill", data: { pids: swept, reason: "startup sweep" } });
+  }
   audit.record({
     kind: "server_start",
     data: { version: VERSION, repoRoot: config.repoRoot, platform: process.platform },

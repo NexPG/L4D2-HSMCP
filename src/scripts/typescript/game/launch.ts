@@ -100,9 +100,12 @@ export function launchGame(exe: string, args: string[]): LaunchHandle {
     }
     if (child.pid !== undefined) {
       try {
-        spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+        // Synchronous: a spawned taskkill can die with the MCP process and leave the game
+        // window behind, which is exactly the defect this is meant to prevent.
+        execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
           stdio: "ignore",
           windowsHide: true,
+          timeout: 15_000,
         });
       } catch {
         // Nothing else to do: the caller only cares that the game is not left running.

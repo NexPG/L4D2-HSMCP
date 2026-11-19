@@ -34,6 +34,22 @@ or a tool that has one, not by hand afterwards.
   cites. Keep it unless the run was a throwaway and the log is only noise.
 - Valve/Steam files you never touched.
 
+## Windows
+
+A tool that opens an editor or the game closes it by default and **verifies** the close:
+`run_hlmv` and `open_in_hammer` return `closed` and the pids in `closedProcesses`,
+`run_map_test` returns `gameClosed`. `closed` is true only after the process list was
+re-read and the pid is gone, not because a `taskkill` was spawned.
+
+- Only pids that appeared **after** the tool's own launch snapshot are touched. A person's
+  HLMV or Hammer is never a target.
+- `<stateDir>/windows.json` records a window before its launch and removes it after a
+  verified close. The MCP server sweeps this ledger at startup, so a server stopped
+  mid-call finishes the cleanup next time instead of leaving HLMV on the desktop.
+- `close_windows` is the manual path for `close:false` leftovers or an older window:
+  `dryRun: true` first, Hammer is asked to close through its window and is only force-killed
+  with `force: true`.
+
 ## Why this is a rule
 
 A leftover test map can be loaded by accident, a test `materials/maps/<name>` can make a

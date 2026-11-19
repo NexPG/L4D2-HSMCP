@@ -1,9 +1,15 @@
-import { execFileSync, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import { gameExecutable, sleep } from "../../../scripts/typescript/game/launch.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import {
+  closeNewProcesses,
+  forgetWindow,
+  processIds,
+  rememberWindow,
+} from "../../../core/typescript/process/windows.js";
 import { captureWindow } from "../../../maps/typescript/screenshot/window.js";
 import { CONFIRM, resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
@@ -60,7 +66,9 @@ export const openInHammerTool = defineTool({
     editor: z.string(),
     pid: z.number(),
     waitedMs: z.number(),
+    /** True only when the process list was re-read and the editor is gone. */
     closed: z.boolean(),
+    closedProcesses: z.array(z.number()),
     screenshotPath: z.string().nullable(),
     screenshotWidth: z.number().nullable(),
     screenshotHeight: z.number().nullable(),
@@ -74,6 +82,9 @@ export const openInHammerTool = defineTool({
     const editor = join(dirname(gameExecutable(gameDir)), "bin", "hammerplusplus.exe");
     if (!existsSync(editor)) throw new Error(`Hammer++ is not at ${editor}; run health`);
 
+    // Snapshot before the launch: closing only the new processes leaves a person's editor
+    // alone, and Hammer++ can hand the window to a child process.
+    const before = new Set(processIds(["hammerplusplus", "hammer", "wc"]));
     const child = spawn(editor, [vmf], {
       cwd: dirname(editor),
       stdio: "ignore",
@@ -85,6 +96,7 @@ export const openInHammerTool = defineTool({
     });
     const pid = child.pid;
     if (pid === undefined) throw new Error("Hammer++ started without a process id");
+    if (args.close) rememberWindow(ctx.config.stateDir, "hammer", pid);
     // Leaving the editor open must not keep the MCP server's own process alive: a stdio
     // session would hang after the tool result. `unref` lets Node exit; the editor keeps
     // running for a person or for hammer_live_edit.
@@ -127,35 +139,18 @@ export const openInHammerTool = defineTool({
     }
 
     let closed = false;
+    let closedProcesses: number[] = [];
     if (args.close) {
-      try {
-        // Close the main window first: Hammer++ records a clean shutdown, and a forced
-        // taskkill sets the "did not shut down correctly" recovery flag, which makes the
-        // next launch open a modal recovery prompt instead of the map.
-        execFileSync(
-          "powershell",
-          [
-            "-NoProfile",
-            "-Command",
-            `$p = Get-Process -Id ${pid} -ErrorAction Stop; ` +
-              `if (-not $p.CloseMainWindow()) { exit 1 }; ` +
-              `if (-not $p.WaitForExit(5000)) { Stop-Process -Id ${pid} -Force }`,
-          ],
-          { stdio: "ignore", windowsHide: true, timeout: 15_000 },
-        );
-        closed = true;
-      } catch {
-        try {
-          execFileSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
-            stdio: "ignore",
-            windowsHide: true,
-          });
-          closed = true;
-        } catch {
-          // The editor already exited, or the process tree is gone.
-        }
-      }
-      await sleep(800);
+      // Close the main window first: Hammer++ records a clean shutdown, and a forced
+      // taskkill sets the "did not shut down correctly" recovery flag, which makes the next
+      // launch open a modal recovery prompt instead of the map. The helper verifies the
+      // process list afterwards instead of trusting a spawned taskkill.
+      const outcome = await closeNewProcesses(["hammerplusplus", "hammer", "wc"], before, {
+        gracefulFirst: true,
+      });
+      closed = outcome.remaining.length === 0;
+      closedProcesses = outcome.closed;
+      for (const closedPid of outcome.closed) forgetWindow(ctx.config.stateDir, closedPid);
     }
 
     return {
@@ -164,15 +159,18 @@ export const openInHammerTool = defineTool({
       pid,
       waitedMs: args.waitMs,
       closed,
+      closedProcesses,
       screenshotPath,
       screenshotWidth,
       screenshotHeight,
       note:
-        screenshotPath === null
-          ? "Hammer++ was opened, but the window could not be captured. Increase waitMs, " +
-            "unlock the desktop, or use `method: 'window'` for the UI."
-          : "The capture shows the editor's own viewport. Lighting/fog/sky previews are " +
-            "editor state; `run_map_test` is the in-game oracle.",
+        !args.screenshot
+          ? "Hammer++ was opened and closed without a capture."
+          : screenshotPath === null
+            ? "Hammer++ was opened, but the window could not be captured. Increase waitMs, " +
+              "unlock the desktop, or use `method: 'window'` for the UI."
+            : "The capture shows the editor's own viewport. Lighting/fog/sky previews are " +
+              "editor state; `run_map_test` is the in-game oracle.",
       ...(image ? { _image: image } : {}),
     };
   },

@@ -3,6 +3,12 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import {
+  closeNewProcesses,
+  forgetWindow,
+  processIds,
+  rememberWindow,
+} from "../../../core/typescript/process/windows.js";
 import { gameFor } from "../../../core/typescript/games/resolve.js";
 import { captureWindow } from "../../../maps/typescript/screenshot/window.js";
 import { GAME, CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
@@ -74,7 +80,9 @@ export const runHlmvTool = defineTool({
     screenshotPath: z.string().nullable(),
     screenshotWidth: z.number().nullable(),
     screenshotHeight: z.number().nullable(),
+    /** True only when the process list was re-read and the HLMV is gone. */
     closed: z.boolean(),
+    closedProcesses: z.array(z.number()),
   },
   handler: async (args, ctx) => {
     const { game: profile } = gameFor(ctx.config, args.game);
@@ -100,6 +108,9 @@ export const runHlmvTool = defineTool({
     // the assets a mapper wants to look at. A genuinely missing custom model still shows
     // as HLMV's error window, which the capture preserves.
     const loose = existsSync(path);
+    // HLMV may hand the window to a second process; the snapshot is what keeps this tool
+    // from closing a person's editor along with the one it started.
+    const before = new Set(processIds(["hlmv"]));
     const child = spawn(exe, [loose ? path : relative], {
       cwd: gameDir,
       env: { ...process.env, VPROJECT: gameDir },
@@ -110,11 +121,15 @@ export const runHlmvTool = defineTool({
     child.unref();
     const processId = child.pid ?? null;
     const close = args.close ?? true;
+    if (close && processId !== null) {
+      rememberWindow(ctx.config.stateDir, "hlmv", processId);
+    }
     let screenshotPath: string | null = null;
     let screenshotWidth: number | null = null;
     let screenshotHeight: number | null = null;
     let image: { data: string; mimeType: string } | null = null;
     let closed = false;
+    let closedProcesses: number[] = [];
 
     try {
       if (args.screenshot) {
@@ -144,16 +159,14 @@ export const runHlmvTool = defineTool({
       if (close && !args.screenshot) {
         await new Promise((resolve) => setTimeout(resolve, 1200));
       }
-      if (close && processId !== null) {
-        try {
-          spawn("taskkill", ["/PID", String(processId), "/T", "/F"], {
-            stdio: "ignore",
-            windowsHide: true,
-          });
-          closed = true;
-        } catch {
-          // HLMV may have been closed already.
-        }
+      if (close) {
+        // Wait for the kill and re-read the process list. A fire-and-forget taskkill is how
+        // two HLMVs survived their own calls: `closed: true` was a claim about spawning a
+        // command, not about the window.
+        const outcome = await closeNewProcesses(["hlmv"], before);
+        closed = outcome.remaining.length === 0;
+        closedProcesses = outcome.closed;
+        for (const pid of outcome.closed) forgetWindow(ctx.config.stateDir, pid);
       }
     }
 
@@ -167,6 +180,7 @@ export const runHlmvTool = defineTool({
       screenshotWidth,
       screenshotHeight,
       closed,
+      closedProcesses,
       ...(image ? { _image: image } : {}),
     };
   },

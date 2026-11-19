@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.104-alpha - 2026-11-19
+
+- **A window is closed only when the process list says it is gone.** `run_hlmv` and
+  `open_in_hammer` waited for nothing: they spawned `taskkill` and set `closed: true`
+  unconditionally, which is how two HLMVs survived their own calls. The kill is now
+  synchronous, retried, and verified; the results carry `closed` and `closedProcesses`.
+  `run_map_test` does the same for the game and returns `gameClosed`.
+- **Only windows the tool opened are touched.** The pids are snapshotted immediately before
+  the launch; a person's HLMV or Hammer is never a target. Hammer is asked to close through
+  its window first (so it records a clean shutdown) and force-killed only if it remains.
+- **A server stopped mid-call no longer leaves a window behind.** `<stateDir>/windows.json`
+  records a window before its launch and drops it after a verified close; the MCP server
+  sweeps the ledger at startup. `<stateDir>` is `.hammer-mcp` by default.
+- **Evidence:** `run_hlmv` on a stock model returned `closed: true`,
+  `closedProcesses: [pid]`, empty before/after lists and an empty ledger; a simulated crash
+  (HLMV started by hand, recorded, then swept) closed the pid and cleared the ledger;
+  `open_in_hammer` closed the preview map's editor with the same result.
+- **Tool count stays 161.** Tests: 148 files, 1410 passed, 33 skipped.
+
 ## 0.0.103-alpha - 2026-11-19
 
 - **FBX animations are exported.** `fbx_to_smd` follows `AnimationStack -> AnimationLayer

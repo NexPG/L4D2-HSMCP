@@ -212,6 +212,7 @@ interface HlmvAttempt {
   width: number | null;
   height: number | null;
   blank: boolean;
+  closed: boolean;
   mean: number | null;
   stdDev: number | null;
 }
@@ -237,13 +238,15 @@ async function tryHlmv(
     screenshotPath: string | null;
     screenshotWidth: number | null;
     screenshotHeight: number | null;
-  };
-  if (!result.screenshotPath || !existsSync(result.screenshotPath)) {
+    closed: boolean;
+    };
+    if (!result.screenshotPath || !existsSync(result.screenshotPath)) {
     return {
       screenshotPath: null,
       width: result.screenshotWidth,
       height: result.screenshotHeight,
       blank: true,
+      closed: result.closed,
       mean: null,
       stdDev: null,
     };
@@ -261,6 +264,7 @@ async function tryHlmv(
       width: result.screenshotWidth,
       height: result.screenshotHeight,
       blank: true,
+      closed: result.closed,
       mean,
       stdDev,
     };
@@ -270,6 +274,7 @@ async function tryHlmv(
     width: result.screenshotWidth,
     height: result.screenshotHeight,
     blank: viewportIsBlank(stdDev),
+    closed: result.closed,
     mean,
     stdDev,
   };
@@ -364,6 +369,11 @@ export const previewModelTool = defineTool({
       try {
         hlmv = await tryHlmv(info.model, args, ctx);
         if (!hlmv.blank) {
+          if (!hlmv.closed) {
+            warnings.push(
+              "HLMV did not close after the capture; run close_windows kinds:['hlmv'] to clear it",
+            );
+          }
           return {
             model: info.model,
             via: "hlmv" as const,
@@ -382,6 +392,11 @@ export const previewModelTool = defineTool({
             warnings,
             logTail: [],
           };
+        }
+        if (!hlmv.closed) {
+          warnings.push(
+            "HLMV did not close after the capture; run close_windows kinds:['hlmv'] to clear it",
+          );
         }
         if (args.via === "hlmv") {
           warnings.push(
@@ -523,8 +538,14 @@ export const previewModelTool = defineTool({
       screenshotPath: string | null;
       screenshotWidth: number | null;
       screenshotHeight: number | null;
+      gameClosed: boolean;
       logTail: string[];
     };
+    if (!run.gameClosed) {
+      warnings.push(
+        "the game process was still running after the capture; run close_windows kinds:['game']",
+      );
+    }
     if (!run.matched) {
       warnings.push(
         "the map loaded but the wait marker did not match; the screenshot may be the loading screen",

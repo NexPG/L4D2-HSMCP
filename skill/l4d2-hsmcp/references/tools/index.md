@@ -11,7 +11,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 |---|---|
 | `health` | game profile, compilers, FGD, sidecar, tool count, whether the build is stale |
 | `read_hammerpp` | Hammer++ settings by section, game config/build programs, keybindings, warnings |
-| `open_in_hammer` | open the VMF in Hammer++ and capture the editor window |
+| `open_in_hammer` | open the VMF in Hammer++ and capture the editor window; closes by default |
 | `hammer_status` | running editor, shell channel, main window and open map |
 | `hammer_live_edit` | create/set/delete/rotate entities in the open editor through the shell channel |
 | `hammer_menu` | save, undo, redo, Run Map, Check for Problems through the editor's menu |
@@ -157,8 +157,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `brush_to_model` | convert VMF brush solids to SMD + QC, with VMF UVs and a brush or box collision model |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |
-| `run_hlmv` | launch HLMV on one model, optionally return a screenshot as a real image; closes by default |
-| `close_windows` | close HLMV, Hammer or the game; dry-run lists them first |
+| `run_hlmv` | launch HLMV on one model, optionally return a screenshot as a real image; closes by default and verifies the process is gone (`closed`, `closedProcesses`) |
+| `close_windows` | close HLMV, Hammer or the game; dry-run lists them first. Leftovers from a server restart are swept from the window ledger at startup |
 | `capture_window` | capture any window as a PNG image block, by process id or name |
 | `export_vmf_map` | write a `.vmf` as Valve `.map` 220, with planes, materials and texture axes |
 
@@ -166,7 +166,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 
 | Tool | Use |
 |---|---|
-| `open_in_hammer` | launch Hammer++ on a VMF and capture the editor window (the visual viewport) |
+| `open_in_hammer` | launch Hammer++ on a VMF and capture the editor window (the visual viewport); closes by default and verifies `closed` |
 | `run_compile` | vbsp/vvis/vrad natively, per-stage findings |
 | `read_compile_sequences` | what the editor's own Run Map steps do: enabled flags, executables, parameters |
 | `read_compile_log` | structured findings from a compiler log |

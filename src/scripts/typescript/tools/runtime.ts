@@ -21,6 +21,7 @@ import {
   navGenerateConfig,
   readLog,
   sleep,
+  findGamePid,
   steamExecutable,
   stopGameProcess,
   waitForFile,
@@ -545,6 +546,7 @@ export const runMapTest = defineTool({
     reason: z.enum(["matched", "exited", "timeout"]),
     elapsedSeconds: z.number(),
     processId: z.number().nullable(),
+    gameClosed: z.boolean(),
     screenshotPath: z.string().nullable(),
     screenshotWidth: z.number().nullable(),
     screenshotHeight: z.number().nullable(),
@@ -693,6 +695,7 @@ export const runMapTest = defineTool({
     let image: { data: string; mimeType: string } | null = null;
     let timeline: MarkerHit[] = [];
     let missing: string[] = [];
+    let gameClosed = false;
     try {
       if ((args.markers?.length ?? 0) > 0) {
         const result = await waitForMarkers(
@@ -740,12 +743,19 @@ export const runMapTest = defineTool({
       if (cfgWritten) {
         rmSync(cfgPath, { force: true });
         if (existsSync(cfgBackup)) renameSync(cfgBackup, cfgPath);
-      }
-      for (const entry of scriptBackups) {
+      }      for (const entry of scriptBackups) {
         rmSync(entry.path, { force: true });
         if (entry.had && existsSync(`${entry.path}.hsmcp-backup`)) {
           renameSync(`${entry.path}.hsmcp-backup`, entry.path);
         }
+      }
+      // The kill is asynchronous on Windows; re-read the process table and retry, so the
+      // result can say the game is gone instead of assuming it.
+      gameClosed = findGamePid() === null;
+      for (let attempt = 0; attempt < 3 && !gameClosed; attempt += 1) {
+        stopGameProcess();
+        await sleep(500);
+        gameClosed = findGamePid() === null;
       }
     }
 
@@ -757,6 +767,7 @@ export const runMapTest = defineTool({
       reason,
       elapsedSeconds: Math.round((Date.now() - started) / 1000),
       processId: runPid,
+      gameClosed,
       screenshotPath,
       screenshotWidth,
       screenshotHeight,
