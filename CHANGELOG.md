@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.97-alpha — 2026-11-19
+
+- **`brush_to_model`: the Propper++ path without the plugin.** A VMF brush is already a
+  closed convex volume; `checkVmfSolids` rebuilds its hull and `orderedLoop` winds each
+  face, so the converter triangulates the brush's own geometry rather than reimplementing
+  plane clipping. The VMF `uaxis`/`vaxis` become UVs (divided by `textureSize`, V inverted
+  for SMD), the material directories become `$cdmaterials`, and the origin can stay in
+  world space or move to the brush's centre/base. `collision: "brush"` uses the brush
+  itself (`$concave` for several solids), `box` writes an AABB, `none` omits the `.phy`.
+- **The whole path is proven.** The test writes a 64×64×64 box through the repository's
+  own VMF writer, converts it, checks the UVs against the `uaxis` formula, compiles it with
+  the game's `studiomdl.exe`, and reads back one bone, one skin and `hasPhysics: true`.
+  Displacements are refused rather than flattened.
+- **Tool count: 156.** Docs: `references/mapping/brush-to-model.md`; the coverage table's
+  Propper++ row is no longer a gap. Tests: 142 files, 1371 passed, 33 skipped.
+
 ## 0.0.96-alpha — 2026-11-19
 
 - **The licence is GPL-3.0-only again, and the README says it plainly.** At the owner's

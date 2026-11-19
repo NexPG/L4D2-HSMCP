@@ -41,7 +41,7 @@ when it has all four:
 | Special infected stats | `z_*` cvars | **documented** (common 50, boomer 50, hunter/smoker 250, spitter 100, jockey 325, charger 600, tank 4000, witch 1000); behaviours still need a live test |
 | Weapon/item stats | `scripts/weapon_*.txt`, `info_map_parameters` | **documented**; placement is tool-checked, balance is a play-test judgement |
 | Hammer++ editor-only previews | lighting/fog/sky/particles/ropes | **view-only**; `render_vmf_*` and `run_map_test` are the agent's eyes |
-| Propper++ brush → model | model authoring | **partial:** `write_smd`/`write_qc` and `dmx_to_smd` can produce the source, but brush→mesh conversion itself is still a gap |
+| Propper++ brush → model | `brush_to_model` | **verified with the real compiler:** a VMF box brush becomes an SMD/QC, compiles with the brush as `$collisionmodel`, and `read_model_info` reports the `.phy`; UVs are checked against the VMF `uaxis`/`vaxis` formula. Displacements are refused rather than flattened |
 | Static props in a compiled BSP | `read_static_props`, `edit_static_props` | **structural:** add/set/remove and re-read verified; changing model/origin leaves compiled visleafs stale until vbsp |
 | Nav connections | `edit_nav_connections` | **structural:** add/remove/set, mirroring and re-read verified; the bot path over the new link is a play-test check |
 

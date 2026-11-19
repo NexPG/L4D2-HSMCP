@@ -65,6 +65,10 @@ the absence instead of hiding it.
   `parts` and an optional `qc` block cover the rest. Each animation is sampled into its own
   SMD and sequence; `collision: "box"` writes a `$collisionmodel` so the compiled prop has a
   `.phy`. See [glTF and GLB → SMD](gltf-import.md) for the conventions and the limits.
+- `brush_to_model` — a VMF brush becomes an SMD/QC without a DCC. The brush's own planes are
+  the geometry, `uaxis`/`vaxis` become UVs (divided by `textureSize`), the origin can move to
+  the centre/base, and the collision model defaults to the brush itself. This is the
+  Propper++ path: see [Brush → model](brush-to-model.md).
 
 ## L4D2 specifics
 
@@ -87,6 +91,7 @@ the absence instead of hiding it.
 | Inspect a glTF/GLB | `read_gltf` |
 | Convert glTF/GLB geometry, skeleton and animations | `gltf_to_smd` |
 | Generate a `$collisionmodel` box for a solid prop | `gltf_to_smd` with `collision: "box"` |
+| Turn a VMF brush into a model | `brush_to_model` (Propper++ path) |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |

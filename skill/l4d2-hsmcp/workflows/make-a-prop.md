@@ -70,6 +70,19 @@ one. A `prop_static` without a `.phy` is **not solid**. Either:
 3. `read_static_props` after the compile — it lists the prop and whether its model has
    physics, which is the machine-checkable version of "it looks solid".
 
+## Building a prop from a Hammer brush
+
+If the shape is already in the map, do not remodel it:
+
+1. `read_vmf_solids` — note the solid id.
+2. `brush_to_model` — `solids: [id]`, `output`, and a `qc` block; the brush's own planes
+   are the mesh and its `uaxis`/`vaxis` are the UVs.
+3. `run_studiomdl` — the brush collision model gives the `.phy`.
+4. `read_model_info` — bounds and `hasPhysics`.
+
+`textureSize` is the texture width/height (512 by default); a VMF does not store it. The
+full conventions are in [Brush → model](../references/mapping/brush-to-model.md).
+
 ## Reusing an existing DCC export
 
 - `read_dmx` shows what Blender/Crowbar wrote, without expanding the cyclic graph.
