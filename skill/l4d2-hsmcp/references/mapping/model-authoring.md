@@ -80,7 +80,8 @@ the absence instead of hiding it.
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
-| Open in HLMV | `run_hlmv`; capture the window with `capture_window` |
+| Open in HLMV | `run_hlmv`; captures and closes by default, `close:false` leaves it for a person |
+| Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
 | Reformat or resize a shipped VTF | `convert_vtf` — decode, resize, re-encode, verify |
 | Look at a texture directly | `extract_vtf` — any VTF to a PNG, no VMT needed; `face` selects a cubemap side |
@@ -101,8 +102,8 @@ files and prove the compiled result.
 4. `read_model_info` — `found`, bounds, skins, sequences, materials, `hasPhysics`.
 5. `preview_asset` on each material — a missing VTF is a purple checkerboard in game.
 6. Place it in a test map and `run_map_test` with a screenshot; HLMV's 3D canvas is not
-   reliable on every desktop.
-7. `read_static_props` after the compile — a model without `.phy` is non-solid unless a clip
+   reliable on every desktop. `run_hlmv` and `close_windows` make sure no GUI is left behind.
+7. `read_static_props` after the compile - a model without `.phy` is non-solid unless a clip
    brush replaces it.
 
 ## Licensing

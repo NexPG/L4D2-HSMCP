@@ -224,12 +224,27 @@ export function writeBspEntities(
 
   const source = readEntityLump(path);
   const result = editEntityText(source.text, ops);
-  const payload = Buffer.from(`${result.text}\0`, "utf8");
+  const written = writeEntityText(path, result.text, options);
+  return { ...result, ...written };
+}
 
+/**
+ * Writes already-edited entity text, in place or to a new file.
+ *
+ * Separate from `writeBspEntities` because a compressed entity lump has to be decompressed
+ * first; the caller does that, edits the text, and hands it here. The new lump is stored
+ * uncompressed and the fourCC slot is zeroed, which is what tells `readHeader` this lump
+ * no longer starts with `LZMA`.
+ */
+export function writeEntityText(
+  path: string,
+  text: string,
+  options: { out?: string; backup?: boolean } = {},
+): { path: string; written: boolean; backupPath: string | null; lumpOffset: number; lumpBytes: number } {
+  const header = readHeader(path);
+  const payload = Buffer.from(`${text}\0`, "utf8");
   const out = options.out ?? path;
-  if (out !== path) {
-    copyFileSync(path, out);
-  }
+  if (out !== path) copyFileSync(path, out);
 
   let backupPath: string | null = null;
   if (options.backup && out === path) {
@@ -242,21 +257,14 @@ export function writeBspEntities(
   patchEntityLump(out, header, sizeBefore, payload.length);
 
   const check = readEntityLump(out);
-  if (check.entities.length !== result.entitiesAfter) {
+  const expected = parseEntityText(text).length;
+  if (check.entities.length !== expected) {
     throw new BspEditError(
-      `refusing to report success: wrote ${result.entitiesAfter} entities but the file ` +
-        `reads back ${check.entities.length}`,
+      `refusing to report success: wrote ${expected} entities but the file reads back ` +
+        `${check.entities.length}`,
     );
   }
-
-  return {
-    ...result,
-    path: out,
-    written: true,
-    backupPath,
-    lumpOffset: sizeBefore,
-    lumpBytes: payload.length,
-  };
+  return { path: out, written: true, backupPath, lumpOffset: sizeBefore, lumpBytes: payload.length };
 }
 
 /** Points the entity lump's directory entry at the appended bytes. */
@@ -284,4 +292,8 @@ function patchEntityLump(
   };
   field(offsetAt, offset);
   field(lengthAt, length);
+  // The fourCC slot holds the uncompressed size on an LZMA lump. This writer stores the
+  // entity text raw, so the slot must be cleared or `readHeader` would still call it
+  // compressed and the engine would try to inflate KeyValues.
+  field(at + 12, 0);
 }

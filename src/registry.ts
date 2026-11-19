@@ -26,6 +26,7 @@ import { gameTools } from "./core/typescript/tools/games.js";
 import { gateTools } from "./campaigns/typescript/tools/gate.js";
 import { hammerTools } from "./hammer/typescript/tools/hammer.js";
 import { hammerLiveTools } from "./hammer/typescript/tools/hammerlive.js";
+import { windowTools } from "./hammer/typescript/tools/windows.js";
 import { hammerPlusPlusTools } from "./hammer/typescript/tools/hammerpp.js";
 import { healthTools } from "./core/typescript/tools/health.js";
 import { hlmvTools } from "./hammer/typescript/tools/hlmv.js";
@@ -84,6 +85,7 @@ export const allTools: AnyToolDef[] = [
   ...healthTools,
   ...hammerTools,
   ...hammerLiveTools,
+  ...windowTools,
   ...hammerPlusPlusTools,
   ...hlmvTools,
   ...gameTools,

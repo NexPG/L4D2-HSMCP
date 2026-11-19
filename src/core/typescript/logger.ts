@@ -13,6 +13,7 @@ export type AuditKind =
   | "compile_start"
   | "compile_end"
   | "hammer_capture_failed"
+  | "process_kill"
   | "error";
 
 /**

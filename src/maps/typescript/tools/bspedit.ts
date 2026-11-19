@@ -1,8 +1,10 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname } from "node:path";
 import { z } from "zod";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";
-import { writeBspEntities } from "../bsp/edit.js";
+import { readHeader } from "../bsp/header.js";
+import { editEntityText, writeBspEntities, writeEntityText } from "../bsp/edit.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 
@@ -48,9 +50,10 @@ export const editBspEntitiesTool = defineTool({
     "Adds, updates or removes entities in a COMPILED .bsp -- the primitive needed for " +
     "things a source map cannot express, such as point_servercommand plus logic_auto for " +
     "buildcubemaps. The new entity text is appended and only lump 0's directory entry moves, " +
-    "so no other lump is shifted by a byte. Compiled outputs are ordinary keyvalues. Writes " +
-    "in place by default, or to `out`; refuses a compressed entity lump, an empty operation " +
-    "list, and a result with no worldspawn. Guarded.",
+    "so no other lump is shifted by a byte. A compressed entity lump is decompressed first " +
+    "and written back uncompressed, with the fourCC cleared. Compiled outputs are ordinary " +
+    "keyvalues. Writes in place by default, or to `out`; refuses an empty operation list and " +
+    "a result with no worldspawn. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -82,8 +85,9 @@ export const editBspEntitiesTool = defineTool({
     lumpBytes: z.number(),
     bytesBefore: z.number(),
     bytesAfter: z.number(),
+    decompressed: z.boolean(),
   },
-  handler: (args, ctx) => {
+  handler: async (args, ctx) => {
     const bsp = resolveInput(args.bsp, ctx.config);
     if (!existsSync(bsp)) throw new Error(`${bsp} does not exist`);
     if (extname(bsp).toLowerCase() !== ".bsp") throw new Error(`${bsp} is not a .bsp`);
@@ -95,10 +99,44 @@ export const editBspEntitiesTool = defineTool({
     assertWritable(out ?? bsp, ctx.config);
 
     const before = statSync(bsp).size;
-    const result = writeBspEntities(bsp, args.ops, {
-      ...(out ? { out } : {}),
-      backup: args.backup,
-    });
+    const header = readHeader(bsp);
+    const lump = header.lumps[0];
+    let result: {
+      entitiesBefore: number;
+      entitiesAfter: number;
+      outcomes: unknown[];
+      warnings: string[];
+      path: string;
+      written: boolean;
+      backupPath: string | null;
+      lumpOffset: number;
+      lumpBytes: number;
+    };
+    let decompressed = false;
+
+    if (lump?.compressed) {
+      const stored = readFileSync(bsp).subarray(lump.offset, lump.offset + lump.length);
+      const decoded = await callSidecar<{ dataBase64: string }>(
+        "lzma_decompress",
+        { dataBase64: stored.toString("base64") },
+        ctx.config,
+        300_000,
+      );
+      let text = Buffer.from(decoded.dataBase64, "base64").toString("utf8");
+      if (text.endsWith("\0")) text = text.slice(0, -1);
+      const edited = editEntityText(text, args.ops);
+      const written = writeEntityText(bsp, edited.text, {
+        ...(out ? { out } : {}),
+        backup: args.backup,
+      });
+      result = { ...edited, ...written };
+      decompressed = true;
+    } else {
+      result = writeBspEntities(bsp, args.ops, {
+        ...(out ? { out } : {}),
+        backup: args.backup,
+      });
+    }
     const after = statSync(result.path).size;
 
     return {
@@ -113,6 +151,7 @@ export const editBspEntitiesTool = defineTool({
       lumpBytes: result.lumpBytes,
       bytesBefore: before,
       bytesAfter: after,
+      decompressed,
     };
   },
 });

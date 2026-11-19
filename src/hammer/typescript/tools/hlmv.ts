@@ -17,9 +17,10 @@ export const runHlmvTool = defineTool({
   description:
     "Launches the game's HLMV on one compiled model, for a person to inspect. The model is " +
     "resolved against the game's models/ tree and must exist; the tool returns the process " +
-    "id immediately and does not wait for the window to close. HLMV is a GUI, so there is " +
-    "no screenshot and no machine-readable result: use read_model_info for bounds, " +
-    "sequences and materials. Guarded.",
+    "id. HLMV closes by default after a short look, so repeated calls do not leave windows " +
+    "behind; pass close:false to leave it open, and use close_windows to clear old ones. " +
+    "HLMV is a GUI, so there is no screenshot and no machine-readable result without the " +
+    "screenshot option: use read_model_info for bounds, sequences and materials. Guarded.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -57,8 +58,8 @@ export const runHlmvTool = defineTool({
       .boolean()
       .optional()
       .describe(
-        "Close HLMV after the screenshot. Defaults to true when screenshot is set, so the " +
-          "agent's view does not leave a window behind; false leaves it for a person.",
+        "Close HLMV when the call is done. Defaults to true for every call, so repeated looks " +
+          "cannot pile up windows; false leaves it open for a person.",
       ),
     game: GAME,
     confirm: CONFIRM,
@@ -108,7 +109,7 @@ export const runHlmvTool = defineTool({
     });
     child.unref();
     const processId = child.pid ?? null;
-    const close = args.close ?? args.screenshot === true;
+    const close = args.close ?? true;
     let screenshotPath: string | null = null;
     let screenshotWidth: number | null = null;
     let screenshotHeight: number | null = null;
@@ -137,6 +138,12 @@ export const runHlmvTool = defineTool({
         };
       }
     } finally {
+      // Without a screenshot there is nothing to capture, but a person may still be
+      // looking at the window. Give it a moment, then close; `close:false` is the
+      // explicit "leave it open" path.
+      if (close && !args.screenshot) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+      }
       if (close && processId !== null) {
         try {
           spawn("taskkill", ["/PID", String(processId), "/T", "/F"], {

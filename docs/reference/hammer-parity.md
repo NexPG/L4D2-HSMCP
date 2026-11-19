@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **147 tools**.
+Last checked against the tool list on 19/11/2026: **148 tools**.
 
 ## The file itself
 
@@ -234,6 +234,7 @@ map and looking, or by not happening at all.
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `write_soundscript` | nothing: sound scripts are edited by hand |
 | `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames or whether it is a cubemap |
+| `close_windows` | nothing: Hammer leaves every HLMV it opens running |
 | `read_autosaves` | nothing: the editor knows where it put them and will not say |
 | `restore_autosave` | opening the autosave by hand and saving it under a new name |
 | `read_vmt` | nothing: the material's parameters, its `%compile*` flags and its `Proxies` blocks are invisible in the editor |

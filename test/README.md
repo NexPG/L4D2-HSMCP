@@ -14,7 +14,7 @@ answers "where is the test for this file" without a search.
 | [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching |
 | [`formats/`](formats/) | shared formats: DMX datamodels read/write |
 | [`textures/`](textures/) | textures: PNG decode, VTF write/convert/extract, DXT |
-| [`hammer/`](hammer/) | editor data: the Hammer build registry and its hash lookup |
+| [`hammer/`](hammer/) | editor data: build registry and hash lookup, window cleanup |
 | [`campaign/`](campaign/) | mission files, convars, addons, finale contract |
 | [`game/`](game/) | game-directory staging: hide/restore archives, install a BSP/nav pair |
 | [`kv/`](kv/) | KeyValues parse/serialise |

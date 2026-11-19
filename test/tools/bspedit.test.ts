@@ -4,7 +4,9 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
+import { readHeader } from "../../src/maps/typescript/bsp/header.js";
 import { editBspEntitiesTool } from "../../src/maps/typescript/tools/bspedit.js";
+import { readBspLumpTool, writeBspLumpTool } from "../../src/maps/typescript/tools/bsplump.js";
 import { FIXTURES, ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -62,9 +64,47 @@ describe("edit_bsp_entities tool", () => {
     expect(readEntityLump(out).entities.some((e) => e.targetname === "copy")).toBe(true);
   });
 
-  it("refuses an existing output and an empty op list", () => {
+  it("decompresses a compressed entity lump before editing it", async () => {
+    const path = copy("compressed.bsp");
+    const textPath = join(scratch, "entities.txt");
+    await readBspLumpTool.handler(
+      { path, lump: "ENTITIES", out: textPath, maxInline: 0 } as never,
+      ctx,
+    );
+    await writeBspLumpTool.handler(
+      {
+        path,
+        lump: "ENTITIES",
+        data: { source: textPath },
+        compress: true,
+        backup: false,
+        confirm: true,
+      } as never,
+      ctx,
+    );
+    expect(readHeader(path).lumps[0]!.compressed).toBe(true);
+
+    const result = (await editBspEntitiesTool.handler(
+      {
+        bsp: path,
+        ops: [{ op: "add", keyvalues: { classname: "info_target", targetname: "hsmcp_probe" } }],
+        backup: false,
+        confirm: true,
+      },
+      ctx,
+    )) as { decompressed: boolean; entitiesBefore: number; entitiesAfter: number };
+
+    expect(result.decompressed).toBe(true);
+    expect(result.entitiesAfter).toBe(result.entitiesBefore + 1);
+    expect(readHeader(path).lumps[0]!.compressed).toBe(false);
+    expect(
+      readEntityLump(path).entities.some((entity) => entity.classname === "info_target"),
+    ).toBe(true);
+  });
+
+  it("refuses an existing output and an empty op list", async () => {
     const path = copy("refuse.bsp");
-    expect(() =>
+    await expect(
       editBspEntitiesTool.handler(
         {
           bsp: path,
@@ -75,13 +115,13 @@ describe("edit_bsp_entities tool", () => {
         },
         ctx,
       ),
-    ).toThrow(/already exists/);
+    ).rejects.toThrow(/already exists/);
 
-    expect(() =>
+    await expect(
       editBspEntitiesTool.handler(
         { bsp: path, ops: [], backup: false, confirm: true },
         ctx,
       ),
-    ).toThrow();
+    ).rejects.toThrow();
   });
 });

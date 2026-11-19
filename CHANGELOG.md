@@ -45,10 +45,16 @@ with a line here.
     it. A real QC that used to read as unknown `$Macro` now reads as the statements it
     produces. `$pushd` / `$popd` / `$cd` move scriplib's `qdir`, so an `$include` after
     `$pushd "parts"` resolves inside `parts/`, not next to the including file.
+- **Windows close themselves.** `run_hlmv` now defaults `close: true` for every call (not
+  only screenshots), with a short pause so a person can see the window before it goes.
+  `close_windows` is the cleanup primitive for anything left behind: it lists HLMV/Hammer/
+  game windows, closes HLMV and the game outright, and asks Hammer to close without
+  force-killing an unsaved map unless `force: true`. A live run closed seven leftover HLMV
+  windows that had piled up from earlier previews.
 - **The licence record is unchanged and still honest.** No new upstream tree was copied;
   these are implementations in TypeScript and Python. sourcepp and EpicMorg remain credited
   for the translations that predate this pass.
-- **Tool count: 147.** Parity, the skill catalogue and the test layout are updated in the
+- **Tool count: 148.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
 ## 0.0.92-alpha — 2026-11-19
