@@ -263,6 +263,45 @@ def mat4_decompose(m: Mat4, tolerance: float = 1e-4) -> tuple[Vec3, Vec4, Vec3, 
     return translation, quat_from_matrix(rotation), tuple(factors), mirrored
 
 
+def vec3_lerp(a: Sequence[float], b: Sequence[float], t: float) -> Vec3:
+    return (
+        float(a[0]) + (float(b[0]) - float(a[0])) * t,
+        float(a[1]) + (float(b[1]) - float(a[1])) * t,
+        float(a[2]) + (float(b[2]) - float(a[2])) * t,
+    )
+
+
+def quat_slerp(a: Sequence[float], b: Sequence[float], t: float) -> Vec4:
+    """Shortest-arc spherical interpolation, with a linear fallback when nearly equal.
+
+    glTF rotation channels are quaternions and ``LINEAR`` means slerp, not component-wise
+    lerp. A near-identical pair is common (a key that does not move) and normalising a
+    component lerp there is both cheaper and free of the antipodal branch.
+    """
+    ax, ay, az, aw = quat_normalize(a)
+    bx, by, bz, bw = quat_normalize(b)
+    dot = ax * bx + ay * by + az * bz + aw * bw
+    if dot < 0.0:
+        bx, by, bz, bw = -bx, -by, -bz, -bw
+        dot = -dot
+    if dot > 0.9995:
+        return quat_normalize(
+            (
+                ax + (bx - ax) * t,
+                ay + (by - ay) * t,
+                az + (bz - az) * t,
+                aw + (bw - aw) * t,
+            )
+        )
+    theta = math.acos(max(-1.0, min(1.0, dot)))
+    sin_theta = math.sin(theta)
+    if abs(sin_theta) < 1e-12:
+        return (ax, ay, az, aw)
+    wa = math.sin((1.0 - t) * theta) / sin_theta
+    wb = math.sin(t * theta) / sin_theta
+    return quat_normalize((ax * wa + bx * wb, ay * wa + by * wb, az * wa + bz * wb, aw * wa + bw * wb))
+
+
 def normalize3(vector: Sequence[float]) -> Vec3:
     x, y, z = float(vector[0]), float(vector[1]), float(vector[2])
     length = math.sqrt(x * x + y * y + z * z)

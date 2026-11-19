@@ -78,6 +78,8 @@ one. A `prop_static` without a `.phy` is **not solid**. Either:
   SMD and can write the QC in the same call. The default is Blender's export: mesh-space
   geometry, node transforms ignored, bind pose from `inverseBindMatrices`. Pass
   `axis: "y"` only for hand-written Y-up data, and `useNodeTransforms: true` for a
-  multi-object scene. Animations and morph targets are reported, not exported; each needs
-  its own SMD. See [glTF and GLB → SMD](../references/mapping/gltf-import.md).
+  multi-object scene. Each animation becomes its own SMD and sequence;
+  `collision: "box"` adds a `$collisionmodel` so the compiled prop is solid. Morph targets
+  are reported by name, not exported. See
+  [glTF and GLB → SMD](../references/mapping/gltf-import.md).
 - FBX is still not read: `studiomdl` does not read it either. Export SMD/DMX, or install

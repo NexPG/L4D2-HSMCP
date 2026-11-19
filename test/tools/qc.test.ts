@@ -277,12 +277,15 @@ $Loop
       staticprop: true,
       sequences: [{ name: "idle", smd: "crate_idle.smd", fps: 30 }],
       attachments: [{ name: "attach", bone: "root", position: [0, 0, 64] }],
+      collision: { smd: "crate_phys.smd", mass: 25 },
       extra: ["$keyvalues { prop_data { base \"Wooden.Medium\" } }"],
     });
     // `models/` is stripped: studiomdl adds the game's models/ directory itself.
     expect(text).toContain('$modelname "props_myaddon/crate.mdl"');
     expect(text).toContain("$staticprop");
     expect(text).toContain("$attachment");
+    expect(text).toContain('$collisionmodel "crate_phys.smd"');
+    expect(text).toContain("$mass 25");
 
     const parsed = parseQc(text, "crate.qc");
     expect(qcModelName(parsed)).toBe("props_myaddon/crate.mdl");
@@ -294,6 +297,9 @@ $Loop
     expect(() => buildQc({ modelname: "" })).toThrow(/needs a \$modelname/);
     expect(() => buildQc({ modelname: "models/a.mdl", body: [] })).toThrow(/no geometry/);
     expect(() => buildQc({ modelname: 'models/a".mdl' })).toThrow(/cannot contain a quote/);
+    expect(() =>
+      buildQc({ modelname: "models/a.mdl", collision: { smd: "a.smd", mass: 0 } }),
+    ).toThrow(/mass/);
   });
 });
 

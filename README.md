@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
-[![License: GPL v3 or later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.94--alpha-orange.svg)](CHANGELOG.md)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.0.96--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -49,8 +49,9 @@ clear description, and anything that writes asks for confirmation.
 - **Build cubemaps** with the engine's own `-buildcubemaps` launch mode, and pack them into
   a copy of the map.
 - **Compile models** from QC/SMD sources with the game's `studiomdl`, including a
-  `.gltf`/`.glb` converted by `gltf_to_smd` (geometry, skeleton and weights), open a model
-  in HLMV, and capture the window as an image the agent can see.
+  `.gltf`/`.glb` converted by `gltf_to_smd` (geometry, skeleton, weights, one SMD per
+  animation, and an optional collision box for a solid prop), open a model in HLMV, and
+  capture the window as an image the agent can see.
 - **Edit the map in the open Hammer++** through its own shell channel: create, change,
   delete and rotate entities, then Save/Undo/Redo/Run Map with the editor's menu commands.
 - **Capture any GUI window** — HLMV, Hammer++ or the running game — as a real image block,
@@ -163,15 +164,9 @@ this repository and tested here; no other project's source tree is kept alongsid
 
 ## License
 
-**GPL-3.0-or-later.** Copyright (C) 2026 **NexPG**.
+**GPL-3.0** — Copyright (C) 2026 **NexPG**.
 
-This is free software: you can redistribute it and/or modify it under the terms of the GNU
-General Public License as published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version. It is distributed in the hope that it will be
-useful, but **without any warranty**; without even the implied warranty of merchantability or
-fitness for a particular purpose. See [`LICENSE`](LICENSE) for the full text.
-
-Provenance, the modification notice and the obligations the GPL places on anyone
-redistributing this work are in [`third_party/NOTICE`](third_party/NOTICE).
+Licensed under the GNU General Public License, version 3 only. See [`LICENSE`](LICENSE)
+for the full text.
 
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.

@@ -212,6 +212,67 @@ function skinnedScene() {
   return { document, bin: bin.bytes() };
 }
 
+/**
+ * A triangle on a two-node chain with one 1-second translation animation. At 10 fps the
+ * body should sit at x = 0, 10, 20 on frames 0, 5 and 10.
+ */
+function animatedScene() {
+  const bin = new Bin();
+  const positions = bin.add(floats([0, 0, 0, 10, 0, 0, 0, 10, 0]));
+  const normals = bin.add(floats([0, 0, 1, 0, 0, 1, 0, 0, 1]));
+  const uvs = bin.add(floats([0, 0, 1, 0, 0, 1]));
+  const indices = bin.add(Buffer.from(new Uint16Array([0, 1, 2]).buffer));
+  const times = bin.add(floats([0, 0.5, 1]));
+  const translations = bin.add(floats([0, 0, 0, 10, 0, 0, 20, 0, 0]));
+  const rotations = bin.add(floats([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]));
+  const document = {
+    asset: { version: "2.0" },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [
+      { name: "root", children: [1] },
+      { name: "body", mesh: 0 },
+    ],
+    meshes: [
+      {
+        name: "body",
+        primitives: [
+          {
+            attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 },
+            indices: 3,
+            material: 0,
+          },
+        ],
+      },
+    ],
+    materials: [{ name: "anim/mat" }],
+    animations: [
+      {
+        name: "wave",
+        samplers: [
+          { input: 4, output: 5, interpolation: "LINEAR" },
+          { input: 4, output: 6, interpolation: "LINEAR" },
+        ],
+        channels: [
+          { sampler: 0, target: { node: 1, path: "translation" } },
+          { sampler: 1, target: { node: 1, path: "rotation" } },
+        ],
+      },
+    ],
+    bufferViews: bin.views,
+    accessors: [
+      accessor(positions, 5126, 3, "VEC3", { min: [0, 0, 0], max: [10, 10, 0] }),
+      accessor(normals, 5126, 3, "VEC3"),
+      accessor(uvs, 5126, 3, "VEC2"),
+      accessor(indices, 5123, 3, "SCALAR"),
+      accessor(times, 5126, 3, "SCALAR", { min: [0], max: [1] }),
+      accessor(translations, 5126, 3, "VEC3"),
+      accessor(rotations, 5126, 3, "VEC4"),
+    ],
+  };
+  return { document, bin: bin.bytes() };
+}
+
 interface SmdRead {
   nodes: { id: number; name: string; parent: number }[];
   boneCount: number;
@@ -383,6 +444,58 @@ describe.skipIf(!installed)("gltf_to_smd", () => {
     expect(lines.slice(start + 1, end).filter((line) => line.trim() && !line.startsWith("time"))).toEqual([
       "0 0.000000 0.000000 0.000000 0.000000 0.000000 1.570796",
     ]);
+  });
+
+  it("writes one animation SMD with the same bones and the sampled frames", async () => {
+    const dir = join(scratch, "animation");
+    const { document, bin } = animatedScene();
+    const source = writeGltf(dir, "anim", document, bin);
+    const smd = join(dir, "anim.smd");
+    const converted = await callSidecar<{
+      animations: Array<{ name: string; path: string; frames: number; duration: number; verified: boolean }>;
+      animationCount: number;
+      boneCount: number;
+    }>("gltf_to_smd", { path: source, out: smd, animationFps: 10 }, config);
+    expect(converted.boneCount).toBe(2);
+    expect(converted.animationCount).toBe(1);
+    const animation = converted.animations[0]!;
+    expect(animation.name).toBe("wave");
+    expect(animation.frames).toBe(11);
+    expect(animation.duration).toBe(1);
+    expect(animation.verified).toBe(true);
+
+    const read = await callSidecar<SmdRead & { frameCount: number; frameTimes: number[] }>(
+      "smd_read",
+      { path: animation.path },
+      config,
+    );
+    expect(read.boneCount).toBe(2);
+    expect(read.triangleCount).toBe(0);
+    expect(read.frameCount).toBe(11);
+    expect(read.frameTimes).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+    const lines = readFileSync(animation.path, "utf8").split(/\r?\n/);
+    const at = lines.indexOf("time 5.000000");
+    expect(at).toBeGreaterThan(-1);
+    // After the time line come bone 0 and bone 1. Bone 1 is the body, at x = 10 on frame 5.
+    expect(lines[at + 2]).toBe("1 10.000000 0.000000 0.000000 0.000000 0.000000 0.000000");
+
+    const filtered = await callSidecar<{ animationCount: number; ignoredAnimations: number }>(
+      "gltf_to_smd",
+      { path: source, out: join(dir, "filtered.smd"), animationFps: 10, animations: ["nope"] },
+      config,
+    );
+    expect(filtered.animationCount).toBe(0);
+    expect(filtered.ignoredAnimations).toBe(1);
+
+    const disabled = await callSidecar<{ animationCount: number; ignoredAnimations: number }>(
+      "gltf_to_smd",
+      { path: source, out: join(dir, "disabled.smd"), exportAnimations: false },
+      config,
+    );
+    expect(disabled.animationCount).toBe(0);
+    expect(disabled.ignoredAnimations).toBe(1);
+    expect(existsSync(join(dir, "disabled_wave.smd"))).toBe(false);
   });
 
   it("applies axis conversion and node transforms only when asked", async () => {
@@ -580,6 +693,12 @@ describe.skipIf(!installed)("gltf tools", () => {
         parts: [],
         material: "debug/debugempty",
         limitVertices: 2_000_000,
+        exportAnimations: true,
+        animationFps: 30,
+        animations: [],
+        collision: "none",
+        mass: 10,
+        collisionThickness: 1,
         qc: {
           path: qc,
           modelname: "models/props_test/crate.mdl",
@@ -587,6 +706,8 @@ describe.skipIf(!installed)("gltf tools", () => {
           surfaceprop: "wood",
           staticprop: true,
           fps: 30,
+          animationSequences: true,
+          animationArgs: [],
           overwrite: false,
         },
         overwrite: false,
@@ -616,6 +737,12 @@ describe.skipIf(!installed)("gltf tools", () => {
           parts: [],
           material: "debug/debugempty",
           limitVertices: 2_000_000,
+          exportAnimations: true,
+          animationFps: 30,
+          animations: [],
+          collision: "none",
+          mass: 10,
+          collisionThickness: 1,
           overwrite: false,
           confirm: true,
         },
@@ -649,6 +776,12 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
             parts: [],
             material: "debug/debugempty",
             limitVertices: 2_000_000,
+            exportAnimations: true,
+            animationFps: 30,
+            animations: [],
+            collision: "box",
+            mass: 25,
+            collisionThickness: 1,
             qc: {
               path: qc,
               // No `models/`: studiomdl adds the game's models/ directory itself.
@@ -658,6 +791,8 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
               staticprop: true,
               sequence: "idle",
               fps: 30,
+              animationSequences: true,
+              animationArgs: [],
               overwrite: false,
             },
             overwrite: false,
@@ -685,7 +820,7 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
         expect(compile.modelExists).toBe(true);
         expect(compile.model).not.toBeNull();
         expect(compile.files.map((f) => f.name)).toEqual(
-          expect.arrayContaining(["probe.mdl", "probe.vvd", "probe.dx90.vtx"]),
+          expect.arrayContaining(["probe.mdl", "probe.vvd", "probe.dx90.vtx", "probe.phy"]),
         );
 
         const info = (await readModelInfoTool.handler({ model: `models/${unique}/probe.mdl` }, ctx)) as {
@@ -696,15 +831,14 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
           hasPhysics: boolean;
         };
         expect(info.found).toBe(true);
-        expect(info.size).toEqual([64, 64, 0]);
-        // `$staticprop` makes studiomdl rotate the geometry itself by its default
-        // Rz(90°) (`MakeStaticProp`), and the hull follows the rotated VVD. This is the
-        // documented official behaviour, not the converter tipping the model:
-        // (x,y,z) -> (-y,x,z), so a 0..64 square becomes x -64..0, y 0..64.
-        expect(info.mins).toEqual([-64, 0, 0]);
-        expect(info.maxs).toEqual([0, 64, 0]);
-        // No $collisionmodel was written: the model is drawable, not solid.
-        expect(info.hasPhysics).toBe(false);
+        // The mesh is 64x64; `CollisionModel_ExpandBBox` adds the physics AABB and its
+        // margin to the hull, so the exact numbers are larger than the mesh alone. The
+        // point of this test is that the collision SMD compiled at all.
+        expect(info.size![0]).toBeGreaterThanOrEqual(64);
+        expect(info.size![1]).toBeGreaterThanOrEqual(64);
+        expect(info.size![2]).toBeGreaterThan(0);
+        // `collision:'box'` wrote a $collisionmodel; the compiled model is solid.
+        expect(info.hasPhysics).toBe(true);
       } finally {
         // Only remove the uniquely named test folder, never a stock model tree. The
         // compiler may have written files even when the tool reported a failure.
@@ -781,6 +915,85 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
   );
 
   it(
+    "compiles the animation SMDs and keeps both sequences",
+    async () => {
+      const dir = join(scratch, "compile-anim");
+      const { document, bin } = animatedScene();
+      const source = writeGltf(dir, "anim", document, bin);
+      const smd = join(dir, "anim.smd");
+      const qc = join(dir, "anim.qc");
+      const unique = `hsmcp_gltf_anim_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6)}`;
+      let compiledModel: string | null = null;
+
+      try {
+        const converted = (await gltfToSmdTool.handler(
+          {
+            path: source,
+            output: smd,
+            scale: 1,
+            axis: "z",
+            useNodeTransforms: false,
+            flipV: true,
+            parts: [],
+            material: "debug/debugempty",
+            limitVertices: 2_000_000,
+            exportAnimations: true,
+            animationFps: 10,
+            animations: [],
+            collision: "none",
+            mass: 10,
+            collisionThickness: 1,
+            qc: {
+              path: qc,
+              modelname: `${unique}/anim.mdl`,
+              cdmaterials: [`models/${unique}`],
+              surfaceprop: "flesh",
+              staticprop: false,
+              sequence: "idle",
+              fps: 10,
+              animationSequences: true,
+              animationArgs: [],
+              overwrite: false,
+            },
+            overwrite: false,
+            confirm: true,
+          },
+          ctx,
+        )) as { animationCount: number; animations: Array<{ name: string; path: string }> };
+        expect(converted.animationCount).toBe(1);
+        expect(converted.animations[0]!.name).toBe("wave");
+
+        const compile = (await runStudiomdlTool.handler(
+          { qc, timeoutMinutes: 2, confirm: true },
+          ctx,
+        )) as { ok: boolean; model: string | null; warning: string | null };
+        compiledModel = compile.model;
+        expect(compile.ok).toBe(true);
+        expect(compile.warning).toBeNull();
+
+        const info = (await readModelInfoTool.handler(
+          { model: `models/${unique}/anim.mdl` },
+          ctx,
+        )) as { found: boolean; sequenceCount: number; boneCount: number };
+        expect(info.found).toBe(true);
+        expect(info.boneCount).toBe(2);
+        // `idle` over the bind SMD plus `wave` over the animation SMD.
+        expect(info.sequenceCount).toBe(2);
+      } finally {
+        const folder = compiledModel
+          ? dirname(compiledModel)
+          : config.gameDir
+            ? join(config.gameDir, "models", unique)
+            : null;
+        if (folder && existsSync(folder) && folder.toLowerCase().includes(unique.toLowerCase())) {
+          rmSync(folder, { recursive: true, force: true });
+        }
+      }
+    },
+    120_000,
+  );
+
+  it(
     "compiles a skinned glTF with its two bones intact",
     async () => {
       const dir = join(scratch, "compile-skin");
@@ -803,6 +1016,12 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
             parts: [],
             material: "debug/debugempty",
             limitVertices: 2_000_000,
+            exportAnimations: true,
+            animationFps: 30,
+            animations: [],
+            collision: "none",
+            mass: 10,
+            collisionThickness: 1,
             qc: {
               path: qc,
               modelname: `${unique}/skin.mdl`,
@@ -811,6 +1030,8 @@ describe.skipIf(!installed || !has.toolchain)("glTF -> SMD -> studiomdl", () => 
               staticprop: false,
               sequence: "idle",
               fps: 30,
+              animationSequences: true,
+              animationArgs: [],
               overwrite: false,
             },
             overwrite: false,

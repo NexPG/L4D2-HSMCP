@@ -10,8 +10,8 @@
 This repository began from code published as **hammer-mcp** by **Project Society Studio**
 at <https://github.com/Sycatle/hammer-mcp>, and also includes code from the projects listed
 in [`NOTICES.md`](NOTICES.md). It is an independent project now,
-distributed as a whole under the **GNU General Public License, version 3 or later**
-(`GPL-3.0-or-later`). The full licence text is in [`LICENSE`](../LICENSE).
+distributed as a whole under the **GNU General Public License, version 3 only**
+(`GPL-3.0-only`). The full licence text is in [`LICENSE`](../LICENSE).
 
 ## The upstream licence is kept
 
@@ -32,10 +32,10 @@ recipient may still exercise the MIT permissions on the MIT code.
 
 This is a modified version of the original program. The code was taken in 2026 and first
 modified on 16 November 2026, when the licence of the combined work was changed and the project metadata was pointed
-at this repository. On 19 November 2026 the combined work was relicensed from
-GPL-3.0-only to **GPL-3.0-or-later**; the upstream MIT permissions are unchanged.
-Further changes are recorded in the git history, which is the authoritative account of
-what was modified and when.
+at this repository. On 19 November 2026 the combined work was briefly relicensed to
+**GPL-3.0-or-later**; at the copyright holder's request it is now distributed under
+**GPL-3.0-only**. The upstream MIT permissions are unchanged. Further changes are recorded
+in the git history, which is the authoritative account of what was modified and when.
 
 Copyright in this fork's changes:
 
@@ -46,8 +46,8 @@ Copyright in this fork's changes:
 - Ship the complete corresponding source, including the build and install scripts, to everyone you
   distribute a binary to.
 - Keep this file, `LICENSE` and `licenses/hammer-mcp-sycatle-MIT.txt` intact, and do not strip the notices from the source.
-- Licence anything you add to this tree under GPL-3.0 as well — it cannot be closed off or
-  sublicensed under other terms.
+- Licence anything you add to this tree under GPL-3.0-only as well — it cannot be closed
+  off or sublicensed under other terms.
 - If you modify it, say so and give the date, as this file does for the fork.
 - No additional restrictions may be placed on top of the GPL.
 

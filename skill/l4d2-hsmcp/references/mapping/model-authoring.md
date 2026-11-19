@@ -62,8 +62,9 @@ the absence instead of hiding it.
   cannot read at all. Geometry stays in mesh space by default (what Blender's `+Y up` export
   writes), the bind pose comes from `inverseBindMatrices`, and the SMD V is inverted so
   studiomdl's parse-time inversion leaves the glTF UV intact. `axis`, `useNodeTransforms`,
-  `parts` and an optional `qc` block cover the rest. See
-  [glTF and GLB → SMD](gltf-import.md) for the conventions and the limits.
+  `parts` and an optional `qc` block cover the rest. Each animation is sampled into its own
+  SMD and sequence; `collision: "box"` writes a `$collisionmodel` so the compiled prop has a
+  `.phy`. See [glTF and GLB → SMD](gltf-import.md) for the conventions and the limits.
 
 ## L4D2 specifics
 
@@ -84,7 +85,8 @@ the absence instead of hiding it.
 | Read a DMX datamodel | `read_dmx` |
 | Build a DMX from JSON | `write_dmx` |
 | Inspect a glTF/GLB | `read_gltf` |
-| Convert glTF/GLB to SMD (and optionally write the QC) | `gltf_to_smd` |
+| Convert glTF/GLB geometry, skeleton and animations | `gltf_to_smd` |
+| Generate a `$collisionmodel` box for a solid prop | `gltf_to_smd` with `collision: "box"` |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |

@@ -376,8 +376,16 @@ def smd_write(req: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("frames must be a non-empty list")
 
     triangles = req.get("triangles")
-    if not isinstance(triangles, list) or not triangles:
-        raise ValueError("triangles must be a non-empty list of {material, vertices}")
+    allow_empty = bool(req.get("allowEmptyTriangles", False))
+    if triangles is None:
+        triangles = []
+    if not isinstance(triangles, list):
+        raise ValueError("triangles must be a list of {material, vertices}")
+    if not triangles and not allow_empty:
+        raise ValueError(
+            "triangles must be a non-empty list of {material, vertices}; pass "
+            "allowEmptyTriangles:true only for an animation SMD, which carries frames and no mesh"
+        )
 
     lines: list[str] = ["version 1", "nodes"]
     for node in resolved:

@@ -5,6 +5,34 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.96-alpha — 2026-11-19
+
+- **The licence is GPL-3.0-only again, and the README says it plainly.** At the owner's
+  request the `or-later` grant was removed; the front page now carries only
+  `GPL-3.0 — Copyright (C) 2026 NexPG`, the link to `LICENSE`, and the Valve disclaimer.
+  The upstream MIT notices are untouched and remain compatible with GPLv3. `package.json`,
+  `third_party/NOTICE`, `NOTICES.md`, `CONTRIBUTING.md`, `third_party/README.md` and the
+  skill all state the same licence.
+- **glTF animations become SMD sequences.** `gltf_to_smd` now samples every animation at
+  `animationFps` (default 30) and writes `<name>_<animation>.smd` with the same bone table
+  as the bind pose. `STEP` and `LINEAR` are exact; `CUBICSPLINE` is resampled linearly and
+  says so. Animation-only bones are added to the bind SMD even when export is off, so the
+  two files cannot disagree. `animations` filters by name.
+- **Collision for compiled props.** `collision: "box"` writes `<name>_phys.smd`, a closed
+  box around the model (with `collisionThickness` as a minimum on flat axes), and the QC
+  block adds `$collisionmodel` with `$mass`. `buildQc` gained a first-class `collision`
+  spec. A `prop_static` compiled from the result has a `.phy` and is solid; the test
+  compiles one and checks `read_model_info.hasPhysics`.
+- **Morph targets are named in the report.** SMD still cannot carry them, but
+  `read_gltf` returns `mesh.extras.targetNames` and `gltf_to_smd` lists the ignored names,
+  so the follow-up (one SMD/DMX per expression) is planned rather than guessed.
+- **The physics material matters.** The generated collision SMD uses the material name
+  `phys`: with the render fallback `debug/debugempty`, studiomdl reports a collision
+  volume and then writes a 0-byte `.phy`. The end-to-end test compiles the box and asserts
+  both the `.phy` file and `hasPhysics`.
+- **Tool count: 155** (no new tool names; the new work is in the existing glTF and QC
+  tools). Tests: 141 files, 1366 passed, 33 skipped.
+
 ## 0.0.95-alpha — 2026-11-19
 
 - **glTF/GLB is now a model source.** `studiomdl.exe` has no glTF loader (its extension

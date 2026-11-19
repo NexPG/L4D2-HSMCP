@@ -10,22 +10,23 @@ you convert it.
 | Job | Tool |
 |---|---|
 | Inspect a `.gltf`/`.glb` | `read_gltf` |
-| Convert geometry and a skeleton | `gltf_to_smd` |
+| Convert geometry, skeleton and animations | `gltf_to_smd` |
+| Make a solid prop | `gltf_to_smd` with `collision: "box"` |
 | Write the QC in the same call | `gltf_to_smd` with the `qc` block |
 | Compile | `run_studiomdl` on the QC |
 
 A minimal prop path from a Blender `.glb`:
 
 1. `read_gltf` — check the mesh count, materials, skins and that every buffer loaded.
-2. `gltf_to_smd` with `output: "crate.smd"` and, for a static prop, a `qc` block:
-   `{ path: "crate.qc", modelname: "props_myaddon/crate.mdl", staticprop: true,
-   cdmaterials: ["models/props_myaddon"] }`. `$modelname` is relative to the game's
-   `models/` directory; a leading `models/` is stripped by the writer because studiomdl
-   already adds it.
+2. `gltf_to_smd` with `output: "crate.smd"`, `collision: "box"` for a solid prop, and a
+   `qc` block: `{ path: "crate.qc", modelname: "props_myaddon/crate.mdl",
+   staticprop: true, cdmaterials: ["models/props_myaddon"] }`. `$modelname` is relative to
+   the game's `models/` directory; a leading `models/` is stripped by the writer because
+   studiomdl already adds it. The QC gets the `$collisionmodel` and its `$mass` for you.
 3. `run_studiomdl` on `crate.qc`.
 4. `write_vmt` and `write_vtf` for each material, then `preview_asset`.
-5. `read_model_info` — bounds and `hasPhysics`. Without a `$collisionmodel`, a
-   `prop_static` is non-solid.
+5. `read_model_info` — bounds and `hasPhysics`. With `collision: "box"` the `.phy` exists
+   and `hasPhysics` is true; without it, a `prop_static` is non-solid.
 
 ## The conventions that make it a Source model
 
@@ -64,13 +65,50 @@ keeps the glTF UV. `flipV: false` exists only for a source that already compensa
 list to SMD bone numbers. A weight set that does not sum to 1 is written as-is and reported,
 because studiomdl accepts it and the vertex then behaves unlike either bone.
 
+## Animations
+
+`gltf_to_smd` samples every animation at `animationFps` (default 30) and writes
+`<name>_<animation>.smd` beside the bind SMD. The animation file has the **same node table**
+as the bind file, which is why animation-driven nodes are added to the bind skeleton even
+when `exportAnimations: false`. SMD frame times are integers; `fps` in the QC turns them into
+seconds.
+
+- `STEP` and `LINEAR` are exact; rotations use slerp.
+- `CUBICSPLINE` is resampled from the middle value of each key, linearly, and the animation's
+  `warnings` say so.
+- A channel that targets a node with a `matrix` is ignored (glTF forbids animating those).
+- `animations: ["idle"]` filters by name; an empty list means every animation.
+- The QC block adds a `$sequence` per animation when `animationSequences` is true (the
+  default). `animationArgs: ["loop"]` appends arguments to each one.
+
+The animation SMD has an empty `triangles` section and many `time` blocks; that is legal and
+is what `studiomdl` reads for `$sequence`.
+
+## Collision
+
+`collision: "box"` writes `<name>_phys.smd`, a closed box around the model, and the QC block
+adds:
+
+```
+$collisionmodel "crate_phys.smd"
+{
+    $mass 10
+}
+```
+
+- `mass` defaults to 10; `collisionThickness` (default 1) is the minimum size on a flat
+  axis, so a sign still gets a solid slab instead of a zero-volume hull.
+- The physics SMD uses the material name `phys`, not `debug/debugempty`: with the debug
+  fallback `studiomdl` reports a collision volume and then writes a **0-byte** `.phy`.
+- The box is in SMD model space. `$staticprop` still applies studiomdl's own `Rz(90°)` to
+  the compiled geometry; the engine expects that, so do not pre-rotate the SMD.
+- The compiled hull is the mesh AABB unioned with the physics AABB plus its margin, so
+  `read_model_info` bounds are slightly larger than the mesh alone.
+
 ## What is not exported
 
-- **Morph targets.** SMD has no per-vertex morph target. `read_gltf` counts them and
-  `gltf_to_smd` reports how many were ignored; each expression needs its own SMD/DMX, or a
-- **Animations.** This path writes one bind-pose frame. Each animation needs its own SMD
-  source. `read_gltf` lists the animations and their duration so the work is planned, not
-  discovered later.
+- **Morph targets.** SMD has no per-vertex morph target. `read_gltf` returns
+  `mesh.extras.targetNames` and `gltf_to_smd` lists the ignored names; each expression needs
 - **Compressed geometry.** `KHR_draco_mesh_compression` and `EXT_meshopt_compression` are
   required extensions the importer does not decode. It refuses with a message that says to
   export without compression; `read_gltf` still describes the rest of the file.
@@ -84,17 +122,25 @@ because studiomdl accepts it and the vertex then behaves unlike either bone.
 - Triangle lists, strips (odd triangles flipped to keep winding) and fans.
 - Node TRS or a 4x4 matrix, a hierarchy whose parent is not guaranteed to come first, skins
   with `inverseBindMatrices`, and multiple mesh instances.
+- Animations with translation, rotation and scale channels; collision as a box.
 
 The fixtures in `test/models/gltf.test.ts` build all of these byte by byte, including the
-GLB container and a sparse accessor. The axis and bind-pose conventions were cross-checked
+GLB container, a sparse accessor, an animation and a collision box. Static and animated
+models are compiled with the real `studiomdl.exe`; the static one is checked for a `.phy`
+and `hasPhysics`, the animated one for both sequences. The axis and bind-pose conventions
 
 ## Pitfalls
 
 - **A material is not a texture.** The QC gets the material *name*; the `.vmt` and `.vtf`
   are separate files. `read_gltf` shows the base-colour texture chain so you know what to
   export.
-- **No `.phy`, no solid prop.** The converter does not build a collision model. Add a
-  `$collisionmodel` SMD or place a clip brush.
+- **No `.phy`, no solid prop.** Pass `collision: "box"` to generate the `$collisionmodel`
+  SMD, or supply your own. A `prop_static` from a model without `.phy` is not solid.
+- **Animations need the same bone table.** Use one `gltf_to_smd` call for the bind pose and
+  all animations; do not convert the bind and the animation separately, or the bone numbers
+  can differ.
+- **A static prop collapses animation.** `$staticprop` makes studiomdl throw away all but
+  one frame; do not mark an animated character or prop `$staticprop`.
 - **Node transforms ignored by default.** If two objects in the file sit at the same place
   after conversion, that is the warning, not a bug: pass `useNodeTransforms: true`.
 - **Scale is uniform.** `scale` multiplies positions and bone translations. A per-node

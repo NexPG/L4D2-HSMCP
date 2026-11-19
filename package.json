@@ -1,8 +1,8 @@
 {
   "name": "hammer-mcp",
-  "version": "0.0.95-alpha",
+  "version": "0.0.96-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
-  "license": "GPL-3.0-or-later",
+  "license": "GPL-3.0-only",
   "author": "NexPG",
   "homepage": "https://github.com/NexPG/L4D2-HSMCP#readme",
   "repository": {

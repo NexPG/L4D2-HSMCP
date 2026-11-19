@@ -148,7 +148,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_dmx` | build a binary v4 or KeyValues2 DMX from a JSON tree, then read it back |
 | `dmx_to_smd` | convert a static DMX mesh export to SMD (transform + UV flip; one root bone) |
 | `read_gltf` | inspect a glTF/GLB: nodes, meshes, primitives, materials, skins, animations, buffers |
-| `gltf_to_smd` | convert glTF/GLB geometry and skeleton to SMD; optionally write the QC in the same call |
+| `gltf_to_smd` | convert glTF/GLB geometry, skeleton, animations and a collision box to SMD; optionally write the QC in the same call |
 | `write_text_file` | write arbitrary source text; no template, existing files need overwrite |
 | `run_studiomdl` | compile a QC with the game's `studiomdl.exe` and prove the `.mdl` exists |
 | `run_hlmv` | launch HLMV on one model, optionally return a screenshot as a real image; closes by default |

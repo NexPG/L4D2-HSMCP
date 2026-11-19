@@ -714,6 +714,17 @@ export interface QcSpec {
     block?: string[];
   }>;
   attachments?: Array<{ name: string; bone: string; position?: [number, number, number] }>;
+  /**
+   * `$collisionmodel`: the physics SMD, and the block studiomdl reads it with. A model
+   * without one has no `.phy`; a `prop_static` from it is not solid.
+   */
+  collision?: {
+    smd: string;
+    mass?: number;
+    concave?: boolean;
+    /** Raw lines inside the block, e.g. `$maxconvexpieces 12`. */
+    extra?: string[];
+  };
   /** Raw QC lines appended last, for anything this builder does not model. */
   extra?: string[];
 }
@@ -736,6 +747,15 @@ export function buildQc(spec: QcSpec): string {
   if (!spec.modelname) throw new Error("a QC needs a $modelname");
   if (spec.body !== undefined && spec.body.length === 0) {
     throw new Error("`body: []` would produce a model with no geometry; omit it to write only the header");
+  }
+  if (spec.collision) {
+    if (!spec.collision.smd) throw new Error("a $collisionmodel needs an SMD path");
+    if (
+      spec.collision.mass !== undefined &&
+      (!Number.isFinite(spec.collision.mass) || spec.collision.mass <= 0)
+    ) {
+      throw new Error("$collisionmodel mass must be a positive finite number");
+    }
   }
 
   // `studiomdl` prepends the game's `models/` directory to `$modelname`. Accepting the
@@ -775,6 +795,15 @@ export function buildQc(spec: QcSpec): string {
     } else {
       lines.push(`$sequence ${args.join(" ")}`);
     }
+  }
+
+  if (spec.collision) {
+    lines.push(`$collisionmodel ${quote(spec.collision.smd)}`);
+    lines.push("{");
+    if (spec.collision.mass !== undefined) lines.push(`\t$mass ${spec.collision.mass}`);
+    if (spec.collision.concave) lines.push("\t$concave");
+    for (const line of spec.collision.extra ?? []) lines.push(`\t${line}`);
+    lines.push("}");
   }
 
   lines.push(...(spec.extra ?? []));

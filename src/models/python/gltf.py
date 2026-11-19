@@ -38,6 +38,7 @@ its findings, not its code, were used, and this implementation is independent).
 from __future__ import annotations
 
 import base64
+import bisect
 import json
 import math
 import re
@@ -60,6 +61,8 @@ from modelmath import (
     mat4_transform_direction,
     mat4_transform_point,
     normalize3,
+    quat_slerp,
+    vec3_lerp,
 )
 
 _SEVERITY_ERROR = "error"
@@ -622,8 +625,9 @@ def _kept_nodes(
     parents: Sequence[int],
     instances: Sequence[tuple[int, int]],
     roots: Sequence[int],
+    extra_nodes: Iterable[int] = (),
 ) -> list[int]:
-    kept: set[int] = set()
+    kept: set[int] = set(extra_nodes)
     for node_index, _ in instances:
         node = (document.get("nodes") or [])[node_index]
         skin_index = node.get("skin")
@@ -710,6 +714,237 @@ def _triangle_count(mode: int, vertices: int) -> int:
     if mode in {5, 6}:
         return max(0, vertices - 2)
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Animations
+# ---------------------------------------------------------------------------
+
+
+def _animation_targets(document: dict[str, Any]) -> set[int]:
+    """Every node any animation channel drives, for the shared bone table."""
+    out: set[int] = set()
+    for animation in document.get("animations") or []:
+        for channel in animation.get("channels") or []:
+            node = (channel.get("target") or {}).get("node")
+            if node is not None:
+                out.add(int(node))
+    return out
+
+
+def _animation_tracks(
+    document: dict[str, Any],
+    buffers: Sequence[bytes | None],
+    animation: dict[str, Any],
+) -> tuple[dict[int, dict[str, dict[str, Any]]], list[str]]:
+    """Channels as per-node tracks of ``(times, values, interpolation)``.
+
+    A channel is a sampler plus a target; the accessor values are already the final local
+    TRS values. Cubic-spline output carries three values per key (in-tangent, value,
+    out-tangent); the tangents are not used, so the middle value is resampled linearly and
+    the caller is told. Morph-weight channels are counted, not exported.
+    """
+    tracks: dict[int, dict[str, dict[str, Any]]] = {}
+    notes: list[str] = []
+    samplers = animation.get("samplers") or []
+    name = str(animation.get("name") or "")
+    for channel in animation.get("channels") or []:
+        target = channel.get("target") or {}
+        node = target.get("node")
+        path = target.get("path")
+        if node is None or path not in {"translation", "rotation", "scale", "weights"}:
+            continue
+        if path == "weights":
+            notes.append(f"{name}: morph-target weight channel is not exported")
+            continue
+        sampler_index = channel.get("sampler")
+        if sampler_index is None or not (0 <= int(sampler_index) < len(samplers)):
+            notes.append(f"{name}: a channel points at sampler {sampler_index}, which does not exist")
+            continue
+        sampler = samplers[int(sampler_index)]
+        input_index = sampler.get("input")
+        output_index = sampler.get("output")
+        if input_index is None or output_index is None:
+            notes.append(f"{name}: a sampler has no input or output accessor")
+            continue
+        times = [float(value[0]) for value in _accessor(document, buffers, int(input_index))[0]]
+        values, accessor = _accessor(document, buffers, int(output_index))
+        interpolation = str(sampler.get("interpolation", "LINEAR")).upper()
+        if interpolation == "CUBICSPLINE":
+            if len(values) == len(times) * 3:
+                values = [values[index * 3 + 1] for index in range(len(times))]
+            else:
+                notes.append(
+                    f"{name}: CubicSpline output has {len(values)} values for {len(times)} "
+                    "keys; it cannot be resampled and the channel is skipped"
+                )
+                continue
+            notes.append(f"{name}: CubicSpline is resampled linearly (tangents are ignored)")
+        if len(times) != len(values):
+            notes.append(
+                f"{name}: channel has {len(times)} times but {len(values)} values; "
+                "only the shorter run is used"
+            )
+            count = min(len(times), len(values))
+            times = times[:count]
+            values = values[:count]
+        if not times:
+            continue
+        pairs = sorted(zip(times, values), key=lambda pair: pair[0])
+        ordered_times = [pair[0] for pair in pairs]
+        ordered_values = [pair[1] for pair in pairs]
+        if path == "rotation" and any(len(value) < 4 for value in ordered_values):
+            notes.append(f"{name}: a rotation channel has a value that is not VEC4")
+            continue
+        if path in {"translation", "scale"} and any(len(value) < 3 for value in ordered_values):
+            notes.append(f"{name}: a {path} channel has a value that is not VEC3")
+            continue
+        tracks.setdefault(int(node), {})[path] = {
+            "path": path,
+            "times": ordered_times,
+            "values": ordered_values,
+            "interpolation": interpolation,
+            "_type": str(accessor.get("type", "")),
+        }
+    return tracks, notes
+
+
+def _sample_track(track: dict[str, Any], time: float) -> tuple[float, ...] | None:
+    times: list[float] = track["times"]
+    values: list[tuple[float, ...]] = track["values"]
+    if not times:
+        return None
+    if time <= times[0]:
+        return values[0]
+    if time >= times[-1]:
+        return values[-1]
+    index = bisect.bisect_right(times, time) - 1
+    if index >= len(times) - 1:
+        return values[-1]
+    if track["interpolation"] == "STEP":
+        return values[index]
+    span = times[index + 1] - times[index]
+    blend = 0.0 if span <= 0.0 else (time - times[index]) / span
+    if track["path"] == "rotation":
+        return quat_slerp(values[index], values[index + 1], blend)
+    count = min(len(values[index]), len(values[index + 1]))
+    return tuple(
+        float(values[index][i]) + (float(values[index + 1][i]) - float(values[index][i])) * blend
+        for i in range(count)
+    )
+
+
+def _animation_frame(
+    document: dict[str, Any],
+    kept: Sequence[int],
+    parents: Sequence[int],
+    tracks: dict[int, dict[str, dict[str, Any]]],
+    time: float,
+    axis_matrix: Mat4,
+) -> tuple[list[dict[str, Any]], int]:
+    """One SMD skeleton block: local bone transforms at ``time``.
+
+    Worlds are accumulated in glTF space, then the same ``axis_matrix`` used for the bind
+    pose is pre-multiplied before the parent is divided out. That is what makes
+    ``axis:'y'`` and a global scale apply to animation exactly as they do to the mesh,
+    instead of rotating the skeleton differently.
+    """
+    nodes = document.get("nodes") or []
+    world: dict[int, Mat4] = {}
+    for node in kept:
+        data = nodes[node]
+        if data.get("matrix") is not None:
+            # glTF forbids animating a matrix node; the caller reports the ignored track.
+            local = mat4_from_gltf([float(v) for v in data["matrix"]])
+        else:
+            translation = [float(v) for v in (data.get("translation") or [0.0, 0.0, 0.0])]
+            rotation = [float(v) for v in (data.get("rotation") or [0.0, 0.0, 0.0, 1.0])]
+            scale = [float(v) for v in (data.get("scale") or [1.0, 1.0, 1.0])]
+            for path, track in tracks.get(node, {}).items():
+                value = _sample_track(track, time)
+                if value is None:
+                    continue
+                if path == "translation":
+                    translation = [float(v) for v in value[:3]]
+                elif path == "rotation":
+                    rotation = [float(v) for v in value[:4]]
+                elif path == "scale":
+                    scale = [float(v) for v in value[:3]]
+            local = mat4_from_trs(translation, rotation, scale)
+        parent = parents[node]
+        world[node] = mat4_mul(world[parent], local) if parent in world else local
+
+    source_world = {node: mat4_mul(axis_matrix, world[node]) for node in kept}
+    frame: list[dict[str, Any]] = []
+    scale_notes = 0
+    for bone, node in enumerate(kept):
+        parent = parents[node]
+        if parent in source_world:
+            inverse_parent = mat4_inverse(source_world[parent])
+            local = mat4_mul(inverse_parent, source_world[node]) if inverse_parent else mat4_identity()
+        else:
+            local = source_world[node]
+        translation, quaternion, bone_scale, mirrored = mat4_decompose(local)
+        if parent in source_world and any(abs(value - 1.0) > 1e-3 for value in bone_scale):
+            scale_notes += 1
+        if mirrored:
+            scale_notes += 1
+        roll, pitch, yaw = euler_xyz(quaternion)
+        frame.append(
+            {
+                "bone": bone,
+                "position": [round(v, 6) for v in translation],
+                "rotation": [round(roll, 6), round(pitch, 6), round(yaw, 6)],
+            }
+        )
+    return frame, scale_notes
+
+
+def _safe_animation_name(name: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("._-")
+    return cleaned or "anim"
+
+
+def _box_triangles(
+    minimum: Sequence[float], maximum: Sequence[float], material: str
+) -> list[dict[str, Any]]:
+    """A closed, outward-wound box for `$collisionmodel`."""
+    x0, y0, z0 = (float(v) for v in minimum)
+    x1, y1, z1 = (float(v) for v in maximum)
+    v000 = (x0, y0, z0)
+    v100 = (x1, y0, z0)
+    v110 = (x1, y1, z0)
+    v010 = (x0, y1, z0)
+    v001 = (x0, y0, z1)
+    v101 = (x1, y0, z1)
+    v111 = (x1, y1, z1)
+    v011 = (x0, y1, z1)
+    faces = [
+        ((0.0, 0.0, -1.0), (v000, v010, v110), (v000, v110, v100)),
+        ((0.0, 0.0, 1.0), (v001, v101, v111), (v001, v111, v011)),
+        ((0.0, -1.0, 0.0), (v000, v100, v101), (v000, v101, v001)),
+        ((0.0, 1.0, 0.0), (v010, v011, v111), (v010, v111, v110)),
+        ((-1.0, 0.0, 0.0), (v000, v001, v011), (v000, v011, v010)),
+        ((1.0, 0.0, 0.0), (v100, v110, v111), (v100, v111, v101)),
+    ]
+    triangles: list[dict[str, Any]] = []
+    for normal, first, second in faces:
+        for corners in (first, second):
+            triangles.append(
+                {
+                    "material": material,
+                    "vertices": [
+                        {
+                            "position": [round(v, 6) for v in corner],
+                            "normal": list(normal),
+                            "uv": [0.0, 0.0],
+                            "links": [{"bone": 0, "weight": 1.0}],
+                        }
+                        for corner in corners
+                    ],
+                }
+            )
+    return triangles
 
 
 # ---------------------------------------------------------------------------
@@ -816,11 +1051,14 @@ def gltf_read(req: dict[str, Any]) -> dict[str, Any]:
                 global_maxs = maximum[:3] if global_maxs is None else [
                     max(global_maxs[i], maximum[i]) for i in range(3)
                 ]
+        extras = mesh.get("extras") or {}
+        target_names = extras.get("targetNames") if isinstance(extras, dict) else None
         meshes_out.append(
             {
                 "index": mesh_index,
                 "name": _mesh_name(document, mesh_index),
                 "primitives": primitives_out,
+                "morphTargetNames": [str(v) for v in target_names] if isinstance(target_names, list) else [],
             }
         )
 
@@ -899,6 +1137,16 @@ def gltf_read(req: dict[str, Any]) -> dict[str, Any]:
                 "samplerCount": len(samplers),
                 "duration": duration,
                 "targets": targets,
+                "paths": sorted(
+                    {
+                        str((channel.get("target") or {}).get("path", ""))
+                        for channel in channels
+                        if (channel.get("target") or {}).get("path")
+                    }
+                ),
+                "interpolations": sorted(
+                    {str(sampler.get("interpolation", "LINEAR")).upper() for sampler in samplers}
+                ),
             }
         )
 
@@ -1029,6 +1277,20 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     fallback_material = str(req.get("material") or "debug/debugempty")
     parts = [str(part) for part in (req.get("parts") or [])]
     limit_vertices = int(req.get("limitVertices", 2_000_000))
+    export_animations = bool(req.get("exportAnimations", True))
+    animation_fps = float(req.get("animationFps", 30.0))
+    if not math.isfinite(animation_fps) or animation_fps <= 0.0:
+        raise GltfError("animationFps must be a positive finite number")
+    animation_filter = [str(value).lower() for value in (req.get("animations") or [])]
+    collision = str(req.get("collision", "none")).lower()
+    if collision not in {"none", "box"}:
+        raise GltfError("collision must be 'none' or 'box'")
+    mass = float(req.get("mass", 10.0))
+    if not math.isfinite(mass) or mass <= 0.0:
+        raise GltfError("mass must be a positive finite number")
+    collision_thickness = float(req.get("collisionThickness", 1.0))
+    if not math.isfinite(collision_thickness) or collision_thickness <= 0.0:
+        raise GltfError("collisionThickness must be a positive finite number")
 
     parents = _parent_table(document)
     roots = _scene_roots(document, parents)
@@ -1041,7 +1303,10 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
 
     worlds = _world_matrices(document, parents)
     bind_worlds = _bind_worlds(document, buffers)
-    kept = _kept_nodes(document, parents, instances, roots)
+    # Animation-only bones must exist in the bind SMD too, or the animation SMD would
+    # declare a bone the model does not have. The union is deliberately independent of
+    # `exportAnimations`: turning export off must not change the model's skeleton.
+    kept = _kept_nodes(document, parents, instances, roots, _animation_targets(document))
     if not kept:
         raise GltfError(f"{source}: the selected meshes produced no nodes")
     names = _unique_names(document, kept)
@@ -1079,7 +1344,9 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
                 f"{names[node]}: the bind matrix is mirrored; SMD cannot carry a negative "
                 "bone scale, so the rotation is written without it"
             )
-        if any(abs(value - 1.0) > 1e-3 for value in bone_scale):
+        # A root bone's local scale is the global `scale` option (which is applied to the
+        # positions deliberately); only a non-root bone scale is a loss SMD cannot carry.
+        if parent_bone is not None and any(abs(value - 1.0) > 1e-3 for value in bone_scale):
             scale_notes += 1
         roll, pitch, yaw = euler_xyz(quaternion)
         frames.append(
@@ -1281,21 +1548,35 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
             f"{bad_weight_vertices} vertex/vertices have weights that do not sum to 1; "
             "studiomdl accepts this but the vertex then behaves unlike either bone"
         )
+    morph_names: list[str] = []
+    for mesh in meshes:
+        extras = mesh.get("extras") or {}
+        target_names = extras.get("targetNames") if isinstance(extras, dict) else None
+        if isinstance(target_names, list):
+            morph_names.extend(str(name) for name in target_names)
     if morph_targets_ignored:
+        suffix = f" ({', '.join(morph_names)})" if morph_names else ""
         warnings.append(
-            f"{morph_targets_ignored} morph target(s) were not exported: SMD has no morph "
-            "target, so shape keys need a separate SMD/DMX per expression"
+            f"{morph_targets_ignored} morph target(s){suffix} were not exported: SMD has no "
+            "morph target, so shape keys need a separate SMD/DMX per expression"
         )
     animation_count = len(document.get("animations") or [])
-    if animation_count:
+    if animation_count and not export_animations:
         warnings.append(
-            f"{animation_count} animation(s) were not exported: this tool writes the bind "
-            "pose, so each animation needs its own SMD source"
+            f"{animation_count} animation(s) were not exported because exportAnimations is "
+            "false; pass exportAnimations:true to write one SMD per animation"
         )
 
     output = Path(str(req.get("out", "") or req.get("output", ""))).resolve()
     if output.suffix.lower() != ".smd":
         output = output.with_suffix(".smd")
+    overwrite = bool(req.get("overwrite", False))
+
+    def ensure_new(path: Path) -> None:
+        if path.exists() and not overwrite:
+            raise GltfError(f"{path} already exists; pass overwrite:true to replace it")
+
+    ensure_new(output)
 
     smd_nodes = [
         {"name": names[node], "parent": None if parents[node] not in bone_of else bone_of[parents[node]]}
@@ -1314,6 +1595,140 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     mins = [min(point[i] for point in points) for i in range(3)]
     maxs = [max(point[i] for point in points) for i in range(3)]
     diagnostics.extend(written.get("diagnostics", []))
+
+    # One SMD per animation, with the same node table as the bind file. SMD frame times
+    # are integers; `fps` in the QC turns them into seconds, so a 30 fps sample is one
+    # frame per 1/30 s.
+    animation_results: list[dict[str, Any]] = []
+    ignored_animations = 0
+    animations = document.get("animations") or []
+    if export_animations:
+        used_names: set[str] = set()
+        for index, animation in enumerate(animations):
+            raw_name = str(animation.get("name") or f"animation{index}")
+            if animation_filter and raw_name.lower() not in animation_filter:
+                ignored_animations += 1
+                continue
+            tracks, notes = _animation_tracks(document, buffers, animation)
+            if not tracks:
+                ignored_animations += 1
+                warnings.append(f"{raw_name}: no usable animation channels; skipped")
+                warnings.extend(notes)
+                continue
+            matrix_animated = [
+                node for node in tracks if (nodes[node].get("matrix") is not None)
+            ]
+            if matrix_animated:
+                notes.append(
+                    f"{raw_name}: {len(matrix_animated)} channel(s) target a node with a "
+                    "matrix; glTF forbids animating those, so the static matrix is used"
+                )
+                for node in matrix_animated:
+                    tracks.pop(node, None)
+                if not tracks:
+                    ignored_animations += 1
+                    warnings.extend(notes)
+                    continue
+            all_times = [
+                time
+                for node_tracks in tracks.values()
+                for track in node_tracks.values()
+                for time in track["times"]
+            ]
+            start = min(all_times)
+            end = max(all_times)
+            if end < start:
+                start, end = end, start
+            duration = max(0.0, end - start)
+            frame_count = max(1, int(round(duration * animation_fps)) + 1)
+            animation_frames: list[dict[str, Any]] = []
+            animation_scale_notes = 0
+            for frame_index in range(frame_count):
+                time = min(start + frame_index / animation_fps, end)
+                frame, frame_scale_notes = _animation_frame(
+                    document, kept, parents, tracks, time, axis_matrix
+                )
+                animation_scale_notes += frame_scale_notes
+                animation_frames.append({"time": float(frame_index), "bones": frame})
+            if animation_scale_notes:
+                notes.append(
+                    f"{raw_name}: {animation_scale_notes} bone/frame value(s) carry a scale "
+                    "other than 1; SMD has no bone scale, so only translation and rotation "
+                    "were written"
+                )
+            name = _safe_animation_name(raw_name)
+            unique = name
+            suffix = 2
+            while unique.lower() in used_names:
+                unique = f"{name}_{suffix}"
+                suffix += 1
+            used_names.add(unique.lower())
+            animation_path = output.with_name(f"{output.stem}_{unique}.smd")
+            ensure_new(animation_path)
+            animation_written = smd_write(
+                {
+                    "path": str(animation_path),
+                    "nodes": smd_nodes,
+                    "frames": animation_frames,
+                    "triangles": [],
+                    "allowEmptyTriangles": True,
+                }
+            )
+            diagnostics.extend(animation_written.get("diagnostics", []))
+            animation_results.append(
+                {
+                    "name": unique,
+                    "path": str(animation_path),
+                    "frames": frame_count,
+                    "fps": round(animation_fps, 4),
+                    "duration": round(duration, 4),
+                    "start": round(start, 4),
+                    "end": round(end, 4),
+                    "warnings": notes,
+                    "verified": bool(animation_written.get("verified")),
+                }
+            )
+    else:
+        ignored_animations = len(animations)
+
+    collision_result: dict[str, Any] | None = None
+    if collision == "box":
+        box_mins = [float(value) for value in mins]
+        box_maxs = [float(value) for value in maxs]
+        for axis_index in range(3):
+            if box_maxs[axis_index] - box_mins[axis_index] < collision_thickness:
+                center = (box_mins[axis_index] + box_maxs[axis_index]) * 0.5
+                box_mins[axis_index] = center - collision_thickness * 0.5
+                box_maxs[axis_index] = center + collision_thickness * 0.5
+        physics_path = output.with_name(f"{output.stem}_phys.smd")
+        ensure_new(physics_path)
+        physics_written = smd_write(
+            {
+                "path": str(physics_path),
+                "nodes": [{"name": "root", "parent": None}],
+                "frames": [
+                    {
+                        "time": 0.0,
+                        "bones": [{"bone": 0, "position": [0, 0, 0], "rotation": [0, 0, 0]}],
+                    }
+                ],
+                # A collision SMD still carries a material name, and `debug/debugempty`
+                # makes studiomdl print "Collision model volume" but write a 0-byte .phy.
+                # `phys` is the conventional name; no VMT is needed for the hull itself.
+                "triangles": _box_triangles(box_mins, box_maxs, "phys"),
+            }
+        )
+        diagnostics.extend(physics_written.get("diagnostics", []))
+        collision_result = {
+            "path": str(physics_path),
+            "triangles": 12,
+            "mins": [round(v, 4) for v in box_mins],
+            "maxs": [round(v, 4) for v in box_maxs],
+            "thickness": collision_thickness,
+            "mass": mass,
+            "verified": bool(physics_written.get("verified")),
+        }
+
     return {
         "path": str(output),
         "written": True,
@@ -1334,15 +1749,22 @@ def gltf_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         "nodes": [{"index": bone, "name": names[node], "parent": smd_nodes[bone]["parent"]} for bone, node in enumerate(kept)],
         "ignoredNodeTransforms": ignored_node_transforms,
         "ignoredMorphTargets": morph_targets_ignored,
-        "ignoredAnimations": animation_count,
+        "morphTargetNames": morph_names,
+        "ignoredAnimations": ignored_animations,
+        "animations": animation_results,
+        "animationCount": len(animation_results),
+        "animationFps": animation_fps,
+        "collision": collision_result,
         "warnings": warnings,
         "diagnostics": diagnostics,
         "verified": bool(written.get("verified")),
         "note": (
-            "One bind-pose frame. Geometry is in mesh space by default (axis:'z'); pass "
-            "axis:'y' for Y-up data and useNodeTransforms:true for a multi-object scene. "
-            "The SMD V is inverted because studiomdl inverts it while parsing, so the "
-            "compiled model keeps the glTF UV. Morph targets and animations are reported, "
-            "not silently dropped."
+            "The bind SMD is one frame; each glTF animation is written beside it as "
+            "<name>_<animation>.smd with the same bone table. Geometry is in mesh space by "
+            "default (axis:'z'); pass axis:'y' for Y-up data and useNodeTransforms:true for "
+            "a multi-object scene. SMD V is inverted because studiomdl inverts it while "
+            "parsing, so the compiled model keeps the glTF UV. Morph targets are reported, "
+            "not silently dropped. collision:'box' writes a <name>_phys.smd for "
+            "$collisionmodel."
         ),
     }

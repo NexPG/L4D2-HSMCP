@@ -13,9 +13,9 @@
  * refused unless `overwrite` is set.
  */
 import { existsSync, mkdirSync } from "node:fs";
-import { basename, dirname, relative } from "node:path";
+import { basename, dirname, isAbsolute, relative } from "node:path";
 import { z } from "zod";
-import { buildQc, loadQc } from "../../../formats/typescript/formats/qc.js";
+import { buildQc, loadQc, qcModelName } from "../../../formats/typescript/formats/qc.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
@@ -44,6 +44,15 @@ const COUNTS = z.object({
 });
 
 const VEC3 = z.tuple([z.number(), z.number(), z.number()]);
+
+/** A path as a QC names it, refusing the different-drive case `relative` cannot express. */
+function qcRelative(fromDir: string, file: string): string {
+  const rel = relative(fromDir, file);
+  if (isAbsolute(rel)) {
+    throw new Error(`${file} is on a different drive from the QC; a QC cannot name it`);
+  }
+  return rel.replace(/\\/g, "/") || basename(file);
+}
 
 export const readGltfTool = defineTool({
   name: "read_gltf",
@@ -89,6 +98,7 @@ export const readGltfTool = defineTool({
         z.object({
           index: z.number(),
           name: z.string(),
+          morphTargetNames: z.array(z.string()),
           primitives: z.array(
             z.object({
               index: z.number(),
@@ -151,6 +161,8 @@ export const readGltfTool = defineTool({
           samplerCount: z.number(),
           duration: z.object({ min: z.number(), max: z.number() }).nullable(),
           targets: z.array(z.number()),
+          paths: z.array(z.string()),
+          interpolations: z.array(z.string()),
         }),
       )
       .optional(),
@@ -226,6 +238,14 @@ const QC_BLOCK = z.object({
     .optional()
     .describe("If set, add `$sequence \"<name>\"` over the same SMD (one frame at `fps`)."),
   fps: z.number().positive().default(30).describe("Sequence fps, when `sequence` is set."),
+  animationSequences: z
+    .boolean()
+    .default(true)
+    .describe("Add a `$sequence` for every exported animation SMD."),
+  animationArgs: z
+    .array(z.string())
+    .default([])
+    .describe("Extra arguments appended to every animation sequence, e.g. `loop`."),
   overwrite: z.boolean().default(false),
 });
 
@@ -239,9 +259,12 @@ export const gltfToSmdTool = defineTool({
     "match a Blender export: geometry stays in mesh space (axis:'z'), node transforms are " +
     "ignored (set `useNodeTransforms:true` and `axis:'y'` for a hand-authored Y-up scene), " +
     "and the SMD V is inverted so studiomdl's own parse-time inversion leaves the glTF UV " +
-    "intact. Morph targets and animations are counted and reported, not silently dropped. " +
-    "An optional `qc` block writes the QC in the same call. Writes only; refuses to replace " +
-    "an existing SMD without overwrite.",
+    "intact. Each animation becomes its own SMD (`<name>_<animation>.smd`) with the same " +
+    "bone table, sampled at `animationFps`; `collision:'box'` writes a `<name>_phys.smd` " +
+    "for `$collisionmodel`, so the compiled prop is solid. Morph targets are counted and " +
+    "named, not silently dropped. An optional `qc` block writes the QC in the same call, " +
+    "including sequences for the animations and the collision model. Writes only; refuses " +
+    "to replace an existing SMD without overwrite.",
   realm: "map",
   guarded: true,
   inputSchema: {
@@ -284,6 +307,40 @@ export const gltfToSmdTool = defineTool({
       .positive()
       .default(2_000_000)
       .describe("Refuse a conversion that would write more vertices than this."),
+    exportAnimations: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Write one SMD per glTF animation beside the bind SMD (`<name>_<animation>.smd`). " +
+          "The bind SMD's bone table includes animation-driven nodes either way.",
+      ),
+    animationFps: z
+      .number()
+      .positive()
+      .default(30)
+      .describe("Resample rate for animations. SMD frame times are integers, so fps turns them into seconds."),
+    animations: z
+      .array(z.string())
+      .default([])
+      .describe("Only these animation names (case-insensitive). Empty means every animation."),
+    collision: z
+      .enum(["none", "box"])
+      .default("none")
+      .describe(
+        "Write a `<name>_phys.smd` box for `$collisionmodel`. Without one, a prop_static " +
+          "from this model has no .phy and is not solid. 'box' is the model's AABB, with " +
+          "collisionThickness as a minimum on flat axes.",
+      ),
+    mass: z
+      .number()
+      .positive()
+      .default(10)
+      .describe("`$mass` for the generated collision model."),
+    collisionThickness: z
+      .number()
+      .positive()
+      .default(1)
+      .describe("Minimum box thickness on an axis; a flat sign still gets a solid slab."),
     qc: QC_BLOCK.optional().describe(
       "Also write a QC that names the SMD. The QC path and the SMD path may differ; the " +
         "`$body` file is made relative to the QC.",
@@ -308,7 +365,34 @@ export const gltfToSmdTool = defineTool({
     nodes: z.array(z.object({ index: z.number(), name: z.string(), parent: z.number().nullable() })),
     ignoredNodeTransforms: z.number(),
     ignoredMorphTargets: z.number(),
+    morphTargetNames: z.array(z.string()),
     ignoredAnimations: z.number(),
+    animations: z.array(
+      z.object({
+        name: z.string(),
+        path: z.string(),
+        frames: z.number(),
+        fps: z.number(),
+        duration: z.number(),
+        start: z.number(),
+        end: z.number(),
+        warnings: z.array(z.string()),
+        verified: z.boolean(),
+      }),
+    ),
+    animationCount: z.number(),
+    animationFps: z.number(),
+    collision: z
+      .object({
+        path: z.string(),
+        triangles: z.number(),
+        mins: z.array(z.number()),
+        maxs: z.array(z.number()),
+        thickness: z.number(),
+        mass: z.number(),
+        verified: z.boolean(),
+      })
+      .nullable(),
     warnings: z.array(z.string()),
     diagnostics: z.array(
       z.object({
@@ -326,6 +410,8 @@ export const gltfToSmdTool = defineTool({
         written: z.boolean(),
         modelname: z.string(),
         body: z.string(),
+        collision: z.string().nullable(),
+        animations: z.array(z.object({ name: z.string(), path: z.string() })),
         diagnostics: z.array(
           z.object({
             severity: z.enum(["error", "warning"]),
@@ -368,27 +454,62 @@ export const gltfToSmdTool = defineTool({
         parts: args.parts,
         material: args.material,
         limitVertices: args.limitVertices,
+        exportAnimations: args.exportAnimations,
+        animationFps: args.animationFps,
+        animations: args.animations,
+        collision: args.collision,
+        mass: args.mass,
+        collisionThickness: args.collisionThickness,
+        overwrite: args.overwrite,
       },
       ctx.config,
       600_000,
     )) as Record<string, unknown>;
     ctx.audit.record({ kind: "file_write", data: { path: output, created: true } });
 
+    const animationFiles = (result.animations ?? []) as Array<{
+      name: string;
+      path: string;
+      fps: number;
+    }>;
+    const collisionFile = result.collision as { path: string } | null;
+
     if (args.qc) {
       const qcPath = resolveInput(args.qc.path, ctx.config);
       if (!qcPath.toLowerCase().endsWith(".qc")) {
         throw new Error(`${qcPath} is not a .qc path; studiomdl only reads that extension`);
       }
-      const smdName = relative(dirname(qcPath), output).replace(/\\/g, "/") || basename(output);
+      const qcDir = dirname(qcPath);
+      const smdName = qcRelative(qcDir, output);
+      const sequences: Array<{ name: string; smd: string; fps?: number; args?: string[] }> = [];
+      if (args.qc.sequence !== undefined) {
+        sequences.push({ name: args.qc.sequence, smd: smdName, fps: args.qc.fps });
+      }
+      const animationArgs = args.qc.animationArgs ?? [];
+      if (args.qc.animationSequences !== false) {
+        for (const animation of animationFiles) {
+          // The explicit sequence wins if the names collide; the QC parser would otherwise
+          // warn about a duplicate the caller cannot see.
+          if (sequences.some((sequence) => sequence.name === animation.name)) continue;
+          sequences.push({
+            name: animation.name,
+            smd: qcRelative(qcDir, animation.path),
+            fps: animation.fps,
+            ...(animationArgs.length > 0 ? { args: animationArgs } : {}),
+          });
+        }
+      }
+      const collision = collisionFile
+        ? { smd: qcRelative(qcDir, collisionFile.path), mass: args.mass }
+        : undefined;
       const text = buildQc({
         modelname: args.qc.modelname,
         body: [{ name: "Body", smd: smdName }],
         ...(args.qc.cdmaterials === undefined ? {} : { cdmaterials: args.qc.cdmaterials }),
         ...(args.qc.surfaceprop === undefined ? {} : { surfaceprop: args.qc.surfaceprop }),
         staticprop: args.qc.staticprop,
-        ...(args.qc.sequence === undefined
-          ? {}
-          : { sequences: [{ name: args.qc.sequence, smd: smdName, fps: args.qc.fps }] }),
+        sequences,
+        ...(collision === undefined ? {} : { collision }),
       });
       mkdirSync(dirname(qcPath), { recursive: true });
       const written = writeGuarded(qcPath, text, ctx.config);
@@ -397,8 +518,13 @@ export const gltfToSmdTool = defineTool({
       result.qc = {
         path: written.path,
         written: written.written,
-        modelname: args.qc.modelname,
+        modelname: qcModelName(parsed) ?? args.qc.modelname,
         body: smdName,
+        collision: collision?.smd ?? null,
+        animations: animationFiles.map((animation) => ({
+          name: animation.name,
+          path: qcRelative(qcDir, animation.path),
+        })),
         diagnostics: parsed.diagnostics,
       };
     }
