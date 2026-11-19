@@ -430,6 +430,22 @@ def _soundscript_write(req: dict[str, Any]) -> dict[str, Any]:
     return soundscript_write(req)
 
 
+@verb("soundscape_read")
+def _soundscape_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads soundscape definitions from one file or the game."""
+    from soundscapes import soundscape_read
+
+    return soundscape_read(req)
+
+
+@verb("soundscape_write")
+def _soundscape_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds one soundscape block and appends it without rewriting the file."""
+    from soundscapes import soundscape_write
+
+    return soundscape_write(req)
+
+
 @verb("lzma_decompress")
 def _lzma_decompress(req: dict[str, Any]) -> dict[str, Any]:
     """Decodes a Source-framed LZMA block (BSP lump compression)."""

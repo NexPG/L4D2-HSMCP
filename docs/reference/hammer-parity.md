@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **149 tools**.
+Last checked against the tool list on 19/11/2026: **151 tools**.
 
 ## The file itself
 
@@ -233,6 +233,8 @@ map and looking, or by not happening at all.
 | `write_cubemap_vtf` | nothing offline: six named faces into one cubemap .vtf |
 | `extract_vtf` | the texture browser shows the image, but not at a size or as a file the agent can keep |
 | `read_soundscript` | nothing: Hammer has no sound browser |
+| `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
+| `write_soundscape` | nothing: soundscapes are written by hand |
 | `write_soundscript` | nothing: sound scripts are edited by hand |
 | `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames or whether it is a cubemap |
 | `close_windows` | nothing: Hammer leaves every HLMV it opens running |

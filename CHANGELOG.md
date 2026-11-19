@@ -60,7 +60,11 @@ with a line here.
   mirror the opposite direction by default, `symmetric: false` is the one-way case, and the
   result is read back area by area. This is the repair path for bots that will not cross a
   threshold, without opening the game console.
-- **Tool count: 149.** Parity, the skill catalogue and the test layout are updated in the
+  - **Soundscapes.** `read_soundscape` reads one file or the game's `scripts/soundscapes_*.txt`:
+    looping beds, random one-shots, child scapes, DSP, fadetime and soundmixer, with every
+    wave checked under `sound/`. `write_soundscape` appends one definition for an
+    `env_soundscape`, refuses a duplicate name, and parses the result back.
+- **Tool count: 151.** Parity, the skill catalogue and the test layout are updated in the
   same commit.
 
 ## 0.0.92-alpha — 2026-11-19

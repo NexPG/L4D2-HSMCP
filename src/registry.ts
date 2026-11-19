@@ -1,4 +1,5 @@
 import type { AnyToolDef } from "./core/typescript/mcp/registry.js";
+import { soundscapeTools } from "./audio/typescript/tools/soundscapes.js";
 import { soundscriptTools } from "./audio/typescript/tools/soundscripts.js";
 import { wavTools } from "./audio/typescript/tools/wav.js";
 import { bspTools } from "./maps/typescript/tools/bsp.js";
@@ -107,6 +108,7 @@ export const allTools: AnyToolDef[] = [
   ...contentTools,
   ...wavTools,
   ...soundscriptTools,
+  ...soundscapeTools,
   ...solidTools,
   ...spaceTools,
   ...sceneTools,

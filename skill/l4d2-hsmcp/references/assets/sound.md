@@ -47,6 +47,8 @@ soundscript name (`MyAddon.Tone`) or, for a simple one-shot, by the wave path wi
 | Is this WAV safe for L4D2? | `read_wav` — format, channels, rate, duration, loop, `gameReady` |
 | Make it safe | `convert_wav` — resample, mix to mono/stereo, write 16-bit PCM, read it back |
 | Register it | `write_soundscript` — one block, appended to an existing script |
+| Build the ambient bed | `write_soundscape` — looping beds, random one-shots, children, DSP |
+| Check an existing scape | `read_soundscape` — every wave under `sound/`, from one file or the game |
 | Check a name or the whole game | `read_soundscript` — channel, waves, `#base`, and whether each wave exists |
 | Ship it | `run_vpk_build` / `run_vpk_pack` with the `sound/` and `scripts/` trees staged |
 
@@ -59,6 +61,18 @@ than re-exporting, so comments and other entries survive.
 new rate and writes it back. L4D2 gameplay loops are usually a property of the soundscript
 or the entity playing the sound, but keeping the chunk means a converted file does not lose
 information. `keepLoop: false` drops it deliberately.
+
+## Soundscapes
+
+A soundscape is the ambient mix an `env_soundscape` entity selects: a looping bed, random
+one-shots, child scapes and a DSP preset. It lives in `scripts/soundscapes_<name>.txt` and
+uses raw wave paths, not soundscript names.
+
+`write_soundscape` appends one definition, refuses a duplicate name, and checks every wave
+when the game directory is resolved. `read_soundscape` reads one file or all
+`soundscapes_*.txt` in the game, follows child names, and reports waves this install does
+not have. Point an `env_soundscape` at the scape name; `env_soundscape_proxy` forwards from
+another entity.
 
 ## Checking it
 

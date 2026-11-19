@@ -1,6 +1,6 @@
 # Tool catalogue
 
-149 tools. This page groups them by the job you are doing; each tool's own description is the
+151 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -183,6 +183,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_cubemap_vtf` | six named PNG faces into a cubemap VTF, every face verified |
 | `extract_vtf` | decode any `.vtf` to a PNG the agent can look at |
 | `read_soundscript` | named sounds, channels and resolved wave paths from one file or the game |
+| `read_soundscape` | ambient bed, random one-shots, children, DSP; checks every wave |
+| `write_soundscape` | append one soundscape for an `env_soundscape` |
 | `write_soundscript` | add one sound block, appending to the file |
 | `read_wav` | WAV format, duration, loop and whether it is L4D2-game-ready |
 | `convert_wav` | resample and mix a WAV to 16-bit PCM mono/stereo at 22050/44100 |
