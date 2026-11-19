@@ -166,7 +166,4 @@ this repository and tested here; no other project's source tree is kept alongsid
 
 **GPL-3.0** — Copyright (C) 2026 **NexPG**.
 
-Licensed under the GNU General Public License, version 3 only. See [`LICENSE`](LICENSE)
-for the full text.
-
 Not affiliated with Valve Corporation. Left 4 Dead 2 and its content belong to Valve.
