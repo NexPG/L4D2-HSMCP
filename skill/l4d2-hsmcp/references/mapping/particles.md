@@ -19,6 +19,53 @@ system's:
 `includeOperators: false` gives a compact name/material list when that is all the check
 needs.
 
+Typed options are kept, not flattened: a vector comes back as
+`{ "type": "vector3", "value": [..] }`, a colour as `{ "type": "color", "value": [r,g,b,a] }`,
+a time as `{ "type": "time", "value": seconds }`. That is exactly the shape `write_particle`
+accepts, so `options` can be read from one system and written into another without losing
+colour or vector values.
+
+### Resolving a map's `effect_name`
+
+`read_particle` with `effectName` answers the question that a map actually asks: does a system
+have this name? It is exact and case-insensitive, and it flags the path form:
+
+```json
+{ "path": "particles/fire_01L4D.pcf", "effectName": "fire_barrel_big", "includeOperators": false }
+```
+
+returns `effectName.resolved: true`, while `"fire_01l4d/fire_barrel_big"` returns
+`pathStyle: true, resolved: false` with the rule in `hint`.
+
+## Naming a system in the map
+
+`info_particle_system.effect_name` is the **bare system name**. Valve's own entities on
+`c1m1_hotel` say `emergency_light_strobe` and `window_glass`; `fire_barrel_big` renders.
+
+A `pcf/system` path is wrong: `fire_01l4d/fire_barrel_big` is precached as unknown — the
+console says `Attempted to precache unknown particle system "fire_01l4d/fire_barrel_big"` and
+`Attempting to create unknown particle system ...` — and draws nothing. Both a stock map and
+the test map were proven to render `fire_barrel_big` once the prefix was removed.
+
+## Shipping a custom `.pcf`
+
+The engine registers particle files at startup from `particles/particles_manifest.txt` (44
+lines in this install, and `fire_01L4D.pcf` is one of them). Ship a new file in an addon:
+
+1. `particles/<name>.pcf` inside `addons/<addon>.vpk`;
+2. `particles/particles_manifest.txt` in the same addon: copy the stock manifest and add
+   `"file"  "particles/<name>.pcf"`.
+
+Verified in game: with the addon mounted, `info_particle_system` pointed at a system built by
+`write_particle` produced no `unknown particle system` line at all; with the addon removed the
+same map and entity said `Attempted to precache unknown particle system "hsmcp_fire"`. So the
+file and the manifest line do register the system.
+
+Whether a system *rebuilt from a JSON summary* looks right is a separate question: the rebuilt
+copy of `fire_barrel_big` registered but did not visibly draw. Use `source` to copy a stock
+system byte-for-byte instead of rebuilding it from `systems`, and verify the result with
+`run_map_test`.
+
 ## Writing
 
 `write_particle` takes a list of systems:
@@ -77,8 +124,10 @@ dangling child cannot be represented, so it is dropped and named in `warnings`. 
   separate files. `preview_asset` checks the texture.
 - **Children are same-file.** A child in another `.pcf` is not a cross-file reference in this
   format; include the system in the same file.
-- **No in-game visual proof yet.** The writer is tested by round-tripping a stock
-  `fire_01l4d.pcf` and by parsing the result, not by watching the particles render. Treat a
-  new effect as visually unverified until `run_map_test` shows it.
+- **In-game proof: the stock systems render, a rebuilt one may not.** `fire_barrel_big` was
+  watched rendering on `c1m1_hotel` and on the test map, once `effect_name` was the bare
+  system name. A system rebuilt from a JSON summary registered but did not draw, so treat a
+  rebuilt effect as visually unverified until `run_map_test` shows it; copy stock systems with
+  `source` instead.
 - **The engine caches particles.** A changed `.pcf` may need a map reload (or a game
   restart) before a `info_particle_system` shows the new version.

@@ -226,7 +226,7 @@ map and looking, or by not happening at all.
 | `read_prop_survey` | nothing |
 | `read_static_props` | nothing: Hammer shows a static prop as solid even when its model has no `.phy` |
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |
-| `read_particle` | Hammer lists `.pcf` files, not the systems inside them or their materials |
+| `read_particle` | Hammer lists `.pcf` files, not the systems inside them, their materials or a map's `effect_name` resolution |
 | `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |

@@ -17,13 +17,13 @@ when it has all four:
 | Nav generation and attributes | run_nav_generate, func_nav_attribute_region, read_nav_dump | **verified** |
 | Assets: textures, models, sizes, skyboxes, particles | `read_game_content`, `read_model_info`, `read_particle`, `write_particle`, `extract_vtf`, `read_soundscape` | **verified** against the stock game: model hulls/sequences/events, VTF decode, particle systems and soundscape waves |
 | Sound: WAV, soundscripts, soundscapes | `read_wav`/`convert_wav`, `read_soundscript`/`write_soundscript`, `read_soundscape`/`write_soundscape` | tools + stock-game verification (13k soundscript names, 577 soundscapes); in-game audio mix not judged |
-| Particles: `.pcf` read and write | `read_particle`, `write_particle` | **verified structurally:** a stock `fire_01l4d.pcf` (59 systems) round-trips through the writer and parses back with the same systems, children, materials and operator counts; a new system is built from JSON. In-game render not judged |
+| Particles: `.pcf` read and write | `read_particle`, `write_particle` | **verified structurally and in game:** a stock `fire_01l4d.pcf` (59 systems) round-trips with the same systems, children, materials and operator counts; typed options (vectors, colours, times) survive the reader as `{type, value}`. In game, `fire_barrel_big` rendered on `c1m1_hotel` and on the test map, and a `pcf/system` name was rejected by the engine; a system built by `write_particle` and shipped in an addon with a manifest registered (no unknown-particle line) but a rebuilt copy did not visibly draw |
 | Collision models (`$collisionmodel`) | glTF `collision: "box"`/`"hull"`, `brush_to_model` brush collision | **verified with the real compiler:** box and convex hull both produce a `.phy` and `hasPhysics: true`; a flat hull falls back to the box with a warning; a brush collision is convex (or `$concave` for several solids) |
 | Compile, pack, deploy | run_compile, run_vpk_pack, check_campaign | **verified** |
 | Automated play test | `run_map_test`, `-condebug` | **verified** for single-pattern waits. Ordered `markers` and `via: "steam"` are verified: with Steam logged on, a run matched spawn (106.7 s), the finale stages, escape, touch and `Map: credits` with `missing: []`. Long finales and rounds are no longer blocked on this machine; full Versus/Scavenge rounds still need two teams |
-| VScript: ship and attach | write_vscript, logic_script, printl banner | **verified (load only)** |
+| VScript: ship and attach | `write_vscript`, `logic_script`, `vscripts` key | **verified in game**: a map entity `logic_script` with `vscripts "hookprobe"` logged `[HSMCP] hookprobe loaded` and `OnGameEvent_player_spawn` for userids 2-5; a bare `script_execute` runs the code but registers no event hooks |
 | VScript static contract | `read_vscript`, `write_vscript` | **verified offline**: Lua habits (`end`, `elseif`, `then`, `nil`, `~=`, `--[[`), unbalanced delimiters with lines, include paths, and the `DirectorOptions` custom-finale stage list (count, missing/extra/undefined stages). Runtime hooks and stage transitions still need `-condebug` |
-| VScript: finale waves, Director hooks | ScriptedMode/DirectorScript API | not yet |
+| VScript: Director hooks and events | `OnGameEvent_*`, `EntFire(director, RunScriptCode)` | **verified in game**: `EntFire("director", "RunScriptCode", ...)` ran (survival/scavenge probes) and `OnGameEvent_player_spawn`/`OnGameEvent_player_death` registered only through `logic_script`; scripted finale stages 1-6 already logged from the finale script |
 | Common infected, hordes | spawn areas, population, nav | not yet |
 | Special infected | Director spawn set, nav | not yet |
 | Tanks, witches | Director, nav, spawn rules | **verified** via `z_spawn` with `sv_cheats`: `Damage Taken from "Tank"` and `calm witch` in the log, 59 s; the tank killed the test player |
@@ -60,7 +60,7 @@ when it has all four:
 4. Tanks and witches.
 5. Scavenge, Survival, Versus.
 6. Weather, fog and lighting.
-7. VScript waves and Director hooks.
+7. VScript waves (event hooks are verified; the waves are not).
 8. Displacements and instances.
 
 ## Rules

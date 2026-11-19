@@ -15,6 +15,12 @@ from typing import Any
 
 
 def _scalar(attr: Any) -> Any:
+    """One option value. Vectors, colours and times keep their DMX type.
+
+    They are returned as `{type, value}` so the same JSON can go back into
+    `write_particle`: a bare list of four numbers would become a `vector4`, and a
+    colour written as a vector4 is a different attribute to the engine.
+    """
     try:
         kind = attr.type.value
         if kind == "string":
@@ -26,6 +32,15 @@ def _scalar(attr: Any) -> Any:
             return round(float(attr.val_float), 6)
         if kind == "bool":
             return bool(attr.val_bool)
+        if kind in {"vector2", "vector3", "vector4"}:
+            vector = getattr(attr, f"val_{kind}")
+            return {"type": kind, "value": [round(float(item), 6) for item in vector]}
+        if kind == "color":
+            return {"type": "color", "value": [int(item) for item in attr.val_color]}
+        if kind == "quaternion":
+            return {"type": "quaternion", "value": [round(float(item), 6) for item in attr.val_quaternion]}
+        if kind == "time":
+            return {"type": "time", "value": round(float(attr.val_time), 6)}
     except Exception:  # noqa: BLE001
         return None
     return None
@@ -99,6 +114,7 @@ def _mounted(game_dir: str | None) -> tuple[Any, str | None]:
 def particle_read(req: dict[str, Any]) -> dict[str, Any]:
     path = str(req.get("path", "")).strip()
     needle = str(req.get("name", "")).strip().lower()
+    effect_name = str(req.get("effectName", "")).strip()
     limit = max(1, min(int(req.get("limit", 200)), 10_000))
     include_operators = bool(req.get("includeOperators", True))
     fsys = None
@@ -141,6 +157,35 @@ def particle_read(req: dict[str, Any]) -> dict[str, Any]:
                 problems.append(f"{file}: {type(exc).__name__}: {exc}")
 
     total = len(systems)
+    effect: dict[str, Any] | None = None
+    if effect_name:
+        folded = effect_name.casefold()
+        matches = [system for system in systems if system["name"].casefold() == folded]
+        effect = {
+            "name": effect_name,
+            "pathStyle": any(sep in effect_name for sep in ("/", "\\")),
+            "resolved": bool(matches),
+            "matches": [
+                {
+                    "name": system["name"],
+                    "file": system["file"],
+                    "materials": system["materials"],
+                }
+                for system in matches
+            ],
+        }
+        if effect["pathStyle"]:
+            effect["hint"] = (
+                "`info_particle_system.effect_name` takes the bare system name -- Valve's own "
+                "maps use `window_glass`, not `fire_01L4D/window_glass`. A `pcf/system` path "
+                "precaches as unknown and renders nothing."
+            )
+        elif not matches:
+            effect["hint"] = (
+                "no system has this name in the files scanned. A custom .pcf normally ships "
+                "inside an addon with a `particles/particles_manifest.txt` entry; without "
+                "that, the engine may never register its systems."
+            )
     if needle:
         systems = [system for system in systems if needle in system["name"].lower()]
     return {
@@ -155,6 +200,7 @@ def particle_read(req: dict[str, Any]) -> dict[str, Any]:
         "systems": systems[:limit],
         "truncated": len(systems) > limit,
         "name": needle or None,
+        "effectName": effect,
         "note": (
             "`children` are other systems in the same file; an `info_particle_system` uses "
             "`cpoint1`..`cpoint8` for child control points. `materials` are the VMT names "

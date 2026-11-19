@@ -41,12 +41,22 @@ export const readParticleTool = defineTool({
     "system: child references, renderer/initializer/emitter/force/constraint operators and " +
     "the materials it draws. Use it before pointing an info_particle_system at a name: a " +
     "missing or renamed system renders nothing and the compiler never complains. `name` " +
-    "filters systems, `filePattern` filters files. `includeOperators: false` gives a compact " +
+    "filters systems, `filePattern` filters files, and `effectName` resolves an " +
+    "`info_particle_system.effect_name` exactly: L4D2 wants the bare system name, and a " +
+    "`pcf/system` path precaches as unknown. `includeOperators: false` gives a compact " +
     "list when only names and materials matter. Needs the Python sidecar.",
   realm: "map",
   inputSchema: {
     path: z.string().optional().describe("A loose .pcf. Wins over gameDir."),
     name: z.string().optional().describe("Case-insensitive substring of the system name."),
+    effectName: z
+      .string()
+      .optional()
+      .describe(
+        "An `info_particle_system.effect_name` to resolve, e.g. `window_glass`. Returns " +
+          "whether a system has that exact name, and calls a `pcf/system` path what it is: " +
+          "L4D2 precaches that as unknown and draws nothing.",
+      ),
     filePattern: z.string().optional().describe("Only game files whose path contains this."),
     maxFiles: z.number().int().min(1).max(2000).default(200),
     limit: z.number().int().min(1).max(10_000).default(200),
@@ -64,6 +74,18 @@ export const readParticleTool = defineTool({
     count: z.number().optional(),
     problems: z.array(z.string()).optional(),
     systems: z.array(SYSTEM).optional(),
+    effectName: z
+      .object({
+        name: z.string(),
+        pathStyle: z.boolean(),
+        resolved: z.boolean(),
+        matches: z.array(
+          z.object({ name: z.string(), file: z.string(), materials: z.array(z.string()) }),
+        ),
+        hint: z.string().optional(),
+      })
+      .nullable()
+      .optional(),
     truncated: z.boolean().optional(),
     name: z.string().nullable().optional(),
     note: z.string().optional(),
@@ -79,6 +101,7 @@ export const readParticleTool = defineTool({
         {
           path,
           name: args.name,
+          effectName: args.effectName,
           limit: args.limit,
           includeOperators: args.includeOperators,
         },
@@ -93,6 +116,7 @@ export const readParticleTool = defineTool({
       {
         gameDir: game.gameDir,
         name: args.name,
+        effectName: args.effectName,
         filePattern: args.filePattern,
         maxFiles: args.maxFiles,
         limit: args.limit,

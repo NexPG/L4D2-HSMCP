@@ -118,6 +118,50 @@ describe.skipIf(!installed)("read_particle", () => {
     expect((smoke.initializers[0] as { function: string }).function).toBe("init_life_time");
   });
 
+  it("resolves an effect_name and calls a pcf/system path what it is", async () => {
+    const path = join(scratch, "effect.pcf");
+    await callSidecar(
+      "particle_write",
+      {
+        path,
+        systems: [
+          {
+            name: "smoke_effect",
+            options: { material: "particle/smoke_test" },
+          },
+        ],
+      },
+      config,
+    );
+
+    interface EffectResult {
+      effectName?: {
+        name: string;
+        pathStyle: boolean;
+        resolved: boolean;
+        matches: Array<{ name: string }>;
+        hint?: string;
+      };
+    }
+    const bare = await callSidecar<EffectResult>(
+      "particle_read",
+      { path, effectName: "smoke_effect", includeOperators: false },
+      config,
+    );
+    expect(bare.effectName?.resolved).toBe(true);
+    expect(bare.effectName?.pathStyle).toBe(false);
+    expect(bare.effectName?.matches[0]?.name).toBe("smoke_effect");
+
+    const styled = await callSidecar<EffectResult>(
+      "particle_read",
+      { path, effectName: "effect/smoke_effect", includeOperators: false },
+      config,
+    );
+    expect(styled.effectName?.resolved).toBe(false);
+    expect(styled.effectName?.pathStyle).toBe(true);
+    expect(styled.effectName?.hint).toContain("bare system name");
+  });
+
   it.skipIf(!has.gameContent)("rewrites a stock PCF through the writer without losing systems", async () => {
     const copy = join(scratch, "fire_copy.pcf");
     const written = await callSidecar<{

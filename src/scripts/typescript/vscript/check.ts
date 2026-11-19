@@ -250,6 +250,16 @@ export function checkNut(source: string, path = "<script>"): NutReport {
   }
 
   const functions = [...new Set([...code.matchAll(/\bfunction\s+([A-Za-z_]\w*)\s*\(/g)].map((m) => m[1]!))];
+  const eventHooks = functions.filter((name) => name.startsWith("OnGameEvent_"));
+  if (eventHooks.length > 0) {
+    diagnostics.push(
+      diag(
+        "info",
+        "nut-event-hook-needs-entity",
+        `${eventHooks.join(", ")} only fires when a logic_script entity (or a mode script) loads this file; script_execute runs the code but registers no hooks`,
+      ),
+    );
+  }
   const includes = [
     ...new Set(
       [...source.matchAll(/\bIncludeScript\s*\(\s*"([^"]+)"/g)].map((match) => match[1]!),

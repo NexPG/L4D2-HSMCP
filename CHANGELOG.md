@@ -5,6 +5,32 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.110-alpha - 2026-11-20
+
+- **VScript event hooks run in game.** A `logic_script` entity with `"vscripts" "hookprobe"` in
+  the compiled BSP loaded the file (`hsmcp_hookprobe executing script: hookprobe`) and
+  `OnGameEvent_player_spawn` fired for userids 2-5; the same file run through `script_execute`
+  registered no hooks. `EntFire("director", "RunScriptCode", ...)` already ran in the survival
+  and scavenge probes.
+- **`read_vscript` explains that split** with an `info` rule (`nut-event-hook-needs-entity`)
+  instead of letting a file with `OnGameEvent_*` look ready for `script_execute`.
+- **A particle `effect_name` is the bare system name.** `fire_barrel_big` renders; a
+  `pcf/system` path such as `fire_01l4d/fire_barrel_big` logs `Attempted to precache unknown
+  particle system` and draws nothing. Valve's own `c1m1_hotel` entities use
+  `window_glass`/`emergency_light_strobe`. Both the stock map and the test map were watched
+  rendering the fire once the prefix was gone.
+- **`read_particle` keeps typed options.** Colours, vectors, quaternions and times used to be
+  dropped (scalar-only), so reading a system and writing it back lost its colour and size
+  initializers — the reason a rebuilt fire registered but stayed invisible. They now come back
+  as `{ "type": "vector3", "value": [..] }`, which is the shape `write_particle` accepts.
+- **`read_particle` takes `effectName`** and resolves a map's `effect_name` exactly, flagging
+  the path form with the rule in `hint`.
+- **Custom particle registration:** a `.pcf` shipped in an addon with a
+  `particles/particles_manifest.txt` line registered its system (no unknown-particle line; the
+  same map without the addon did report it unknown). A rebuilt copy registered but did not
+  visibly draw, so `source` rewrites remain the supported way to copy a stock system.
+- **Tool count stays 164.** Tests: 150 files, 1430 passed, 33 skipped.
+
 ## 0.0.109-alpha - 2026-11-19
 
 - **Survival round started in game.** A probe called `ForceSurvivalStart()` through

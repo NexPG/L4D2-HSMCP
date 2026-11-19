@@ -78,7 +78,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_entity_report` | Hammer's Entity Report, filterable |
 | `validate_io` | entity wiring against the FGD |
 | `read_fgd_class` | keyvalues, inputs, outputs of one entity class from the game's FGD |
-| `read_particle` | systems, children, operators and materials inside a `.pcf` |
+| `read_particle` | systems, children, operators, materials and typed options inside a `.pcf`; `effectName` resolves a map's `effect_name` |
 | `write_particle` | build a binary `.pcf` from JSON systems, or rewrite a stock file |
 | `read_game_content` | find installed materials and models by name; an empty pattern browses a kind, paged with `offset` |
 | `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |

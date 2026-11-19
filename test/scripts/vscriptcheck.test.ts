@@ -101,4 +101,14 @@ describe("checkNut", () => {
     expect(entry?.severity).toBe("info");
     expect(report.ok).toBe(true);
   });
+
+  it("says an event hook needs a logic_script entity", () => {
+    const report = checkNut(
+      'printl( "hooks" )\n\nfunction OnGameEvent_player_spawn( params )\n{\n\tprintl( "spawn " + params.userid );\n}\n',
+    );
+    const entry = report.diagnostics.find((item) => item.rule === "nut-event-hook-needs-entity");
+    expect(entry?.severity).toBe("info");
+    expect(entry?.message).toContain("OnGameEvent_player_spawn");
+    expect(report.ok).toBe(true);
+  });
 });
