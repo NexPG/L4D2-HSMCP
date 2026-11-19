@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.109-alpha - 2026-11-19
+
+- **Survival round started in game.** A probe called `ForceSurvivalStart()` through
+  `EntFire("director", "RunScriptCode", ...)` on `hsmcp_test_m1`; the log shows
+  `OnSurvivalRoundStarted: Survival started` and the screenshot shows the HUD timer at
+  `00:07.44` against a 4:00 Bronze Standard. The full wave to bronze is not timed.
+- **Scavenge round started and its item accounting is live.** The same path called
+  `ForceScavengeStart()`; `OnScavengeRoundStarted: Scavenge started` and
+  `GetScavengeItemsRemaining()`/`GetScavengeItemsGoal()` returned **16 / 16**, with the
+  screenshot showing `SCORE 0 / 16` and the enemy team at 0. A gas-can pickup and score
+  are still not automated.
+- **The engine's mode scripts are absent as loose `.nut` here** (`Script not found
+  (survival)` / `<map>_survival`); the C++ director starts and runs the round, which is
+  why the scripted `[SURVIVAL]` stage lines are not the evidence. `check_modes` still warns
+  that the test map has no radio trigger: `ForceSurvivalStart` is not the player-facing path.
+- **Tool count stays 164.** Tests: 150 files, 1428 passed, 33 skipped.
+
 ## 0.0.108-alpha - 2026-11-19
 
 - **`check_modes` checks a mode against the maps it lists.** Scavenge needs
