@@ -143,9 +143,11 @@ export const fbxToSmdTool = defineTool({
     "already wrote Source-sized numbers. The bind pose comes from the skin clusters' " +
     "`TransformLink`; a file without clusters uses the node hierarchy and says so. UVs are " +
     "flipped because SMD inverts V. Every AnimationStack is resampled at `animationFps` " +
-    "into its own SMD with the bind SMD's node table; cubic tangents are sampled linearly " +
-    "and that is reported. Blend shapes are counted, not exported: SMD has no morph target. " +
-    "The optional `qc` block writes a QC naming the SMD and a `$sequence` per animation.",
+    "into its own SMD with the bind SMD's node table; cubic tangents are sampled linearly, " +
+    "the documented fallback. `collision: 'box'` or `'hull'` writes a `<name>_phys.smd` for " +
+    "`$collisionmodel`, and a flat model falls back to the box with a warning. Blend shapes " +
+    "are counted, not exported: SMD has no morph target. The optional `qc` block writes a QC " +
+    "naming the SMD, a `$sequence` per animation and the collision model with its `$mass`.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .fbx, absolute or relative to the repo root."),
@@ -192,11 +194,24 @@ export const fbxToSmdTool = defineTool({
       .number()
       .positive()
       .default(30)
-      .describe("Resample rate. SMD frame times are indices; fps turns them into seconds."),
-    animations: z
+      .describe("Resample rate. SMD frame times are indices; fps turns them into seconds."),    animations: z
       .array(z.string())
       .default([])
       .describe("Only these animation names (case-insensitive). Empty means every stack."),
+    collision: z
+      .enum(["none", "box", "hull"])
+      .default("none")
+      .describe(
+        "Write a `<name>_phys.smd` for `$collisionmodel`. 'box' is the model's AABB with " +
+          "collisionThickness as a minimum on flat axes; 'hull' is its convex hull and falls " +
+          "back to the box with a warning when the model is flat.",
+      ),
+    mass: z.number().positive().default(10).describe("`$mass` for the collision model."),
+    collisionThickness: z
+      .number()
+      .positive()
+      .default(1)
+      .describe("Minimum box thickness on an axis; a flat sign still gets a solid slab."),
     qc: QC_BLOCK.optional().describe("Also write a QC that names the SMD."),
     overwrite: z.boolean().default(false),
     confirm: CONFIRM,
@@ -230,9 +245,20 @@ export const fbxToSmdTool = defineTool({
         start: z.number(),
         end: z.number(),
       }),
-    ),
-    animationCount: z.number(),
+    ),    animationCount: z.number(),
     animationFps: z.number(),
+    collision: z
+      .object({
+        path: z.string(),
+        mode: z.enum(["box", "hull"]),
+        triangles: z.number(),
+        mins: z.array(z.number()),
+        maxs: z.array(z.number()),
+        thickness: z.number(),
+        mass: z.number(),
+        verified: z.boolean(),
+      })
+      .nullable(),
     diagnostics: z.array(DIAGNOSTIC),
     warnings: z.array(z.string()),
     qc: z
@@ -282,9 +308,11 @@ export const fbxToSmdTool = defineTool({
         models: args.models,
         material: args.material,
         limitVertices: args.limitVertices,
-        exportAnimations: args.exportAnimations,
-        animationFps: args.animationFps,
+        exportAnimations: args.exportAnimations,        animationFps: args.animationFps,
         animations: args.animations,
+        collision: args.collision,
+        mass: args.mass,
+        collisionThickness: args.collisionThickness,
         overwrite: args.overwrite,
       },
       ctx.config,
@@ -320,6 +348,7 @@ export const fbxToSmdTool = defineTool({
           });
         }
       }
+      const collisionFile = (result.collision ?? null) as { path: string } | null;
       const text = buildQc({
         modelname: args.qc.modelname,
         body: [{ name: "Body", smd: smdName }],
@@ -327,6 +356,9 @@ export const fbxToSmdTool = defineTool({
         ...(args.qc.surfaceprop === undefined ? {} : { surfaceprop: args.qc.surfaceprop }),
         staticprop: args.qc.staticprop,
         sequences,
+        ...(collisionFile === null
+          ? {}
+          : { collision: { smd: qcRelative(qcDir, collisionFile.path), mass: args.mass } }),
       });
       mkdirSync(dirname(qcPath), { recursive: true });
       const written = writeGuarded(qcPath, text, ctx.config);

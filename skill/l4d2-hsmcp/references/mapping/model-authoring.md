@@ -70,7 +70,8 @@ the absence instead of hiding it.
   taken from the skin clusters' `TransformLink`, the axis from `UpAxis`, and V flipped for
   SMD. Units are a flag, not a guess: centimetres need `scale: 0.3937` unless the DCC wrote
   Source-sized numbers. Every animation stack is resampled into its own SMD with a
-  `$sequence` in the QC; blend shapes are counted, not exported. See
+  `$sequence` in the QC, and `collision: "box"`/`"hull"` writes a `_phys.smd`; blend shapes
+  are counted, not exported. See
   [FBX -> SMD](fbx-import.md).
 - `gltf_to_dmx` — shape keys become a DMX model source with Source flexes. The compiler
   reads the `DmeVertexDeltaData` and `DmeCombinationOperator` without a `$flex` command, and

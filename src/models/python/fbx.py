@@ -14,8 +14,11 @@ What is read and what is not, stated plainly:
   the bone in the bind pose, which is the only place that pose is recorded; node TRS is the
   rest pose and can differ. A file without clusters falls back to the node hierarchy and
   says so.
-* **Animations are counted, not exported.** SMD sequences are a different reader; an FBX
-  with an `AnimationStack` reports how many it found, so the omission is visible.
+* **Animations are exported.** Every `AnimationStack` is resampled at `animationFps` into
+  its own SMD, using the bind SMD's node table; the QC gets a `$sequence` per animation.
+  Cubic tangents are sampled linearly, the documented fallback.
+* **Collision is optional.** `collision: "box"` writes the AABB and `"hull"` the convex
+  hull as a `_phys.smd` for `$collisionmodel`; a flat model falls back to the box loudly.
 * **Blend shapes are counted, not exported.** SMD has no morph target; that is the DMX
   path's job.
 * **Units are a flag, not a guess.** FBX is commonly in centimetres and Source is in
@@ -65,6 +68,10 @@ from modelmath import (
     normalize3,
     quat_normalize,
 )
+
+# The collision-shape builder is shared with the glTF path: the AABB and the outward-wound
+# convex hull are format-independent, and a second implementation would only drift.
+from gltf import _box_triangles, _hull_triangles
 
 _BINARY_MAGIC = b"Kaydara FBX Binary  \x00\x1a\x00"
 _BINARY_HEADER_64BIT = 7500
@@ -1120,6 +1127,15 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         raise FbxError("animationFps must be a positive finite number")
     animation_filter = [str(name).lower() for name in (req.get("animations") or [])]
     max_animation_frames = int(req.get("maxAnimationFrames", 20_000))
+    collision = str(req.get("collision", "none")).lower()
+    if collision not in {"none", "box", "hull"}:
+        raise FbxError("collision must be 'none', 'box' or 'hull'")
+    mass = float(req.get("mass", 10.0))
+    if not math.isfinite(mass) or mass <= 0.0:
+        raise FbxError("mass must be a positive finite number")
+    collision_thickness = float(req.get("collisionThickness", 1.0))
+    if not math.isfinite(collision_thickness) or collision_thickness <= 0.0:
+        raise FbxError("collisionThickness must be a positive finite number")
 
     unit = _unit_scale(root)
     if unit and abs(unit - 1.0) > 1e-6 and abs(unit - 2.54) > 1e-6:
@@ -1672,6 +1688,65 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
     mins = [min(point[i] for point in points) for i in range(3)]
     maxs = [max(point[i] for point in points) for i in range(3)]
 
+    collision_result: dict[str, Any] | None = None
+    if collision in {"box", "hull"}:
+        box_mins = [float(value) for value in mins]
+        box_maxs = [float(value) for value in maxs]
+        for axis_index in range(3):
+            if box_maxs[axis_index] - box_mins[axis_index] < collision_thickness:
+                center = (box_mins[axis_index] + box_maxs[axis_index]) * 0.5
+                box_mins[axis_index] = center - collision_thickness * 0.5
+                box_maxs[axis_index] = center + collision_thickness * 0.5
+        mode = "box"
+        if collision == "hull":
+            try:
+                physics_triangles = _hull_triangles(points, "phys")
+                mode = "hull"
+            except Exception as exc:  # noqa: BLE001 -- a flat model has no hull
+                diagnostics.append(
+                    _diag(
+                        "warning",
+                        "fbx-hull-fallback",
+                        f"convex hull failed ({type(exc).__name__}: {exc}); the collision "
+                        "model falls back to the bounding box",
+                    )
+                )
+                physics_triangles = _box_triangles(box_mins, box_maxs, "phys")
+        else:
+            physics_triangles = _box_triangles(box_mins, box_maxs, "phys")
+        physics_path = output.with_name(f"{output.stem}_phys.smd")
+        if physics_path.exists() and not bool(req.get("overwrite", False)):
+            raise FbxError(
+                f"{physics_path} already exists; pass overwrite:true to replace it"
+            )
+        physics_written = smd_write(
+            {
+                "path": str(physics_path),
+                "nodes": [{"name": "root", "parent": None}],
+                "frames": [
+                    {
+                        "time": 0.0,
+                        "bones": [
+                            {"bone": 0, "position": [0, 0, 0], "rotation": [0, 0, 0]}
+                        ],
+                    }
+                ],
+                # A collision SMD carries a material name; `phys` is the conventional one.
+                "triangles": physics_triangles,
+            }
+        )
+        diagnostics.extend(physics_written.get("diagnostics", []))
+        collision_result = {
+            "path": str(physics_path),
+            "mode": mode,
+            "triangles": len(physics_triangles),
+            "mins": [round(v, 4) for v in (box_mins if mode == "box" else mins)],
+            "maxs": [round(v, 4) for v in (box_maxs if mode == "box" else maxs)],
+            "thickness": collision_thickness,
+            "mass": mass,
+            "verified": bool(physics_written.get("verified")),
+        }
+
     return {
         "path": str(source),
         "out": str(output),
@@ -1691,6 +1766,7 @@ def fbx_to_smd(req: dict[str, Any]) -> dict[str, Any]:
         "materials": sorted(materials_seen),
         "bounds": {"mins": [round(value, 6) for value in mins], "maxs": [round(value, 6) for value in maxs]},
         "unitScaleFactor": unit,
+        "collision": collision_result,
         "animations": animation_results,
         "animationCount": len(animation_results),
         "animationFps": animation_fps,

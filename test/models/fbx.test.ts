@@ -42,6 +42,9 @@ function convert(path: string, out: string, extra: Record<string, unknown> = {})
       exportAnimations: true,
       animationFps: 30,
       animations: [],
+      collision: "none",
+      mass: 10,
+      collisionThickness: 1,
       overwrite: false,
       confirm: true,
       ...extra,
@@ -248,6 +251,27 @@ function staticTriangle(upAxis: number, translation: [number, number, number], u
           ]),
       ]),
     () => writer.node("Material", [i64(300), str("Material::wood"), str("")], []),
+  ]);
+  writer.node("Connections", [], [
+    () => connection(writer, 100, 200),
+    () => connection(writer, 300, 200),
+  ]);
+  return writer.finish();
+}
+
+/** A closed tetrahedron: the smallest mesh with a real convex hull. */
+function tetrahedron(): Buffer {
+  const writer = new Binary();
+  header(writer, 2, 1);
+  writer.node("Objects", [], [
+    () =>
+      writer.node("Geometry", [i64(100), str("Geometry::tetra"), str("Mesh")], [
+        () =>
+          writer.node("Vertices", [doubles([0, 0, 0, 64, 0, 0, 0, 64, 0, 0, 0, 64])], []),
+        () => writer.node("PolygonVertexIndex", [ints([0, 2, -2, 0, 1, -4, 0, 3, -3, 1, 2, -4])], []),
+      ]),
+    () => writer.node("Model", [i64(200), str("Model::tetra"), str("Mesh")], []),
+    () => writer.node("Material", [i64(300), str("Material::stone"), str("")], []),
   ]);
   writer.node("Connections", [], [
     () => connection(writer, 100, 200),
@@ -464,6 +488,124 @@ describe.skipIf(!has.sidecar)("FBX", () => {
     expect(smd.match(/ 1 1 1\.000000/g)?.length).toBe(3);
   });
 
+  it("writes a convex-hull collision model for a closed mesh", async () => {
+    const path = join(scratch, "tetra.fbx");
+    writeFileSync(path, tetrahedron());
+    const out = join(scratch, "tetra.smd");
+    const result = (await convert(path, out, { collision: "hull" })) as {
+      collision: { path: string; mode: string; triangles: number } | null;
+      warnings: string[];
+    };
+    expect(result.collision).toMatchObject({ mode: "hull", triangles: 4 });
+    expect(existsSync(result.collision!.path)).toBe(true);
+    expect(result.warnings.join(" ")).not.toContain("falls back");
+    const phys = readFileSync(result.collision!.path, "utf8");
+    expect(phys).toContain("phys");
+    expect(phys.match(/ 1 0 1\.000000/g)?.length).toBe(12);
+  });
+
+  it("falls back to the box when a hull would be flat, and says why", async () => {
+    const path = join(scratch, "flat.fbx");
+    writeFileSync(path, staticTriangle(2, [0, 0, 0]));
+    const out = join(scratch, "flat.smd");
+    const result = (await convert(path, out, { collision: "hull" })) as {
+      collision: { mode: string; triangles: number } | null;
+      warnings: string[];
+    };
+    expect(result.collision).toMatchObject({ mode: "box", triangles: 12 });
+    expect(result.warnings.join(" ")).toContain("falls back to the bounding box");
+  });
+
+  it("names the collision model in the QC with a $mass", async () => {
+    const path = join(scratch, "tetra-qc.fbx");
+    writeFileSync(path, tetrahedron());
+    const qc = join(scratch, "tetra-qc.qc");
+    const result = (await convert(path, join(scratch, "tetra-qc.smd"), {
+      collision: "box",
+      mass: 25,
+      qc: {
+        path: qc,
+        modelname: "test/tetra.mdl",
+        cdmaterials: ["models/test"],
+        surfaceprop: "metal",
+        staticprop: true,
+        sequence: "idle",
+        fps: 30,
+        animationSequences: true,
+        animationArgs: [],
+        overwrite: false,
+      },
+    })) as { collision: { path: string } | null };
+    const text = readFileSync(qc, "utf8");
+    expect(text).toContain('$collisionmodel "tetra-qc_phys.smd"');
+    expect(text).toContain("$mass 25");
+    expect(result.collision).not.toBeNull();
+  });
+
+  it(
+    "compiles a hull collision model into a .phy",
+    async () => {
+      if (!has.toolchain) return;
+      const dir = join(scratch, "tetra-compile");
+      mkdirSync(dir, { recursive: true });
+      const path = join(dir, "tetra.fbx");
+      writeFileSync(path, tetrahedron());
+      const qc = join(dir, "tetra.qc");
+      const unique = `hsmcp_fbx_phys_${Date.now().toString(36)}${Math.floor(Math.random() * 1e6)}`;
+      let compiledModel: string | null = null;
+      try {
+        await convert(path, join(dir, "tetra.smd"), {
+          collision: "hull",
+          mass: 25,
+          qc: {
+            path: qc,
+            modelname: `${unique}/tetra.mdl`,
+            cdmaterials: [`models/${unique}`],
+            surfaceprop: "metal",
+            staticprop: true,
+            sequence: "idle",
+            fps: 30,
+            animationSequences: true,
+            animationArgs: [],
+            overwrite: false,
+          },
+        });
+        const compile = (await runStudiomdlTool.handler(
+          { qc, timeoutMinutes: 2, confirm: true },
+          ctx,
+        )) as {
+          ok: boolean;
+          modelExists: boolean;
+          model: string | null;
+          warning: string | null;
+          files: Array<{ name: string }>;
+        };
+        compiledModel = compile.model;
+        expect(compile.warning).toBeNull();
+        expect(compile.ok).toBe(true);
+        expect(compile.files.map((file) => file.name)).toEqual(
+          expect.arrayContaining(["tetra.mdl", "tetra.phy"]),
+        );
+        const info = (await readModelInfoTool.handler(
+          { model: `models/${unique}/tetra.mdl` },
+          ctx,
+        )) as { found: boolean; hasPhysics: boolean };
+        expect(info.found).toBe(true);
+        expect(info.hasPhysics).toBe(true);
+      } finally {
+        const folder = compiledModel
+          ? dirname(compiledModel)
+          : config.gameDir
+            ? join(config.gameDir, "models", unique)
+            : null;
+        if (folder && existsSync(folder) && folder.toLowerCase().includes(unique.toLowerCase())) {
+          rmSync(folder, { recursive: true, force: true });
+        }
+      }
+    },
+    120_000,
+  );
+
   it("resamples an AnimationStack into one SMD with the bind node table", async () => {
     const path = join(scratch, "anim.fbx");
     writeFileSync(path, skinnedTriangle(true));
@@ -473,6 +615,9 @@ describe.skipIf(!has.sidecar)("FBX", () => {
       exportAnimations: true,
       animationFps: 30,
       animations: [],
+      collision: "none",
+      mass: 10,
+      collisionThickness: 1,
       qc: {
         path: qc,
         modelname: "test/anim.mdl",
@@ -577,6 +722,9 @@ describe.skipIf(!has.sidecar)("FBX", () => {
             exportAnimations: true,
             animationFps: 30,
             animations: [],
+            collision: "none",
+            mass: 10,
+            collisionThickness: 1,
             qc: {
               path: qc,
               // No `models/`: studiomdl adds the game's models/ directory itself.

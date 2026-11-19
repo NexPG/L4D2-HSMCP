@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.105-alpha - 2026-11-19
+
+- **FBX collision models.** `fbx_to_smd` takes `collision: "box"` or `"hull"`, the same
+  choice as `gltf_to_smd`. The AABB honours `collisionThickness` on a flat axis; the hull is
+  outward-wound and falls back to the box with `fbx-hull-fallback` when the mesh is
+  coplanar. The shape builder is shared with the glTF path, not copied.
+- **The QC gets the collision model.** With the `qc` block the generated file carries
+  `$collisionmodel "<name>_phys.smd" { $mass N }`, and the result reports the shape's
+  `mode`, triangle count, bounds and byte-verified write.
+- **Proven with the real compiler:** a tetrahedron with `collision: "hull"` produces four
+  hull faces, `studiomdl` writes `tetra.phy`, and `read_model_info.hasPhysics` is true; a
+  flat triangle reports the box fallback and its warning; the QC round-trips `$mass 25`.
+- **Tool count stays 161.** Tests: 148 files, 1414 passed, 33 skipped.
+
 ## 0.0.104-alpha - 2026-11-19
 
 - **A window is closed only when the process list says it is gone.** `run_hlmv` and

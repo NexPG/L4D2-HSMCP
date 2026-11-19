@@ -11,6 +11,7 @@ Both binary 7.x and ASCII are read; no SDK, Blender or third-party importer is i
 | Inspect a `.fbx` | `read_fbx` |
 | Convert geometry, skeleton and weights | `fbx_to_smd` |
 | Export every animation stack as an SMD + `$sequence` | `fbx_to_smd` (default) with the `qc` block |
+| Make a solid prop | `fbx_to_smd` with `collision: "box"` or `"hull"` |
 | Write the QC in the same call | `fbx_to_smd` with the `qc` block |
 | Compile | `run_studiomdl` |
 | Look at the result | `preview_model` (engine fallback) or `preview_asset` (HLMV) |
@@ -87,8 +88,22 @@ What the path does with the curves:
 | Several mesh models | Merged into one SMD, with a note: `$bodygroup` is a QC decision |
 | No material connection | `material` (default `debug/debugempty`), which compiles as the pink checkerboard, not an error |
 
-There is no FBX collision model yet. A solid prop needs a `_phys.smd`: use `gltf_to_smd`
-with `collision: "box"`/`"hull"` on a glTF export, or `brush_to_model` for brush collision.
+## Collision
+
+A solid prop needs a `_phys.smd`. `fbx_to_smd` takes the same choice as the glTF path:
+
+- `collision: "box"` writes the model's AABB, with `collisionThickness` as a minimum on an
+  axis so a flat sign still gets a solid slab;
+- `collision: "hull"` writes the convex hull of the mesh vertices, outward-wound; a
+  coplanar cloud cannot bound a volume, so it falls back to the box and reports
+  `fbx-hull-fallback`;
+- the result's `collision.mode` says which shape was written, and `mass` is passed to the
+  QC's `$collisionmodel`.
+
+The collision SMD uses the material `phys`; `debug/debugempty` makes `studiomdl` report a
+collision volume but write a 0-byte `.phy`. A brush-built collision is still
+`brush_to_model`'s job; a model with several disjoint parts needs `$concave`, which this
+path does not generate.
 
 ## Formats and failure modes
 
