@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **164 tools**.
+Last checked against the tool list on 21/11/2026: **166 tools**.
 
 ## The file itself
 
@@ -53,8 +53,8 @@ getting `ENOENT` on the first call.
 | Flip / mirror | `transform_solids` | |
 | Delete | `delete_solids` | |
 | **Clip tool** | `clip_solids` | Front, back or both. Both must sum to the original volume or the write is refused |
-| **Vertex manipulation** | `move_vertices` | Refuses what Hammer refuses: a move that leaves a face non-planar |
-| Make Hollow | `hollow_solids` | Mitred. Hammer's own version overlaps at the corners |
+| **Vertex manipulation** | `move_vertices` | Refuses what Hammer refuses: a move that leaves a face non-planar. A broadened edge compiled with vbsp |
+| Make Hollow | `hollow_solids` | Mitred. Hammer's own version overlaps at the corners. Verified by vbsp |
 | **Carve** | *not implemented, on purpose* | Its result comes from `clip_solids` repeated. An operation whose correct use is "don't" is not a gap |
 | Snap to grid | `transform_solids` (`grid`) | Optional and measured: snapping is what makes a face stop being flat |
 | Nudge | `transform_solids` (`move`) | |
@@ -82,8 +82,9 @@ getting `ENOENT` on the first call.
 
 | Hammer | Here | Notes |
 |---|---|---|
-| Create | `write_displacement` | Power 2, 3 or 4 |
+| Create | `write_displacement` | Power 2, 3 or 4. A displaced brush stops sealing; `seal:true` writes the duplicate back |
 | Destroy | `edit_vmf` | The `dispinfo` block is removed like any other |
+| Create Sealing Brush | `seal_displacements` | Duplicates each displaced world brush, drops the `dispinfo`, tool-textures the copy. Measured: the bare room leaks, the sealed one compiles |
 | Sew | `sew_displacements` | Averages, so a ridge is not dragged to one side |
 | Paint Alpha | `paint_displacement` | Uniform, by height, or by slope of the resulting surface |
 | Paint Geometry — raise/lower | `sculpt_displacement` (`raise`) | |
@@ -220,7 +221,7 @@ map and looking, or by not happening at all.
 | `write_overlay` | the overlay tool, driven by a side id and a point instead of a drag |
 | `write_instance` | the instance tool, without the GUI or the file dialog |
 | `write_sky_camera` | the sky_camera entity, with the one-per-map and skyname checks |
-| `write_skybox_copy` | the copy/scale/move half of a 3D skybox; sealing and design stay with the mapper |
+| `build_skybox` | copy, sealed room and `sky_camera` in one call; `write_skybox_copy` is the copy/scale/move half |
 | `write_weather` | `func_precipitation` and `env_fog_controller` with FGD-checked choices and a checked brush |
 | `read_map_extents` | nothing |
 | `read_map_geometry` | nothing — how full each lump is against vbsp's ceiling |

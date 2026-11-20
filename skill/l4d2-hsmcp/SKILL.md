@@ -166,8 +166,9 @@ what you need, the primitive can. See `references/tools/primitives.md`.
   as one SMD per stack with `$sequence` lines, and `collision: "box"`/`"hull"` writes the
   `_phys.smd`; shape keys go through `fbx_to_dmx` as DMX flexes, while `fbx_to_smd` counts
   them because SMD has no morph target.
-- **3D-skybox composition.** `write_sky_camera` places the camera and `write_skybox_copy`
-  makes the scaled copy; choosing and sealing what to copy is design work.
+- **3D-skybox composition.** `build_skybox` copies a selection, seals the room and places
+  `sky_camera` in one call; choosing what is worth copying is design work. `write_sky_camera`
+  and `write_skybox_copy` remain as the halves.
 
 If a request depends on one of these, say so plainly and do not fake the step.
 

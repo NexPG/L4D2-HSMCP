@@ -5,6 +5,29 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.121-alpha - 2026-11-21
+
+- **The displacement leak is explained, and `seal_displacements` repairs it.** The previous entry
+  left the cause open; it is not the grid. A `dispinfo` lifted verbatim out of a Hammer-written
+  fixture leaks exactly the same way, so `startposition`, its winding and `triangle_tags` are
+  innocent. The mechanism is stronger than "the surface moved": **vbsp takes a displaced brush
+  out of the hull entirely and emits its surface separately**, so the brush's own volume is void
+  and the leak trace runs through it. Measured on one room: bare, it compiles; displaced, it
+  leaks; displaced plus a plain duplicate, it compiles. `seal_displacements` writes that
+  duplicate -- same planes, no `dispinfo`, tool material -- and `write_displacement` takes
+  `seal: true` to do both in one call. A second run recognises its own work and adds nothing.
+- **Hollow, vertex edit and overlay now have the compiler's word too.** One sealed room is
+  hollowed, has a top edge broadened by `move_vertices`, and receives an `info_overlay` on its
+  floor; vbsp accepts the result with no leak. The displacement pair above runs in the same file,
+  so the room itself is never the variable.
+- **A 3D skybox is now one call.** `build_skybox` copies the selected brushes at 1/16 scale
+  around the map origin, places them in a sealed `TOOLS/TOOLSSKYBOX` room chosen outside the
+  playable map, and puts the single `sky_camera` at the scaled origin. It refuses a room that
+  overlaps the map or leaves the world bounds, and a selection whose scaled origin lands
+  inside a copied brush -- which vbsp rejects as "entity in solid volume" rather than as a
+  leak. Verified by vbsp: the map plus its second sealed volume compiles with no leak.
+- **Tool count: 166.** Tests: 153 files, 1469 passed, 33 skipped.
+
 ## 0.0.120-alpha - 2026-11-21
 
 - **`auto_visgroups` fills the tree the way Hammer++'s Auto Visgroups does.** One visgroup per

@@ -69,6 +69,7 @@ import { runtimeTools } from "./scripts/typescript/tools/runtime.js";
 import { sceneTools } from "./scripts/typescript/tools/scene.js";
 import { skyboxTools } from "./textures/typescript/tools/skybox.js";
 import { skyboxCopyTools } from "./textures/typescript/tools/skyboxcopy.js";
+import { skyboxBuildTools } from "./textures/typescript/tools/skyboxbuild.js";
 import { smdTools } from "./models/typescript/tools/smd.js";
 import { snapTools } from "./maps/typescript/tools/snap.js";
 import { solidTools } from "./maps/typescript/tools/solids.js";
@@ -176,6 +177,7 @@ export const allTools: AnyToolDef[] = [
   ...instanceTools,
   ...skyboxTools,
   ...skyboxCopyTools,
+  ...skyboxBuildTools,
   ...weatherTools,
   ...worldspawnTools,
   ...textTools,

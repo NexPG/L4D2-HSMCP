@@ -26,8 +26,8 @@ covered: this table is the summary.
 |---|---|---|
 | Brush create: box, wedge, cylinder, convex, cone, stairs, arch, sphere, torus | `write_vmf_solid` | verified for box/wedge/cylinder/convex; the compound shapes are checked by `read_vmf_solids` and each reports its brush count |
 | Clip | `clip_solids` | verified: both halves of a cut brush compiled with vbsp in a sealed room (`tools-compile.test.ts`) |
-| Hollow | `hollow_solids` | tool |
-| Vertex edit | `move_vertices` | tool |
+| Hollow | `hollow_solids` | verified: six mitred walls from one block compiled with vbsp in a sealed room (`tools-compile.test.ts`) |
+| Vertex edit | `move_vertices` | verified: a broadened top edge compiled with vbsp in the same room as hollow and an overlay |
 | Move/rotate/scale/mirror | `transform_solids` | tool |
 | Merge convex brushes | `merge_solids` | verified: merged platform passed vbsp; refuses a non-convex or overlapping union |
 | Move objects to floor/ceiling | `move_to_surface` | verified: dropped brush passed vbsp; optional align to the surface |
@@ -41,12 +41,13 @@ covered: this table is the summary.
 
 | Feature | Tool | Status |
 |---|---|---|
-| Create | `write_displacement` | tool, and **known defect**: a sealed room whose floor is displaced leaks; the same room without the displacement seals |
+| Create | `write_displacement` | verified: a displaced floor is compiled twice, leaking without a seal and sealing with one |
 | Subdivide (raise power) | `subdivide_displacements` | tool |
 | Sew | `sew_displacements` | tool |
 | Sculpt (flatten, raise, slope, noise) | `sculpt_displacement` | tool |
 | Paint blend | `paint_displacement` | tool |
 | Read | `read_displacements` | tool |
+| Seal a displaced brush | `seal_displacements` | verified: the duplicate is what stops the leak; a second run is a no-op |
 
 ## Entities and I/O
 
@@ -96,8 +97,8 @@ covered: this table is the summary.
 | Particle browser | `read_game_content(kind: "particle")` + `read_particle` for system contents | verified |
 | Sound browser | `read_game_content(kind: "sound")` | verified |
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
-| Overlays / decals | `write_overlay` | tool (format from Valve's styleguide VMF; play test pending) |
-| 3D skybox | `write_sky_camera` + `write_skybox_copy`; sealing and design manual | partial (copy and camera tools, sealing/design gap) |
+| Overlays / decals | `write_overlay` | verified: format from Valve's styleguide VMF, and vbsp accepted an overlay on the room floor in `tools-compile.test.ts` |
+| 3D skybox | `build_skybox`; `write_sky_camera` + `write_skybox_copy` for the halves | verified by vbsp: the copy, the sealed room and the camera compile with no leak (`skyboxbuild.test.ts`); the choice of scenery is still the mapper's |
 | Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
 | Instance from selection | `create_instance_from_selection` | verified: the extracted instance and `func_instance` passed vbsp; a brush entity is taken whole |
 | Prefabs | `insert_prefab` | verified: paste a saved `.vmf` fragment; ids remapped, move and yaw about a pivot; brush entities and entity angles turn with it |

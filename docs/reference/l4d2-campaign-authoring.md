@@ -86,8 +86,9 @@ campaign. Sources are listed at the end; this page turns them into contracts the
 - Foliage does double duty: it hides the boundary and it is a spawn/ambush surface. Use
   grass models and detail sprites on terrain, not a flat green texture.
 - Terrain is displacements: a grid, `write_displacement`, `sculpt_displacement` (noise,
-  raise, slope), sew, paint by height/slope. A displacement does not seal; keep the brush
-  hull under it.
+  raise, slope), sew, paint by height/slope. A displaced brush stops contributing to the hull,
+  so `write_vmf_terrain` seals every cell by default; for a hand-built patch pass
+  `seal: true` or run `seal_displacements`.
 - Water is `func_water_analog` plus `water_lod_control`; it is not nav. A boardwalk/bridge
   must join nav on both banks.
 

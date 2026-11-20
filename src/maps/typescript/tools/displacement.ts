@@ -10,6 +10,7 @@ import {
   subdivideDisplacements,
   writeDisplacements,
 } from "../vmf/dispwrite.js";
+import { checkSeal, SEAL_MATERIAL, sealDisplacements } from "../vmf/dispseal.js";
 import type { FaceSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
@@ -192,11 +193,12 @@ export const writeDisplacementTool = defineTool({
     "Creates displacements on selected faces: the vertex grids that make every piece of " +
     "terrain in Source. Power 2, 3 or 4, which are 5x5, 9x9 and 17x17 grids -- Source " +
     "accepts 0 and 1 and no terrain is built with them. Flat by default, which is what " +
-    "Hammer's own create makes and what a mapper then sculpts. WARNING: a displacement " +
-    "does not seal. vbsp builds the hull from the brush's own planes and draws the terrain " +
-    "over it, so displacing a face of the map's shell leaks through a shape the terrain no " +
-    "longer has, and the leak names a brush that looks solid in the editor. Refuses a face " +
-    "that already carries one rather than discarding what was sculpted onto it.",
+    "Hammer's own create makes and what a mapper then sculpts. WARNING: a displacement does " +
+    "not seal. vbsp takes a displaced brush out of the hull and draws its surface separately, " +
+    "so the inside of that brush is void and a displaced floor leaks through a shape that " +
+    "looks solid in the editor. Pass seal:true to duplicate each displaced brush as a " +
+    "tool-textured solid in the same write; seal_displacements does it afterwards. Refuses a " +
+    "face that already carries one rather than discarding what was sculpted onto it.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -208,6 +210,18 @@ export const writeDisplacementTool = defineTool({
       .boolean()
       .optional()
       .describe("Every quadrilateral face of the map. Required when nothing else narrows it."),
+    seal: z
+      .boolean()
+      .optional()
+      .describe(
+        "Duplicate each displaced brush as a tool-textured solid in the same write. A " +
+          "displacement does not seal -- vbsp drops a displaced brush from the hull -- so a " +
+          "displaced floor leaks. This is the repair, and it is what a mapper does by hand.",
+      ),
+    sealMaterial: z
+      .string()
+      .optional()
+      .describe(`Material for the sealing duplicate. Default ${SEAL_MATERIAL}.`),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -221,6 +235,9 @@ export const writeDisplacementTool = defineTool({
     created: z.array(
       z.object({ solidId: z.number(), power: z.number(), vertices: z.number() }),
     ),
+    sealed: z
+      .array(z.object({ solidId: z.number(), sealId: z.number(), faces: z.number() }))
+      .optional(),
     warnings: z.array(z.string()),
     nextStep: z.string(),
   },
@@ -245,26 +262,45 @@ export const writeDisplacementTool = defineTool({
       }
     }
 
-    const write = writeGuarded(path, result.text, ctx.config, {
+    let text = result.text;
+    let sealed: Array<{ solidId: number; sealId: number; faces: number }> | undefined;
+    if (args.seal === true) {
+      const repair = sealDisplacements(text, {
+        solidIds: result.created.map((c) => c.solidId),
+        ...(args.sealMaterial !== undefined ? { material: args.sealMaterial } : {}),
+      });
+      const problems = checkSeal(text, repair.text);
+      if (problems.length > 0) throw new Error(`refusing to write: ${problems.join(" | ")}`);
+      text = repair.text;
+      sealed = repair.sealed;
+    }
+
+    const write = writeGuarded(path, text, ctx.config, {
       dryRun: args.dryRun,
       backup: args.backup,
-      unchanged: result.unchanged,
+      unchanged: text === before,
     });
+    const world = readDisplacements(text).warnings;
     return {
       path,
       written: write.written,
       backupPath: write.backupPath,
-      unchanged: result.unchanged,
+      unchanged: text === before,
       matched: result.matched,
       created: result.created.map((c) => ({
         solidId: c.solidId,
         power: c.power,
         vertices: c.vertices,
       })),
-      warnings: result.warnings,
+      ...(sealed !== undefined ? { sealed } : {}),
+      warnings: [...result.warnings, ...world],
       nextStep:
-        "Compile and read_leak if any of these brushes was part of the hull. A displaced " +
-        "face does not seal, and the leak will name a brush that looks solid.",
+        sealed !== undefined
+          ? "Compile and read_leak. The seal is a duplicate of each displaced brush with a " +
+            "tool material; terrain sculpted below the original face will meet it."
+          : "Compile and read_leak if any of these brushes was part of the hull. A displaced " +
+            "brush does not seal, and the leak will name a brush that looks solid. " +
+            "seal_displacements adds the duplicate that fixes it.",
     };
   },
 });
@@ -604,6 +640,99 @@ export const subdivideDisplacementsTool = defineTool({
   },
 });
 
+export const sealDisplacementsTool = defineTool({
+  name: "seal_displacements",
+  description:
+    "Adds the solid a displacement removed: duplicates every displaced world brush, drops " +
+    "its dispinfo and paints the copy with a tool material. A displacement does not seal, " +
+    "and not merely because the surface moved -- vbsp takes the whole displaced brush out " +
+    "of the hull, so a sealed room whose floor carries one leaks through the floor's own " +
+    "volume. A plain duplicate closes it again; this is the operation Hammer++ calls a " +
+    "sealing brush. Reads the result back and refuses a duplicate whose volume differs. " +
+    "Leaves detail brushes alone (a detail brush never sealed the hull) and skips a brush " +
+    "that already has an undisplaced twin, so a second run is a no-op. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    solidIds: z
+      .array(z.number())
+      .optional()
+      .describe("Only seal these displaced brushes. Default: every displaced world brush."),
+    material: z
+      .string()
+      .optional()
+      .describe(`Material for the duplicate. Default ${SEAL_MATERIAL}.`),
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    unchanged: z.boolean(),
+    sealed: z.array(z.object({ solidId: z.number(), sealId: z.number(), faces: z.number() })),
+    skipped: z.array(z.object({ solidId: z.number(), reason: z.string() })),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    const result = sealDisplacements(before, {
+      ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
+      ...(args.material !== undefined ? { material: args.material } : {}),
+    });
+
+    const problems = checkSeal(before, result.text);
+    if (problems.length > 0) throw new Error(`refusing to write: ${problems.join(" | ")}`);
+
+    // The seal has to be the same volume, carry no displacement, and be ordinary geometry.
+    const after = checkVmfSolids(path, result.text);
+    for (const made of result.sealed) {
+      const source = after.solids.find((s) => s.id === made.solidId);
+      const seal = after.solids.find((s) => s.id === made.sealId);
+      if (!source || !seal) {
+        throw new Error(`refusing to write: solid ${made.solidId} or its seal is not readable`);
+      }
+      if (Math.abs(seal.volume - source.volume) > 1e-3) {
+        throw new Error(
+          `refusing to write: the seal of solid ${made.solidId} has volume ${seal.volume} ` +
+            `where the brush has ${source.volume}`,
+        );
+      }
+      if (seal.sides.some((side) => side.hasDisplacement)) {
+        throw new Error(`refusing to write: the seal of solid ${made.solidId} has a dispinfo`);
+      }
+    }
+
+    const write = writeGuarded(path, result.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: result.unchanged,
+    });
+
+    return {
+      path,
+      written: write.written,
+      backupPath: write.backupPath,
+      unchanged: result.unchanged,
+      sealed: result.sealed,
+      skipped: result.skipped,
+      warnings: result.warnings,
+      nextStep:
+        result.sealed.length > 0
+          ? "Compile and read_leak. The duplicate sits exactly on the displaced brush's " +
+            "volume; terrain edges should stay on the original face plane, which is where " +
+            "the seal's surface is."
+          : "Nothing was added. If read_leak still reports a leak, it names a brush this " +
+            "map does not carry a displacement on.",
+    };
+  },
+});
+
 export const displacementTools = [
   readDisplacementsTool,
   writeDisplacementTool,
@@ -611,4 +740,5 @@ export const displacementTools = [
   sewDisplacementsTool,
   sculptDisplacementTool,
   paintDisplacementTool,
+  sealDisplacementsTool,
 ];

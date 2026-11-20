@@ -6,10 +6,11 @@
  * the same file and agreeing.
  *
  * The one thing worth stating before the code: **a displacement is not geometry the way a
- * brush is.** vbsp builds the map's hull from the brush's own planes and draws the terrain
- * over the top, so displacing a wall does not move the wall -- it leaves a wall-shaped hole
- * in the world with a hillside painted on it. That is why `write_displacement` warns about
- * a world brush and why nothing here will displace a face of a sealing hull quietly.
+ * brush is, and a displaced brush stops being solid.** vbsp takes the brush out of the hull
+ * and emits the displaced surface separately, so the brush's own volume is void: displace a
+ * wall and you get a wall-shaped hole marked by a hillside. That is why `write_displacement`
+ * warns about world brushes and why `seal_displacements` exists -- a duplicate with no
+ * `dispinfo` is what closes the hull again.
  */
 import { children, get, parse } from "../../../formats/typescript/kv/parse.js";
 import type { KvBlock } from "../../../formats/typescript/kv/parse.js";

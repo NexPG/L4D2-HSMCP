@@ -176,6 +176,11 @@ why `run_compile` stops at the stage that leaked instead of spending an hour on 
 brushes from the BSP tree, so as far as visibility is concerned they are not there. Everything that
 makes `func_detail` worth using is the same thing that makes it unable to hold the void out.
 
+A displaced brush is the same story for a different reason: vbsp takes it out of the hull
+entirely and emits its surface separately, so the brush's own volume is void. Putting a brush
+*under* a displaced floor does not help unless that brush itself has no displacement;
+`seal_displacements` duplicates the displaced brush with a tool material, which does.
+
 This rule was written down in an earlier French-only note and did not survive the move into these
 docs — restored 11/08/2026 after a second session shipped a tool that flips brushes to
 `func_detail` and had to prove the trap beside the benefit.

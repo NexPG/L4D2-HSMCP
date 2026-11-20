@@ -21,10 +21,12 @@ export const writeVmfTerrain = defineTool({
   description:
     "Builds a terrain patch: a grid of floor brushes at floorZ, a power-2/3/4 displacement " +
     "on every top face, then sculpt_displacement noise and sew_displacements. This is the " +
-    "native Source terrain path, not a heightmap importer. The brush hulls seal the floor; " +
-    "the displacement is the visible and walkable surface. It does NOT remove an existing " +
-    "flat floor: use it as the floor of the area, or pits will be hidden by the old brush. " +
-    "Keep the cabin, doors, boardwalk and stairs on flat floor. Guarded.",
+    "native Source terrain path, not a heightmap importer. Each displaced cell is duplicated " +
+    "as a tool-textured solid, because a displaced brush contributes no volume to the hull " +
+    "and a bare patch leaks; pass seal:false only when the patch sits on a floor that already " +
+    "seals. It does NOT remove an existing flat floor: use it as the floor of the area, or " +
+    "pits will be hidden by the old brush. Keep the cabin, doors, boardwalk and stairs on " +
+    "flat floor. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -46,6 +48,13 @@ export const writeVmfTerrain = defineTool({
       .describe("Top and side material. A blend material can be painted by height later."),
     noise: z.number().min(0).default(48).describe("Noise amplitude in units. 0 skips sculpting."),
     seed: z.number().int().default(7).describe("Same seed, same terrain."),
+    seal: z
+      .boolean()
+      .optional()
+      .describe(
+        "Duplicate every displaced cell as a tool-textured solid so the patch seals. On by " +
+          "default; turn it off only when an untouched floor underneath already seals.",
+      ),
     confirm: CONFIRM,
   },
   outputSchema: {
@@ -107,6 +116,7 @@ export const writeVmfTerrain = defineTool({
         solidIds,
         facing: "up",
         power,
+        seal: args.seal ?? true,
         confirm: true,
       } as never,
       ctx,
@@ -142,7 +152,8 @@ export const writeVmfTerrain = defineTool({
       warnings,
       nextStep:
         "Paint the blend with paint_displacement(byHeight/bySlope) and keep props/doors on " +
-        "flat floor. A displacement does not seal; the brush hulls do.",
+        "flat floor. Each cell is sealed by default; compile and read_leak before trusting " +
+        "the patch as the map's floor.",
     };
   },
 });

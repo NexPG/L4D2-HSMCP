@@ -14,8 +14,9 @@ at the skybox shell.
    ```
    write_displacement(path, power: 4, facing: "up", material: "<ground material>", confirm: true)
    ```
-   Do not displace the map's sealing shell: a displacement does not seal, and vbsp will leak
-   through the shape the terrain no longer has.
+   Do not displace the map's sealing shell: vbsp takes a displaced brush out of the hull, so its
+   volume is void and the map leaks through it. Pass `seal: true` to duplicate each displaced
+   brush with a tool material, or run `seal_displacements` afterwards.
 3. **Shape it.**
    ```
    sculpt_displacement(path, solidIds: [...], shape: { kind: "noise", amplitude: 48, seed: 7 })

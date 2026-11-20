@@ -69,9 +69,13 @@ describe("readDisplacements", () => {
     expect(Math.max(...ridge.vertices.map((v) => v.position[2]))).toBeCloseTo(128);
   });
 
-  it("says a displacement does not seal, because a leak here names an innocent brush", () => {
+  it("explains that a displaced brush is not solid, and names the repair", () => {
+    // The old wording said the hull was built from the brush's planes and the terrain was
+    // drawn over it. vbsp does the opposite: it takes the whole brush out of the hull. A
+    // reader that says the wrong thing sends the mapper to seal the wrong brush.
     const r = readDisplacements(DISPLACED_VMF);
-    expect(r.warnings.join(" ")).toMatch(/does not seal/);
+    expect(r.warnings.join(" ")).toMatch(/contributes no volume/);
+    expect(r.warnings.join(" ")).toMatch(/seal_displacements/);
   });
 
   it("refuses a power Source does not have", () => {

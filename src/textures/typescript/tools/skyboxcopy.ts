@@ -25,10 +25,10 @@ export const writeSkyboxCopyTool = defineTool({
   description:
     "Copies selected brushes into a 3D skybox: scales the copy by 1/scale (16 by default) " +
     "around the map origin and moves it so that origin lands at targetOrigin, which is where " +
-    "sky_camera should sit. It is the missing half of write_sky_camera; sealing the skybox " +
-    "area and choosing what to copy remain the mapper's job, and the tool warns when no " +
-    "sky_camera is near targetOrigin. Refuses hidden and displaced brushes; every copy is " +
-    "checked as a solid before the write. Guarded.",
+    "sky_camera should sit. It is the copy half of a 3D skybox; build_skybox does the copy, " +
+    "the sealed room and the camera in one call, so use this only when the copy must land " +
+    "somewhere specific. It warns when no sky_camera is near targetOrigin. Refuses hidden and " +
+    "displaced brushes; every copy is checked as a solid before the write. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -171,8 +171,9 @@ export const writeSkyboxCopyTool = defineTool({
       warnings,
       nextStep:
         "Place sky_camera at targetOrigin (or move the copy to an existing camera), seal " +
-        "the skybox area, compile and look up. clone_solids and transform_solids remain " +
-        "available if the selection or offset is wrong.",
+        "the skybox area, compile and look up. build_skybox does the room and the camera " +
+        "too; clone_solids and transform_solids remain available if the selection or offset " +
+        "is wrong.",
     };
   },
 });

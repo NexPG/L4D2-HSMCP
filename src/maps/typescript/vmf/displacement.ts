@@ -408,17 +408,19 @@ export function readDisplacements(source: string): {
     }
   }
 
-  // A displaced brush does not seal a map. vbsp builds the hull from the brush's own
-  // planes and the displacement is drawn on top, so a wall turned into terrain leaks
-  // through the shape the terrain no longer has -- and the leak names a brush that looks
-  // perfectly solid in the editor.
+  // A displaced brush does not seal, and the mechanism is stronger than "the surface moved":
+  // vbsp takes the whole brush out of the hull and emits the displacement as a surface of its
+  // own, so the brush's interior is void. A leak trace from a sealed room whose floor is
+  // displaced runs *through that brush*, which is why the brush looks solid in Hammer while
+  // the compiler disagrees. `seal_displacements` adds the duplicate that closes it.
   const displacedSolids = new Set(displacements.map((d) => d.solidId));
   const worldDisplaced = [...displacedSolids].filter((id) => byId.get(id)?.owner === "world");
   if (worldDisplaced.length > 0) {
     warnings.push(
-      `${worldDisplaced.length} world brush(es) carry a displacement. A displacement does ` +
-        `not seal: vbsp builds the hull from the brush's own planes and draws the terrain ` +
-        `over it, so if one of these is part of the map's shell the next compile leaks.`,
+      `${worldDisplaced.length} world brush(es) carry a displacement. A displaced brush ` +
+        `contributes no volume to the hull -- vbsp emits its surface separately -- so if one ` +
+        `of these is part of the map's shell the next compile leaks through it unless a ` +
+        `duplicate brush seals it. seal_displacements writes that duplicate.`,
     );
   }
 
