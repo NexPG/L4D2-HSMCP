@@ -1,6 +1,6 @@
 # Tool catalogue
 
-170 tools. This page groups them by the job you are doing; each tool's own description is the
+172 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -10,6 +10,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | Tool | Use |
 |---|---|
 | `health` | game profile, compilers, FGD, sidecar, tool count, whether the build is stale |
+| `review_map` | one-call audit: lint, rules, organisation, budgets, deps; `deep` adds rooms/sightlines |
+| `compare_renders` | render the same camera against two VMFs and diff the frames |
 | `read_hammerpp` | Hammer++ settings by section, game config/build programs, keybindings, warnings |
 | `open_in_hammer` | open the VMF in Hammer++ and capture the editor window; closes by default |
 | `hammer_status` | running editor, shell channel, main window and open map |

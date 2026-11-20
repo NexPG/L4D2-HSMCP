@@ -27,6 +27,19 @@ with a line here.
   registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
 - **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
 
+## 0.0.126-alpha - 2026-11-21
+
+- **`review_map` runs the checklist in one call, and says what did not run.** Lint, the map's
+  own rules file and organisation; when a compiled `.bsp` sits beside it, the budget report,
+  lightmap and visleaf statistics and the dependency walk; `deep` adds the room segmentation
+  and the longest sight lines. Each section carries its own error, so a missing sidecar or an
+  uncompiled map produces "incomplete", not a stack trace or a clean verdict that hides it.
+- **`compare_renders` renders the same camera against two VMFs and diffs the frames.** Changed
+  pixel count and fraction, mean and maximum channel delta, the bounding box, and a difference
+  image with changed pixels red. It uses the offline flat-colour renderer, so the frames are
+  comparable: same camera, material hashes and geometry; textures, lightmaps and props are
+  outside what it can show.
+- **Tool count: 172.** Tests: 161 files, 1512 passed, 33 skipped.
 ## 0.0.125-alpha - 2026-11-21
 
 - **`diff_vmf` compares what a mapper means by changed.** Brushes added, removed or changed

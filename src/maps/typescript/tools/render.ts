@@ -494,4 +494,144 @@ export const renderVmfTourTool = defineTool({
   },
 });
 
-export const renderTools = [renderVmfViewTool, renderVmfTourTool];
+export const compareRendersTool = defineTool({
+  name: "compare_renders",
+  description:
+    "Renders the same camera against two .vmf files and reports what changed in the picture: " +
+    "changed pixel count, fraction, mean and maximum channel delta, and the bounding box. " +
+    "Use it to catch a visual regression an edit was not supposed to cause, or to see what a " +
+    "geometry change actually did. The renderer is the offline flat-colour one used by " +
+    "render_vmf_view, so the two frames are comparable: same camera, same material hashes, no " +
+    "textures or props. The difference image paints changed pixels red over the second frame.",
+  realm: "map",
+  inputSchema: {
+    before: z.string().describe("The older .vmf, absolute or relative to the repo root."),
+    after: z.string().describe("The newer .vmf."),
+    origin: z.array(z.number()).length(3).describe("Eye position, the same for both frames."),
+    angles: z
+      .array(z.number())
+      .length(3)
+      .default([0, 0, 0])
+      .describe("Pitch, yaw, roll in degrees, the same for both frames."),
+    fov: z.number().min(10).max(150).default(90),
+    width: z.number().int().min(64).max(1024).default(480),
+    height: z.number().int().min(64).max(1024).default(360),
+    near: z.number().positive().default(4),
+    threshold: z
+      .number()
+      .min(0)
+      .max(255)
+      .default(8)
+      .describe("A pixel counts as changed when its largest channel delta exceeds this."),
+    image: z.boolean().default(true).describe("Return the difference frame as a PNG."),
+  },
+  outputSchema: {
+    before: z.string(),
+    after: z.string(),
+    width: z.number(),
+    height: z.number(),
+    totalPixels: z.number(),
+    changedPixels: z.number(),
+    changedFraction: z.number(),
+    meanDelta: z.number(),
+    maxDelta: z.number(),
+    bbox: z
+      .object({ minX: z.number(), minY: z.number(), maxX: z.number(), maxY: z.number() })
+      .nullable(),
+    identical: z.boolean(),
+    facesDrawnBefore: z.number(),
+    facesDrawnAfter: z.number(),
+    pngBytes: z.number(),
+    notes: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const before = resolveVmfInput(args.before, ctx.config);
+    const after = resolveVmfInput(args.after, ctx.config);
+    const sceneBefore = buildScene(before, readFileSync(before, "utf8"), { withTerrain: true });
+    const sceneAfter = buildScene(after, readFileSync(after, "utf8"), { withTerrain: true });
+
+    // Defaults live in the schema and the MCP layer applies them; a direct handler call
+    // (tests, another tool) does not. Undefined width here produced a zero-length frame and
+    // every pixel then differed.
+    const threshold = args.threshold ?? 8;
+    const camera: Camera = {
+      origin: args.origin as unknown as Vec3,
+      angles: (args.angles ?? [0, 0, 0]) as unknown as Vec3,
+      fov: args.fov ?? 90,
+      width: args.width ?? 480,
+      height: args.height ?? 360,
+      near: args.near ?? 4,
+    };
+    const a = render(sceneBefore, camera);
+    const b = render(sceneAfter, camera);
+
+    let changed = 0;
+    let sum = 0;
+    let max = 0;
+    let minX = a.width;
+    let minY = a.height;
+    let maxX = -1;
+    let maxY = -1;
+    const diff = Buffer.from(b.rgb);
+    for (let y = 0; y < a.height; y += 1) {
+      for (let x = 0; x < a.width; x += 1) {
+        const at = (y * a.width + x) * 3;
+        const delta = Math.max(
+          Math.abs(a.rgb[at]! - b.rgb[at]!),
+          Math.abs(a.rgb[at + 1]! - b.rgb[at + 1]!),
+          Math.abs(a.rgb[at + 2]! - b.rgb[at + 2]!),
+        );
+        if (delta <= threshold) continue;
+        changed += 1;
+        sum += delta;
+        if (delta > max) max = delta;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+        diff[at] = 255;
+        diff[at + 1] = 16;
+        diff[at + 2] = 16;
+      }
+    }
+
+    const notes: string[] = [];
+    if (changed === 0) {
+      notes.push("No pixel changed above the threshold.");
+    } else {
+      notes.push(
+        `${changed} pixel(s) changed; the difference image paints them red over the second ` +
+          `frame. Changed area: ${(minX + 1) * (minY + 1)} at the top-left, ` +
+          `${(maxX + 1) * (maxY + 1)} at the bottom-right, in pixels.`,
+      );
+    }
+    notes.push(
+      "Flat colour, one light, no textures, lightmaps, fog or props. A change in a texture, " +
+        "a lightmap or a prop is invisible here; a change in geometry or material is not.",
+    );
+
+    const png = encodePng(diff, a.width, a.height);
+    return {
+      before,
+      after,
+      width: a.width,
+      height: a.height,
+      totalPixels: a.width * a.height,
+      changedPixels: changed,
+      changedFraction: Math.round((changed / (a.width * a.height)) * 10000) / 10000,
+      meanDelta: changed > 0 ? Math.round((sum / changed) * 100) / 100 : 0,
+      maxDelta: max,
+      bbox: changed > 0 ? { minX, minY, maxX, maxY } : null,
+      identical: changed === 0,
+      facesDrawnBefore: a.facesDrawn,
+      facesDrawnAfter: b.facesDrawn,
+      pngBytes: png.length,
+      notes,
+      ...(args.image
+        ? { [IMAGE_KEY]: { data: png.toString("base64"), mimeType: "image/png" } }
+        : {}),
+    };
+  },
+});
+
+export const renderTools = [renderVmfViewTool, renderVmfTourTool, compareRendersTool];
