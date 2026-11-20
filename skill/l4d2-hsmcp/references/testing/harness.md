@@ -97,3 +97,25 @@ script) are unaffected.
 - `missing` names the first step that did not happen and everything after it.
 - `logTail` is the last 25 lines, for the line the pattern did not anticipate.
 - The full log stays at `<game>/left4dead2/console.log`.
+
+## Hidden addons and a killed run
+
+`addonsToHide` renames an archive to `*.off` and restores it at the end. A run that is killed
+mid-flight never reaches the restore, and the campaign then vanishes from the menu (the
+`AddOn Campaigns` list is built at startup). `run_map_test` now restores every `*.vpk.off` in
+`addons/` before it hides anything and returns `addonsRestored`.
+
+## Driving the menu
+
+The campaign menu can be walked with synthetic input:
+
+1. click `PLAY CAMPAIGN` (SendInput absolute), then press `Down` -- the flyout is a hover list
+   that the keyboard enters from below;
+2. `Down` to `Single Player`, `Enter`;
+3. `Right` on `CAMPAIGN` opens the list, `Down` to `AddOn Campaign...`, `Enter`;
+4. the add-on campaign list appears, with the campaign's `addontitle`, author and description.
+
+Everything up to the last step works with `SendInput` clicks and `SendKeys` arrows. The final
+`SELECT` inside the add-on list did not accept Enter, Space, `e` or a synthetic click in this
+build, even though the row highlights on hover -- that last press needs a real pointer or the
+gamepad button.

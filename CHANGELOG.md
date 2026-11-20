@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.117-alpha - 2026-11-21
+
+- **A killed run no longer leaves a hidden addon.** `addonsToHide` renames an archive to
+  `*.off`; a run killed mid-flight skipped the restore and the campaign disappeared from the
+  menu, which is scanned at startup. `run_map_test` restores every `*.vpk.off` before hiding
+  anything and returns `addonsRestored`.
+- **The campaign menu is reachable with synthetic input.** `PLAY CAMPAIGN` (SendInput click) ->
+  `Down` into the hover flyout -> `Single Player` (Enter) -> `Right` on `CAMPAIGN` ->
+  `Down` to `AddOn Campaign...` -> the list shows `HSMCP Test by NexPG` with the description
+  written into `addoninfo.txt`. The last `SELECT` inside that list did not accept Enter, Space,
+  `e` or a synthetic click in this build, even with the row highlighted -- a real pointer or the
+  gamepad button is still needed there.
+- **Scavenge:** `jointeam Survivor` + `god` puts the client on the survivors and a teleported
+  can glows about 120 units away -- at the edge of the use range, which fits "the cans are too
+  far". The round's countdown restarts the round and resets the team, so the test needs a
+  stable round or a re-join after each restart. The pickup stays unproven.
+- **Tool count stays 164.** Tests: 151 files, 1439 passed, 33 skipped.
+
 ## 0.0.116-alpha - 2026-11-21
 
 - **FBX in-between shapes become their own flexes.** A `BlendShapeChannel` with several shapes

@@ -578,6 +578,7 @@ export const runMapTest = defineTool({
     scriptsInstalled: z.number(),
     commandsRun: z.array(z.string()),
     scheduleArmed: z.number(),
+    addonsRestored: z.number(),
     /** One entry per marker reached, in order, with the line that matched and its time. */
     timeline: z.array(
       z.object({
@@ -608,6 +609,20 @@ export const runMapTest = defineTool({
     // Truncate rather than delete: a delete that silently fails leaves yesterday's
     // "Mission credits" in the file and a wait-for match returns immediately.
     writeFileSync(consoleLog, "", "utf8");
+
+    // A run killed mid-flight leaves a hidden addon as `*.vpk.off`; restoring it here keeps
+    // the campaign menu honest and stops a later run from hiding nothing.
+    const addonsDir = join(gameDir, "addons");
+    let addonsRestored = 0;
+    if (existsSync(addonsDir)) {
+      for (const entry of readdirSync(addonsDir)) {
+        if (!entry.toLowerCase().endsWith(".vpk.off")) continue;
+        const target = join(addonsDir, entry.slice(0, -4));
+        if (existsSync(target)) continue;
+        renameSync(join(addonsDir, entry), target);
+        addonsRestored += 1;
+      }
+    }
 
     const hidden = hideFiles(
       (args.addonsToHide ?? []).map((addon) =>
@@ -824,6 +839,7 @@ export const runMapTest = defineTool({
       scriptsInstalled: scriptBackups.length,
       commandsRun: commands,
       scheduleArmed: args.schedule.length,
+      addonsRestored,
       timeline,
       missing,
       logTail: log
