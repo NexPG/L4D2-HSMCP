@@ -27,6 +27,15 @@ with a line here.
   registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
 - **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
 
+## 0.0.125-alpha - 2026-11-21
+
+- **`diff_vmf` compares what a mapper means by changed.** Brushes added, removed or changed
+  (volume, bounds, materials, displacement count), entities added, removed or changed
+  (keyvalues and outputs), and worldspawn keys. Matched by Hammer id, so a tool that
+  regenerates ids reads as all-added/all-removed -- honest, because the ids really are
+  different. A textual diff of a map is unreadable; this is the review tool a machine edit
+  needed. Tool 170.
+- **Tool count: 170.** Tests: 159 files, 1506 passed, 33 skipped.
 ## 0.0.124-alpha - 2026-11-21
 
 - **Hotspot texturing: the last Hammer++ data format is covered.** A `.rect` file is plain

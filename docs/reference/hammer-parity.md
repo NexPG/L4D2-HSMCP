@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **169 tools**.
+Last checked against the tool list on 21/11/2026: **170 tools**.
 
 ## The file itself
 
@@ -232,6 +232,7 @@ map and looking, or by not happening at all.
 | `read_particle` | Hammer lists `.pcf` files, not the systems inside them, their materials or a map's `effect_name` resolution |
 | `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
 | `read_bsp_faces` | nothing: Hammer reads the source, not the compiled faces, their masks or luxels |
+| `diff_vmf` | a textual diff of a map is unreadable; this says which brushes, entities and worldspawn keys changed |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
 | `run_pakfile_add` | nothing: Hammer cannot put a file into a compiled map |
