@@ -84,6 +84,7 @@ import { vtfGenTools } from "./textures/typescript/tools/vtfgen.js";
 import { vtfTools } from "./textures/typescript/tools/vtf.js";
 import { vpkTools } from "./packages/typescript/tools/vpk.js";
 import { vmtTools } from "./textures/typescript/tools/vmt.js";
+import { rectTools } from "./textures/typescript/tools/rect.js";
 import { vmfTools } from "./maps/typescript/tools/vmf.js";
 import { vmfEditTools } from "./maps/typescript/tools/vmfedit.js";
 import { vscriptTools } from "./scripts/typescript/tools/vscript.js";
@@ -178,6 +179,7 @@ export const allTools: AnyToolDef[] = [
   ...skyboxTools,
   ...skyboxCopyTools,
   ...skyboxBuildTools,
+  ...rectTools,
   ...weatherTools,
   ...worldspawnTools,
   ...textTools,

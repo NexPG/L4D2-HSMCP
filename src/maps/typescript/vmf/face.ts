@@ -212,6 +212,16 @@ export interface AlignOptions {
    * half its intended size.
    */
   textureSizes?: Map<string, [number, number]>;
+  /**
+   * For `fit`: a sub-rectangle of the texture, in pixels, as a `.rect` hotspot stores it.
+   *
+   * The face is fitted to this region instead of the whole texture, which is what Hammer++'s
+   * hotspot texturing does: a trim sheet holds many panels, and `min`/`max` choose the one a
+   * face gets. Coordinates follow the texture: origin top-left, `max` below and right of
+   * `min`. The full texture size is not needed for this, because the region defines the
+   * scale; it only has to exist.
+   */
+  fitRect?: { mins: [number, number]; maxs: [number, number] };
 }
 
 export interface AlignChange {
@@ -473,8 +483,14 @@ export function alignFaces(
         );
       }
       const size = options.textureSizes?.get(normaliseMaterial(side.material));
-      const texelsU = size?.[0] ?? TEXELS_ASSUMED;
-      const texelsV = size?.[1] ?? TEXELS_ASSUMED;
+      const rect = options.fitRect;
+      const texelsU = rect ? rect.maxs[0] - rect.mins[0] : (size?.[0] ?? TEXELS_ASSUMED);
+      const texelsV = rect ? rect.maxs[1] - rect.mins[1] : (size?.[1] ?? TEXELS_ASSUMED);
+      if (texelsU <= 0 || texelsV <= 0) {
+        throw new VmfFaceError(
+          `fitRect needs max above min on both axes, not ${texelsU} x ${texelsV}`,
+        );
+      }
       uScale = (su.hi - su.lo) / (texelsU * ru);
       vScale = (sv.hi - sv.lo) / (texelsV * rv);
     }
@@ -496,6 +512,12 @@ export function alignFaces(
     const ahead = running?.get(face.side) ?? 0;
     let uOff = (ahead - su.lo) / uScale;
     let vOff = -sv.lo / vScale;
+    if (options.fitRect) {
+      // The face's low edge maps to the region's top-left, not to texel 0. Offsets in a VMF
+      // uaxis are texels, so the region's minimum is added directly.
+      uOff += options.fitRect.mins[0];
+      vOff += options.fitRect.mins[1];
+    }
     if (options.shift) {
       uOff += options.shift[0];
       vOff += options.shift[1];
@@ -517,7 +539,7 @@ export function alignFaces(
   }
 
   if (faces.length === 0) warnings.push("nothing matched the selector, so nothing changed");
-  if (options.mode === "fit") {
+  if (options.mode === "fit" && !options.fitRect) {
     const unknown = [
       ...new Set(
         faces

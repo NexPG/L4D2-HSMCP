@@ -151,7 +151,7 @@ its file-level result or named as view-only.
 | Polygon tool | `write_vmf_solid` shape `convex` |
 | UV lock | `move_vertices`/`transform_solids` move geometry; `set_face_uv` writes the resulting axes |
 | Propper++ (brush → model) | `brush_to_model`: VMF planes → SMD + QC, VMF UVs, brush or box collision; verified with the real compiler |
-| Hotspot texturing (`$rectanglemap`/`.rect`) | `align_faces(fit)` writes U/V; the rectangle lookup is editor-side and not implemented |
+| Hotspot texturing (`$rectanglemap`/`.rect`) | `read_rect`, `write_rect`, `align_faces(fitRect)` | verified: a 256x128 face maps exactly onto a 32..96 / 64..128 hotspot; the `.rect` reader/writer round-trips. L4D2 ships no `.rect`, so the format is checked against its own grammar |
 | Particle/rope/fog/render-effect previews | Editor-only; `render_vmf_view`, `run_map_test`, `read_lightmap_budget` are the substitutes |
 
 These are not gaps in what a map can contain. They are the editor application's own surface,
@@ -177,9 +177,8 @@ be. That is why geometry edits update or drop it rather than leave it behind.
 
 Ordered by how often a mapper needs it:
 
-1. **Hotspot / `.rect` lookup** - the one Hammer++ data format with no path here. `align_faces(fit)` uses the VTF size; Hammer++ maps the face to a rectangle from a `.rect` file.
-2. **4-way displacement blends** - the writer can set alpha; whether L4D2's shaders support a four-way blend is unverified, so no tool promises one.
-3. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
+1. **4-way displacement blends** - the writer can set alpha; whether L4D2's shaders support a four-way blend is unverified, so no tool promises one.
+2. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
 
 The rest is editor presentation: selection glow, gizmos, previews and drag interactions. Their
 results are already file-level operations, and the coverage table says which one stands in.

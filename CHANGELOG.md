@@ -27,6 +27,16 @@ with a line here.
   registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
 - **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
 
+## 0.0.124-alpha - 2026-11-21
+
+- **Hotspot texturing: the last Hammer++ data format is covered.** A `.rect` file is plain
+  KeyValues, not binary: an optional `output_scale`, then a `Rectangles` block with one
+  `rectangle` per panel. `read_rect` and `write_rect` handle it, and `align_faces` takes
+  `fitRect` to fit a face onto one rectangle instead of stretching the whole texture over it.
+  Verified by the UV algebra: a 256x128 face fitted to a 32..96 / 64..128 hotspot spans
+  exactly those coordinates, with scales 4 and 2. L4D2 ships no `.rect` file, so the grammar
+  round-trip is the format oracle; the math is checked against the VMF axes.
+- **Tool count: 169.** Tests: 158 files, 1502 passed, 33 skipped.
 ## 0.0.123-alpha - 2026-11-21
 
 - **`read_bsp_faces` reads the compiled result, not the source.** Material, smoothing-group

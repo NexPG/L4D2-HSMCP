@@ -1,6 +1,6 @@
 # Tool catalogue
 
-167 tools. This page groups them by the job you are doing; each tool's own description is the
+169 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -123,6 +123,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_instance` | place a `func_instance` from an instance VMF, with origin, angles and fixup |
 | `create_instance_from_selection` | write selected brushes as an instance and leave a `func_instance` |
 | `write_sky_camera` | place the single `sky_camera` a 3D skybox needs |
+| `read_rect` | Hammer++ `.rect` hotspot rectangles |
+| `write_rect` | write a `.rect` hotspot file; refuses a degenerate rectangle |
 | `build_skybox` | copy, seal the room and place `sky_camera` in one call |
 | `write_skybox_copy` | copy brushes at 1/16 scale and move them to the skybox origin |
 | `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation |

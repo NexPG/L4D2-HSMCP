@@ -214,6 +214,17 @@ export const alignFacesTool = defineTool({
       .tuple([z.number(), z.number()])
       .optional()
       .describe("For 'fit': how many times the texture repeats across the face. Default once."),
+    fitRect: z
+      .object({
+        mins: z.tuple([z.number(), z.number()]),
+        maxs: z.tuple([z.number(), z.number()]),
+      })
+      .optional()
+      .describe(
+        "For 'fit': a sub-rectangle of the texture in pixels, as read_rect reports it. The " +
+          "face is fitted to this hotspot instead of the whole texture; the origin is the " +
+          "top-left and maxs must be below and right of mins.",
+      ),
     ...SELECTOR,
     game: GAME,
     dryRun: DRY_RUN,
@@ -246,10 +257,16 @@ export const alignFacesTool = defineTool({
         `fit needs a positive number of repeats on both axes, not ${args.repeat.join(" and ")}`,
       );
     }
+    if (args.fitRect && args.mode !== "fit") {
+      throw new Error(
+        `fitRect is only meaningful with mode 'fit'; mode '${args.mode}' derives the axes ` +
+          `from the face and would ignore the hotspot`,
+      );
+    }
     // Hammer's Fit reads the texture's real size from the VTF. The offline path asks the
     // sidecar for it; a lookup that fails leaves the 512 assumption and its warning.
     let textureSizes: Map<string, [number, number]> | undefined;
-    if (args.mode === "fit") {
+    if (args.mode === "fit" && !args.fitRect) {
       const { game } = gameFor(ctx.config, args.game);
       if (game.gameDir) {
         const materials = new Set<string>();
@@ -288,6 +305,9 @@ export const alignFacesTool = defineTool({
       ...(args.rotate !== undefined ? { rotate: args.rotate } : {}),
       ...(args.shift !== undefined ? { shift: args.shift as [number, number] } : {}),
       ...(args.repeat !== undefined ? { repeat: args.repeat as [number, number] } : {}),
+      ...(args.fitRect !== undefined
+        ? { fitRect: args.fitRect as { mins: [number, number]; maxs: [number, number] } }
+        : {}),
     });
     assertGeometryUntouched(path, before, result.text);
 

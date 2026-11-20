@@ -403,7 +403,7 @@ question asked of the Hammer++-specific layer.
 | Cordon / visgroups / groups | `set_cordon`, `set_visgroup`, `group_solids` | verified for the cordon: `run_compile` filters the copy, and the outside leak disappears from the BSP |
 | Instances, create from selection, prefab | `write_instance`, `create_instance_from_selection`, `insert_prefab` | verified |
 | Propper++ (brush → model) | `brush_to_model`: VMF planes → SMD + QC, VMF UVs, brush or box collision; `run_studiomdl` compiles it | verified with the real compiler (`.phy`, `read_model_info`) |
-| Hotspot texturing | `align_faces(fit)` only; `.rect` lookup is editor-side | **gap** (editor-side; result is U/V, which `set_face_uv` can write) |
+| Hotspot texturing | `read_rect` / `write_rect` for the `.rect` file; `align_faces(fitRect)` maps a face onto one rectangle | verified: the UV range matches the rectangle exactly; L4D2 ships no `.rect`, so the grammar round-trip is the file oracle |
 | Texture browser/face sheet | `read_game_content`, `set_face_material`, `align_faces`, `set_face_uv` | verified |
 | Smoothing groups / lightmap scale | `set_smoothing_groups`, `set_lightmap_scale` | verified: mask 4096 and scale 32 read back from FACES |
 | Overlays | `write_overlay` | verified: vbsp accepted an overlay in the sealed-room compile test |
