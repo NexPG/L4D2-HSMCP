@@ -545,8 +545,9 @@ As of this pass:
   cubemaps, campaign packaging.
 - **Open:** a type-2 finale that starts from the campaign menu on the current test map
   (the `+map` harness has no player +use); full Versus/Scavenge rounds with two teams; a
-  full Survival wave; Propper++-style model authoring; HLMV's 3D canvas on this desktop;
-  4-way displacement blend support in L4D2.
+  full Survival wave; Propper++-style model authoring; HLMV's 3D canvas on this desktop.
+  Four-way displacement blends are not open: L4D2 ships `WorldTwoTextureBlend` and no
+  second alpha channel, so there is nothing to write.
 - **A row is not "supported" because an entity exists.** It needs a tool, a static check,
   a game test with a log marker and a reference page. That is the rule in `coverage.md`.
 

@@ -27,6 +27,26 @@ with a line here.
   registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
 - **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
 
+## 0.0.128-alpha - 2026-11-21
+
+- **`check_bsp` judges the compiled file and its relationship to the source.** Every lump
+  descriptor must lie inside the file and none may overlap another; the entity lump must have
+  a worldspawn. With a VMF it also reports a stale compile (VMF newer than BSP), a skyname
+  that differs, and entity classes present in the source but absent from the result --
+  excluding the classes vbsp expands or removes (`func_instance`, `func_detail`,
+  `func_group`). A truncated file is a problem, not a thrown exception. Tool 173.
+- **Tool count: 173.** Tests: 162 files, 1516 passed, 33 skipped.
+## 0.0.127-alpha - 2026-11-21
+
+- **4-way displacement blends are not an L4D2 feature, and the documents now say so.** The
+  check was done against the installed game, not against a wiki: 4,645 VMTs scanned, 68
+  `WorldVertexTransition`, every one with two base textures; zero `$basetexture3`/`$basetexture4`
+  and zero `Enable4WayBlends`. `stdshader_dx9.dll` exports `WorldTwoTextureBlend` and no
+  four-way shader; `vbsp.exe` has an `alphas` block and no `alphas2`; `engine.dll` says
+  "using WorldTwoTextureBlend on a non-displacement surface". `read_hammerpp` now warns that
+  `Enable4WayBlends=1` has nothing to write. The last "verification gap" closes as an engine
+  answer rather than a toolkit gap.
+- **Tool count stays 172.** Tests: 161 files, 1512 passed, 33 skipped.
 ## 0.0.126-alpha - 2026-11-21
 
 - **`review_map` runs the checklist in one call, and says what did not run.** Lint, the map's

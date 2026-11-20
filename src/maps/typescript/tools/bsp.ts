@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import { readEntityLump } from "../bsp/entities.js";
+import { checkBsp } from "../bsp/integrity.js";
 import { readBspFaces } from "../bsp/faces.js";
 import { HDR_LUMPS, readHeader } from "../bsp/header.js";
 import { parseNavDump } from "../../../nav/typescript/bsp/navdump.js";
@@ -331,4 +332,65 @@ export const readBspFacesTool = defineTool({
   },
 });
 
-export const bspTools = [readBspInfo, readBspEntities, readBspFacesTool, readNavDump];
+export const checkBspTool = defineTool({
+  name: "check_bsp",
+  description:
+    "Checks a compiled .bsp as a file and against its source. Every one of the 64 lump " +
+    "descriptors must lie inside the file and none may overlap another; the entity lump " +
+    "must have a worldspawn. With `vmf`, the result is also compared with the map it came " +
+    "from: an older .bsp than .vmf is stale, a different skyname is a warning, and an entity " +
+    "class present in the source but absent from the result usually means the same. Classes " +
+    "vbsp expands or removes (func_instance, func_detail, func_group) are not reported. " +
+    "Read-only and offline.",
+  realm: "map",
+  inputSchema: {
+    bsp: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
+    vmf: z
+      .string()
+      .optional()
+      .describe(
+        "The source .vmf to compare against; the .bsp goes in `bsp`. Omit for a structural " +
+          "check only.",
+      ),
+  },
+  outputSchema: {
+    path: z.string(),
+    vmf: z.string().nullable(),
+    bytes: z.number(),
+    version: z.number().nullable(),
+    mapRevision: z.number().nullable(),
+    ok: z.boolean(),
+    stale: z.boolean().nullable(),
+    problems: z.array(
+      z.object({
+        severity: z.enum(["error", "warning"]),
+        code: z.string(),
+        message: z.string(),
+      }),
+    ),
+    lumps: z.object({
+      count: z.number(),
+      nonEmpty: z.number(),
+      compressed: z.number(),
+      totalBytes: z.number(),
+    }),
+    entities: z.object({
+      bsp: z.number().nullable(),
+      vmf: z.number().nullable(),
+      classesMissing: z.array(z.string()),
+    }),
+    skyname: z.object({
+      vmf: z.string().nullable(),
+      bsp: z.string().nullable(),
+      match: z.boolean().nullable(),
+    }),
+    solids: z.object({ vmf: z.number().nullable() }),
+  },
+  handler: (args, ctx) => {
+    const bsp = resolveInput(args.bsp, ctx.config);
+    const vmf = args.vmf !== undefined ? resolveInput(args.vmf, ctx.config) : undefined;
+    return { ...checkBsp(bsp, vmf) };
+  },
+});
+
+export const bspTools = [readBspInfo, readBspEntities, readBspFacesTool, checkBspTool, readNavDump];

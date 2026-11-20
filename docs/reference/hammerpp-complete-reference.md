@@ -95,7 +95,7 @@ The official feature list is organised as a list of highlights. The grouping bel
 |---|---|
 | Create / destroy | Power 2, 3, 4 |
 | Sculpt: raise/lower, flatten, slope, noise | Real-time; continuous painting and line-of-sight toggles |
-| Paint alpha | Blend by height/slope; 4-way blends are an option (`Enable4WayBlends`) but need engine shader support |
+| Paint alpha | Blend by height/slope. Four-way is not an L4D2 feature: the game ships `WorldTwoTextureBlend` and vbsp has only an `alphas` block, so `Enable4WayBlends` has nothing to write |
 | Subdivide | Raise power; resamples the grid |
 | Sew | Joins two displacement edges |
 | Create sealing brush | `seal_displacements` duplicates each displaced world brush without its `dispinfo` and tool-textures the copy; `write_displacement` takes `seal: true` to do both in one call. Verified by vbsp: the bare room leaks, the sealed one compiles |
@@ -225,7 +225,7 @@ changes the loop; Hammer++ regenerates it on save.
 | Game directory / executable | Wrong path → `Unable to find gameinfo.txt` |
 | Build programs | Stock or Tools++; an x64 tool on a 32-bit game can fail at the second stage |
 | FGD | `left4dead2.fgd` + `toolsplusplus.fgd`; a wrong FGD reports real classes as unknown |
-| `Enable4WayBlends` | Only useful if the engine/shaders support it; L4D2 support must be verified per material |
+| `Enable4WayBlends` | No effect in L4D2: no four-way shader and no second alpha channel |
 | Instance collapse hidden | `InstanceCollapseHidden=1` restores old behaviour; hidden instance objects otherwise do not compile |
 | 3D sky preview | Requires the skybox section to be an instance with a `sky_camera` |
 | HDR lighting preview | On by default; L4D2 uses up to x8 tonemap scaling, which is why LDR preview looked wrong in dark areas |
@@ -420,13 +420,13 @@ question asked of the Hammer++-specific layer.
 | Tools++ flags/limits | `run_compile` (`toolchain: "plusplus"`), `read_map_geometry`, `read_map_report` | verified |
 | Crash recovery/autosave, keybinds, Discord, MP3 | Application state | not applicable |
 | Propper++ atlas/merge | `brush_to_model` covers several solids, per-material SMD groups and `$concave`; a texture atlas is a Propper++ convenience, not something a map needs | optional |
-| 4-way displacement blends | `paint_displacement`/`sculpt_displacement` can write alpha; engine support unverified | **gap (verification)** |
+| 4-way displacement blends | `paint_displacement`/`sculpt_displacement` write the one alpha channel L4D2 has | **not supported by L4D2** (WorldTwoTextureBlend only) |
 
 ## 9. Priority backlog from this pass
 
 1. **Hotspot / `.rect` lookup.** The result is U/V; a small reader could map a face to a
    rectangle from `$rectanglemap`. The last Hammer++ data format with no path here.
-2. **4-way blends.** Verify whether L4D2 shaders support them before offering a writer.
+
 3. **Editor launch/capture.** Done: `open_in_hammer` launches Hammer++ on a VMF and returns
    a real capture of the editor viewport. It is a look, not a control channel; the UI is
    still a person at a mouse.

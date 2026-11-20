@@ -1,6 +1,6 @@
 # Tool catalogue
 
-172 tools. This page groups them by the job you are doing; each tool's own description is the
+173 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -39,6 +39,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_bsp_info` | header, version, all 64 lumps with offsets and sizes |
 | `read_bsp_entities` | entity lump: histogram and filtered entity list |
 | `read_bsp_faces` | compiled faces: material, smoothing mask, lightmap footprint, texture vectors |
+| `check_bsp` | header/lump integrity, and whether the compiled map still matches its VMF |
 | `edit_bsp_entities` | add/update/remove entities in a compiled map, append-only |
 | `read_map_extents` | real map size from the world model |
 | `read_map_geometry` | what each lump holds and how close it is to the compiler ceiling |

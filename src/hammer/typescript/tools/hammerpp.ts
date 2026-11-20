@@ -127,7 +127,10 @@ export const readHammerPlusPlusTool = defineTool({
     }
     if (general["Enable4WayBlends"] === "1") {
       warnings.push(
-        "Enable4WayBlends=1: L4D2 shader support for 4-way blend data is unverified in this project.",
+        "Enable4WayBlends=1 has no effect on an L4D2 map: the game's shader set ships " +
+          "WorldTwoTextureBlend (two base textures and one displacement alpha), and vbsp has " +
+          "only an `alphas` block. There is no four-way shader or second alpha channel to " +
+          "write, so paint_displacement offers one blend and says so.",
       );
     }
     if (general["HDR"] === "0") {

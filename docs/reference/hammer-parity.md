@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **172 tools**.
+Last checked against the tool list on 21/11/2026: **173 tools**.
 
 ## The file itself
 
@@ -234,6 +234,7 @@ map and looking, or by not happening at all.
 | `read_bsp_faces` | nothing: Hammer reads the source, not the compiled faces, their masks or luxels |
 | `diff_vmf` | a textual diff of a map is unreadable; this says which brushes, entities and worldspawn keys changed |
 | `review_map` | no editor runs the whole checklist in one call, and none distinguishes clean from a check that did not run |
+| `check_bsp` | nothing says whether a compiled map is structurally sound or stale against its VMF |
 | `compare_renders` | nothing offline diffs two versions of the same view; this reports changed pixels and where |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |

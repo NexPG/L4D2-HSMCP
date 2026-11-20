@@ -47,6 +47,7 @@ covered: this table is the summary.
 | Sculpt (flatten, raise, slope, noise) | `sculpt_displacement` | verified: noise applied to the sealed patch, which compiled |
 | Paint blend | `paint_displacement` | verified: alpha 200 read back on every vertex, and the patch compiled |
 | Read | `read_displacements` | verified: srctools agrees on the fixture and on written grids; the compile tests read the chain back |
+| Four-way blend | - | not an L4D2 feature: its shader set has `WorldTwoTextureBlend` only, and vbsp has an `alphas` block and no second channel |
 | Seal a displaced brush | `seal_displacements` | verified: the duplicate is what stops the leak; a second run is a no-op |
 
 ## Entities and I/O
@@ -177,8 +178,7 @@ be. That is why geometry edits update or drop it rather than leave it behind.
 
 Ordered by how often a mapper needs it:
 
-1. **4-way displacement blends** - the writer can set alpha; whether L4D2's shaders support a four-way blend is unverified, so no tool promises one.
-2. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
+1. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
 
 The rest is editor presentation: selection glow, gizmos, previews and drag interactions. Their
 results are already file-level operations, and the coverage table says which one stands in.
