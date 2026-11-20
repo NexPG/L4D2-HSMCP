@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **166 tools**.
+Last checked against the tool list on 21/11/2026: **167 tools**.
 
 ## The file itself
 
@@ -74,8 +74,8 @@ getting `ENOENT` on the first call.
 | Scale / shift / rotate U,V | `align_faces` | |
 | U/V vectors by hand (skew) | `set_face_uv` | Writes the axis vectors, offsets, scales and `rotation`; refuses illegal axes |
 | Justify (top/left/…) | `align_faces` (`shift`) | Expressed as a shift rather than as nine buttons |
-| Lightmap scale | `set_lightmap_scale` | Projects the luxel bill before writing |
-| Smoothing groups | `set_smoothing_groups` | Takes Hammer's 1–32 and does the bit shifting |
+| Lightmap scale | `set_lightmap_scale` | Projects the luxel bill before writing. Verified: scale 32 reached FACES |
+| Smoothing groups | `set_smoothing_groups` | Takes Hammer's 1-32 and does the bit shifting. Verified: group 13 is the mask 4096 in the BSP |
 | Alt+click (copy alignment) | `copy_face_alignment` | Exact uaxis/vaxis from a named face; optional material and lightmap scale |
 
 ## Displacements
@@ -85,12 +85,12 @@ getting `ENOENT` on the first call.
 | Create | `write_displacement` | Power 2, 3 or 4. A displaced brush stops sealing; `seal:true` writes the duplicate back |
 | Destroy | `edit_vmf` | The `dispinfo` block is removed like any other |
 | Create Sealing Brush | `seal_displacements` | Duplicates each displaced world brush, drops the `dispinfo`, tool-textures the copy. Measured: the bare room leaks, the sealed one compiles |
-| Sew | `sew_displacements` | Averages, so a ridge is not dragged to one side |
-| Paint Alpha | `paint_displacement` | Uniform, by height, or by slope of the resulting surface |
+| Sew | `sew_displacements` | Averages, so a ridge is not dragged to one side. Verified on a sealed patch |
+| Paint Alpha | `paint_displacement` | Uniform, by height, or by slope of the resulting surface. Verified through vbsp |
 | Paint Geometry — raise/lower | `sculpt_displacement` (`raise`) | |
 | Paint Geometry — flatten | `sculpt_displacement` (`flatten`) | |
 | Noise | `sculpt_displacement` (`noise`) | Takes a seed. A terrain that cannot be regenerated cannot be reviewed |
-| Subdivide | `subdivide_displacements` | Resamples the old grid bilinearly, carries alpha and triangle tags, and reads the result back |
+| Subdivide | `subdivide_displacements` | Resamples the old grid bilinearly, carries alpha and triangle tags, and reads the result back. Verified through vbsp |
 | Free-hand sculpting | *the mouse* | Declarative shapes are here; dragging a brush over a hillside is not something a tool call is |
 | Displacement seams | `read_displacements` | Reports them, which Hammer does not |
 
@@ -151,7 +151,7 @@ getting `ENOENT` on the first call.
 | Read the compile log | `read_compile_log` | Turns each message into what it actually means |
 | Find the leak | `read_leak` | A position and the entity that caused it, from a compile that already ran |
 | Find the leak **before** compiling | `read_vmf_leak` | Hammer cannot. vbsp is the only thing that answers this today, and it costs a toolchain and minutes |
-| Pack content | `run_pack` | `auto:true` derives the list from the map |
+| Pack content | `run_pack` | `auto:true` derives the list from the map. Native ZIP writer, no bspzip; verified byte for byte |
 | Check what is missing | `read_map_dependencies` | The end of "purple checkerboard for the player, fine for me" |
 | Budgets | `read_map_report` | A verdict per criterion rather than another number |
 | Walking the map to check it | `read_vmf_trace`, `read_vmf_visibility` | Hammer has no answer at all: you compile and go and look. These trace the `.vmf` itself |
@@ -230,6 +230,7 @@ map and looking, or by not happening at all.
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |
 | `read_particle` | Hammer lists `.pcf` files, not the systems inside them, their materials or a map's `effect_name` resolution |
 | `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
+| `read_bsp_faces` | nothing: Hammer reads the source, not the compiled faces, their masks or luxels |
 | `read_pakfile` | nothing |
 | `run_pakfile_extract` | nothing: a compiled map's packed content could be listed and never opened |
 | `run_pakfile_add` | nothing: Hammer cannot put a file into a compiled map |

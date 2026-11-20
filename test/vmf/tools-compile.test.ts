@@ -23,6 +23,20 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { hollowSolidsTool } from "../../src/maps/typescript/tools/hollow.js";
+import { setLightmapScaleTool } from "../../src/maps/typescript/tools/optimise.js";
+import { setFaceUvTool, setSmoothingGroupsTool } from "../../src/maps/typescript/tools/face.js";
+import { readBspFacesTool } from "../../src/maps/typescript/tools/bsp.js";
+import { readBspFaces } from "../../src/maps/typescript/bsp/faces.js";
+import { writeVmfTerrain } from "../../src/maps/typescript/tools/terrain.js";
+import { writeInstance } from "../../src/maps/typescript/tools/instance.js";
+import { writeWeather } from "../../src/scripts/typescript/tools/weather.js";
+import {
+  paintDisplacementTool,
+  sculptDisplacementTool,
+  sewDisplacementsTool,
+  subdivideDisplacementsTool,
+} from "../../src/maps/typescript/tools/displacement.js";
+import { readDisplacements } from "../../src/maps/typescript/vmf/displacement.js";
 import { transformSolidsTool } from "../../src/maps/typescript/tools/modify.js";
 import { writeVmfFittingTool } from "../../src/maps/typescript/tools/build.js";
 import { writeHintBrushTool } from "../../src/maps/typescript/tools/optimise.js";
@@ -75,6 +89,7 @@ async function compile(
   bsp: string;
   stages: Array<{ stage: string; clean: boolean; exitCode: number | null }>;
   cordon: { applied: boolean; active: boolean; removedSolids: number; removedEntities: number };
+  instances: { collapsed: number; files: string[] };
 }> {
   return (await runCompile.handler(
     {
@@ -96,6 +111,7 @@ async function compile(
     bsp: string;
     stages: Array<{ stage: string; clean: boolean; exitCode: number | null }>;
     cordon: { applied: boolean; active: boolean; removedSolids: number; removedEntities: number };
+    instances: { collapsed: number; files: string[] };
   };
 }
 
@@ -475,6 +491,224 @@ describe.skipIf(!has.toolchain)("visibility tools, compiled with vvis", () => {
         expect(stage.clean, `${stage.stage} exit ${stage.exitCode}`).toBe(true);
       }
       expect(result.ok).toBe(true);
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("faces, read back out of the BSP", () => {
+  it(
+    "smoothing groups, lightmap scale and texture vectors are what the compiler wrote",
+    async () => {
+      // A block with its own material, floating clear of the floor so all six faces exist.
+      const path = join(scratch, "face_room.vmf");
+      const added = insertSolids(
+        room(),
+        [{ shape: "box", mins: [64, 64, 8], maxs: [240, 240, 200] }],
+        { material: "DEV/DEV_MEASUREGENERIC01" },
+      );
+      writeFileSync(path, added.text);
+      const blockId = added.solidIds[0]!;
+
+      setSmoothingGroupsTool.handler(
+        { path, groups: [13], solidIds: [blockId], backup: false, confirm: true } as never,
+        ctx,
+      );
+      setLightmapScaleTool.handler(
+        { path, scale: 32, solidIds: [blockId], backup: false, confirm: true } as never,
+        ctx,
+      );
+
+      // One face, because a single U axis cannot be legal on all six: on the +x and -x
+      // faces it would lie along the normal, and the tool refuses that rather than writing
+      // a degenerate pair.
+      const top = checkVmfSolids(path, readFileSync(path, "utf8"))
+        .solids.find((solid) => solid.id === blockId)!
+        .sides.find(
+          (side) =>
+            side.plane &&
+            side.plane.normal[0] === 0 &&
+            side.plane.normal[1] === 0 &&
+            side.plane.normal[2] === 1,
+        )!;
+      setFaceUvTool.handler(
+        {
+          path,
+          sideIds: [top.id!],
+          uaxis: [1, 0, 0],
+          vaxis: [0, -1, 0],
+          uShift: 16,
+          vShift: 0,
+          uScale: 0.5,
+          vScale: 0.5,
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+
+      // The block shares the room material, so the smoothing mask is what identifies its
+      // six faces: the shell was left at 0.
+      const faces = readBspFaces(result.bsp, { smoothingGroups: 1 << 12 });
+      expect(faces.faces).toHaveLength(6);
+      expect(
+        faces.faces.every((face) => face.material.toLowerCase().includes("dev_measuregeneric01")),
+      ).toBe(true);
+
+      for (const face of faces.faces) {
+        // Group 13 is bit 12. A reader that returned the group number would say 13; the
+        // file stores the mask, and that is what vrad reads.
+        expect(face.smoothingGroups, `face ${face.index}`).toBe(1 << 12);
+      }
+
+      // `uaxis "[1 0 0 16] 0.5"`: vbsp divides the axis by the scale but stores the shift
+      // as written. Reading the source would suggest 32 for the offset; only the BSP says 16.
+      const moved = faces.faces.find(
+        (face) =>
+          Math.abs(face.textureVecs[0][0] - 2) < 1e-4 &&
+          Math.abs(face.textureVecs[0][3] - 16) < 1e-4,
+      );
+      expect(moved, "the face whose axes were set").toBeDefined();
+      expect(moved!.textureVecs[0][3]).toBeCloseTo(16, 4);
+      expect(moved!.textureVecs[1][1]).toBeCloseTo(-2, 4);
+      expect(moved!.textureVecs[1][3]).toBeCloseTo(0, 4);
+      // The top face is 176x176 units at 32 units per luxel: floor(176/32)+1 = 6, and the
+      // BSP stores that value directly. `luxels` adds the border luxel, which the lightmap
+      // budget counts and the setter's forecast does not -- 49 here against 36.
+      expect(moved!.sizeLuxels).toEqual([6, 6]);
+      expect(moved!.luxels).toBe(49);
+
+      // The tool is the same reader with a page around it.
+      const viaTool = readBspFacesTool.handler(
+        { path: result.bsp, smoothingGroups: 1 << 12, includeVectors: true, limit: 10 } as never,
+        ctx,
+      ) as unknown as { returned: number; faceCount: number; faces: Array<{ smoothingGroups: number }> };
+      expect(viaTool.returned).toBe(6);
+      expect(viaTool.faceCount).toBeGreaterThanOrEqual(6);
+      expect(viaTool.faces.every((face) => face.smoothingGroups === 1 << 12)).toBe(true);
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("terrain through the whole displacement chain", () => {
+  it(
+    "a sealed patch survives subdivide, sculpt, paint and vbsp",
+    async () => {
+      const path = join(scratch, "terrain_room.vmf");
+      writeFileSync(path, room());
+
+      await writeVmfTerrain.handler(
+        {
+          path,
+          mins: [-200, -200],
+          maxs: [200, 200],
+          floorZ: 0,
+          thickness: 16,
+          cellSize: 128,
+          power: 2,
+          noise: 0,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      const made = readDisplacements(readFileSync(path, "utf8")).displacements;
+      expect(made).toHaveLength(16);
+      expect(made.every((d) => d.power === 2)).toBe(true);
+      // The terrain tool seals every cell: 16 displaced brushes and 16 duplicates.
+      expect(checkVmfSolids(path, readFileSync(path, "utf8")).solidCount).toBe(6 + 16 * 2);
+
+      subdivideDisplacementsTool.handler({ path, power: 3, all: true, confirm: true } as never, ctx);
+      sculptDisplacementTool.handler(
+        { path, shape: { kind: "noise", amplitude: 24, seed: 3 }, confirm: true } as never,
+        ctx,
+      );
+      paintDisplacementTool.handler(
+        { path, rule: { kind: "uniform", alpha: 200 }, confirm: true } as never,
+        ctx,
+      );
+      sewDisplacementsTool.handler({ path, confirm: true } as never, ctx);
+
+      const after = readDisplacements(readFileSync(path, "utf8"));
+      expect(after.displacements).toHaveLength(16);
+      expect(after.displacements.every((d) => d.power === 3 && d.size === 9)).toBe(true);
+      expect(after.displacements.every((d) => d.maxAlpha === 200)).toBe(true);
+      expect(after.seams).toEqual([]);
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("instances, expanded before vbsp", () => {
+  it(
+    "a func_instance becomes the entity it points at, instead of crashing the compiler",
+    async () => {
+      const path = join(scratch, "instance_room.vmf");
+      writeFileSync(path, room());
+
+      const fragment = join(scratch, "red_light.vmf");
+      writeFileSync(
+        fragment,
+        `versioninfo\n{\n\t"editorversion" "400"\n}\n` +
+          `entity\n{\n\t"id" "1"\n\t"classname" "light"\n\t"origin" "0 0 0"\n` +
+          `\t"_light" "255 0 0 400"\n}\n`,
+      );
+
+      await writeInstance.handler(
+        { path, file: "red_light.vmf", origin: [100, 100, 128], confirm: true } as never,
+        ctx,
+      );
+
+      // vbsp has no instance support: handed a `func_instance` it exits with an access
+      // violation and writes no .bsp. This is the expansion Hammer performs before it runs.
+      const result = await compile(path);
+      expect(result.instances.collapsed).toBe(1);
+      expect(result.instances.files).toEqual(["red_light.vmf"]);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+
+      const lump = readEntityLump(result.bsp);
+      expect(lump.text).toContain('"origin" "100 100 128"');
+      expect(lump.text).toContain('"_light" "255 0 0 400"');
+      expect(lump.text).not.toContain("func_instance");
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("weather, compiled", () => {
+  it(
+    "a precipitation volume and a fog controller reach the entity lump",
+    async () => {
+      const path = join(scratch, "weather_room.vmf");
+      writeFileSync(path, room());
+
+      await writeWeather.handler(
+        {
+          path,
+          precipitation: { kind: "rain", mins: [-200, -200, 0], maxs: [200, 200, 240] },
+          fog: { color: [180, 180, 190], start: 400, end: 1800 },
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+
+      const lump = readEntityLump(result.bsp);
+      expect(lump.text).toContain('"classname" "func_precipitation"');
+      expect(lump.text).toContain('"preciptype" "0"');
+      expect(lump.text).toContain('"classname" "env_fog_controller"');
     },
     300_000,
   );

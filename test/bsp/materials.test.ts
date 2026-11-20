@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { readMaterials } from "../../src/textures/typescript/bsp/materials.js";
+import { readMaterials } from "../../src/maps/typescript/bsp/materials.js";
 import { BspFormatError } from "../../src/maps/typescript/bsp/header.js";
 import { LZMA_MAGIC } from "../../src/maps/typescript/bsp/header.js";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";

@@ -27,6 +27,29 @@ with a line here.
   registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
 - **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
 
+## 0.0.123-alpha - 2026-11-21
+
+- **`read_bsp_faces` reads the compiled result, not the source.** Material, smoothing-group
+  bitmask, lightmap footprint and texture vectors come out of FACES, TEXINFO and the texdata
+  string table. It is the oracle the face tools needed: a 30-degree turn, a scale of 32 and
+  group 13 are now checked against what vbsp wrote, not against what the `.vmf` asked for.
+  Tool 167.
+- **Terrain is compiled end to end.** A 16-cell sealed patch is subdivided to power 3,
+  sculpted with seeded noise, painted to alpha 200 and sewn; the result has no seam and vbsp
+  accepts it. The displacement rows stop saying `tool`.
+- **Instances are expanded before vbsp.** vbsp has no `func_instance` support and exits with an
+  access violation when handed one. `run_compile` now collapses them through srctools, under
+  the map's own name, and falls back to a clear refusal when the sidecar is absent. Verified:
+  the fragment's light is in the BSP entity lump.
+- **`run_pack` writes the ZIP itself.** bspzip needs a Steam install and a VConfig setup, writes
+  to a second file rather than in place, and can leave modal error dialogs; it is gone. The
+  native writer appends the archive, moves lump 40 and compares every entry byte for byte.
+  Verified on `c1m1_hotel`: 1720 → 1721 entries. BSP lump roundtrips (including LZMA) and
+  compiled-entity add/update/remove are covered by the same offline test file.
+- **Weather compiles.** A rain volume and a fog controller reach the entity lump in the sealed
+  room.
+- **Tool count: 167.** Tests: 156 files, 1490 passed, 33 skipped.
+
 ## 0.0.121-alpha - 2026-11-21
 
 - **The displacement leak is explained, and `seal_displacements` repairs it.** The previous entry

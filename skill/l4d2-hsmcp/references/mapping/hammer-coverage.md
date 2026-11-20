@@ -42,11 +42,11 @@ covered: this table is the summary.
 | Feature | Tool | Status |
 |---|---|---|
 | Create | `write_displacement` | verified: a displaced floor is compiled twice, leaking without a seal and sealing with one |
-| Subdivide (raise power) | `subdivide_displacements` | tool |
-| Sew | `sew_displacements` | tool |
-| Sculpt (flatten, raise, slope, noise) | `sculpt_displacement` | tool |
-| Paint blend | `paint_displacement` | tool |
-| Read | `read_displacements` | tool |
+| Subdivide (raise power) | `subdivide_displacements` | verified: a 16-cell patch subdivided to power 3, sculpted, painted and sewn, then compiled with vbsp |
+| Sew | `sew_displacements` | verified: the same patch reports no seam after sewing |
+| Sculpt (flatten, raise, slope, noise) | `sculpt_displacement` | verified: noise applied to the sealed patch, which compiled |
+| Paint blend | `paint_displacement` | verified: alpha 200 read back on every vertex, and the patch compiled |
+| Read | `read_displacements` | verified: srctools agrees on the fixture and on written grids; the compile tests read the chain back |
 | Seal a displaced brush | `seal_displacements` | verified: the duplicate is what stops the leak; a second run is a no-op |
 
 ## Entities and I/O
@@ -72,8 +72,8 @@ covered: this table is the summary.
 | Material assign | `set_face_material` | verified |
 | Texture alignment | `align_faces`, `copy_face_alignment`, `set_face_uv` | verified: fit reads the real VTF size (a 64x64 tool texture is no longer fitted as 512) |
 | Manual U/V vectors (skew) | `set_face_uv` | verified: skewed axes accepted by vbsp and the map loaded |
-| Smoothing groups | `set_smoothing_groups` | tool |
-| Lightmap scale | `set_lightmap_scale` | tool |
+| Smoothing groups | `set_smoothing_groups` | verified: group 13 reached the BSP as the mask 4096 on all six faces |
+| Lightmap scale | `set_lightmap_scale` | verified: scale 32 produced the expected FACES luxel dimensions |
 | Light entities | `edit_vmf` | verified |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |
 | Cubemap placement | `edit_vmf` (`env_cubemap`) | tool: the entity is internal and must be in the VMF before compile |
@@ -99,7 +99,7 @@ covered: this table is the summary.
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
 | Overlays / decals | `write_overlay` | verified: format from Valve's styleguide VMF, and vbsp accepted an overlay on the room floor in `tools-compile.test.ts` |
 | 3D skybox | `build_skybox`; `write_sky_camera` + `write_skybox_copy` for the halves | verified by vbsp: the copy, the sealed room and the camera compile with no leak (`skyboxbuild.test.ts`); the choice of scenery is still the mapper's |
-| Instances | `write_instance` places a `func_instance`; `read_vmf` with `collapseInstances` reads the result | tool (fixture-tested); nested instances are reported |
+| Instances | `write_instance` places a `func_instance`; `run_compile` expands them before vbsp | verified: the expanded entity is in the BSP, and vbsp crashes on the unexpanded one |
 | Instance from selection | `create_instance_from_selection` | verified: the extracted instance and `func_instance` passed vbsp; a brush entity is taken whole |
 | Prefabs | `insert_prefab` | verified: paste a saved `.vmf` fragment; ids remapped, move and yaw about a pivot; brush entities and entity angles turn with it |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
@@ -113,7 +113,7 @@ covered: this table is the summary.
 | Open the editor's viewport | `open_in_hammer` | verified: Hammer++ loaded the night-moscow VMF and the capture shows the 3D view |
 | Leak check | `read_vmf_leak`, `read_leak` | verified |
 | Compile log findings | `read_compile_log` | verified |
-| Pack assets into BSP | `run_pack` | tool |
+| Pack assets into BSP | `run_pack` | verified: native ZIP writer, entry read back byte for byte on `c1m1_hotel`; no bspzip |
 | Nav generation | `run_nav_generate` | verified |
 | Nav attributes / dump | `read_nav_dump`, `func_nav_attribute_region` | verified |
 | Launch and test | `run_map_test` | verified |

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import { readEntityLump } from "../bsp/entities.js";
+import { readBspFaces } from "../bsp/faces.js";
 import { HDR_LUMPS, readHeader } from "../bsp/header.js";
 import { parseNavDump } from "../../../nav/typescript/bsp/navdump.js";
 import { histogram, matchesFilter } from "../entity/model.js";
@@ -246,4 +247,88 @@ const readNavDump = defineTool({
   },
 });
 
-export const bspTools = [readBspInfo, readBspEntities, readNavDump];
+export const readBspFacesTool = defineTool({
+  name: "read_bsp_faces",
+  description:
+    "Reads a compiled map's faces: the material, smoothing-group bitmask, lightmap footprint " +
+    "and texture vectors vbsp actually produced. This is the result side of read_vmf_surfaces " +
+    "-- a `.vmf` says `lightmapscale 32` and `smoothing_groups 4096`, and only the BSP says " +
+    "how many luxels the face got and which mask vrad will read. Filter by material or by " +
+    "exact smoothing mask; the texture vectors are omitted unless asked for, because they " +
+    "are four floats per face and rarely what a caller needs. Reads FACES, TEXINFO and the " +
+    "texdata string table by offset, never the whole file.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
+    material: z
+      .string()
+      .optional()
+      .describe("Only faces whose material contains this text. Case-insensitive."),
+    smoothingGroups: z
+      .number()
+      .int()
+      .optional()
+      .describe("Only faces with exactly this bitmask. Group 13 is 1 << 12 = 4096."),
+    includeVectors: z
+      .boolean()
+      .default(false)
+      .describe("Return the U/V texture vectors. Four floats per face."),
+    limit: z.number().int().min(1).max(2000).default(200),
+  },
+  outputSchema: {
+    path: z.string(),
+    mapRevision: z.number(),
+    faceCount: z.number(),
+    filtered: z.number(),
+    returned: z.number(),
+    truncated: z.boolean(),
+    materials: z.array(z.object({ name: z.string(), faces: z.number() })),
+    faces: z.array(
+      z.object({
+        index: z.number(),
+        material: z.string(),
+        smoothingGroups: z.number(),
+        area: z.number(),
+        lightofs: z.number(),
+        sizeLuxels: z.tuple([z.number(), z.number()]),
+        luxels: z.number(),
+        flags: z.number(),
+        textureVecs: z
+          .tuple([
+            z.tuple([z.number(), z.number(), z.number(), z.number()]),
+            z.tuple([z.number(), z.number(), z.number(), z.number()]),
+          ])
+          .optional(),
+      }),
+    ),
+  },
+  handler: (args, ctx) => {
+    const report = readBspFaces(resolveInput(args.path, ctx.config), {
+      ...(args.material !== undefined ? { material: args.material } : {}),
+      ...(args.smoothingGroups !== undefined ? { smoothingGroups: args.smoothingGroups } : {}),
+      ...(args.limit !== undefined ? { limit: args.limit } : {}),
+    });
+    return {
+      path: report.header.path,
+      mapRevision: report.header.mapRevision,
+      faceCount: report.faceCount,
+      filtered: report.filtered,
+      returned: report.faces.length,
+      truncated: report.truncated,
+      materials: report.materials,
+      faces: report.faces.map((face) => ({
+        index: face.index,
+        material: face.material,
+        smoothingGroups: face.smoothingGroups,
+        area: Math.round(face.area * 100) / 100,
+        lightofs: face.lightofs,
+        sizeLuxels: face.sizeLuxels,
+        luxels: face.luxels,
+        flags: face.flags,
+        ...(args.includeVectors === true ? { textureVecs: face.textureVecs } : {}),
+      })),
+    };
+  },
+});
+
+export const bspTools = [readBspInfo, readBspEntities, readBspFacesTool, readNavDump];

@@ -13,6 +13,8 @@ import {
   toWindowsPath,
 } from "../compile/toolchain.js";
 import { readEntityLump } from "../bsp/entities.js";
+import { LUMP_PAKFILE, readHeader } from "../bsp/header.js";
+import { addToPakfile, readPakfile } from "../bsp/pakwrite.js";
 import { checkNavFreshness } from "../../../nav/typescript/bsp/nav.js";
 import { parseEntityText } from "../bsp/entities.js";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";
@@ -71,7 +73,8 @@ export const runCompile = defineTool({
     "fails, because vvis and vrad results are meaningless after a leak. Run " +
     "read_vmf_lint first -- it catches before the compile most of what makes one fail. " +
     "An active cordon is applied to the compile copy the way Hammer applies it; pass " +
-    "ignoreCordon: true to compile the whole map anyway.",
+    "ignoreCordon: true to compile the whole map anyway. `func_instance` entities are " +
+    "expanded before vbsp, which crashes on one, and the result says how many.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -135,6 +138,11 @@ export const runCompile = defineTool({
     toolchainNote: z.string().nullable(),
     /** Whether the culling flags were passed. False on stock, where they do not exist. */
     cull: z.boolean(),
+    /** `func_instance` expansion, done before vbsp because vbsp crashes on one. */
+    instances: z.object({
+      collapsed: z.number(),
+      files: z.array(z.string()),
+    }),
     game: GAME_BLOCK,
     bsp: z.string(),
     bspExists: z.boolean(),
@@ -244,18 +252,51 @@ export const runCompile = defineTool({
       );
     }
 
+    // vbsp does not expand `func_instance`: handed one, it crashes with an access violation.
+    // Hammer expands instances before the compile, and so does this, through the same
+    // srctools pass `read_vmf` uses. The expanded copy goes into a temp directory under the
+    // map's own name, because vbsp derives the map name from the file it is given.
+    let tempDir: string | null = null;
+    let compileText = vmfText;
+    let instances: { collapsed: number; files: string[] } = { collapsed: 0, files: [] };
+    if (/"classname"\s+"func_instance"/i.test(compileText)) {
+      tempDir = mkdtempSync(join(tmpdir(), "hsmcp-compile-"));
+      const out = join(tempDir, basename(vmf));
+      try {
+        const reply = (await callSidecar(
+          "vmf_collapse",
+          {
+            path: vmf,
+            out,
+            gameDir: profile.gameDir ?? ctx.config.gameDir,
+            instancePath: profile.instancePath,
+          },
+          ctx.config,
+          120_000,
+        )) as { collapsed: number; files: string[] };
+        compileText = readFileSync(out, "utf8");
+        instances = { collapsed: reply.collapsed, files: reply.files };
+      } catch (error) {
+        throw new Error(
+          "this map contains func_instance entities, which vbsp cannot expand (it crashes). " +
+            "Expanding them needs the Python sidecar: " +
+            (error instanceof Error ? error.message : String(error)),
+        );
+      }
+    }
+
     // The cordon is the one piece of the map's organisation that changes the compile: with
     // it on, Hammer hands vbsp only what the box contains. This used to read the block and
-    // compile everything, so a one-room test built the whole map. The filtered copy lives
-    // in a temp directory under the original map's own name, and its .bsp and .lin are
-    // copied back, because vbsp derives the map name from the file it is given.
-    const cordon = applyCordon(vmfText, { ignore: args.ignoreCordon });
+    // compile everything, so a one-room test built the whole map. It is applied after
+    // instance expansion, so the instance geometry is inside the box that decides it.
+    const cordon = applyCordon(compileText, { ignore: args.ignoreCordon });
+    if (cordon.applied) compileText = cordon.text;
+
     let compileVmf = vmf;
-    let tempDir: string | null = null;
-    if (cordon.applied) {
-      tempDir = mkdtempSync(join(tmpdir(), "hsmcp-cordon-"));
+    if (compileText !== vmfText) {
+      if (!tempDir) tempDir = mkdtempSync(join(tmpdir(), "hsmcp-compile-"));
       compileVmf = join(tempDir, basename(vmf));
-      writeFileSync(compileVmf, cordon.text);
+      writeFileSync(compileVmf, compileText);
     }
     const target = toWindowsPath(compileVmf);
     const compiledBsp = join(dirname(compileVmf), `${basename(compileVmf, ".vmf")}.bsp`);
@@ -353,6 +394,7 @@ export const runCompile = defineTool({
       toolchainRequested: chosen.requested,
       toolchainNote: chosen.note,
       cull: culling,
+      instances,
       game: gameBlock(profile, from),
       bsp,
       bspExists,
@@ -600,16 +642,16 @@ export const readLeak = defineTool({
 export const runPack = defineTool({
   name: "run_pack",
   description:
-    "Packs files into a compiled .bsp with bspzip, so custom assets ship with the map " +
-    "instead of appearing as purple checkerboards on every client that lacks them. " +
-    "Takes explicit pairs of in-game path and source file. With auto:true it also derives " +
-    "the list from the map itself, via read_map_dependencies: every asset the map " +
-    "references that resolves from a LOOSE file in the game's content tree rather than " +
-    "from a VPK. Those are the ones that ship broken -- they work at home because they " +
-    "are on that disk. VPK content is never packed: every player who owns the game has it. " +
-    "The derived list is returned, so what was packed is visible rather than inferred. " +
-    "Verifies afterwards by re-reading the pakfile: bspzip reports success whether or not " +
-    "anything was added.",
+    "Packs files into a compiled .bsp with this server's own ZIP writer: no bspzip, no " +
+    "Steam install, no VConfig. Takes explicit pairs of in-game path and source file. With " +
+    "auto:true it also derives the list from the map itself, via read_map_dependencies: " +
+    "every asset the map references that resolves from a LOOSE file in the game's content " +
+    "tree rather than from a VPK. Those are the ones that ship broken -- they work at home " +
+    "because they are on that disk. VPK content is never packed: every player who owns the " +
+    "game has it. The derived list is returned, so what was packed is visible rather than " +
+    "inferred. Verifies afterwards by reading every entry back and comparing bytes; `ok` is " +
+    "the archive's answer, not a process exit code. `toolchain` is accepted for " +
+    "compatibility and reported as 'native'.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -642,6 +684,10 @@ export const runPack = defineTool({
           "would otherwise pack harmlessly but pointlessly.",
       ),
     toolchain: TOOLCHAIN,
+    backup: z
+      .boolean()
+      .optional()
+      .describe("Write <bsp>.bak before the pakfile is replaced. On by default."),
     game: GAME,
     confirm: z.boolean().default(false),
   },
@@ -671,15 +717,17 @@ export const runPack = defineTool({
     const bsp = assertWritable(resolveInput(args.bsp, ctx.config), ctx.config);
     if (!existsSync(bsp)) throw new Error(`${bsp} does not exist`);
     const packGameDir = packProfile.gameDir ?? ctx.config.gameDir;
-    if (!packGameDir) {
-      throw new ToolchainError(
-        `cannot pack against ${packProfile.id}: no -game directory was resolved`,
-      );
-    }
 
     const derived: Array<{ internal: string; source: string }> = [];
     let autoNote: string | undefined;
     if (args.auto) {
+      // Only the dependency walk needs a game directory. An explicit pack is a ZIP append
+      // and needs nothing from the install at all.
+      if (!packGameDir) {
+        throw new ToolchainError(
+          `cannot derive the file list for ${packProfile.id}: no -game directory was resolved`,
+        );
+      }
       const deps = await callSidecar<{
         loose: Array<{ path: string; diskPath: string | null }>;
         looseCount: number;
@@ -738,69 +786,65 @@ export const runPack = defineTool({
       );
     }
 
-    const countPak = async (): Promise<number> => {
-      const r = await callSidecar<{ fileCount: number }>(
-        "pakfile",
-        { path: bsp, limit: 1 },
-        ctx.config,
-        300_000,
-      );
-      return r.fileCount;
-    };
+    const inputs = files.map((file) => ({
+      internal: file.internal,
+      data: readFileSync(resolveInput(file.source, ctx.config)),
+    }));
 
-    const filesBefore = await countPak();
-    const bytesBefore = statSync(bsp).size;
+    // Packing is this server's own ZIP writer now. bspzip is a separate binary that needs a
+    // Steam install and a VConfig setup, and its `-addlist` writes to a second file rather
+    // than in place; none of that is required to append a ZIP. `run_pakfile_add` is the same
+    // writer with explicit files only.
+    const source = readFileSync(bsp);
+    const header = readHeader(bsp);
+    const lump = header.lumps[LUMP_PAKFILE]!;
+    const target = { offset: lump.offset, length: lump.length, layout: header.layout };
+    const filesBefore = readPakfile(source, target, bsp).length;
+    const bytesBefore = source.length;
 
-    // bspzip -addlist reads pairs of lines: in-game path, then source path.
-    const listPath = join(ctx.config.stateDir, "bspzip-filelist.txt");
-    assertWritable(listPath, ctx.config);
-    mkdirSync(dirname(listPath), { recursive: true });
-    writeFileSync(
-      listPath,
-      files.flatMap((f) => [f.internal, resolveInput(f.source, ctx.config)]).join("\n") + "\n",
+    if (args.backup !== false) {
+      copyFileSync(bsp, `${bsp}.bak`);
+    }
+    const result = addToPakfile(source, inputs, target);
+    writeFileSync(bsp, result.bytes);
+
+    const bytes = readFileSync(bsp);
+    const afterHeader = readHeader(bsp);
+    const afterLump = afterHeader.lumps[LUMP_PAKFILE]!;
+    const after = readPakfile(
+      bytes,
+      { offset: afterLump.offset, length: afterLump.length, layout: afterHeader.layout },
+      bsp,
     );
+    const byName = new Map(after.map((entry) => [entry.name.toLowerCase(), entry.data]));
+    const verified = inputs.every((file) => {
+      const stored = byName.get(file.internal.replace(/\\/g, "/").toLowerCase());
+      return stored !== undefined && stored.equals(file.data);
+    });
 
-    const packChain = chooseToolchain(ctx.config, args.toolchain, ["bspzip"], packProfile);
-
-    const run = await runCompiler(
-      ctx.config,
-      compilerExe("bspzip", packChain.chain),
-      [
-        "-game",
-        toWindowsPath(packGameDir),
-        "-addlist",
-        toWindowsPath(bsp),
-        toWindowsPath(listPath),
-        toWindowsPath(bsp),
-      ],
-      600_000,
-      packChain.chain,
-      packProfile,
-    );
-
-    const filesAfter = await countPak();
-    const bytesAfter = statSync(bsp).size;
+    const filesAfter = after.length;
+    const bytesAfter = bytes.length;
 
     return {
       bsp,
-      toolchain: packChain.chain,
-      toolchainRequested: packChain.requested,
-      toolchainNote: packChain.note,
+      toolchain: "native",
+      toolchainRequested: args.toolchain,
+      toolchainNote: "packed by this server's ZIP writer; bspzip was not run",
       game: gameBlock(packProfile, packFrom),
       requested: files.length,
       derived,
       ...(autoNote !== undefined ? { autoNote } : {}),
       filesBefore,
       filesAfter,
-      added: filesAfter - filesBefore,
+      added: result.added.length,
       bytesBefore,
       bytesAfter,
-      exitCode: run.code,
-      // The exit code is not the oracle: what matters is that the pakfile grew by what
-      // was asked for.
-      ok: filesAfter - filesBefore === files.length,
+      exitCode: null,
+      // The oracle is the archive, not an exit code: every requested entry is read back
+      // and compared byte for byte.
+      ok: verified,
       missingSources,
-      stdoutTail: clip(run.stdout.split(/\r?\n/).slice(-20).join("\n"), 2000),
+      stdoutTail: "",
     };
   },
 });

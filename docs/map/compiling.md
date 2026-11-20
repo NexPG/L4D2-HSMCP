@@ -243,11 +243,24 @@ they share a size and flags — which is what vbsp actually needs to build the d
 lives in the `.vtf` headers, and nothing in this server reads those. A sky can pass the check and
 still draw these two lines, so the tool says so rather than implying a guarantee it has not earned.
 
-## run_pack does not believe its own exit code
+## run_pack writes the ZIP itself
 
-`bspzip` exits 0 whether or not it added anything. So `run_pack` counts the pakfile contents before
-and after, and only returns `ok: true` when the file count grew by **exactly** what was asked for.
-Verified: 1 → 2 files, 34,876 → 36,876 bytes.
+`bspzip` was the wrong tool for this. It is a separate binary that needs a Steam install and a
+VConfig setup, its `-addlist` writes to a **second** file rather than in place, and it exits 0
+whether or not anything was added. Pointing it at the map as both input and output exits
+`0xFFFFFFFF` and, when VConfig cannot find `gameinfo.txt`, leaves a modal error dialog on the
+desktop. Three of those dialogs were three interruptions for a job the repository already knew
+how to do.
+
+`run_pack` now uses the same in-process writer as `run_pakfile_add`: append the ZIP, move lump
+40's descriptor, read every entry back and compare bytes. No game install, no helper process,
+and `ok` is the archive's answer rather than a process exit code. Verified on `c1m1_hotel.bsp`:
+1720 → 1721 entries, and the added VMT reads back identical.
+
+The cost is stated rather than hidden: the archive is appended, so the previous pakfile stays
+in the file as dead bytes. Adding a 60-byte VMT to `c1m1_hotel` grew it from 32.8 MB to
+37.9 MB. That is the price of an edit that cannot lose a map; a repack that rebuilds the file
+would need to move every lump.
 
 ## The nav mesh, or the failure that says nothing
 

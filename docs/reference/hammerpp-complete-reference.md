@@ -405,7 +405,7 @@ question asked of the Hammer++-specific layer.
 | Propper++ (brush → model) | `brush_to_model`: VMF planes → SMD + QC, VMF UVs, brush or box collision; `run_studiomdl` compiles it | verified with the real compiler (`.phy`, `read_model_info`) |
 | Hotspot texturing | `align_faces(fit)` only; `.rect` lookup is editor-side | **gap** (editor-side; result is U/V, which `set_face_uv` can write) |
 | Texture browser/face sheet | `read_game_content`, `set_face_material`, `align_faces`, `set_face_uv` | verified |
-| Smoothing groups / lightmap scale | `set_smoothing_groups`, `set_lightmap_scale` | tool |
+| Smoothing groups / lightmap scale | `set_smoothing_groups`, `set_lightmap_scale` | verified: mask 4096 and scale 32 read back from FACES |
 | Overlays | `write_overlay` | verified: vbsp accepted an overlay in the sealed-room compile test |
 | Entity tool / properties / I/O | `edit_vmf`, `read_entity_report`, `validate_io` | verified |
 | `editor_text` | `edit_vmf` | tool (no in-game effect) |

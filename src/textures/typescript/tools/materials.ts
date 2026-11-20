@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { readMaterials } from "../bsp/materials.js";
+import { readMaterials } from "../../../maps/typescript/bsp/materials.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 

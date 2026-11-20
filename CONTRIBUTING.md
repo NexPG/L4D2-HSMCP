@@ -160,6 +160,13 @@ pnpm test
 Typecheck is separate from tests, and not out of habit: a stale `dist/` of
 `@projectsociety/mcp-core` makes tests green and typecheck red on the same tree. Run both, always.
 
+**Close what you open.** Compilers, Hammer, HLMV, a game launch and any helper binary that
+draws a window are processes, and a failed one can leave a modal error dialog on someone's
+desktop. Close them when the answer has been read. This is not only tidiness: three
+`VConfig Error` dialogs from an abandoned `bspzip` experiment are three interruptions for the
+person at the machine, and the experiment had already been replaced by the in-process ZIP
+writer.
+
 ## Workflow
 
 There is one branch, `main`, and commits go straight to it. A pull request is welcome when a change

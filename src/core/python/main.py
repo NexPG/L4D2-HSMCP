@@ -302,6 +302,26 @@ def _load_vmf(path: str, req: dict[str, Any] | None = None) -> tuple[Any, dict[s
     return vmf, info
 
 
+@verb("vmf_collapse")
+def _vmf_collapse(req: dict[str, Any]) -> dict[str, Any]:
+    """Writes a copy of a .vmf with every `func_instance` expanded.
+
+    vbsp does not expand instances; run_compile used to hand it a map containing one and
+    the compiler crashed with an access violation. Hammer expands them before compiling,
+    and this is the same expansion srctools already performs for `vmf_read`.
+    """
+    vmf, info = _load_vmf(req["path"], {**req, "collapseInstances": True})
+    out = req["out"]
+    with open(out, "w", encoding="utf8", newline="\n") as handle:
+        vmf.export(handle)
+    return {
+        "collapsed": info.get("collapsed", 0),
+        "files": info.get("files", []),
+        "depthLimit": info.get("depthLimit"),
+        "out": out,
+    }
+
+
 @verb("map_dependencies")
 def _map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     """Every asset a compiled map references, and where each one will come from."""
