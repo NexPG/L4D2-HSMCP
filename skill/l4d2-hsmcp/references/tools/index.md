@@ -1,6 +1,6 @@
 # Tool catalogue
 
-219 tools. This page groups them by the job you are doing; each tool's own description is the
+220 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -53,6 +53,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 |---|---|
 | `write_brush_entity` | any brush entity by class, volume and outputs — the universal escape hatch |
 | `write_point_entity` | any point entity by class, origin and outputs |
+| `write_entity_probe` | runtime presence check: makes a targetname echo a line when `run_map_test` fires it |
 | `write_trigger` | a trigger as a brush volume: multiple, once, hurt, push, teleport, look, gravity |
 | `write_mover` | `func_movelinear`, `func_rotating` or `func_tracktrain` with the volume and origin |
 | `write_logic` | `logic_auto`, relay, timer, branch, compare, case, `math_counter`, `math_remap` with connections |

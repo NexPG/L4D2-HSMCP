@@ -42,6 +42,7 @@ import { posterTools } from "./campaigns/typescript/tools/poster.js";
 import { particleCheckTools } from "./assets/typescript/tools/particlecheck.js";
 import { dressingTools } from "./maps/typescript/tools/dressing.js";
 import { entityFamilyTools } from "./maps/typescript/tools/entityfamilies.js";
+import { entityProbeTools } from "./maps/typescript/tools/entityprobe.js";
 import { entityExtraTools } from "./maps/typescript/tools/entityextras.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
 import { exportMapTools } from "./maps/typescript/tools/exportmap.js";
@@ -174,6 +175,7 @@ export const allTools: AnyToolDef[] = [
   ...particleCheckTools,
   ...dressingTools,
   ...entityFamilyTools,
+  ...entityProbeTools,
   ...entityExtraTools,
   ...reviewTools,
   ...exportMapTools,

@@ -10,7 +10,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { waitForMarkers } from "../../src/scripts/typescript/game/launch.js";
+import { waitForMarkers, waitForMarkersAny } from "../../src/scripts/typescript/game/launch.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "hammer-markers-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -75,5 +75,45 @@ describe("waitForMarkers", () => {
     );
     expect(result.reason).toBe("exited");
     expect(result.missing).toEqual(["load"]);
+  });
+});
+
+describe("waitForMarkersAny", () => {
+  it("matches a burst of simultaneous markers in marker order", async () => {
+    const log = join(scratch, "burst.log");
+    // The engine writes the echoes in this order; the markers ask for the opposite. A cursor
+    // would lose the first one; an independent search finds both.
+    writeFileSync(log, "HSMCP_FOUND_b\nHSMCP_FOUND_a\n");
+    const result = await waitForMarkersAny(
+      log,
+      [
+        { name: "a", pattern: "HSMCP_FOUND_a" },
+        { name: "b", pattern: "HSMCP_FOUND_b" },
+      ],
+      2000,
+      () => true,
+      50,
+    );
+    expect(result.reason).toBe("matched");
+    expect(result.missing).toEqual([]);
+    expect(result.hits.map((hit) => hit.name)).toEqual(["a", "b"]);
+    expect(result.hits[0]!.line).toBe("HSMCP_FOUND_a");
+  });
+
+  it("names the marker that never appeared", async () => {
+    const log = join(scratch, "any-missing.log");
+    writeFileSync(log, "HSMCP_FOUND_a\n");
+    const result = await waitForMarkersAny(
+      log,
+      [
+        { name: "a", pattern: "HSMCP_FOUND_a" },
+        { name: "b", pattern: "HSMCP_FOUND_b" },
+      ],
+      1000,
+      () => true,
+      50,
+    );
+    expect(result.reason).toBe("timeout");
+    expect(result.missing).toEqual(["b"]);
   });
 });

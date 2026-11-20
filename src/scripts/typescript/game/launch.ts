@@ -230,6 +230,66 @@ export async function waitForMarkers(
   return { hits, missing: [], reason: "matched" };
 }
 
+/**
+ * The same markers, but searched independently in the whole log.
+ *
+ * Ordered matching is the right default for a sequence (`load`, then `finale`, then
+ * `credits`), but wrong for events that fire at once: several `OnMapSpawn` outputs land in one
+ * burst, and whichever the engine writes first would hide all the others from a cursor. Here
+ * every marker is matched against the full log and reported in marker order.
+ */
+export async function waitForMarkersAny(
+  path: string,
+  markers: readonly LogMarker[],
+  timeoutMs: number,
+  alive: () => boolean,
+  intervalMs = 500,
+): Promise<{ hits: MarkerHit[]; missing: string[]; reason: WaitReason }> {
+  const started = Date.now();
+  const deadline = started + timeoutMs;
+  const matched = new Set<number>();
+  const hits: MarkerHit[] = [];
+  let exited = false;
+
+  while (Date.now() < deadline && matched.size < markers.length) {
+    const text = existsSync(path) ? readFileSync(path, "utf8") : "";
+    for (const [index, marker] of markers.entries()) {
+      if (matched.has(index)) continue;
+      const match = new RegExp(marker.pattern, "i").exec(text);
+      if (!match || match.index === undefined) continue;
+      const from = text.lastIndexOf("\n", match.index) + 1;
+      const to = text.indexOf("\n", match.index + match[0].length);
+      hits.push({
+        name: marker.name,
+        pattern: marker.pattern,
+        matched: true,
+        atSeconds: Math.round((Date.now() - started) / 100) / 10,
+        line: text.slice(from, to === -1 ? undefined : to).trim(),
+      });
+      matched.add(index);
+    }
+    if (matched.size === markers.length) break;
+    if (!alive()) {
+      exited = true;
+      break;
+    }
+    await sleep(intervalMs);
+  }
+
+  const missing = markers
+    .map((marker, index) => ({ marker, index }))
+    .filter(({ index }) => !matched.has(index))
+    .map(({ marker }) => marker.name);
+  const order = new Map(markers.map((marker, index) => [marker.name, index]));
+  return {
+    hits: hits.sort(
+      (a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0),
+    ),
+    missing,
+    reason: missing.length === 0 ? "matched" : exited ? "exited" : "timeout",
+  };
+}
+
 /** Polls until a file appears, the process exits, or the timeout passes. */
 export async function waitForFile(
   path: string,

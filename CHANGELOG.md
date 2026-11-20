@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.143-alpha - 2026-11-21
+
+- **A runtime oracle for entity wiring.** `write_entity_probe` adds an `OnUser1` echo to every
+  entity with a given targetname and a `logic_auto` that fires each probe on `OnMapSpawn`. It
+  returns the `markers` for `run_map_test`; a missing echo is a real absence in the running
+  map, not a write failure. The entity primitives stay reachable: the tool is a shortcut over
+  `write_point_entity` and the `edit_vmf` output writer.
+- **Simultaneous markers.** `run_map_test` now has `markerOrder: "any"`: the default moves a
+  cursor forward for a sequence, while `any` searches each marker independently in the whole
+  log. Several `OnMapSpawn` outputs land in one burst, and a cursor would hide all but the
+  first. Marker patterns from `write_entity_probe` use a boundary so `..._camera` cannot be
+  satisfied by `..._camera_timer`.
+- **Nameable saferoom stock and camera wiring.** `write_saferoom_stock` accepts a `targetname`
+  prefix (`stock_medkit`, ...) and returns `targetnames`; `write_intro_camera` names its
+  `logic_auto` `<camera>_auto`. Both are probeable at runtime.
+- **Verified end to end.** vbsp++ compiled a sealed test room with a rifle spawner, saferoom
+  medkit/pills/ammo, an intro camera with its auto/timer, a rescue point and an infected
+  border; all nine probes matched at 11.2 s. A `weapon_pistol_spawn` was gone by the time a
+  later probe fired — the Director removes it when survivors already carry pistols.
+- **Tool count: 220.** Tests: 173 files, 1619 passed, 33 skipped.
+
 ## 0.0.142-alpha - 2026-11-21
 
 - **The newest viewer that actually works.** `run_hlmv` prefers HLMV++ and probes it for

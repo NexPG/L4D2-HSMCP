@@ -28,6 +28,7 @@ import {
   waitForGamePid,
   waitForLog,
   waitForMarkers,
+  waitForMarkersAny,
 } from "../game/launch.js";
 import type { MarkerHit } from "../game/launch.js";
 import {
@@ -418,6 +419,8 @@ export const runMapTest = defineTool({
     "load', 'did the finale script run', 'did the map finish loading at all'. The map must " +
     "already be installed in `left4dead2/maps` or a mounted add-on VPK. Returns the match, " +
     "the elapsed time and the log tail; the full log stays at `<game>/left4dead2/console.log`. " +
+    "Set `markerOrder: 'any'` when several markers fire in one burst (for example the " +
+    "`OnMapSpawn` probes from `write_entity_probe`); the default moves a cursor forward. " +
     "With `screenshot: true`, captures the game window as a real image block after the " +
     "marker; use `method: 'screen'` (the default) for a 3D game canvas. Match a marker that " +
     "fires after loading, such as `Loading: [0-9]`, before asking for a picture. " +
@@ -469,6 +472,14 @@ export const runMapTest = defineTool({
           "previous match. This is what turns 'did the map load' into 'did the finale start, " +
           "then the escape unlock, then the credits'. A `Loading:` line cannot satisfy a " +
           "later step because the cursor moves past each match.",
+      ),
+    markerOrder: z
+      .enum(["ordered", "any"])
+      .default("ordered")
+      .describe(
+        "`ordered` moves a cursor forward, for a sequence. `any` searches every marker in the " +
+          "whole log independently, for events that fire together such as several " +
+          "`OnMapSpawn` outputs; the timeline is still returned in marker order.",
       ),
     timeoutSeconds: z.number().int().min(10).max(600).default(120),
     via: z
@@ -754,12 +765,20 @@ export const runMapTest = defineTool({
     let captureError: string | null = null;
     try {
       if ((args.markers?.length ?? 0) > 0) {
-        const result = await waitForMarkers(
-          consoleLog,
-          args.markers,
-          args.timeoutSeconds * 1000,
-          alive,
-        );
+        const result =
+          (args.markerOrder ?? "ordered") === "any"
+            ? await waitForMarkersAny(
+                consoleLog,
+                args.markers,
+                args.timeoutSeconds * 1000,
+                alive,
+              )
+            : await waitForMarkers(
+                consoleLog,
+                args.markers,
+                args.timeoutSeconds * 1000,
+                alive,
+              );
         reason = result.reason;
         timeline = result.hits;
         missing = result.missing;

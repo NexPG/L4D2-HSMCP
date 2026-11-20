@@ -84,6 +84,31 @@ These are shortcuts over `write_point_entity`/`write_brush_entity`, not a closed
 `func_useableladder` is itself a point entity, and a constraint class with no enum entry can
 be written through the primitive.
 
+## Runtime presence
+
+A compiled entity is not proof that the entity exists when the map runs. `write_entity_probe`
+adds a runtime oracle: for each targetname it writes an `OnUser1` output that echoes a unique
+line through a `point_servercommand`, and a `logic_auto` whose `OnMapSpawn` fires each probe.
+The result includes `markers` for `run_map_test`; no schedule is needed.
+
+```text
+write_entity_probe(path, targets: ["probe_item", "probe_camera", "probe_border"])
+run_map_test(map, bsp, nav, markers, markerOrder: "any")
+```
+
+- `markerOrder: "any"` matters: `OnMapSpawn` outputs land in one burst, and the default ordered
+  matcher would lose all but the first line. `any` searches each marker independently.
+- Marker patterns end with `(?![A-Za-z0-9_])`; without it `HSMCP_FOUND_probe_camera` matches
+  `HSMCP_FOUND_probe_camera_timer` and a missing camera looks present.
+- What it proves: the entity was created and its output system ran in the live map. What it
+  does not prove: the Director's later behaviour. In the scratch room a `weapon_pistol_spawn`
+  echoed on a previous run but was gone by the time the next probe fired, because survivors
+  already carry pistols. Probe a spawner early (OnMapSpawn) or accept that its removal is the
+  finding.
+- Verified end to end on `hsmcp_gameplay`: vbsp++ compiled a sealed room with a rifle spawner,
+  saferoom medkit/pills/ammo, an intro camera with its `logic_auto` and timer, a rescue point
+  and an infected border; all nine probes matched at 11.2 s.
+
 ## Verification
 
 `test/tools/entityfamilies.test.ts` writes each family and reads it back: the brush volume and

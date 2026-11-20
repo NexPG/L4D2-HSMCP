@@ -55,16 +55,18 @@ describe("gameplay entities", () => {
         path,
         origin: [0, 0, 16],
         items: ["medkit", "pills", "ammo", "pistol"],
+        targetname: "stock",
         confirm: true,
       } as never,
       ctx,
-    )) as unknown as { ids: number[]; classes: string[] };
+    )) as unknown as { ids: number[]; classes: string[]; targetnames: string[] };
     expect(r.classes).toEqual([
       "weapon_first_aid_kit_spawn",
       "weapon_pain_pills_spawn",
       "weapon_ammo_spawn",
       "weapon_pistol_spawn",
     ]);
+    expect(r.targetnames).toEqual(["stock_medkit", "stock_pills", "stock_ammo", "stock_pistol"]);
     expect(entities(path).filter((entity) => r.ids.includes(entity.id!))).toHaveLength(4);
   });
 
@@ -76,6 +78,9 @@ describe("gameplay entities", () => {
     )) as unknown as { cameraId: number; logicAutoId: number; timerId: number };
     expect(entities(path).find((entity) => entity.id === r.cameraId)?.classname).toBe("point_viewcontrol");
     expect(entities(path).find((entity) => entity.id === r.logicAutoId)?.classname).toBe("logic_auto");
+    expect(entities(path).find((entity) => entity.id === r.logicAutoId)?.targetname).toBe(
+      "intro_camera_auto",
+    );
     expect(entities(path).find((entity) => entity.id === r.timerId)?.classname).toBe("logic_timer");
     const text = readFileSync(path, "utf8");
     expect(text).toContain("OnMapSpawn");

@@ -512,6 +512,7 @@ export const previewModelTool = defineTool({
         nav: generated.nav,
         waitFor: "Loading: [0-9]",
         markers: [],
+        markerOrder: "ordered",
         schedule: [],
         console: true,
         via: "direct",

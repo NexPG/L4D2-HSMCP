@@ -28,16 +28,20 @@ possible. If a helper cannot express what you need, the primitive can. The class
 `write_brush_entity`/`write_point_entity` is a string, so a class with no named builder is
 still reachable. See `references/tools/primitives.md`.
 
+**Runtime truth is a primitive too.** `write_entity_probe` + `run_map_test` with
+`markerOrder: "any"` proves a written entity exists in the running map; a compiled BSP alone
+does not. Use it for spawners, borders and anything invisible in a screenshot.
+
 **Addon provenance.** Every addon or campaign packed with `run_vpk_pack` gets an
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.142-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.143-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.142-alpha`.
+the last entry. The current skill version is `0.0.143-alpha`.
 
 ## Route the task first
 

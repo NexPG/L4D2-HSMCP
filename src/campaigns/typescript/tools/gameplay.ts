@@ -145,6 +145,13 @@ export const writeSaferoomStockTool = defineTool({
       .array(z.enum(["medkit", "pills", "ammo", "pistol", "adrenaline", "defib", "molotov", "pipe_bomb"]))
       .default(["medkit", "pills", "ammo", "pistol"]),
     spacing: z.number().positive().default(48),
+    targetname: z
+      .string()
+      .optional()
+      .describe(
+        "Prefix for each item's targetname, with the item kind appended (`<prefix>_medkit`). " +
+          "A targetname is what makes the entity probeable at runtime.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -152,6 +159,7 @@ export const writeSaferoomStockTool = defineTool({
     ids: z.array(z.number().nullable()),
     count: z.number(),
     classes: z.array(z.string()),
+    targetnames: z.array(z.string().nullable()),
     warnings: z.array(z.string()),
     nextStep: z.string(),
   },
@@ -164,6 +172,9 @@ export const writeSaferoomStockTool = defineTool({
       classname: ITEMS[item],
       origin: vec([origin[0] + index * (args.spacing ?? 48), origin[1], origin[2]]),
       angles: vec(args.angles ?? [0, 0, 0]),
+      ...(args.targetname !== undefined
+        ? { targetname: `${args.targetname}_${item}` }
+        : {}),
     }));
     const warnings: string[] = [];
     for (const kv of keyvalues) warnings.push(...(await fgdWarnings(kv.classname, kv, ctx)));
@@ -174,6 +185,7 @@ export const writeSaferoomStockTool = defineTool({
       ids,
       count: ids.length,
       classes: keyvalues.map((kv) => kv.classname),
+      targetnames: keyvalues.map((kv) => kv.targetname ?? null),
       warnings,
       nextStep: "Move any item that landed in a wall; the row is a starting layout, not a rule.",
     };
@@ -234,7 +246,7 @@ export const writeIntroCameraTool = defineTool({
     }
     const [logicAutoId = null] = await addEntities(
       path,
-      [{ classname: "logic_auto", origin: vec(args.origin) }],
+      [{ classname: "logic_auto", targetname: `${name}_auto`, origin: vec(args.origin) }],
       ctx,
     );
     verifyEntities(path, [logicAutoId], ["logic_auto"]);

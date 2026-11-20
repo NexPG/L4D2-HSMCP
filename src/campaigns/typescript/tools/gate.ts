@@ -561,6 +561,7 @@ export const runCampaignGate = defineTool({
             ...(scriptsDir ? { scriptsDir } : {}),
             waitFor: spec.waitFor ?? "Loading: [0-9]",
             markers: [],
+            markerOrder: "ordered",
             schedule: [],
             console: true,
             via: "direct",
