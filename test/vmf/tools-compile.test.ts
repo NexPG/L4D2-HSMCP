@@ -36,6 +36,11 @@ import {
   writeSpriteTool,
 } from "../../src/maps/typescript/tools/dressing.js";
 import { writeInstance } from "../../src/maps/typescript/tools/instance.js";
+import {
+  writeChangelevelTool,
+  writeFinaleSetupTool,
+  writeSpawnPointsTool,
+} from "../../src/campaigns/typescript/tools/campaignbuild.js";
 import { writeWeather } from "../../src/scripts/typescript/tools/weather.js";
 import {
   paintDisplacementTool,
@@ -775,6 +780,57 @@ describe.skipIf(!has.toolchain)("world dressing, compiled", () => {
         "keyframe_rope",
         "env_beam",
         "info_target",
+      ]) {
+        expect(lump.text, className).toContain(`"classname" "${className}"`);
+      }
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("campaign wiring, compiled", () => {
+  it(
+    "a changelevel volume, spawns and a finale reach vbsp",
+    async () => {
+      const path = join(scratch, "campaign_room.vmf");
+      writeFileSync(path, room());
+
+      await writeSpawnPointsTool.handler(
+        {
+          path,
+          kind: "zombie",
+          spawns: [{ origin: [64, 0, 1], population: "2", offerTank: true }],
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      await writeChangelevelTool.handler(
+        {
+          path,
+          role: "departure",
+          map: "next_chapter",
+          landmark: "room_landmark",
+          bounds: { mins: [-32, -32, 0], maxs: [32, 32, 64] },
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      await writeFinaleSetupTool.handler(
+        { path, type: "gauntlet", origin: [0, 0, 32], confirm: true } as never,
+        ctx,
+      );
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+
+      const lump = readEntityLump(result.bsp);
+      for (const className of [
+        "info_player_start",
+        "info_zombie_spawn",
+        "info_changelevel",
+        "info_landmark",
+        "trigger_finale",
       ]) {
         expect(lump.text, className).toContain(`"classname" "${className}"`);
       }

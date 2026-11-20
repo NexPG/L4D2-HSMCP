@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **178 tools**.
+Last checked against the tool list on 21/11/2026: **184 tools**.
 
 ## The file itself
 
@@ -135,6 +135,11 @@ getting `ENOENT` on the first call.
 | Decals | `write_decal` | `infodecal` projected onto a face; a sized overlay is `write_overlay` |
 | Ropes | `write_rope` | The `move_rope`/`keyframe_rope` pair linked by `NextKey`; one alone renders nothing |
 | Sprites, beams, lasers | `write_sprite` | Creates the two `info_target`s a beam needs and the end target a laser needs; `.spr` paths |
+| Safe room | `write_safe_room` | Checkpoint door on its hinge, player start, four ordered survivor positions and a director |
+| Chapter change | `write_changelevel` | The `info_changelevel` brush volume and its landmark; departure or arrival (`spawnflags 2`) |
+| Finale | `write_finale_setup` | `trigger_finale` with L4D2's type numbers (0, 1, 2, 4), custom script, start state and escape positions |
+| Spawn areas | `write_spawn_points` | Player, survivor, zombie and rescue spawns with the keys each reads |
+| Item density | `write_map_parameters` | The 18 density keys of `info_map_parameters` or its versus variant |
 
 ## Organisation
 
@@ -303,6 +308,7 @@ map and looking, or by not happening at all.
 | `write_campaign` | nothing: a mission file is written by hand |
 | `check_modes` | nothing: no editor checks that a map can actually run the mode it is listed under |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
+| `check_campaign_wiring` | nothing: no editor follows a chapter's changelevel into the next map and compares the landmark pair |
 | `run_vpk_pack` | nothing: Hammer has no addon packaging |
 | `run_vpk_build` | nothing: Hammer has no addon packaging, and this one needs neither the game nor its `vpk.exe` |
 | `read_vpk` | nothing: Hammer cannot open an addon archive |

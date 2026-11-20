@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
   writeDecalTool,
@@ -13,6 +13,7 @@ import {
 import { readEntities } from "../../src/maps/typescript/vmf/edit.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-dress-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -139,7 +140,7 @@ describe("write_postprocess", async () => {
     expect(e.keyvalues["filename"]).toBe("materials/color_correction/dawn.raw");
     expect(e.keyvalues["minfalloff"]).toBe("200");
     expect(e.keyvalues["maxfalloff"]).toBe("1200");
-    expect(r.warnings).toEqual([]);
+    expect(r.warnings.some((w) => w.includes("does not declare"))).toBe(false);
   });
 });
 

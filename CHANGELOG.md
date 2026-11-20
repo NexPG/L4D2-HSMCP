@@ -5,6 +5,32 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.130-alpha - 2026-11-21
+
+- **Campaign wiring is built, not just checked.** Six tools close the gap between a
+  compile-clean map and a campaign the engine can walk. `write_safe_room` places a
+  `prop_door_rotating_checkpoint` on its hinge through `place_door`, an `info_player_start`,
+  four ordered `info_survivor_position`s and a director. `write_changelevel` writes the
+  `info_changelevel` **brush volume** (an entity with no solids compiles to nothing) and its
+  `info_landmark`, distinguishing departure from the arrival volume that stock chapters carry
+  with `spawnflags 2`. `write_finale_setup` encodes L4D2's type set -- 0 standard, 1 gauntlet,
+  2 custom, 4 scavenge, no 3 -- and refuses a custom finale with no script. `write_spawn_points`
+  covers player, survivor, zombie and rescue spawns; `write_map_parameters` writes only the
+  density keys chosen, under the FGD's names.
+- **`check_campaign_wiring` follows the chain across files.** Given maps in chapter order it
+  requires each non-final chapter's changelevel to name the next, compares the landmark pair,
+  expects the arrival volume in the destination, checks the checkpoint doors by the names the
+  engine looks up, and holds the last chapter to its mode's finale contract. It reads VMF and
+  BSP, and on the test campaign it reports no errors.
+- **One L4D2 fact corrected in the tools: there is no stock `trigger_escape`.** All 26 stock
+  campaign BSPs ship zero of them; escaping is the finale's state machine and the nav FINALE
+  areas. The builder does not write the legacy entity.
+- **Verified by vbsp.** A sealed room with a departure changelevel, zombie spawn and gauntlet
+  finale emits `info_player_start`, `info_zombie_spawn`, `info_changelevel`, `info_landmark`
+  and `trigger_finale` in the entity lump. The safe-room builder needs the game's model hull
+  and is exercised on this machine.
+- **Tool count: 184.** Tests: 164 files, 1552 passed, 33 skipped.
+
 ## 0.0.129-alpha - 2026-11-21
 
 - **World dressing has builders, not just `edit_vmf`.** Five tools encode the rules the

@@ -93,6 +93,17 @@ covered: this table is the summary.
 | Areaportal / occluder | `write_portal` | verified: a `func_areaportal` filling a sealed doorway compiled with vbsp and vvis |
 | Visgroups / groups / cordon | `set_visgroup`, `auto_visgroups`, `group_solids`, `set_cordon` | verified for the cordon: an active box filters the compile copy, and the leaky structure outside it is absent from the BSP (`tools-compile.test.ts`). Auto visgroups build one group per class and one per dominant material |
 
+## Campaign wiring
+
+| Feature | Tool | Status |
+|---|---|---|
+| Safe room | `write_safe_room` | verified by vbsp: checkpoint door on its hinge, player start, four ordered survivor positions and a director; the door names are the ones the engine looks up |
+| Chapter change | `write_changelevel` | verified by vbsp: an `info_changelevel` brush volume with map and landmark, plus the matching `info_landmark`; departure and arrival (`spawnflags 2`) |
+| Finale | `write_finale_setup` | verified by vbsp: type 0/1/2/4, custom refuses no script and starts disabled, four escape positions |
+| Spawn areas | `write_spawn_points` | verified by vbsp: one `info_player_start`, ordered survivor positions, zombie spawns with population/offer_tank, rescue |
+| Item density | `write_map_parameters` | verified by unit: only the 18 FGD keys given are written, defaults left absent |
+| Cross-chapter wiring | `check_campaign_wiring` | verified against the test campaign: follows the changelevel, compares the landmark pair, checks doors and the finale; no errors on a working chain |
+
 ## Assets
 
 | Feature | Tool | Status |

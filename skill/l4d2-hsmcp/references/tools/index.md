@@ -1,6 +1,6 @@
 # Tool catalogue
 
-178 tools. This page groups them by the job you are doing; each tool's own description is the
+184 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -32,6 +32,16 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |
 
+## Campaign wiring
+
+| Tool | Use |
+|---|---|
+| `write_safe_room` | checkpoint door, player start, four survivor positions and a director in one call |
+| `write_changelevel` | an `info_changelevel` brush volume plus its `info_landmark`; departure or arrival |
+| `write_finale_setup` | `trigger_finale` with the right type, script, start state and escape positions |
+| `write_spawn_points` | player, survivor, zombie and rescue spawns as one family |
+| `write_map_parameters` | the 18 item-density keys of `info_map_parameters` (or versus) |
+| `check_campaign_wiring` | follow transitions across chapters: map, landmark pair, doors, finale |
 ## Compiled map
 
 | Tool | Use |
