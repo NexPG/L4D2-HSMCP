@@ -624,7 +624,7 @@ with a line here.
   (submodules, upstream docs), and that non-code data gets a `data/` directory beside
   the language directories.
 - **Nothing was built here and nothing pretends otherwise.** No CMake or dotnet is
-  installed; `build/`, `target/` and `obj/` stay ignored.
+  installed; `build/` and `obj/` stay ignored.
 
 ## 0.0.90-alpha â€” 2026-11-18
 
@@ -656,7 +656,7 @@ with a line here.
 - **Licences travel with the code.** Each vendored tree keeps its own `LICENSE`; the
   canonical copies and the record are in `third_party/`. `third_party/NOTICES.md` says which
   path belongs to which project and what it provides.
-- **Build output is ignored.** `build/`, `target/` and `obj/` are gitignored; none of these
+- **Build output is ignored.** `build/` and `obj/` are gitignored; none of these
   trees is built on this machine (no CMake or dotnet), and the TypeScript server does
   not import them.
 
