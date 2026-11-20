@@ -19,7 +19,7 @@ with a line here.
   through the displaced brush. The writer's structure matches a stock map's displacement block,
   so the next step is comparing against what vbsp expects from `startposition`/`triangle_tags`
   rather than adding a test that hides it.
-- **Tool count: 165.** Tests: 152 files, 1445 passed, 33 skipped.
+- **Tool count: 164.** Tests: 151 files, 1442 passed, 33 skipped.
 
 ## 0.0.119-alpha - 2026-11-21
 

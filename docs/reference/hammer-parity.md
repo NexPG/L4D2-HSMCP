@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **165 tools**.
+Last checked against the tool list on 21/11/2026: **164 tools**.
 
 ## The file itself
 

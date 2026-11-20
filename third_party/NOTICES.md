@@ -27,23 +27,18 @@ files in this repository; the upstream file is named so a port can be re-checked
 
 ### Code that was rewritten, not vendored
 
-The C++ and C# trees that were briefly vendored were **removed on 2026-11-19**. Every
-capability the toolkit exposes is implemented in TypeScript, Python or PowerShell, and the
-remaining source trees are none of them.
+The upstream source trees are no longer in the repository. Every capability the toolkit exposes
+is implemented in TypeScript, Python or PowerShell.
 
 That does not erase the notices above. A translation is a derivative work: the three
 sourcepp-derived files named in the table, and the shell-channel port from EpicMorg, still
 carry the copyright and permission notices because their logic came from those projects.
 Removing the upstream tree removes the copy, not the obligation.
 
-reading, writing and packing are this project's own TypeScript implementation; model
-compilation is driven through the game's `studiomdl` (and, optionally, a user-installed
-glTF findings** were used as a reference oracle for the axis, UV and bind-pose conventions
-copied, and the GPL-3.0-only tree is not part of this repository.
-
 FBX is read by this project's own parser (`src/models/python/fbx.py`). The binary 7.x record
 layout, the zlib-compressed property arrays and the ASCII grammar were implemented from the
 published format documentation and checked against files built by the tests. The FBX SDK,
+Blender's `io_scene_fbx`, assimp and ufbx were **not** used as source: they document
 behaviour, and the implementation here is independent, so no new licence entry is required.
 If a future change ports code from any of them, the table above is where it must be recorded.
 
