@@ -562,6 +562,7 @@ export const runCampaignGate = defineTool({
             waitFor: spec.waitFor ?? "Loading: [0-9]",
             markers: [],
             schedule: [],
+            console: true,
             via: "direct",
             timeoutSeconds: args.testTimeoutSeconds,
             extraArgs: [],

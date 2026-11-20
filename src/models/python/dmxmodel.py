@@ -147,6 +147,7 @@ class DmxMeshData:
     faces_by_material: dict[str, list[int]] = field(default_factory=dict)
     materials: dict[str, str] = field(default_factory=dict)
     morphs: dict[str, dict[int, tuple[float, float, float]]] = field(default_factory=dict)
+    morph_normals: dict[str, dict[int, tuple[float, float, float]]] = field(default_factory=dict)
     morph_order: list[str] = field(default_factory=list)
     morph_notes: list[str] = field(default_factory=list)
 
@@ -163,6 +164,7 @@ def write_model_dmx(
     from srctools.dmx import Element
 
     warnings: list[str] = []
+    normal_delta_count = 0
     controls: list[Any] = []
     delta_states: list[Any] = []
     dmx = Dmx()
@@ -205,9 +207,11 @@ def write_model_dmx(
         dmx.strings(delta_element, "vertexFormat", ["positions", "normals"])
         dmx.vec3s(delta_element, "positions", [deltas[index] for index in indices])
         dmx.ints(delta_element, "positionsIndices", indices)
-        # The format permits empty normal arrays; the fixture proves it compiles.
-        dmx.vec3s(delta_element, "normals", [])
-        dmx.ints(delta_element, "normalsIndices", [])
+        normal_deltas = mesh_data.morph_normals.get(name, {})
+        normal_indices = [index for index in indices if index in normal_deltas]
+        dmx.vec3s(delta_element, "normals", [normal_deltas[index] for index in normal_indices])
+        dmx.ints(delta_element, "normalsIndices", normal_indices)
+        normal_delta_count += len(normal_indices)
         delta_states.append(delta_element)
 
         control = dmx.element(name, "DmeCombinationInputControl")
@@ -325,4 +329,5 @@ def write_model_dmx(
         "warnings": warnings,
         "jointCount": len(bones),
         "vertexCount": len(mesh_data.loops),
+        "flexNormalDeltas": normal_delta_count,
     }

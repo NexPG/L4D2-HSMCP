@@ -105,6 +105,10 @@ one `DmeMesh`, and one flex per `BlendShapeChannel`.
   per control. Without them the compiler writes the payload and `flexrule = 0`.
 - The QC names the DMX as `$body` and needs no `$flex` command. `studiomdl` writes
   `flexdesc`, `flexcontroller` and `flexrule` from the graph.
+- Normal deltas ride along when the source has them: `gltf_to_dmx` reads a morph target's
+  `NORMAL` accessor and the shared writer emits `normals`/`normalsIndices` beside the
+  positions, so a flex that bends a surface bends its shading too. FBX shapes carry positions
+  only, so their normal arrays stay empty; the writer returns `flexNormalDeltas`.
 - A delta beyond ±8 is clamped by `studiomdl` and reported. Animations are not written to
   the DMX; use `fbx_to_smd` when the model needs sequences.
 

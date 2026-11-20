@@ -513,6 +513,7 @@ export const previewModelTool = defineTool({
         waitFor: "Loading: [0-9]",
         markers: [],
         schedule: [],
+        console: true,
         via: "direct",
         timeoutSeconds: Math.min(300, args.timeoutSeconds ?? 300),
         extraArgs: ["-console"],

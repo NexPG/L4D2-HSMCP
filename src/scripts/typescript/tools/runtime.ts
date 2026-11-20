@@ -509,6 +509,14 @@ export const runMapTest = defineTool({
           "for an action seconds later use `schedule`. The file is restored afterwards and " +
           "`sv_cheats 1` is prepended.",
       ),
+    console: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Open the in-game console window. Set false for a UI test: with it open every " +
+          "keystroke goes into the console instead of the game. `-condebug` still writes " +
+          "console.log, so markers keep working.",
+      ),
     schedule: z
       .array(
         z.object({
@@ -669,7 +677,9 @@ export const runMapTest = defineTool({
     const started = Date.now();
     const gameArgs = [
       "-novid",
-      "-console",
+      // A UI test needs the keyboard: with the VGUI console open every key goes into its text
+      // field. `-condebug` writes console.log with or without the window.
+      ...(args.console ? ["-console"] : []),
       "-allowdebug",
       // `-insecure` is for a direct launch's cheats and loose content. Through Steam it is
       // also what the client reports as `No Steam logon`, so the normal-client path keeps

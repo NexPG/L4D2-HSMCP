@@ -159,6 +159,7 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
     faces_by_material: dict[str, list[int]] = {}
     materials: dict[str, str] = {}
     morphs: dict[str, dict[int, tuple[float, float, float]]] = {}
+    morph_normals: dict[str, dict[int, tuple[float, float, float]]] = {}
     morph_order: list[str] = []
     morph_notes: list[str] = []
     used_morph_names: set[str] = set()
@@ -321,6 +322,23 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
                             "deltas; the first was kept"
                         )
 
+                target_normals = target.get("NORMAL")
+                if target_normals is not None:
+                    normal_deltas = _vector3(document, buffers, int(target_normals))
+                    normal_map = morph_normals.setdefault(name, {})
+                    for vertex_index, delta in enumerate(normal_deltas):
+                        position = vertex_to_position.get(vertex_index)
+                        if position is None:
+                            continue
+                        if apply_node:
+                            delta = mat4_transform_direction(mesh_world, delta)
+                        delta = mat4_transform_direction(axis_matrix, delta)
+                        rounded = (
+                            round(delta[0], 6),
+                            round(delta[1], 6),
+                            round(delta[2], 6),
+                        )
+                        normal_map.setdefault(position, rounded)
             indices = _indices(
                 document,
                 buffers,
@@ -389,6 +407,7 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
         faces_by_material=faces_by_material,
         materials=materials,
         morphs=morphs,
+        morph_normals=morph_normals,
         morph_order=morph_order,
         morph_notes=list(morph_notes),
     )
@@ -429,6 +448,7 @@ def gltf_to_dmx(req: dict[str, Any]) -> dict[str, Any]:
             for name in morph_order
         ],
         "morphTargetCount": len(morph_order),
+        "flexNormalDeltas": written.get("flexNormalDeltas", 0),
         "boneCount": len(kept),
         "skinned": skinned_any,
         "ignoredAnimations": ignored_animations,

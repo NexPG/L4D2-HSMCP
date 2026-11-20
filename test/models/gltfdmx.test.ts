@@ -92,6 +92,7 @@ function skinnedMorphScene() {
   );
   const morph = bin.add(floats([4, 0, 0, 4, 0, 0, 4, 0, 0]));
   const indices = bin.add(Buffer.from(new Uint16Array([0, 1, 2]).buffer));
+  const morphNormals = bin.add(floats([0, 0, 1, 0, 0, 1, 0, 0, 1]));
   const document = {
     asset: { version: "2.0" },
     scene: 0,
@@ -110,7 +111,7 @@ function skinnedMorphScene() {
             attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2, JOINTS_0: 3, WEIGHTS_0: 4 },
             indices: 7,
             material: 0,
-            targets: [{ POSITION: 6 }],
+            targets: [{ POSITION: 6, NORMAL: 8 }],
           },
         ],
       },
@@ -127,6 +128,7 @@ function skinnedMorphScene() {
       accessor(ibm, 5126, 2, "MAT4"),
       accessor(morph, 5126, 3, "VEC3"),
       accessor(indices, 5123, 3, "SCALAR"),
+      accessor(morphNormals, 5126, 3, "VEC3"),
     ],
   };
   return { document, bin: bin.bytes() };
@@ -149,6 +151,7 @@ describe.skipIf(!installed)("gltf_to_dmx", () => {
       skinned: boolean;
       morphTargets: Array<{ name: string; deltas: number; maxDelta: number }>;
       morphTargetCount: number;
+    flexNormalDeltas: number;
       ignoredAnimations: number;
     }>("gltf_to_dmx", { path: source, out: dmx }, config);
     expect(converted.verified).toBe(true);
@@ -159,6 +162,7 @@ describe.skipIf(!installed)("gltf_to_dmx", () => {
     expect(converted.skinned).toBe(true);
     expect(converted.morphTargetCount).toBe(1);
     expect(converted.morphTargets[0]).toMatchObject({ name: "wide", deltas: 3, maxDelta: 4 });
+    expect(converted.flexNormalDeltas).toBe(3);
     expect(converted.ignoredAnimations).toBe(0);
 
     const read = await callSidecar<{

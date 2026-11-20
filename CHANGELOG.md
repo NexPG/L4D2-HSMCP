@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.115-alpha - 2026-11-21
+
+- **Flex normal deltas.** `gltf_to_dmx` reads a morph target's `NORMAL` accessor and the
+  shared DMX writer emits `normals`/`normalsIndices` beside the positions (one entry per
+  position that has a normal delta); the result carries `flexNormalDeltas`. The skinned
+  morph fixture now includes a normal delta and asserts three of them. FBX shapes still carry
+  positions only.
+- **`run_map_test` can launch without the console.** `console: false` drops `-console` so a UI
+  test's keystrokes reach the game instead of the VGUI console text field; `-condebug` still
+  writes `console.log`, so markers keep working.
+- **Synthetic input, measured.** `SendInput` with absolute coordinates *does* reach the game:
+  a click on `PLAY CAMPAIGN` opened its flyout. `SetCursorPos` plus `mouse_event` does not move
+  the game's cursor at all. Full menu navigation is still flaky -- the mode carousel and the
+  flyout share screen space and a trained sequence of clicks has not been settled -- so a
+  campaign start from the menu is not proven yet.
+- **Tool count stays 164.** Tests: 151 files, 1437 passed, 33 skipped.
+
 ## 0.0.114-alpha - 2026-11-21
 
 - **`read_qc` reads `$definebone` as a graph.** A parent no `$definebone` declares, a bone
