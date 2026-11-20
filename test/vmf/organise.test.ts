@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  autoVisgroups,
   groupSolids,
   readOrganisation,
   setCordon,
@@ -236,6 +237,35 @@ describe("groupSolids", () => {
     const loose = groupSolids(grouped.text, { ids: [FLOOR] }, { ungroup: true });
     expect(loose.solidsChanged).toBe(1);
     expect(readOrganisation(loose.text).groups[0]!.solidCount).toBe(1);
+  });
+
+  it("fills a visgroup tree from the classes and materials in the file", () => {
+    const result = autoVisgroups(probe());
+    const byName = new Map(result.groups.map((group) => [group.name, group]));
+    expect(byName.get("Auto/Entities/info_target")?.members).toBe(1);
+    expect([...byName.keys()].some((name) => name.startsWith("Auto/Materials/"))).toBe(true);
+
+    const org = readOrganisation(result.text);
+    expect(org.warnings).toEqual([]);
+    // Every declaration has members and every membership has a declaration.
+    for (const group of org.visgroups) {
+      expect(group.solidCount + group.entityCount).toBeGreaterThan(0);
+    }
+  });
+
+  it("adds nothing the second time it runs", () => {
+    const once = autoVisgroups(probe());
+    const twice = autoVisgroups(once.text);
+    expect(twice.unchanged).toBe(true);
+    expect(twice.text).toBe(once.text);
+    expect(twice.groups.length).toBe(once.groups.length);
+  });
+
+  it("puts a solid in the group of its dominant material by area", () => {
+    const result = autoVisgroups(probe(), { by: ["material"] });
+    expect(result.groups.length).toBeGreaterThan(0);
+    const org = readOrganisation(result.text);
+    expect(org.solidsInNoVisgroup).toBeLessThan(6);
   });
 
   it("counts an entity in a group as an entity, not as a solid", () => {

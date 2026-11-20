@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 19/11/2026: **164 tools**.
+Last checked against the tool list on 21/11/2026: **165 tools**.
 
 ## The file itself
 
@@ -134,6 +134,7 @@ getting `ENOENT` on the first call.
 | Hammer | Here | Notes |
 |---|---|---|
 | Visgroups | `set_visgroup`, `read_map_organisation` | Writes both halves: a membership with no declaration is dropped by Hammer without a word |
+| Auto Visgroups | `auto_visgroups` | Fills the tree from what the file contains: one group per entity class and one per material, a solid joining its dominant material by face area |
 | Groups | `group_solids` | |
 | Cordon | `set_cordon` | The one setting that changes what compiles |
 | Hide / show | *the 3D view* | A visgroup's visibility flag is written; what an editor draws is not this toolkit's business |

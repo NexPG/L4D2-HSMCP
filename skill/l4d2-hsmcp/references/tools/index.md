@@ -109,7 +109,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `set_face_uv` | write a face's U/V vectors, offsets, scales and `rotation` directly |
 | `copy_face_alignment` | copy one face's exact uaxis/vaxis (and optionally material/lightmap) onto others |
 | `set_smoothing_groups` | smoothing groups |
-| `set_visgroup` / `group_solids` / `set_cordon` | organisation |
+| `set_visgroup` / `auto_visgroups` / `group_solids` / `set_cordon` | organisation, with one pass that groups every entity class and material |
 | `write_hint_brush` | hint brush for vvis |
 | `set_solid_class` | move brushes into or out of `func_detail` |
 | `set_lightmap_scale` | lightmapscale on faces |

@@ -25,7 +25,7 @@ covered: this table is the summary.
 | Feature | Tool | Status |
 |---|---|---|
 | Brush create: box, wedge, cylinder, convex, cone, stairs, arch, sphere, torus | `write_vmf_solid` | verified for box/wedge/cylinder/convex; the compound shapes are checked by `read_vmf_solids` and each reports its brush count |
-| Clip | `clip_solids` | tool |
+| Clip | `clip_solids` | verified: both halves of a cut brush compiled with vbsp in a sealed room (`tools-compile.test.ts`) |
 | Hollow | `hollow_solids` | tool |
 | Vertex edit | `move_vertices` | tool |
 | Move/rotate/scale/mirror | `transform_solids` | tool |
@@ -41,7 +41,7 @@ covered: this table is the summary.
 
 | Feature | Tool | Status |
 |---|---|---|
-| Create | `write_displacement` | tool |
+| Create | `write_displacement` | tool, and **known defect**: a sealed room whose floor is displaced leaks; the same room without the displacement seals |
 | Subdivide (raise power) | `subdivide_displacements` | tool |
 | Sew | `sew_displacements` | tool |
 | Sculpt (flatten, raise, slope, noise) | `sculpt_displacement` | tool |
@@ -85,7 +85,7 @@ covered: this table is the summary.
 | func_detail | `set_solid_class` | tool |
 | Hint/skip | `write_hint_brush` | tool |
 | Areaportal / occluder | `write_portal` | tool |
-| Visgroups / groups / cordon | `set_visgroup`, `group_solids`, `set_cordon` | tool |
+| Visgroups / groups / cordon | `set_visgroup`, `auto_visgroups`, `group_solids`, `set_cordon` | tool: auto builds one group per entity class and per material, a solid joining its dominant material by face area |
 
 ## Assets
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
-import { groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/organise.js";
+import { autoVisgroups, groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/organise.js";
 import type { SolidSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import type { Vec3 } from "../vmf/solid.js";
@@ -172,6 +172,83 @@ export const setVisgroupTool = defineTool({
   },
 });
 
+export const autoVisgroupsTool = defineTool({
+  name: "auto_visgroups",
+  description:
+    "Fills a visgroup tree from what the map already contains, the way Hammer++'s Auto " +
+    "Visgroups does: one visgroup per entity class and one per world-brush material, with " +
+    "both halves written. A solid joins the group of its dominant material by face area, so " +
+    "one large wall beats four trim faces; tool textures are skipped. Existing groups with " +
+    "the same names are reused, so running it twice adds nothing. A visgroup changes nothing " +
+    "about the compiled map -- its value is that later calls can name a group instead of " +
+    "describing a box.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    by: z
+      .array(z.enum(["class", "material"]))
+      .default(["class", "material"])
+      .describe("Which tree to build. Both by default."),
+    entityPrefix: z
+      .string()
+      .default("Auto/Entities/")
+      .describe("Prefix for the class groups, so they sit in their own folder."),
+    materialPrefix: z
+      .string()
+      .default("Auto/Materials/")
+      .describe("Prefix for the material groups."),
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    unchanged: z.boolean(),
+    groups: z.array(
+      z.object({ name: z.string(), id: z.number(), members: z.number() }),
+    ),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const before = readFileSync(path, "utf8");
+    const result = autoVisgroups(before, {
+      by: args.by,
+      entityPrefix: args.entityPrefix,
+      materialPrefix: args.materialPrefix,
+    });
+    assertGeometryUntouched(path, before, result.text);
+
+    const after = readOrganisation(result.text);
+    const orphaned = after.warnings.filter((w) => w.includes("declared nowhere"));
+    if (orphaned.length > 0) {
+      throw new Error(`refusing to write: ${orphaned.join(" ")}`);
+    }
+
+    const write = writeGuarded(path, result.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup,
+      unchanged: result.unchanged,
+    });
+    return {
+      path,
+      written: write.written,
+      backupPath: write.backupPath,
+      unchanged: result.unchanged,
+      groups: result.groups,
+      warnings: result.warnings,
+      nextStep:
+        "The tree is editor-only. When a group is the thing you want to edit, pass its " +
+        "entity class or material to the selector instead of a new bounding box.",
+    };
+  },
+});
+
 export const groupSolidsTool = defineTool({
   name: "group_solids",
   description:
@@ -308,6 +385,7 @@ export const setCordonTool = defineTool({
 export const organiseTools = [
   readMapOrganisationTool,
   setVisgroupTool,
+  autoVisgroupsTool,
   groupSolidsTool,
   setCordonTool,
 ];

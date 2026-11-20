@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.120-alpha - 2026-11-21
+
+- **`auto_visgroups` fills the tree the way Hammer++'s Auto Visgroups does.** One visgroup per
+  entity class and one per world-brush material, both halves written, existing groups reused so
+  a second run adds nothing. A solid joins the group of its **dominant material by face area**,
+  so one large wall beats four trim faces; tool textures are skipped. On the test campaign it
+  builds 14 class groups and one material group over 34 solids with no warnings.
+- **`clip_solids` is verified against vbsp.** A sealed room with an interior block cut in half
+  compiles with no leak (`tools-compile.test.ts`, skipped where no toolchain exists).
+- **Found a real defect: a displaced face stops sealing.** The same sealed room leaks the moment
+  its floor (or wall) gets a `dispinfo`, and seals without it. The leak trace runs straight
+  through the displaced brush. The writer's structure matches a stock map's displacement block,
+  so the next step is comparing against what vbsp expects from `startposition`/`triangle_tags`
+  rather than adding a test that hides it.
+- **Tool count: 165.** Tests: 152 files, 1445 passed, 33 skipped.
+
 ## 0.0.119-alpha - 2026-11-21
 
 - **`align_faces` fits to the texture's real size.** Hammer's Fit knows the VTF's dimensions;

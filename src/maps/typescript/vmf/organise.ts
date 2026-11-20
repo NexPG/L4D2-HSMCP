@@ -440,6 +440,180 @@ export function setVisgroup(
   return { text, visgroupId, created, solidsChanged: changed, warnings, unchanged: text === source };
 }
 
+export interface AutoVisgroupGroup {
+  name: string;
+  id: number;
+  members: number;
+}
+
+export interface AutoVisgroupResult {
+  text: string;
+  groups: AutoVisgroupGroup[];
+  warnings: string[];
+  unchanged: boolean;
+}
+
+/**
+ * Hammer++'s Auto Visgroups, as one pass over the file.
+ *
+ * Hammer++ fills a visgroup tree from what the map already contains: one group per entity
+ * class and one per material. Doing that with `set_visgroup` means one call per class with a
+ * selector typed for each; here the file says what the classes and materials are.
+ *
+ * Solids join the group of their dominant material, measured by face area rather than by face
+ * count: a brush with one large wall and four small trim faces is a wall. Tool textures are
+ * skipped, because grouping every brush that carries `TOOLS/TOOLSTRIGGER` says nothing.
+ */
+export function autoVisgroups(
+  source: string,
+  options: {
+    by?: Array<"class" | "material">;
+    entityPrefix?: string;
+    materialPrefix?: string;
+  } = {},
+): AutoVisgroupResult {
+  const by = options.by ?? ["class", "material"];
+  const entityPrefix = options.entityPrefix ?? "Auto/Entities/";
+  const materialPrefix = options.materialPrefix ?? "Auto/Materials/";
+  const nodes = parse(source);
+  const roots = nodes.filter(isBlock);
+
+  const report = readOrganisation(source);
+  const flat: VisgroupInfo[] = [];
+  const walkGroups = (list: VisgroupInfo[]): void => {
+    for (const entry of list) {
+      flat.push(entry);
+      walkGroups(entry.children);
+    }
+  };
+  walkGroups(report.visgroups);
+  const byName = new Map(flat.map((entry) => [entry.name, entry.id]));
+
+  const entityBlocks = roots.filter((block) => block.name === "entity");
+  const usedIds: number[] = [];
+  for (const found of findSolids(roots)) {
+    const editor = editorOf(found.block);
+    if (editor) usedIds.push(...allValues(editor, "visgroupid").map(Number));
+  }
+  for (const entity of entityBlocks) {
+    const editor = editorOf(entity);
+    if (editor) usedIds.push(...allValues(editor, "visgroupid").map(Number));
+  }
+  let nextId =
+    Math.max(0, ...flat.map((entry) => entry.id), ...usedIds.filter((n) => Number.isFinite(n))) +
+    1;
+
+  const splices: Splice[] = [];
+  const declarations: string[] = [];
+  const groups: AutoVisgroupGroup[] = [];
+  const warnings: string[] = [];
+  const palette = [
+    "255 180 180",
+    "180 220 255",
+    "200 255 180",
+    "255 240 170",
+    "230 190 255",
+    "190 255 240",
+  ];
+  const members = new Map<number, number>();
+
+  const groupFor = (name: string): number => {
+    const existing = byName.get(name);
+    if (existing !== undefined) return existing;
+    assertWritableValue("visgroup name", name);
+    const id = nextId++;
+    byName.set(name, id);
+    const colour = palette[(id - 1) % palette.length] ?? "255 255 255";
+    declarations.push(
+      `\tvisgroup\n\t{\n\t\t"name" "${name}"\n\t\t"visgroupid" "${id}"\n` +
+        `\t\t"color" "${colour}"\n\t}\n`,
+    );
+    return id;
+  };
+
+  const addMembership = (block: KvBlock, id: number): void => {
+    const editor = editorOf(block);
+    if (!editor) {
+      ensureEditor(source, block, splices, `"visgroupid" "${id}"`);
+      members.set(id, (members.get(id) ?? 0) + 1);
+      return;
+    }
+    if (allValues(editor, "visgroupid").includes(String(id))) {
+      members.set(id, (members.get(id) ?? 0) + 1);
+      return;
+    }
+    const anchor =
+      editor.entries.filter(isPair).find((pair) => pair.key === "visgroupshown") ??
+      editor.entries.filter(isPair)[0];
+    const at = anchor ? anchor.start : editor.bodyEnd;
+    const indent = indentOf(source, editor) + "\t";
+    splices.push({ start: at, end: at, text: `"visgroupid" "${id}"\n${indent}` });
+    members.set(id, (members.get(id) ?? 0) + 1);
+  };
+
+  if (by.includes("class")) {
+    const classes = new Map<string, KvBlock[]>();
+    for (const entity of entityBlocks) {
+      const classname = (get(entity, "classname") ?? "").trim();
+      if (!classname) {
+        warnings.push("an entity with no classname was left out of the class visgroups");
+        continue;
+      }
+      const list = classes.get(classname);
+      if (list) list.push(entity);
+      else classes.set(classname, [entity]);
+    }
+    for (const [classname, list] of classes) {
+      const name = `${entityPrefix}${classname}`;
+      const id = groupFor(name);
+      for (const entity of list) addMembership(entity, id);
+      groups.push({ name, id, members: members.get(id) ?? 0 });
+    }
+  }
+
+  if (by.includes("material")) {
+    const checks = new Map<number, SolidCheck>();
+    for (const solid of checkVmfSolids("(memory)", source).solids) {
+      if (solid.id !== null) checks.set(solid.id, solid);
+    }
+    const toolTexture = /^TOOLS\//i;
+    for (const found of findSolids(roots)) {
+      const check = checks.get(found.id);
+      if (!check) continue;
+      const areas = new Map<string, number>();
+      for (const side of check.sides) {
+        const material = side.material.trim();
+        if (!material || toolTexture.test(material)) continue;
+        areas.set(material, (areas.get(material) ?? 0) + side.area);
+      }
+      if (areas.size === 0) continue;
+      const dominant = [...areas.entries()].sort((a, b) => b[1] - a[1])[0]!;
+      const name = `${materialPrefix}${dominant[0].toUpperCase()}`;
+      const id = groupFor(name);
+      addMembership(found.block, id);
+      const entry = groups.find((group) => group.id === id);
+      if (entry) entry.members = members.get(id) ?? 0;
+      else groups.push({ name, id, members: members.get(id) ?? 0 });
+    }
+  }
+
+  if (declarations.length > 0) {
+    const visBlock = roots.find((block) => block.name === "visgroups");
+    const entry = declarations.join("");
+    if (visBlock) {
+      splices.push({ start: visBlock.bodyEnd, end: visBlock.bodyEnd, text: entry });
+    } else {
+      const world = roots.find((block) => block.name === "world");
+      const at = world ? lineRange(source, world).start : source.length;
+      splices.push({ start: at, end: at, text: `visgroups\n{\n${entry}}\n` });
+    }
+  }
+
+  const text = applySplices(source, splices);
+  if (groups.length === 0) warnings.push("nothing to group: no entity classes and no materials");
+  return { text, groups, warnings, unchanged: text === source };
+}
+
 export interface GroupResult {
   text: string;
   groupId: number | null;
