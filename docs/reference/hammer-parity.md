@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **184 tools**.
+Last checked against the tool list on 21/11/2026: **188 tools**.
 
 ## The file itself
 
@@ -255,6 +255,10 @@ map and looking, or by not happening at all.
 | `convert_vtf` | nothing: reformat or resize a shipped .vtf, without VTFCmd |
 | `write_cubemap_vtf` | nothing offline: six named faces into one cubemap .vtf |
 | `extract_vtf` | the texture browser shows the image, but not at a size or as a file the agent can keep |
+| `validate_addon` | nothing: the editor never checks addoninfo, scripts, manifests or closecaption encoding before a pack |
+| `write_content_manifest` | the manifests are hand-edited text; a missing line is a silently unloaded asset |
+| `write_localization` | localization files are hand-edited, and closecaption's UTF-16LE is easy to get wrong |
+| `write_workshop_vdf` | Workshop Manager is a GUI; this writes the same build file offline |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |

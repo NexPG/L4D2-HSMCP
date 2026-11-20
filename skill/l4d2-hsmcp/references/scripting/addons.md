@@ -18,6 +18,23 @@ Pack the folder root-relative with `run_vpk_pack` (`install: true` copies it int
 `left4dead2/addons`), then keep only one form: either the `.vpk` or the unpacked folder in
 `addons/`.
 
+## Before packing
+
+An addon can be structurally correct and still ship an asset that never loads. Run
+`validate_addon` on the staging folder: it parses `addoninfo.txt`, reads every `.nut` with the
+Squirrel checker, follows the three content manifests and warns when a referenced file is not
+in the folder, and checks that a closecaption file is UTF-16LE.
+
+| Tool | What it fixes |
+|---|---|
+| `write_content_manifest` | a `.pcf`/soundscript/soundscape that is not listed is never loaded; this adds or removes the entry without rewriting the file |
+| `write_localization` | a `lang`/`Tokens` file, with closecaption kept in UTF-16LE and existing tokens updated in place |
+| `write_workshop_vdf` | the `workshop_build_item.vdf` SteamCMD reads; uploading is still a Steam action |
+| `validate_addon` | the pre-pack check for addoninfo, scripts, manifests and caption encoding |
+
+The three manifests use different blocks and keys: `particles_manifest` with `file`,
+`game_sounds_manifest` with `precache_file`, and the stock `soundscaples_manifest` spelling
+(Valve's typo) with `file`. The paths are game-root-relative, not relative to the addon folder.
 ## What loads by itself
 
 `mapspawn_addon.nut` is the entry point for a pure addon. The engine runs it **once per

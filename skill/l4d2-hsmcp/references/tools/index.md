@@ -1,6 +1,6 @@
 # Tool catalogue
 
-184 tools. This page groups them by the job you are doing; each tool's own description is the
+188 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -32,6 +32,14 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |
 
+## Shipping an addon
+
+| Tool | Use |
+|---|---|
+| `validate_addon` | check addoninfo, every `.nut`, the three content manifests and closecaption encoding before packing |
+| `write_content_manifest` | add or remove a `.pcf`, soundscript or soundscape in the manifest the engine reads |
+| `write_localization` | write or update a `lang`/`Tokens` file, keeping UTF-16LE for closecaption |
+| `write_workshop_vdf` | prepare `workshop_build_item.vdf` for `steamcmd +workshop_build_item` |
 ## Campaign wiring
 
 | Tool | Use |

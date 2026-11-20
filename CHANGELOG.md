@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.132-alpha - 2026-11-21
+
+- **Shipping an addon has an offline path.** Four tools close the gap between a working
+  staging folder and a Workshop build. `write_content_manifest` adds or removes an entry in
+  the particle, soundscript or soundscape manifest the engine actually reads; a file that is
+  not listed is never loaded, which is the usual reason a custom asset ships silent. It
+  normalizes paths, skips duplicates case-insensitively, preserves comments and writes the
+  stock `soundscaples_manifest` spelling for a new soundscape manifest.
+- **`write_localization` writes and updates `lang`/`Tokens` files.** Closecaption is
+  UTF-16LE with a BOM; an existing file keeps its encoding, a new one defaults to UTF-16LE,
+  and existing tokens are updated in place with the rest of the file left alone.
+- **`write_workshop_vdf` prepares the SteamCMD build file** with appid 550, content folder,
+  preview, visibility, title, description and change note. Uploading remains a Steam action;
+  the file and paths do not.
+- **`validate_addon` checks the folder before it is packed.** It parses `addoninfo.txt`,
+  reads every `.nut` as Squirrel, follows the three manifests and warns about referenced files
+  that are absent (they may be stock), and warns when closecaption is not UTF-16LE.
+- **Tool count: 188.** Tests: 165 files, 1561 passed, 33 skipped.
+
 ## 0.0.131-alpha - 2026-11-21
 
 - **A local VScript addon test: bots carry pills and adrenaline but cannot use them above 20 HP.**

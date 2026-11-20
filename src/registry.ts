@@ -13,6 +13,10 @@ import { campaignTools } from "./campaigns/typescript/tools/campaign.js";
 import { campaignBuildTools } from "./campaigns/typescript/tools/campaignbuild.js";
 import { checkModeTools } from "./campaigns/typescript/tools/modes.js";
 import { addonTools } from "./packages/typescript/tools/addon.js";
+import { addonCheckTools } from "./packages/typescript/tools/addoncheck.js";
+import { manifestTools } from "./packages/typescript/tools/manifests.js";
+import { workshopTools } from "./packages/typescript/tools/workshop.js";
+import { localizationTools } from "./assets/typescript/tools/localization.js";
 import { autosaveTools } from "./maps/typescript/tools/autosave.js";
 import { clipTools } from "./maps/typescript/tools/clip.js";
 import { compileTools } from "./maps/typescript/tools/compile.js";
@@ -110,6 +114,10 @@ export const allTools: AnyToolDef[] = [
   ...checkModeTools,
   ...gateTools,
   ...addonTools,
+  ...addonCheckTools,
+  ...manifestTools,
+  ...workshopTools,
+  ...localizationTools,
   ...autosaveTools,
   ...bspTools,
   ...bspEditTools,

@@ -1,0 +1,227 @@
+/**
+ * Addon validation. The packer proves the archive matches the folder; this proves the folder
+ * is an addon the game can use. It is deliberately a warning-heavy check: a missing referenced
+ * file may be stock content, and a script warning is not a compile error. Errors are the things
+ * that make the addon disappear from the menu or fail to load.
+ */
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { z } from "zod";
+import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { checkNut } from "../../../scripts/typescript/vscript/check.js";
+import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { parse } from "../../../formats/typescript/kv/parse.js";
+import type { KvNode } from "../../../formats/typescript/kv/parse.js";
+
+const FINDING = z.object({
+  severity: z.enum(["error", "warning", "info"]),
+  rule: z.string(),
+  message: z.string(),
+  file: z.string().optional(),
+});
+
+function walk(dir: string, out: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, out);
+    else out.push(full);
+  }
+}
+
+function findBlock(nodes: readonly KvNode[], name: string): Extract<KvNode, { kind: "block" }> | null {
+  for (const node of nodes) {
+    if (node.kind === "block" && node.name.toLowerCase() === name.toLowerCase()) return node;
+  }
+  return null;
+}
+
+function keyvalues(file: string): Record<string, string> {
+  const block = findBlock(parse(readFileSync(file, "utf8")), "addoninfo");
+  if (!block) throw new Error("no addoninfo block");
+  return Object.fromEntries(
+    block.entries
+      .filter((node): node is Extract<KvNode, { kind: "pair" }> => node.kind === "pair")
+      .map((pair) => [pair.key.toLowerCase(), pair.value]),
+  );
+}
+
+export const validateAddonTool = defineTool({
+  name: "validate_addon",
+  description:
+    "Checks an addon staging folder before it is packed: addoninfo.txt parses and names the " +
+    "game; every `.nut` under scripts/vscripts is read as Squirrel; the three content " +
+    "manifests reference files that exist in the folder or are stock; and a closecaption file " +
+    "is UTF-16LE. Errors are the failures that hide an addon from the menu or stop a script; " +
+    "missing referenced files and script warnings are warnings. Reads only; does not pack.",
+  realm: "map",
+  inputSchema: {
+    dir: z.string().describe("Addon staging folder, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    dir: z.string(),
+    overall: z.enum(["pass", "warn", "fail"]),
+    findings: z.array(FINDING),
+    counts: z.object({ error: z.number(), warning: z.number(), info: z.number() }),
+    checked: z.object({
+      files: z.number(),
+      scripts: z.number(),
+      manifests: z.number(),
+      addoninfo: z.boolean(),
+    }),
+  },
+  handler: (args, ctx) => {
+    const dir = resolveInput(args.dir, ctx.config);
+    if (!existsSync(dir) || !statSync(dir).isDirectory()) {
+      throw new Error(`${dir} is not an existing directory`);
+    }
+    const findings: Array<z.infer<typeof FINDING>> = [];
+    const files: string[] = [];
+    walk(dir, files);
+    let scripts = 0;
+    let manifests = 0;
+    let addoninfo = false;
+
+    const infoPath = join(dir, "addoninfo.txt");
+    if (!existsSync(infoPath)) {
+      findings.push({
+        severity: "error",
+        rule: "addoninfo-missing",
+        message: "no addoninfo.txt; the game menu has no title, author or tag for this addon",
+        file: relative(dir, infoPath).replace(/\\/g, "/"),
+      });
+    } else {
+      addoninfo = true;
+      try {
+        const info = keyvalues(infoPath);
+        if (!info["addontitle"]) {
+          findings.push({
+            severity: "error",
+            rule: "addoninfo-title",
+            message: "addoninfo.txt has no addonTitle",
+            file: "addoninfo.txt",
+          });
+        }
+        const appId = info["addonsteamappid"];
+        if (appId === undefined) {
+          findings.push({
+            severity: "warning",
+            rule: "addoninfo-appid",
+            message: "addoninfo.txt has no addonSteamAppID; 550 is the L4D2 id",
+            file: "addoninfo.txt",
+          });
+        } else if (appId !== "550") {
+          findings.push({
+            severity: "warning",
+            rule: "addoninfo-appid",
+            message: `addonSteamAppID is ${appId}, not 550`,
+            file: "addoninfo.txt",
+          });
+        }
+      } catch (error) {
+        findings.push({
+          severity: "error",
+          rule: "addoninfo-parse",
+          message: `addoninfo.txt does not parse as KeyValues: ${(error as Error).message}`,
+          file: "addoninfo.txt",
+        });
+      }
+    }
+
+    for (const file of files) {
+      if (!file.toLowerCase().endsWith(".nut")) continue;
+      scripts += 1;
+      const report = checkNut(readFileSync(file, "utf8"), file);
+      for (const diagnostic of report.diagnostics) {
+        if (diagnostic.severity === "info") continue;
+        findings.push({
+          severity: diagnostic.severity,
+          rule: `nut-${diagnostic.rule}`,
+          message: diagnostic.message,
+          file: relative(dir, file).replace(/\\/g, "/"),
+        });
+      }
+    }
+
+    const manifestPaths = [
+      "particles/particles_manifest.txt",
+      "scripts/game_sounds_manifest.txt",
+      "scripts/soundscapes_manifest.txt",
+    ];
+    for (const manifest of manifestPaths) {
+      const path = join(dir, manifest);
+      if (!existsSync(path)) continue;
+      manifests += 1;
+      try {
+        const nodes = parse(readFileSync(path, "utf8"));
+        const block =
+          findBlock(
+            nodes,
+            manifest.includes("particles")
+              ? "particles_manifest"
+              : manifest.includes("game_sounds")
+                ? "game_sounds_manifest"
+                : "soundscaples_manifest",
+          ) ?? findBlock(nodes, "soundscapes_manifest");
+        if (!block) {
+          findings.push({
+            severity: "warning",
+            rule: "manifest-block",
+            message: `${manifest} has no manifest block`,
+            file: manifest,
+          });
+          continue;
+        }
+        for (const entry of block.entries) {
+          if (entry.kind !== "pair") continue;
+          const value = entry.value.replace(/^!/, "").replace(/\\/g, "/");
+          if (!/\.(pcf|txt)$/i.test(value)) continue;
+          if (!existsSync(join(dir, value))) {
+            findings.push({
+              severity: "warning",
+              rule: "manifest-missing-file",
+              message: `${manifest} lists ${value}, which is not in this addon (it may be stock)`,
+              file: manifest,
+            });
+          }
+        }
+      } catch (error) {
+        findings.push({
+          severity: "warning",
+          rule: "manifest-parse",
+          message: `${manifest} does not parse: ${(error as Error).message}`,
+          file: manifest,
+        });
+      }
+    }
+
+    const caption = join(dir, "resource/closecaption_english.txt");
+    if (existsSync(caption)) {
+      const bytes = readFileSync(caption);
+      if (!(bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe)) {
+        findings.push({
+          severity: "warning",
+          rule: "closecaption-encoding",
+          message:
+            "resource/closecaption_english.txt is not UTF-16LE with a BOM; the engine reads " +
+            "Close Caption that way",
+          file: "resource/closecaption_english.txt",
+        });
+      }
+    }
+
+    const counts = {
+      error: findings.filter((finding) => finding.severity === "error").length,
+      warning: findings.filter((finding) => finding.severity === "warning").length,
+      info: findings.filter((finding) => finding.severity === "info").length,
+    };
+    return {
+      dir,
+      overall: counts.error > 0 ? ("fail" as const) : counts.warning > 0 ? ("warn" as const) : ("pass" as const),
+      findings,
+      counts,
+      checked: { files: files.length, scripts, manifests, addoninfo },
+    };
+  },
+});
+
+export const addonCheckTools = [validateAddonTool];
