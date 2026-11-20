@@ -102,4 +102,52 @@ export const writeMissionPosterTool = defineTool({
   },
 });
 
-export const posterTools = [writeMissionPosterTool];
+export const readMissionPosterTool = defineTool({
+  name: "read_mission_poster",
+  description:
+    "Reads the `poster` block of a mission file: `posterImage`, the widescreen variant, " +
+    "`fullscreen` and every extra key. Returns null fields when there is no poster.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Mission .txt, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    found: z.boolean(),
+    image: z.string().nullable(),
+    widescreen: z.string().nullable(),
+    fullscreen: z.boolean().nullable(),
+    keys: z.record(z.string()),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    const nodes = parse(readFileSync(path, "utf8"));
+    const mission = nodes.find(
+      (node): node is KvBlock => node.kind === "block" && node.name.toLowerCase() === "mission",
+    );
+    if (!mission) throw new Error(`${path} has no mission block`);
+    const poster = mission.entries.find(
+      (node): node is KvBlock => node.kind === "block" && node.name.toLowerCase() === "poster",
+    );
+    if (!poster) {
+      return { path, found: false, image: null, widescreen: null, fullscreen: null, keys: {} };
+    }
+    const keys = Object.fromEntries(
+      poster.entries
+        .filter((entry): entry is KvPair => entry.kind === "pair")
+        .map((entry) => [entry.key, entry.value]),
+    );
+    const lower = Object.fromEntries(Object.entries(keys).map(([key, value]) => [key.toLowerCase(), value]));
+    return {
+      path,
+      found: true,
+      image: lower["posterimage"] ?? null,
+      widescreen: lower["posterimage_widescreen"] ?? null,
+      fullscreen: lower["fullscreen"] === undefined ? null : lower["fullscreen"] === "1",
+      keys,
+    };
+  },
+});
+
+export const posterTools = [writeMissionPosterTool, readMissionPosterTool];

@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.139-alpha - 2026-11-21
+
+- **The files the toolkit writes can be read back as data.** `read_addoninfo` exposes the
+  manifest fields and the AI credit; `read_localization` detects UTF-16LE/UTF-8 and returns
+  the token table and duplicates; `read_workshop_vdf` returns the build fields (with VDF
+  backslash escaping undone); `read_mission_poster` reads the poster block;
+  `read_detail_sprites` lists detail types, density and groups.
+- **Tool count: 214.** Tests: 171 files, 1594 passed, 33 skipped.
+
 ## 0.0.138-alpha - 2026-11-21
 
 - **The addon loop is now one folder plus one install.** `write_addon_scaffold` creates the

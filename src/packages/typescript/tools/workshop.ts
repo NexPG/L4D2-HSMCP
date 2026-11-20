@@ -3,12 +3,13 @@
  * `steamcmd +workshop_build_item` reads. Uploading still needs SteamCMD and the account; the
  * file, paths and metadata are what a project can prepare without touching Steam.
  */
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { parse } from "../../../formats/typescript/kv/parse.js";
 
 function vdf(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
@@ -125,4 +126,49 @@ export const writeWorkshopVdfTool = defineTool({
   },
 });
 
-export const workshopTools = [writeWorkshopVdfTool];
+export const readWorkshopVdfTool = defineTool({
+  name: "read_workshop_vdf",
+  description:
+    "Reads a `workshop_build_item.vdf`: appid, publishedfileid, contentfolder, previewfile, " +
+    "visibility, title, description and change note. Use it before handing the file to " +
+    "steamcmd or after editing it by hand.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Workshop VDF, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    found: z.boolean(),
+    keys: z.record(z.string()),
+    publishedFileId: z.string().nullable(),
+    contentFolder: z.string().nullable(),
+    previewFile: z.string().nullable(),
+    title: z.string().nullable(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    const nodes = parse(readFileSync(path, "utf8"));
+    const item = nodes.find(
+      (node) => node.kind === "block" && node.name.toLowerCase() === "workshopitem",
+    );
+    if (!item || item.kind !== "block") throw new Error(`${path} has no workshopitem block`);
+    const unescape = (value: string): string => value.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+    const keys = Object.fromEntries(
+      item.entries
+        .filter((entry) => entry.kind === "pair")
+        .map((entry) => [entry.key, unescape(entry.value)]),
+    );
+    return {
+      path,
+      found: true,
+      keys,
+      publishedFileId: keys.publishedfileid ?? null,
+      contentFolder: keys.contentfolder ?? null,
+      previewFile: keys.previewfile ?? null,
+      title: keys.title ?? null,
+    };
+  },
+});
+
+export const workshopTools = [writeWorkshopVdfTool, readWorkshopVdfTool];

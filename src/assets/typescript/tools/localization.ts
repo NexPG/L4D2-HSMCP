@@ -218,4 +218,59 @@ export const writeLocalizationTool = defineTool({
   },
 });
 
-export const localizationTools = [writeLocalizationTool];
+export const readLocalizationTool = defineTool({
+  name: "read_localization",
+  description:
+    "Reads a `lang`/`Tokens` file: detected encoding (UTF-16LE/BOM or UTF-8), language, " +
+    "every token and duplicate count. Use it after `write_localization` or on a stock " +
+    "`closecaption_english.txt` to see exactly what the engine will read.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Localization file, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    encoding: ENCODING,
+    language: z.string().nullable(),
+    tokens: z.record(z.string()),
+    tokenCount: z.number(),
+    duplicates: z.array(z.string()),
+    warnings: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    let raw = readFileSync(path);
+    let encoding: z.infer<typeof ENCODING> = "utf8";
+    if (raw.length >= 2 && raw[0] === 0xff && raw[1] === 0xfe) {
+      encoding = "utf16le";
+      raw = raw.subarray(2);
+    }
+    const text = raw.toString(encoding);
+    const nodes = parse(text);
+    const lang = findBlock(nodes, "lang");
+    if (!lang) throw new Error(`${path} has no lang block`);
+    const language = lang.entries.find(
+      (entry): entry is KvPair => entry.kind === "pair" && entry.key.toLowerCase() === "language",
+    )?.value ?? null;
+    const tokensBlock = findBlock(lang.entries, "Tokens");
+    if (!tokensBlock) throw new Error(`${path} has no Tokens block`);
+    const tokens: Record<string, string> = {};
+    const duplicates: string[] = [];
+    for (const pair of tokenPairs(tokensBlock)) {
+      if (Object.prototype.hasOwnProperty.call(tokens, pair.key)) duplicates.push(pair.key);
+      else tokens[pair.key] = pair.value;
+    }
+    return {
+      path,
+      encoding,
+      language,
+      tokens,
+      tokenCount: Object.keys(tokens).length,
+      duplicates,
+      warnings: duplicates.length ? ["duplicate token keys: the engine reads the first"] : [],
+    };
+  },
+});
+
+export const localizationTools = [writeLocalizationTool, readLocalizationTool];

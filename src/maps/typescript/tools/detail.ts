@@ -9,7 +9,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { parse } from "../../../formats/typescript/kv/parse.js";
-import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
+import type { KvBlock, KvPair } from "../../../formats/typescript/kv/parse.js";
 
 const blockOf = (nodes: ReturnType<typeof parse>, name: string): KvBlock | null =>
   (nodes.find(
@@ -131,4 +131,53 @@ export const writeDetailSpritesTool = defineTool({
   },
 });
 
-export const detailTools = [writeDetailSpritesTool];
+export const readDetailSpritesTool = defineTool({
+  name: "read_detail_sprites",
+  description:
+    "Reads a `detail.vbsp`: every detail type, its density, and the groups/models inside " +
+    "it (sprite or model, amount, alpha). Use it to check a hand edit or to find the type " +
+    "name worldspawn's `detailmaterial` should scatter.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("detail.vbsp path, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    types: z.array(
+      z.object({
+        name: z.string(),
+        density: z.string().nullable(),
+        groups: z.array(z.object({ name: z.string(), alpha: z.string().nullable(), models: z.number() })),
+      }),
+    ),
+    warnings: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    const nodes = parse(readFileSync(path, "utf8"));
+    const root = blockOf(nodes, "detail");
+    if (!root) throw new Error(`${path} has no detail block`);
+    const types = root.entries
+      .filter((node): node is KvBlock => node.kind === "block")
+      .map((type) => {
+        const density =
+          type.entries.find((entry): entry is KvPair => entry.kind === "pair" && entry.key.toLowerCase() === "density")
+            ?.value ?? null;
+        const groups = type.entries
+          .filter((node): node is KvBlock => node.kind === "block" && /^group/i.test(node.name))
+          .map((group) => ({
+            name: group.name,
+            alpha:
+              group.entries.find(
+                (entry): entry is KvPair => entry.kind === "pair" && entry.key.toLowerCase() === "alpha",
+              )?.value ?? null,
+            models: group.entries.filter((entry) => entry.kind === "block" && /^model/i.test(entry.name)).length,
+          }));
+        return { name: type.name, density, groups };
+      });
+    return { path, types, warnings: types.length === 0 ? ["no detail types"] : [] };
+  },
+});
+
+export const detailTools = [writeDetailSpritesTool, readDetailSpritesTool];

@@ -435,4 +435,54 @@ export const scaffoldAddonTool = defineTool({
   },
 });
 
-export const addonTools = [runVpkPackTool, writeAddonInfoTool, installAddonTool, scaffoldAddonTool];
+export const readAddonInfoTool = defineTool({
+  name: "read_addoninfo",
+  description:
+    "Reads an `addoninfo.txt`: title, author, version, tag, description, the " +
+    "`addonAICredit` line and every key it contains. Missing title or credit is reported, " +
+    "not hidden. Use it after a hand edit or before `validate_addon`.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("addoninfo.txt, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    title: z.string().nullable(),
+    author: z.string().nullable(),
+    version: z.string().nullable(),
+    tag: z.string().nullable(),
+    description: z.string().nullable(),
+    aiCredit: z.string().nullable(),
+    keys: z.record(z.string()),
+    warnings: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    const nodes = parse(readFileSync(path, "utf8"));
+    const info = nodes.find((node) => node.kind === "block" && node.name.toLowerCase() === "addoninfo");
+    if (!info || info.kind !== "block") throw new Error(`${path} has no addoninfo block`);
+    const keys = Object.fromEntries(
+      info.entries
+        .filter((entry) => entry.kind === "pair")
+        .map((entry) => [entry.key, entry.value]),
+    );
+    const lower = Object.fromEntries(Object.entries(keys).map(([key, value]) => [key.toLowerCase(), value]));
+    const warnings: string[] = [];
+    if (!lower["addontitle"]) warnings.push("no addonTitle");
+    if (!lower["addonaicredit"]) warnings.push("no addonAICredit");
+    return {
+      path,
+      title: lower["addontitle"] ?? null,
+      author: lower["addonauthor"] ?? null,
+      version: lower["addonversion"] ?? null,
+      tag: lower["addontag"] ?? null,
+      description: lower["addondescription"] ?? null,
+      aiCredit: lower["addonaicredit"] ?? null,
+      keys,
+      warnings,
+    };
+  },
+});
+
+export const addonTools = [runVpkPackTool, writeAddonInfoTool, readAddonInfoTool, installAddonTool, scaffoldAddonTool];

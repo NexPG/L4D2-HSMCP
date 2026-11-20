@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **209 tools**.
+Last checked against the tool list on 21/11/2026: **214 tools**.
 
 ## The file itself
 
@@ -280,6 +280,11 @@ map and looking, or by not happening at all.
 | `write_mission_poster` | the poster block is hand-written in the mission file |
 | `write_detail_sprites` | detail.vbsp is hand-edited KeyValues |
 | `check_particle` | no editor validates PCF children or renderer materials |
+| `read_addoninfo` | nothing: the manifest is text, this reads it as data |
+| `read_localization` | nothing: the tokens and encoding are invisible in the editor |
+| `read_workshop_vdf` | nothing: the build file is a text file |
+| `read_mission_poster` | nothing: the poster block is mission KeyValues |
+| `read_detail_sprites` | nothing: detail.vbsp is read by vbsp, not by an editor |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |
