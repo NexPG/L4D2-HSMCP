@@ -252,11 +252,19 @@ export function checkNut(source: string, path = "<script>"): NutReport {
   const functions = [...new Set([...code.matchAll(/\bfunction\s+([A-Za-z_]\w*)\s*\(/g)].map((m) => m[1]!))];
   const eventHooks = functions.filter((name) => name.startsWith("OnGameEvent_"));
   if (eventHooks.length > 0) {
+    // A hook is registered by whatever loads the file. The four addon-script names are
+    // global and run without an entity; everything else needs a logic_script, a mode
+    // script, or an include from one of those. `script_execute` alone only runs top-level
+    // code and registers nothing.
+    const globalAddon =
+      /(^|[\\/])(mapspawn|response_testbed|scriptedmode|director_base)_addon\.nut$/i.test(path);
     diagnostics.push(
       diag(
         "info",
         "nut-event-hook-needs-entity",
-        `${eventHooks.join(", ")} only fires when a logic_script entity (or a mode script) loads this file; script_execute runs the code but registers no hooks`,
+        globalAddon
+          ? `${eventHooks.join(", ")} is in a global addon script; the engine loads it once per chapter or round and registers the hooks`
+          : `${eventHooks.join(", ")} fires only when a loader runs this file: a logic_script entity, a mode script, or a mapspawn/mode addon script. script_execute runs the code but registers no hooks`,
       ),
     );
   }

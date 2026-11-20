@@ -1,0 +1,133 @@
+# Pure VScript addons
+
+An addon can change behaviour on every map without editing a single `.vmf`. This page is the
+addon-level half of `vscript.md`: which script the engine loads on its own, how to run code on
+a timer, and the mistakes that look correct in a file but never execute.
+
+## Layout
+
+```
+hsmcp-bot-meds/
+  addoninfo.txt
+  scripts/vscripts/mapspawn_addon.nut
+  scripts/vscripts/hsmcp_bot_meds.nut
+  scripts/vscripts/hsmcp_bot_meds_think.nut
+```
+
+Pack the folder root-relative with `run_vpk_pack` (`install: true` copies it into the game's
+`left4dead2/addons`), then keep only one form: either the `.vpk` or the unpacked folder in
+`addons/`.
+
+## What loads by itself
+
+`mapspawn_addon.nut` is the entry point for a pure addon. The engine runs it **once per
+chapter, before entities exist**, in the root table. Several addons can ship the same name and
+all run, unlike `mapspawn.nut`, which conflicts.
+
+Because it runs before entities, it is the right place to define state and spawn a runner, not
+to look for players or props. Three ways to get recurring code:
+
+| Approach | When it runs | Notes |
+|---|---|---|
+| a `logic_script` entity with `vscripts` and `thinkfunction` | every 0.1 s | The script runs in the entity's own scope; call root helpers with `::name()` |
+| a `logic_timer` entity + `ConnectOutput("OnTimer", "Fn")` | at its `RefireTime` | The callback is looked up in the timer's scope, then the root |
+| `AddThinkToEnt(entity, "Fn")` | every think | Useful when a timer entity is not wanted |
+
+The runner is spawned from `mapspawn_addon.nut`:
+
+```squirrel
+SpawnEntityFromTable("logic_script", {
+    targetname = "hsmcp_runner",
+    vscripts = "hsmcp_think",
+    thinkfunction = "HSMCP_Think",
+    origin = Vector(0, 0, 0)
+});
+```
+
+`hsmcp_think.nut` then defines `HSMCP_Think()` and calls the root function with `::`.
+
+## Event hooks need a loader
+
+`OnGameEvent_<name>(params)` is called only when the file containing it is loaded by a
+**loader**: a `logic_script` entity, a mode script, or one of the four `*_addon.nut` global
+scripts. `script_execute` runs a file's top-level code but registers no hooks, and an
+`IncludeScript` from `mapspawn_addon` does **not** register hooks either.
+
+This is the failure that looks like a working addon: the poller runs, items move, but
+`player_death` and `pills_used` never fire. Put event hooks in the file the `logic_script`
+loads, and call the root helpers from there:
+
+```squirrel
+function OnGameEvent_player_death(params)
+{
+    if (!("userid" in params))
+        return;
+    local player = GetPlayerFromUserID(params.userid);
+    if (player != null && player.IsSurvivor())
+        ::HSMCP_DropStored(player);
+}
+```
+
+`read_vscript` reports the hook and its loader; a `mapspawn_addon.nut` is recognised as a
+global script, an included file is not.
+
+## Bot detection
+
+`CTerrorPlayer.GetNetworkIDString()` returns `"BOT"` for a survivor bot on this install. A
+local human has a Steam ID. Check `IsSurvivor()` first, because infected bots share the
+`player` class.
+
+## Item control
+
+The useful calls for healing items:
+
+| Call | Effect |
+|---|---|
+| `player.GetActiveWeapon()` | the item in hand, the moment a bot decides to use it |
+| `player.DropItem("weapon_pain_pills")` | drops the carried item as a world entity |
+| `player.GiveItem("weapon_adrenaline")` | gives the item back |
+| `player.GetHealth() + player.GetHealthBuffer()` | permanent + temporary health |
+| `player.SetHealthBuffer(n)` | clears or restores temporary health |
+| `Entities.FindByClassname(prev, "weapon_pain_pills")` | iterate carried and world items |
+
+`DropItem` creates a world entity; to keep a hidden inventory, record the class and kill the
+new world entity immediately. Find it by class and null owner near the player, excluding the
+world items that were already there.
+
+The classes are `weapon_pain_pills`, `weapon_adrenaline` and `weapon_first_aid_kit`. A
+one-slot hidden inventory is per bot: a second item of the same category is dropped for a
+human, not stacked. Death, round end and chapter transition need explicit handling, because a
+stored item is not in the bot's inventory and would vanish.
+
+## Testing without a map edit
+
+`run_map_test` can install probe scripts for one run:
+
+```
+run_map_test({
+  map: "c1m1_hotel",
+  scriptsDir: "<probe>/scripts/vscripts",
+  schedule: [
+    { atSeconds: 15, command: "script_execute my_probe_high" },
+    { atSeconds: 30, command: "script_execute my_probe_low" },
+    { atSeconds: 45, command: "script_execute my_probe_done" }
+  ],
+  waitFor: "MYTAG done"
+})
+```
+
+A file loaded with `script_execute` can call top-level code; give each probe step its own small
+`.nut` that includes a shared helper and calls it. `script` (the console command) is not a
+reliable substitute inside a scheduled `point_servercommand`; `script_execute` is.
+
+Put a `printl("[MYTAG] ...")` in the addon and read `left4dead2/console.log`. A mapspawn print
+can happen before `-condebug` starts writing, so use a banner from the first tick or a probe
+marker, not the mapspawn line, as the wait marker.
+
+## The verified addon
+
+`addons/hsmcp-bot-meds` is the working example: bots keep pills/adrenaline in a one-slot
+hidden inventory while total health is at least 20, and get the item back below 20. Medkits
+are left alone (the code has a disabled switch for them). Verified on `c1m1_hotel`:
+stored at 30 HP, returned at 10 HP, temporary health counted, a full slot drops the extra,
+and death drops the stored item once.

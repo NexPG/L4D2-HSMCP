@@ -50,6 +50,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/nav/attributes-and-flow.md` | marking CHECKPOINT/FINALE, or bots ignore the map |
 | `references/nav/editing.md` | the console command set for repairing a generated mesh |
 | `references/scripting/vscript.md` | shipping a `.nut` in the add-on |
+| `references/scripting/addons.md` | pure VScript addons: `mapspawn_addon`, a think runner, event-hook loaders, item control and probe testing |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |

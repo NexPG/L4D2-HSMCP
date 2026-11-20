@@ -5,6 +5,33 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.131-alpha - 2026-11-21
+
+- **A working VScript addon: bots keep pills and adrenaline until they need them.**
+  `addons/hsmcp-bot-meds` is a pure addon (no SourceMod): a `mapspawn_addon` starts a
+  `logic_script` think function, and a bot that brings pain pills or adrenaline into its hands
+  while total health (permanent plus temporary) is at least 20 has the item moved into a
+  one-slot hidden inventory. Below 20 the item is returned so the bot can use it. A second
+  item while the slot is full is put back into the world for a human; death, round end and
+  chapter transition are handled. Verified on `c1m1_hotel`: stored at 30 HP, returned at
+  10 HP, 15+10 temporary health counted as 25, full-slot extra dropped, death drop once. The
+  ready VPK is installed in `left4dead2/addons/hsmcp_bot_meds.vpk`.
+- **Medkits are deliberately out of scope by default.** Bots still use them exactly as
+  vanilla; the code has a disabled `HSMCP_BOT_MEDS_MEDKITS` switch with the same rule. The
+  first observation of "they use medkits in the safe room" was vanilla behaviour, not a
+  failure of the pill rule.
+- **The addon exposed a real VScript-checker mistake.** `read_vscript` said event hooks need
+  a `logic_script`, even in `mapspawn_addon.nut`, which the engine loads as a global script.
+  The message now distinguishes the four global addon scripts from files that need a loader,
+  and the addon page records the harder half: an `IncludeScript` from `mapspawn_addon` does
+  **not** register `OnGameEvent_*` hooks; they must live in the file the `logic_script` loads.
+- **New skill page `references/scripting/addons.md`** covers pure VScript addons, the think
+  runner, hook loaders, item control and probe testing with `run_map_test` and `scriptsDir`.
+- **`run_vpk_pack` can install what it packs.** `install: true` copies the finished archive
+  into the game's `left4dead2/addons`; the entry check now compares names case-insensitively,
+  because vpk.exe lowercases `README.md` to `readme.md` and the old check called it missing.
+- **Tool count: 184.** Tests: 164 files, 1553 passed, 33 skipped.
+
 ## 0.0.130-alpha - 2026-11-21
 
 - **Campaign wiring is built, not just checked.** Six tools close the gap between a

@@ -1,0 +1,9 @@
+"addoninfo"
+{
+	"addonSteamAppID"	"550"
+	"addonTitle"	"HSMCP Bot Meds"
+	"addonAuthor"	"NexPG"
+	"addonVersion"	"1"
+	"addonTag"	"misc"
+	"addonDesc"	"Bots keep pain pills and adrenaline in a one-slot hidden inventory until their total health is below 20. Medkits are left alone."
+}

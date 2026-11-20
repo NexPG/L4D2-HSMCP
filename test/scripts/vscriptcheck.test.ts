@@ -111,4 +111,14 @@ describe("checkNut", () => {
     expect(entry?.message).toContain("OnGameEvent_player_spawn");
     expect(report.ok).toBe(true);
   });
+
+  it("knows mapspawn_addon is a global script, not an orphaned include", () => {
+    const report = checkNut(
+      'printl( "hooks" )\n\nfunction OnGameEvent_player_spawn( params )\n{\n}\n',
+      "scripts/vscripts/mapspawn_addon.nut",
+    );
+    const entry = report.diagnostics.find((item) => item.rule === "nut-event-hook-needs-entity");
+    expect(entry?.message).toContain("global addon script");
+    expect(entry?.message).not.toContain("logic_script entity");
+  });
 });

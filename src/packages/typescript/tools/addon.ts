@@ -61,7 +61,8 @@ export const runVpkPackTool = defineTool({
     "`materials/vgui/maps/` end up where the game expects them. `addoninfo` writes the " +
     "manifest first when the directory has none. Afterwards the archive is read back " +
     "through the sidecar and its entry list is compared with the staging tree: a pack " +
-    "that silently dropped a file is the failure this check exists for.",
+    "that silently dropped a file is the failure this check exists for. `install: true` " +
+    "copies the finished archive into the game's left4dead2/addons directory.",
   realm: "local",
   guarded: true,
   inputSchema: {
@@ -71,6 +72,10 @@ export const runVpkPackTool = defineTool({
       .optional()
       .describe("Destination .vpk. Defaults to <parent>/<directory name>.vpk."),
     addoninfo: ADDON_INFO.optional().describe("Write addoninfo.txt into the staging directory first."),
+    install: z
+      .boolean()
+      .default(false)
+      .describe("Copy the finished .vpk into the game's left4dead2/addons directory."),
     overwrite: z.boolean().default(false),
     confirm: z.boolean().default(false),
   },
@@ -81,6 +86,7 @@ export const runVpkPackTool = defineTool({
     entryCount: z.number(),
     staging: z.string(),
     addoninfoWritten: z.boolean(),
+    installedPath: z.string().nullable(),
     verified: z.object({
       compared: z.number(),
       missingFromVpk: z.array(z.string()),
@@ -166,9 +172,24 @@ export const runVpkPackTool = defineTool({
       }
     };
     walk(dir);
-    const have = new Set(entries);
-    const missingFromVpk = [...expected].filter((p) => !have.has(p));
-    const extraInVpk = entries.filter((p) => !expected.has(p));
+    // Windows and VPK paths are case-insensitive in practice: vpk.exe lowercases the
+    // archive entries, so a README.md on disk is readme.md inside. Compare without case
+    // rather than reporting a file that is present as missing.
+    const have = new Set(entries.map((p) => p.toLowerCase()));
+    const expectedLower = new Set([...expected].map((p) => p.toLowerCase()));
+    const missingFromVpk = [...expected].filter((p) => !have.has(p.toLowerCase()));
+    const extraInVpk = entries.filter((p) => !expectedLower.has(p.toLowerCase()));
+
+    let installedPath: string | null = null;
+    if (args.install) {
+      if (!ctx.config.gameDir) {
+        throw new Error("the game directory is not resolved; run health first");
+      }
+      const addonsDir = join(ctx.config.gameDir, "addons");
+      mkdirSync(addonsDir, { recursive: true });
+      installedPath = join(addonsDir, basename(out));
+      copyFileSync(out, installedPath);
+    }
 
     return {
       vpk: out,
@@ -177,6 +198,7 @@ export const runVpkPackTool = defineTool({
       entryCount: entries.length,
       staging: dir,
       addoninfoWritten,
+      installedPath,
       verified: { compared: expected.size, missingFromVpk, extraInVpk },
     };
   },
