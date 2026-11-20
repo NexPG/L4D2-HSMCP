@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **198 tools**.
+Last checked against the tool list on 21/11/2026: **199 tools**.
 
 ## The file itself
 
@@ -269,6 +269,7 @@ map and looking, or by not happening at all.
 | `check_sound` | no editor says whether a WAV is L4D2's shape or a soundscript wave is missing |
 | `write_brush_entity` | any brush entity by class, volume and outputs; no editor enum limits it |
 | `write_point_entity` | any point entity by class, origin and outputs |
+| `check_model` | nothing: no editor validates a QC/MDL before or after the compiler |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |

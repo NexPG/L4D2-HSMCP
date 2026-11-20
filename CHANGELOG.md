@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.136-alpha - 2026-11-21
+
+- **QC gained the blocks a real model needs.** `write_qc` writes `$bodygroup` alternatives,
+  `$lod`/`$shadowlod` with `replacemodel`, `$hboxset`/`$hbox` sets, and
+  `$bbox`/`$cbox`/`$illumposition`/`$eyeposition`. A bodygroup option that is both studio and
+  blank, or a non-positive LOD distance, is refused rather than written.
+- **`check_model` validates before and after the compiler.** A QC is parsed through its
+  include tree and checked for `$modelname`, geometry (`$body`/`$bodygroup`/`$model`),
+  `$cdmaterials`, diagnostics, bodygroups, LODs, hitbox sets and attachments; an MDL is read
+  through `read_model_info` for sequences, skins, hitboxes and bounds. It does not compile;
+  `run_studiomdl` is the compiler.
+- **Tool count: 199.** Tests: 168 files, 1584 passed, 33 skipped.
+
 ## 0.0.135-alpha - 2026-11-21
 
 - **The entity layer has universal primitives, not a closed menu.** `write_brush_entity`

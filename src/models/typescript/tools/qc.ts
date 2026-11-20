@@ -196,6 +196,48 @@ export const writeQcTool = defineTool({
     attachments: z
       .array(z.object({ name: z.string(), bone: z.string(), position: POSITION.optional() }))
       .optional(),
+    bodygroups: z
+      .array(
+        z.object({
+          name: z.string(),
+          options: z
+            .array(z.object({ studio: z.string().optional(), blank: z.number().int().min(0).optional() }))
+            .min(1),
+        }),
+      )
+      .optional()
+      .describe("`$bodygroup`: named alternatives, each a studio SMD or a blank index."),
+    lods: z
+      .array(
+        z.object({
+          distance: z.number().positive(),
+          source: z.string(),
+          replace: z.string(),
+          shadow: z.boolean().optional(),
+        }),
+      )
+      .optional()
+      .describe("`$lod`/`$shadowlod`: a distance and the high/low model replacement."),
+    hitboxSets: z
+      .array(
+        z.object({
+          name: z.string(),
+          boxes: z.array(
+            z.object({
+              group: z.number().int().min(0),
+              bone: z.string(),
+              mins: POSITION,
+              maxs: POSITION,
+            }),
+          ),
+        }),
+      )
+      .optional()
+      .describe("`$hboxset` plus its `$hbox` boxes."),
+    bbox: z.object({ mins: POSITION, maxs: POSITION }).optional(),
+    cbox: z.object({ mins: POSITION, maxs: POSITION }).optional(),
+    illumposition: POSITION.optional(),
+    eyeposition: POSITION.optional(),
     extra: z.array(z.string()).optional().describe("Raw QC lines appended last."),
     overwrite: z.boolean().default(false),
     confirm: CONFIRM,
@@ -224,6 +266,13 @@ export const writeQcTool = defineTool({
       staticprop: args.staticprop,
       ...(args.sequences === undefined ? {} : { sequences: args.sequences }),
       ...(args.attachments === undefined ? {} : { attachments: args.attachments }),
+      ...(args.bodygroups === undefined ? {} : { bodygroups: args.bodygroups }),
+      ...(args.lods === undefined ? {} : { lods: args.lods }),
+      ...(args.hitboxSets === undefined ? {} : { hitboxSets: args.hitboxSets }),
+      ...(args.bbox === undefined ? {} : { bbox: args.bbox }),
+      ...(args.cbox === undefined ? {} : { cbox: args.cbox }),
+      ...(args.illumposition === undefined ? {} : { illumposition: args.illumposition }),
+      ...(args.eyeposition === undefined ? {} : { eyeposition: args.eyeposition }),
       ...(args.extra === undefined ? {} : { extra: args.extra }),
     });
 

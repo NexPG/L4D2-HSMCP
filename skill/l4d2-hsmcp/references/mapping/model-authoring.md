@@ -27,6 +27,10 @@ $collisionmodel "myprop_phys.smd" { $mass 10 $concave }
 - `$collisionmodel` is the physics hull. A `prop_static` needs the `.phy` that comes from
   it; without one the prop is non-solid in game.
 - `$staticprop` is for a static prop; `$mostlyopaque` for cutout transparency.
+- `write_qc` also writes `$bodygroup` alternatives, `$lod`/`$shadowlod` replacement blocks,
+  `$hboxset`/`$hbox` sets, and `$bbox`/`$cbox`/`$illumposition`/`$eyeposition`.
+  `check_model` reads a QC or a compiled MDL and reports the geometry, bodygroups, LODs,
+  hitbox sets, sequences and missing materials before the compiler is trusted.
 
 ## A simple prop without a DCC
 

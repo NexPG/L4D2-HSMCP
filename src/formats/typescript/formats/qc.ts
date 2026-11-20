@@ -1181,6 +1181,22 @@ export interface QcSpec {
     block?: string[];
   }>;
   attachments?: Array<{ name: string; bone: string; position?: [number, number, number] }>;
+  /** `$bodygroup`: named alternatives, each a studio SMD or a blank index. */
+  bodygroups?: Array<{
+    name: string;
+    options: Array<{ studio?: string; blank?: number }>;
+  }>;
+  /** `$lod`: a distance and the high/low replacement. */
+  lods?: Array<{ distance: number; source: string; replace: string; shadow?: boolean }>;
+  /** `$hboxset` plus its `$hbox` boxes. */
+  hitboxSets?: Array<{
+    name: string;
+    boxes: Array<{ group: number; bone: string; mins: [number, number, number]; maxs: [number, number, number] }>;
+  }>;
+  bbox?: { mins: [number, number, number]; maxs: [number, number, number] };
+  cbox?: { mins: [number, number, number]; maxs: [number, number, number] };
+  illumposition?: [number, number, number];
+  eyeposition?: [number, number, number];
   /**
    * `$collisionmodel`: the physics SMD, and the block studiomdl reads it with. A model
    * without one has no `.phy`; a `prop_static` from it is not solid.
@@ -1248,6 +1264,45 @@ export function buildQc(spec: QcSpec): string {
         `position ${position.join(" ")}`,
     );
   }
+
+  for (const group of spec.bodygroups ?? []) {
+    lines.push(`$bodygroup ${quote(group.name)}`);
+    lines.push("{");
+    for (const option of group.options) {
+      if (option.studio !== undefined && option.blank !== undefined) {
+        throw new Error(`$bodygroup ${group.name}: an option is studio or blank, not both`);
+      }
+      if (option.studio === undefined && option.blank === undefined) {
+        throw new Error(`$bodygroup ${group.name}: an option needs studio or blank`);
+      }
+      lines.push(option.studio !== undefined ? `\tstudio ${quote(option.studio)}` : `\tblank ${option.blank}`);
+    }
+    lines.push("}");
+  }
+
+  for (const lod of spec.lods ?? []) {
+    if (!Number.isFinite(lod.distance) || lod.distance <= 0) {
+      throw new Error(`$lod distance must be positive, got ${lod.distance}`);
+    }
+    lines.push(`$${lod.shadow ? "shadowlod" : "lod"} ${lod.distance}`);
+    lines.push("{");
+    lines.push(`\treplacemodel ${quote(lod.source)} ${quote(lod.replace)}`);
+    lines.push("}");
+  }
+
+  for (const set of spec.hitboxSets ?? []) {
+    lines.push(`$hboxset ${quote(set.name)}`);
+    for (const box of set.boxes) {
+      lines.push(
+        `$hbox ${box.group} ${quote(box.bone)} ${[...box.mins, ...box.maxs].join(" ")}`,
+      );
+    }
+  }
+
+  if (spec.bbox) lines.push(`$bbox ${[...spec.bbox.mins, ...spec.bbox.maxs].join(" ")}`);
+  if (spec.cbox) lines.push(`$cbox ${[...spec.cbox.mins, ...spec.cbox.maxs].join(" ")}`);
+  if (spec.illumposition) lines.push(`$illumposition ${spec.illumposition.join(" ")}`);
+  if (spec.eyeposition) lines.push(`$eyeposition ${spec.eyeposition.join(" ")}`);
 
   for (const sequence of spec.sequences ?? []) {
     const args = [quote(sequence.name), quote(sequence.smd)];
