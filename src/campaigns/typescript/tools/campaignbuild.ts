@@ -75,25 +75,41 @@ async function addBrushEntity(
   const [id = null] = await addEntities(path, [keyvalues], ctx);
   if (id === null) throw new Error("the brush entity was not created");
   verifyEntities(path, [id], [keyvalues["classname"]!]);
-  const written = (await writeVmfSolidTool.handler(
-    {
-      path,
-      entityId: id,
-      solids: [
-        {
-          shape: "box",
-          mins: [...bounds.mins],
-          maxs: [...bounds.maxs],
-        },
-      ],
-      material,
-      backup: false,
-      dryRun: false,
-      confirm: true,
-    } as never,
-    ctx as never,
-  )) as { solidIds: number[] };
-  return { id, solidIds: written.solidIds };
+  try {
+    const written = (await writeVmfSolidTool.handler(
+      {
+        path,
+        entityId: id,
+        solids: [
+          {
+            shape: "box",
+            mins: [...bounds.mins],
+            maxs: [...bounds.maxs],
+          },
+        ],
+        material,
+        backup: false,
+        dryRun: false,
+        confirm: true,
+      } as never,
+      ctx as never,
+    )) as { solidIds: number[] };
+    return { id, solidIds: written.solidIds };
+  } catch (error) {
+    // A brush entity with no solids is worse than no entity: it compiles to nothing and
+    // reads as done. Put the file back before reporting the geometry failure.
+    await editVmf.handler(
+      {
+        path,
+        ops: [{ op: "remove" as const, match: { id } }],
+        backup: false,
+        dryRun: false,
+        confirm: true,
+      } as never,
+      ctx as never,
+    );
+    throw error;
+  }
 }
 
 async function fgdWarnings(
@@ -901,7 +917,14 @@ export const checkCampaignWiringTool = defineTool({
     ),
   },
   handler: (args, ctx) => {
-    const paths = args.maps.map((map) => resolveInput(map, ctx.config));
+    const paths = args.maps.map((map) => {
+      const path = resolveInput(map, ctx.config);
+      const extension = extname(path).toLowerCase();
+      if (extension !== ".vmf" && extension !== ".bsp") {
+        throw new Error(`${path} is neither a .vmf nor a .bsp`);
+      }
+      return path;
+    });
     const names =
       args.names ??
       paths.map((path) => basename(path, extname(path)));
