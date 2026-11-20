@@ -11,6 +11,7 @@ import { buildTools } from "./maps/typescript/tools/build.js";
 import { captureTools } from "./hammer/typescript/tools/capture.js";
 import { campaignTools } from "./campaigns/typescript/tools/campaign.js";
 import { campaignBuildTools } from "./campaigns/typescript/tools/campaignbuild.js";
+import { gameplayTools } from "./campaigns/typescript/tools/gameplay.js";
 import { checkModeTools } from "./campaigns/typescript/tools/modes.js";
 import { addonTools } from "./packages/typescript/tools/addon.js";
 import { addonCheckTools } from "./packages/typescript/tools/addoncheck.js";
@@ -121,6 +122,7 @@ export const allTools: AnyToolDef[] = [
   ...gameTools,
   ...campaignTools,
   ...campaignBuildTools,
+  ...gameplayTools,
   ...checkModeTools,
   ...gateTools,
   ...addonTools,

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **214 tools**.
+Last checked against the tool list on 21/11/2026: **219 tools**.
 
 ## The file itself
 
@@ -285,6 +285,11 @@ map and looking, or by not happening at all.
 | `read_workshop_vdf` | nothing: the build file is a text file |
 | `read_mission_poster` | nothing: the poster block is mission KeyValues |
 | `read_detail_sprites` | nothing: detail.vbsp is read by vbsp, not by an editor |
+| `write_item_spawns` | the item/weapon spawner tool with class, count and skin |
+| `write_saferoom_stock` | a stock row as item spawners |
+| `write_intro_camera` | a point_viewcontrol plus the logic_auto that enables it |
+| `write_rescue_closet` | an info_survivor_rescue plus ordered positions |
+| `write_zombie_border` | the infected border marker |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |

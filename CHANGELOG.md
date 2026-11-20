@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.140-alpha - 2026-11-21
+
+- **Gameplay wiring has its missing entities.** `write_item_spawns` places the L4D2
+  `weapon_*_spawn` classes, with count/skin and a classname override for a spawner the enum
+  does not list. `write_saferoom_stock` lays a medkit/pills/ammo/pistol row as item spawners.
+  `write_intro_camera` writes a `point_viewcontrol` and a `logic_auto` that enables it
+  OnMapSpawn, with an optional `logic_timer` disable. `write_rescue_closet` writes the rescue
+  point and ordered survivor positions; `write_zombie_border` marks where infected spawning
+  stops. Each is a shortcut over the point-entity primitive.
+- **Tool count: 219.** Tests: 172 files, 1599 passed, 33 skipped.
+
 ## 0.0.139-alpha - 2026-11-21
 
 - **The files the toolkit writes can be read back as data.** `read_addoninfo` exposes the

@@ -110,6 +110,13 @@ write_finale_setup(path, type: "scavenge", origin: [...])
 - The builder does not write nav. Run `run_nav_generate`, then mark the finale and escape
   areas FINALE with `func_nav_attribute_region` (or the nav tools), then `check_finale`.
 
+### `write_item_spawns` and `write_saferoom_stock`
+`write_item_spawns` places L4D2 `weapon_*_spawn` classes at points, with `count` and `skin`;
+`write_saferoom_stock` is a 48-unit row of medkit/pills/ammo/pistol shortcuts. A spawner
+is a candidate: `info_map_parameters` density decides whether it becomes an item.
+`write_zombie_border` marks where infected spawning stops; `write_rescue_closet` writes
+the rescue point and ordered survivor positions. Nav still has to mark the rescue area.
+
 ### `write_map_parameters`
 
 ```
