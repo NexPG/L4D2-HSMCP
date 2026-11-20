@@ -22,147 +22,29 @@ actually works.
 
 ## What it is
 
-`L4D2-HSMCP` is an MCP server that gives an AI assistant the same control over Left 4 Dead 2
-content that a mapper has in Hammer — plus the checks Hammer never had. The agent reads and
-writes `.vmf` and `.bsp` files, edits geometry and entities, validates against the game's own
-FGD, compiles, generates nav, writes mission files and packs addons.
+`L4D2-HSMCP` is a **skill and an MCP server for AI agents**: it gives an agent working hands in
+Left 4 Dead 2 modding. The server provides the operations -- reading and writing the game's
+files, building and checking content, compiling and packaging it -- and the companion skill
+provides the knowledge of how that content has to fit together.
 
-A companion **skill** supplies the L4D2 knowledge: safe-room rules, chapter transitions,
-finale stages, nav attributes, asset conventions and troubleshooting. The server provides
-the operations; the skill provides the judgement.
-
-It is designed for agents but useful to people: every operation is a checked tool with a
-clear description, and anything that writes asks for confirmation.
-
-## What you can do
-
-- **Read and inspect** maps without loading a gigabyte into memory: BSP headers, entities,
-  geometry, nav, lighting, pakfile and dependencies.
-- **Build and edit** brushes, entities, I/O, displacements, overlays, instances, weather,
-  fog, 3D-skybox cameras, visgroups, hints and portals.
-- **Validate before compiling**: sealed-map checks, solid validation, FGD lint, clearance,
-  sightlines, room detection and dimensioned plans.
-- **Compile** with the stock L4D2 toolchain or Hammer++/Tools++, and read the log as
-  findings rather than noise.
-- **Build campaigns**: mission files, numbered chapters, safe rooms, chapter transitions,
-  custom finales, nav generation and addon VPKs.
-- **Script** VScripts and attach them with `logic_script`.
-- **Work with game content**: textures, models and their real dimensions, read/write particle
-  systems, sounds,
-  VTF conversion and cubemap utilities.
-- **Test** a map by launching it and watching the console for a real marker.
-- **Build cubemaps** with the engine's own `-buildcubemaps` launch mode, and pack them into
-  a copy of the map.
-- **Compile models** from QC/SMD sources with the game's `studiomdl`, including a
-  `.gltf`/`.glb` converted by `gltf_to_smd` (geometry, skeleton, weights, one SMD per
-  animation, and an optional box or convex-hull collision model for a solid prop), shape keys converted to
-  flexes by `gltf_to_dmx`, an `.fbx` converted by `fbx_to_smd` and its shape keys by `fbx_to_dmx` (binary 7.x or ASCII, with the
-  bind pose from the skin clusters), and a Hammer brush converted by `brush_to_model`
-  (Propper++ without the plugin); open a model in HLMV or render it in the engine with
-  `preview_model` when HLMV's 3D canvas stays blank, and capture the window as an image the
-  agent can see.
-- **Edit the map in the open Hammer++** through its own shell channel: create, change,
-  delete and rotate entities, then Save/Undo/Redo/Run Map with the editor's menu commands.
-- **Capture any GUI window** — HLMV, Hammer++ or the running game — as a real image block,
-  and ask `run_map_test` for a screenshot of the running map.
-- **Build a 3D skybox copy** at 1/16 scale with `write_skybox_copy`.
-- **Paste a saved prefab** with `insert_prefab`, optionally moved and yaw-rotated about a pivot.
-- **Skew a texture** by writing a face's U/V vectors directly with `set_face_uv`.
-- **Merge brushes**, **drop or raise objects to a surface**, and **extract a selection into an instance**.
-- **Export** a `.vmf` to Valve's `.map` format.
+It is built for agents and usable by people: every operation is a described, checked tool, and
+anything that writes asks for confirmation.
 
 ## Requirements
 
-### Required
-
 | Component | Why |
 |---|---|
-| **Windows 10/11 x64** | the game's compilers, `vpk.exe` and the toolkit are Windows binaries |
-| **Left 4 Dead 2** (Steam app `550`) | carries the compilers, `vpk.exe`, the FGD and the game content the tools read |
-| **Left 4 Dead 2 Authoring Tools** (Steam app `563`) | Hammer, HLMV, Faceposer, Workshop manager and example content |
-| **Node.js 20+** | the MCP server (tested on Node 24) |
-| **pnpm 10+** | install and build |
-| **Python 3.10+** | the `srctools` sidecar, used for FGD, VPK and some VMF parsing |
-| **An MCP-capable agent** | OpenCode, Claude Code or any MCP client with tool use |
-| **Git** and ~20 GB free disk | clone, build and the game install |
+| **Left 4 Dead 2 Authoring Tools** (Steam app `563`) | the compilers (`vbsp`, `vvis`, `vrad`, `studiomdl`), Hammer and HLMV, and the FGD the tools validate against |
+| **Hammer++ for L4D2** | the editor this toolkit is modelled on; the live-editor channel (`hammer_live_edit`, `hammer_menu`, `open_in_hammer`) needs it |
+| **Tools++** | `vbsp++`/`vvis++`/`vrad++`/`bspzip++`; the compiler prefers this chain and falls back to the stock one, naming which ran |
+| **Node.js 20+** and **pnpm 10+** | build and run the MCP server (tested on Node 24) |
+| **Python 3.10+** | the `srctools` sidecar behind FGD, VPK, particles and parts of the VMF reader |
+| **VTFEdit++ / VTFCmd** | texture conversion and the cubemap/skybox utilities |
 
-### Recommended
-
-- [**Hammer++ for L4D2**](https://ficool2.github.io/HammerPlusPlus-Website/) — the editor
-  this toolkit is modelled on.
-- [**Tools++**](https://ficool2.github.io/HammerPlusPlus-Website/tools.html) — faster
-  `vbsp++`/`vvis++`/`vrad++`/`bspzip++`; the compiler prefers this chain and falls back to
-  stock, naming the chain that ran.
-- **VTFEdit++ / VTFCmd** — textures, cubemaps and skyboxes.
-- **Steam running and logged in** — needed for nav generation and in-game tests.
-
-## Quick start
-
-```powershell
-git clone https://github.com/NexPG/L4D2-HSMCP
-cd L4D2-HSMCP
-pnpm install
-pnpm build
-powershell -ExecutionPolicy Bypass -File src/core/python/setup.ps1
-node dist/index.js install
-```
-
-`install` registers the server with your MCP client and writes `.mcp.json` with local paths.
-Start or reload your agent, then ask it:
-
-```
-health
-```
-
-`health` reports the game profile it found, the compilers and FGD, the sidecar, the tool
-count and whether the build is stale. Missing pieces are named with their cost; it does not
-throw at you.
-
-If the game is not found automatically, copy
-[`config.example.json`](config.example.json) to `.hammer-mcp/config.json` and set the paths.
-
-## A typical campaign
-
-```
-campaign wish
-   → spec                         chapters, flow, mechanics, assets
-source .vmf
-   → lint and leak check          no compiler needed
-   → compile                      vbsp / vvis / vrad
-   → nav_generate                 the engine builds the .nav
-   → mission file                 chapters, modes, images
-   → addon VPK                    pack and deploy
-   → run_map_test                 prove the chapter or finale loads
-```
-
-The worked rules live in [`docs/campaign/overview.md`](docs/campaign/overview.md), and the
-agent skill turns them into a step-by-step workflow.
-
-## For agent users
-
-The repository's [`opencode.json`](opencode.json) points OpenCode at
-[`skill/l4d2-hsmcp/`](skill/l4d2-hsmcp/SKILL.md). Other MCP clients can copy that directory
-into their skills location. The skill is a short router: it loads only the campaign, nav,
-scripting, asset or troubleshooting page the current task needs.
-
-Tools that write to files or run local binaries are guarded: they require `confirm: true`,
-or an entry in `toolAllowlist` for an unattended run. The agent sees the same permission
-prompt a person would.
-
-## Documentation
-
-- [`docs/README.md`](docs/README.md) — the documentation index.
-- [`docs/campaign/overview.md`](docs/campaign/overview.md) — missions, safe rooms,
-  transitions, finales, nav and deployment.
-- [`skill/l4d2-hsmcp/SKILL.md`](skill/l4d2-hsmcp/SKILL.md) — the agent workflow and its
-  reference library.
-- [`CHANGELOG.md`](CHANGELOG.md) — what changed in each version.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how the project is built and reviewed.
-
-## Status
-
-The project is in **alpha** (`0.0.x`). It is under active development, not production-ready,
-and anything may change between releases. Use it, test it and expect rough edges.
+Tools++ and VTFEdit++ unlock what they name rather than gate the project: without Tools++ the
+compiler falls back to the stock chain and says so, and without VTFCmd texture conversion is
+simply unavailable. The Authoring Tools, Node.js, pnpm and Python are needed for the server to
+run at all.
 
 ## Credits
 
