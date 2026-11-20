@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **191 tools**.
+Last checked against the tool list on 21/11/2026: **196 tools**.
 
 ## The file itself
 
@@ -262,6 +262,11 @@ map and looking, or by not happening at all.
 | `write_trigger` | the trigger tool, with the volume, the class rules and outputs in one call |
 | `write_mover` | a brush mover as a volume with its origin, direction/speed or path target |
 | `write_logic` | a point logic entity and its connections, which the editor does not validate |
+| `write_addoninfo` | the manifest is hand-written; this writes it with the provenance line |
+| `write_loading_screen` | a poster/thumbnail needs a VTF and a VMT; this makes the pair |
+| `write_cubemap_grid` | Hammer places one cubemap at a time; this lays out a grid |
+| `check_vmt` | no editor validates a material's shader, base texture or compile flags |
+| `check_sound` | no editor says whether a WAV is L4D2's shape or a soundscript wave is missing |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |

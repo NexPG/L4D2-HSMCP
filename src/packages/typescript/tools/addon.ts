@@ -6,6 +6,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { run } from "../../../core/typescript/proc/run.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { parse } from "../../../formats/typescript/kv/parse.js";
 
 /** Quoting for the addon manifest; the grammar has no escapes. */
 function quote(text: string): string {
@@ -55,6 +56,7 @@ export function addonInfoText(info: AddonInfo, credit = true): string {
     lines.push(`\t"addonContent_Campaign"\t${quote("1")}`);
   }
   if (info.description) lines.push(`\t"addonDescription"\t${quote(info.description)}`);
+  if (credit) lines.push(`\t"${AI_CREDIT_KEY}"\t${quote(aiCredit())}`);
   lines.push("}");
   lines.push("");
   return lines.join("\n");
@@ -242,4 +244,63 @@ export const runVpkPackTool = defineTool({
   },
 });
 
-export const addonTools = [runVpkPackTool];
+export const writeAddonInfoTool = defineTool({
+  name: "write_addoninfo",
+  description:
+    "Writes an `addoninfo.txt` without packing an archive: appid 550, title, author, " +
+    "version, tag, tagline and description, plus the `addonAICredit` line with the toolkit " +
+    "version. Refuses an existing file unless `overwrite` is set, and parses the result back " +
+    "as KeyValues. Use it for a campaign or addon staging folder before `validate_addon` and " +
+    "`run_vpk_pack`. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z
+      .string()
+      .describe("addoninfo.txt path, or a staging directory to put addoninfo.txt in."),
+    ...ADDON_INFO.shape,
+    credit: z.boolean().default(true),
+    overwrite: z.boolean().default(false),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    written: z.boolean(),
+    bytes: z.number(),
+    aiCredit: z.string().nullable(),
+    title: z.string(),
+  },
+  handler: (args, ctx) => {
+    let path = resolveInput(args.path, ctx.config);
+    if (!path.toLowerCase().endsWith(".txt")) path = join(path, "addoninfo.txt");
+    if (existsSync(path) && args.overwrite !== true) {
+      throw new Error(`${path} already exists; pass overwrite: true to replace it`);
+    }
+    mkdirSync(dirname(path), { recursive: true });
+    const text = addonInfoText(
+      {
+        title: args.title,
+        ...(args.description === undefined ? {} : { description: args.description }),
+        ...(args.author === undefined ? {} : { author: args.author }),
+        ...(args.version === undefined ? {} : { version: args.version }),
+        ...(args.tag === undefined ? {} : { tag: args.tag }),
+        ...(args.tagline === undefined ? {} : { tagline: args.tagline }),
+      },
+      args.credit !== false,
+    );
+    const write = writeGuarded(path, text, ctx.config);
+    const parsed = parse(text);
+    const block = parsed.find((node) => node.kind === "block" && node.name === "addoninfo");
+    if (!block) throw new Error("the addoninfo did not parse back with its block");
+    return {
+      path,
+      written: write.written,
+      bytes: Buffer.byteLength(text, "utf8"),
+      aiCredit: args.credit === false ? null : aiCredit(),
+      title: args.title,
+    };
+  },
+});
+
+export const addonTools = [runVpkPackTool, writeAddonInfoTool];

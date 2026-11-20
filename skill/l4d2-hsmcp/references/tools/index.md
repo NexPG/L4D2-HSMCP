@@ -1,6 +1,6 @@
 # Tool catalogue
 
-191 tools. This page groups them by the job you are doing; each tool's own description is the
+196 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -32,6 +32,11 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |
 
+| `write_addoninfo` | write `addoninfo.txt` with the AI provenance line before packing |
+| `write_loading_screen` | PNG → VTF + `UnlitGeneric` VMT for a campaign poster or map thumbnail |
+| `write_cubemap_grid` | place `env_cubemap` samples on a regular grid inside a bounds box |
+| `check_vmt` | validate shader, base texture, compile flags and texture files |
+| `check_sound` | validate a WAV's format or a soundscript's waves |
 ## Entity families
 
 | Tool | Use |

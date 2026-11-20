@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.134-alpha - 2026-11-21
+
+- **UI materials and cubemap layout.** `write_loading_screen` turns a PNG into the VTF and
+  `UnlitGeneric` VMT a campaign poster or map thumbnail needs, deriving `$basetexture` from
+  the path under `materials/`; `write_cubemap_grid` lays `env_cubemap` samples on a regular
+  grid inside a bounds box (128-sample cap).
+- **`write_addoninfo` writes the manifest without packing.** It carries the appid, title,
+  author, version, tag and `addonAICredit`, and parses the result back as KeyValues.
+- **`check_vmt` and `check_sound` validate the files before a pack.** The VMT check names an
+  unknown shader, a missing `$basetexture`, a filesystem path or `.vtf` in the texture name,
+  non-numeric compile flags, duplicate keys and, with material roots, missing textures. The
+  sound check reports a WAV that is not 16-bit PCM at 22050/44100 and every soundscript wave
+  that is absent.
+- **Tool count: 196.** Tests: 167 files, 1578 passed, 33 skipped.
+
 ## 0.0.133-alpha - 2026-11-21
 
 - **Every packed addon carries AI provenance.** `run_vpk_pack` appends

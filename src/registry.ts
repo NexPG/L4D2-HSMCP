@@ -23,6 +23,10 @@ import { compileTools } from "./maps/typescript/tools/compile.js";
 import { contentTools } from "./assets/typescript/tools/content.js";
 import { particleTools } from "./assets/typescript/tools/particles.js";
 import { cubemapTools } from "./textures/typescript/tools/cubemap.js";
+import { cubemapGridTools } from "./maps/typescript/tools/cubemapgrid.js";
+import { loadingScreenTools } from "./textures/typescript/tools/loadingscreen.js";
+import { vmtCheckTools } from "./textures/typescript/tools/vmtcheck.js";
+import { soundCheckTools } from "./audio/typescript/tools/soundcheck.js";
 import { depsTools } from "./maps/typescript/tools/deps.js";
 import { dmxTools } from "./formats/typescript/tools/dmx.js";
 import { dmxSmdTools } from "./models/typescript/tools/dmxsmd.js";
@@ -182,6 +186,10 @@ export const allTools: AnyToolDef[] = [
   ...compileTools,
   ...renameTools,
   ...cubemapTools,
+  ...cubemapGridTools,
+  ...loadingScreenTools,
+  ...vmtCheckTools,
+  ...soundCheckTools,
   ...pakfileTools,
   ...pakfileAddTools,
   ...vtfTools,

@@ -81,8 +81,10 @@ covered: this table is the summary.
 | Ropes | `write_rope` | verified: the `move_rope`/`keyframe_rope` pair links by `NextKey` and compiles |
 | Sprites, beams, lasers | `write_sprite` | verified: a sprite and a beam with its two `info_target`s compile; a laser without a target gets one |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |
-| Cubemap placement | `edit_vmf` (`env_cubemap`) | tool: the entity is internal and must be in the VMF before compile |
+| Cubemap placement | `write_cubemap_grid`, `edit_vmf` (`env_cubemap`) | verified by unit: a 3x3 grid at 512 spacing; the entity is internal and must be in the VMF before compile |
 | Build cubemaps in engine | `run_build_cubemaps` | verified HDR/LDR/both; `pack` copies them into an `outBsp` |
+| Loading screen / poster / map thumbnail | `write_loading_screen` | verified by unit: PNG to VTF + UnlitGeneric VMT, material path derived from `materials/` |
+| Material and sound validation | `check_vmt`, `check_sound` | verified by unit: bad shader/base texture and a non-game-ready WAV are named |
 
 ## Detail, hints, portals
 

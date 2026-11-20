@@ -22,12 +22,12 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.133-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.134-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.133-alpha`.
+the last entry. The current skill version is `0.0.134-alpha`.
 
 ## Route the task first
 
