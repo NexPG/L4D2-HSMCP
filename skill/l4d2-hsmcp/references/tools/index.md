@@ -1,6 +1,6 @@
 # Tool catalogue
 
-204 tools. This page groups them by the job you are doing; each tool's own description is the
+209 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -33,7 +33,12 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |
 
 | `write_addoninfo` | write `addoninfo.txt` with the AI provenance line before packing |
+| `write_addon_scaffold` | addoninfo + `scripts/vscripts/mapspawn_addon.nut` starting layout |
+| `install_addon` | copy a VPK or staging folder into `left4dead2/addons` |
 | `write_loading_screen` | PNG → VTF + `UnlitGeneric` VMT for a campaign poster or map thumbnail |
+| `write_mission_poster` | set the mission `poster` block and its widescreen variant |
+| `write_detail_sprites` | add a `detail.vbsp` sprite type |
+| `check_particle` | validate a PCF, its child systems and renderer materials |
 | `write_cubemap_grid` | place `env_cubemap` samples on a regular grid inside a bounds box |
 | `check_vmt` | validate shader, base texture, compile flags and texture files |
 | `check_sound` | validate a WAV's format or a soundscript's waves |

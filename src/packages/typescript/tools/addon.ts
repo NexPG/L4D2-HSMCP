@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
@@ -303,4 +303,136 @@ export const writeAddonInfoTool = defineTool({
   },
 });
 
-export const addonTools = [runVpkPackTool, writeAddonInfoTool];
+function countTree(root: string): { files: number; bytes: number } {
+  let files = 0;
+  let bytes = 0;
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else {
+        files += 1;
+        bytes += statSync(full).size;
+      }
+    }
+  };
+  walk(root);
+  return { files, bytes };
+}
+
+export const installAddonTool = defineTool({
+  name: "install_addon",
+  description:
+    "Copies an addon into the game's `left4dead2/addons`: a `.vpk` as itself, or a staging " +
+    "folder as a folder with the same name. Refuses an existing destination unless " +
+    "`overwrite` is true. This is the install step; `run_vpk_pack` builds, `run_map_test` " +
+    "runs. Guarded.",
+  realm: "local",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("A .vpk or a staging directory."),
+    overwrite: z.boolean().default(false),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    source: z.string(),
+    installedPath: z.string(),
+    kind: z.enum(["vpk", "folder"]),
+    files: z.number(),
+    bytes: z.number(),
+  },
+  handler: (args, ctx) => {
+    const source = resolveInput(args.path, ctx.config);
+    if (!existsSync(source)) throw new Error(`${source} does not exist`);
+    if (!ctx.config.gameDir) throw new Error("the game directory is not resolved; run health first");
+    const addons = join(ctx.config.gameDir, "addons");
+    mkdirSync(addons, { recursive: true });
+    const isVpk = source.toLowerCase().endsWith(".vpk");
+    const name = basename(source);
+    const target = join(addons, name);
+    if (existsSync(target) && args.overwrite !== true) {
+      throw new Error(`${target} already exists; pass overwrite: true to replace it`);
+    }
+    if (existsSync(target)) rmSync(target, { recursive: true, force: true });
+    if (isVpk) {
+      copyFileSync(source, target);
+      return { source, installedPath: target, kind: "vpk" as const, files: 1, bytes: statSync(target).size };
+    }
+    if (!statSync(source).isDirectory()) throw new Error(`${source} is neither a .vpk nor a directory`);
+    cpSync(source, target, { recursive: true });
+    const counts = countTree(target);
+    return { source, installedPath: target, kind: "folder" as const, ...counts };
+  },
+});
+
+export const scaffoldAddonTool = defineTool({
+  name: "write_addon_scaffold",
+  description:
+    "Creates the minimum pure-VScript addon layout: `addoninfo.txt` with the AI credit and " +
+    "`scripts/vscripts/mapspawn_addon.nut` with a load banner. It is a starting point, not a " +
+    "template that limits what goes beside it; add scripts, materials and maps freely. " +
+    "Refuses an existing addoninfo unless `overwrite` is true. Guarded.",
+  realm: "local",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Addon staging directory."),
+    title: z.string().min(1),
+    author: z.string().optional(),
+    version: z.string().optional(),
+    tag: z.string().optional(),
+    tagline: z.string().optional(),
+    description: z.string().optional(),
+    overwrite: z.boolean().default(false),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    dir: z.string(),
+    addoninfo: z.string(),
+    mapspawn: z.string().nullable(),
+    written: z.boolean(),
+    warnings: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const dir = resolveInput(args.path, ctx.config);
+    const infoPath = join(dir, "addoninfo.txt");
+    if (existsSync(infoPath) && args.overwrite !== true) {
+      throw new Error(`${infoPath} already exists; pass overwrite: true to replace it`);
+    }
+    mkdirSync(join(dir, "scripts", "vscripts"), { recursive: true });
+    const text = addonInfoText(
+      {
+        title: args.title,
+        ...(args.author === undefined ? {} : { author: args.author }),
+        ...(args.version === undefined ? {} : { version: args.version }),
+        ...(args.tag === undefined ? {} : { tag: args.tag }),
+        ...(args.tagline === undefined ? {} : { tagline: args.tagline }),
+        ...(args.description === undefined ? {} : { description: args.description }),
+      },
+      true,
+    );
+    const write = writeGuarded(infoPath, text, ctx.config);
+    const mapspawnPath = join(dir, "scripts", "vscripts", "mapspawn_addon.nut");
+    let mapspawn: string | null = null;
+    if (!existsSync(mapspawnPath)) {
+      const banner =
+        `// Created by AI via L4D2-HSMCP ${toolkitVersion()}\n` +
+        `printl("[HSMCP] mapspawn loaded");\n`;
+      writeGuarded(mapspawnPath, banner, ctx.config);
+      mapspawn = mapspawnPath;
+    }
+    return {
+      dir,
+      addoninfo: infoPath,
+      mapspawn,
+      written: write.written,
+      warnings:
+        mapspawn === null
+          ? ["scripts/vscripts/mapspawn_addon.nut already existed and was left alone"]
+          : [],
+    };
+  },
+});
+
+export const addonTools = [runVpkPackTool, writeAddonInfoTool, installAddonTool, scaffoldAddonTool];

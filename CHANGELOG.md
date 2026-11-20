@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.138-alpha - 2026-11-21
+
+- **The addon loop is now one folder plus one install.** `write_addon_scaffold` creates the
+  addoninfo (with `addonAICredit`) and a `mapspawn_addon.nut` starter; `install_addon` copies a
+  finished VPK or staging folder into `left4dead2/addons`, refusing an existing destination
+  unless told to replace it.
+- **Poster, detail sprites and particles.** `write_mission_poster` sets a mission's `poster`
+  block, including a widescreen variant, without losing the modes. `write_detail_sprites`
+  appends a named `detail.vbsp` type with its sprite rectangle, size, amount and alpha.
+  `check_particle` reads a PCF, resolves child names to systems and checks renderer materials
+  under supplied roots.
+- **Tool count: 209.** Tests: 170 files, 1592 passed, 33 skipped.
+
 ## 0.0.137-alpha - 2026-11-21
 
 - **Five more entity families, all as shortcuts over the primitives.** `write_prop` covers

@@ -113,6 +113,8 @@ covered: this table is the summary.
 | Model browser + sizes | `read_game_content(kind: "model", details: true)` | verified |
 | Model details (skins, sequences, materials) | `read_model_info` | verified |
 | Particle browser | `read_game_content(kind: "particle")` + `read_particle` for system contents | verified |
+| Particle validation | `check_particle` | checks systems, child references and renderer materials; a PCF is read through the same reader |
+| Detail sprites | `write_detail_sprites` + `detailmaterial` on worldspawn | verified by unit: a named type with a sprite rect and groups parses back; only displacement faces scatter them |
 | Sound browser | `read_game_content(kind: "sound")` | verified |
 | VTF conversion | `run_vtf_convert`, `run_tga2skybox`, `run_cubemap2hdr` | tool |
 | Overlays / decals | `write_overlay` | verified: format from Valve's styleguide VMF, and vbsp accepted an overlay on the room floor in `tools-compile.test.ts` |

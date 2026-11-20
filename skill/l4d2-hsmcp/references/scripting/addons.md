@@ -24,7 +24,7 @@ Every addon and campaign packed with `run_vpk_pack` gets a provenance entry at t
 `addoninfo.txt`:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.137-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.138-alpha"
 ```
 
 The version comes from `package.json`, not from the caller. `credit: false` is the only way
@@ -42,6 +42,8 @@ in the folder, and checks that a closecaption file is UTF-16LE.
 | `write_localization` | a `lang`/`Tokens` file, with closecaption kept in UTF-16LE and existing tokens updated in place |
 | `write_workshop_vdf` | the `workshop_build_item.vdf` SteamCMD reads; uploading is still a Steam action |
 | `write_addoninfo` | the manifest itself, with the AI provenance line |
+| `write_addon_scaffold` | addoninfo plus a `mapspawn_addon.nut` starter |
+| `install_addon` | copy a VPK or staging folder into `left4dead2/addons` |
 | `validate_addon` | the pre-pack check for addoninfo, scripts, manifests and caption encoding |
 | `write_loading_screen` | a PNG loading poster or map thumbnail as VTF + UnlitGeneric VMT |
 | `check_vmt` / `check_sound` | a material or a WAV/soundscript before it is packed |

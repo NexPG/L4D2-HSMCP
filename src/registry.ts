@@ -36,6 +36,9 @@ import { brushTools } from "./models/typescript/tools/brush.js";
 import { displacementTools } from "./maps/typescript/tools/displacement.js";
 import { reviewTools } from "./maps/typescript/tools/review.js";
 import { diffTools } from "./maps/typescript/tools/diff.js";
+import { detailTools } from "./maps/typescript/tools/detail.js";
+import { posterTools } from "./campaigns/typescript/tools/poster.js";
+import { particleCheckTools } from "./assets/typescript/tools/particlecheck.js";
 import { dressingTools } from "./maps/typescript/tools/dressing.js";
 import { entityFamilyTools } from "./maps/typescript/tools/entityfamilies.js";
 import { entityExtraTools } from "./maps/typescript/tools/entityextras.js";
@@ -164,6 +167,9 @@ export const allTools: AnyToolDef[] = [
   ...previewTools,
   ...displacementTools,
   ...diffTools,
+  ...detailTools,
+  ...posterTools,
+  ...particleCheckTools,
   ...dressingTools,
   ...entityFamilyTools,
   ...entityExtraTools,

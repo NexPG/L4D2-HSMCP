@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **204 tools**.
+Last checked against the tool list on 21/11/2026: **209 tools**.
 
 ## The file itself
 
@@ -275,6 +275,11 @@ map and looking, or by not happening at all.
 | `write_ladder` | func_ladder plus the func_useableladder point L4D2's AI uses |
 | `write_scene` | a choreographed scene with its .vcd and targets |
 | `write_ambient_generic` | an ambient sound with its soundscript name and volume |
+| `write_addon_scaffold` | a script addon needs a manifest and a mapspawn; this is the starting layout |
+| `install_addon` | copying a VPK/folder into the game is a manual file operation |
+| `write_mission_poster` | the poster block is hand-written in the mission file |
+| `write_detail_sprites` | detail.vbsp is hand-edited KeyValues |
+| `check_particle` | no editor validates PCF children or renderer materials |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |
