@@ -34,7 +34,7 @@ const OUTPUT = z.object({
 
 type OutputSpec = z.infer<typeof OUTPUT>;
 
-async function addEntities(
+export async function addEntities(
   path: string,
   keyvalues: Array<Record<string, string>>,
   ctx: ToolContext,
@@ -52,7 +52,7 @@ async function addEntities(
   return keyvalues.map((_, index) => reply.outcomes[index]?.ids[0] ?? null);
 }
 
-function verifyEntities(path: string, ids: Array<number | null>, classes: string[]): void {
+export function verifyEntities(path: string, ids: Array<number | null>, classes: string[]): void {
   const entities = readEntities(readFileSync(path, "utf8")).entities;
   ids.forEach((id, index) => {
     const found = entities.find((entity) => entity.id === id);
@@ -65,7 +65,7 @@ function verifyEntities(path: string, ids: Array<number | null>, classes: string
   });
 }
 
-async function addBrushEntity(
+export async function addBrushEntity(
   path: string,
   keyvalues: Record<string, string>,
   bounds: { mins: readonly number[]; maxs: readonly number[] },
@@ -90,7 +90,7 @@ async function addBrushEntity(
   return { id, solidIds: written.solidIds };
 }
 
-async function addOutputs(
+export async function addOutputs(
   path: string,
   id: number,
   outputs: OutputSpec[],
@@ -114,7 +114,7 @@ async function addOutputs(
   );
 }
 
-async function fgdWarnings(
+export async function fgdWarnings(
   className: string,
   keyvalues: Record<string, string>,
   ctx: ToolContext,

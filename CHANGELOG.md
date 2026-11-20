@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.137-alpha - 2026-11-21
+
+- **Five more entity families, all as shortcuts over the primitives.** `write_prop` covers
+  `prop_static`/`prop_dynamic`/`prop_physics` with model, angles, skin and solid, and checks
+  the model with `read_model_info` when available. `write_physics_constraint` writes hinge,
+  length, ballsocket, slide or ragdoll between two names. `write_ladder` writes the
+  `func_ladder` brush plus the `func_useableladder` point L4D2's AI uses. `write_scene` writes
+  a `logic_choreographed_scene` with its `.vcd` and targets. `write_ambient_generic` writes a
+  sound emitter with its soundscript name, volume and radius.
+- **The tool-factory rule is now explicit in three places.** `CONTRIBUTING.md` section 4,
+  the top of `SKILL.md`, and `references/tools/primitives.md`: we build tools for making
+  parts, not a fixed parts catalogue; a preset that is the only path is a defect.
+- **Tool count: 204.** Tests: 169 files, 1589 passed, 33 skipped.
+
 ## 0.0.136-alpha - 2026-11-21
 
 - **QC gained the blocks a real model needs.** `write_qc` writes `$bodygroup` alternatives,

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **199 tools**.
+Last checked against the tool list on 21/11/2026: **204 tools**.
 
 ## The file itself
 
@@ -270,6 +270,11 @@ map and looking, or by not happening at all.
 | `write_brush_entity` | any brush entity by class, volume and outputs; no editor enum limits it |
 | `write_point_entity` | any point entity by class, origin and outputs |
 | `check_model` | nothing: no editor validates a QC/MDL before or after the compiler |
+| `write_prop` | the prop tool with model/skin/solid checks |
+| `write_physics_constraint` | a constraint between two names, with the class keys passed through |
+| `write_ladder` | func_ladder plus the func_useableladder point L4D2's AI uses |
+| `write_scene` | a choreographed scene with its .vcd and targets |
+| `write_ambient_generic` | an ambient sound with its soundscript name and volume |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |

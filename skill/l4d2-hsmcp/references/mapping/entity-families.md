@@ -70,6 +70,20 @@ write_logic(path, kind: "counter", origin: [0,0,96], startValue: 2, maxValue: 10
 - `logic_case`, `logic_compare` and `math_remap` need their value keys (`Case01`, `Min`, `Max`,
   ...) through `keyvalues`; `read_fgd_class` is the authority.
 
+## Props, constraints, ladders, scenes and sounds
+
+| Tool | What it writes |
+|---|---|
+| `write_prop` | `prop_static`, `prop_dynamic` or `prop_physics`; model checked with `read_model_info` when the game is present |
+| `write_physics_constraint` | hinge, length, ballsocket, slide or ragdoll; `attach1`/`attach2` are required |
+| `write_ladder` | a `func_ladder` brush plus the `func_useableladder` point L4D2's AI uses |
+| `write_scene` | `logic_choreographed_scene` with `SceneFile` and up to eight targets |
+| `write_ambient_generic` | an ambient sound with its soundscript name, volume and radius |
+
+These are shortcuts over `write_point_entity`/`write_brush_entity`, not a closed list:
+`func_useableladder` is itself a point entity, and a constraint class with no enum entry can
+be written through the primitive.
+
 ## Verification
 
 `test/tools/entityfamilies.test.ts` writes each family and reads it back: the brush volume and

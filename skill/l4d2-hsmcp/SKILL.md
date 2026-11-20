@@ -8,6 +8,14 @@ description: Build and ship Left 4 Dead 2 campaigns, maps, nav meshes, chapter t
 Left 4 Dead 2 content, built through the MCP server. The server does the file work; this
 skill says what "correct" looks like in L4D2 and in what order to do it.
 
+**A tool factory, not a parts catalogue.** We build instruments for making parts, not a fixed
+box of parts. The agent must be able to make something we never anticipated: a class with no
+named builder, a shape no preset covers, a script no template describes. Named builders are
+shortcuts over primitives; `write_brush_entity` and `write_point_entity` take any classname,
+`write_vmf_solid` takes arbitrary convex faces, `edit_vmf` reaches every key and output, and
+`write_vscript` is the Squirrel source. If a capability exists only as a preset, the primitive
+is missing. `CONTRIBUTING.md` section 4 and `references/tools/primitives.md` carry the rule.
+
 The toolkit is early, but maps, campaigns, finales, nav, model source authoring and
 compilation, native VTF writing and add-on VPKs are proven. Two-team rounds and a few visual
 checks still need a person or a second client. Read
@@ -24,12 +32,12 @@ still reachable. See `references/tools/primitives.md`.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.136-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.137-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.136-alpha`.
+the last entry. The current skill version is `0.0.137-alpha`.
 
 ## Route the task first
 

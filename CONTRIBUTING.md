@@ -111,8 +111,13 @@ rather than filled for exactly that reason.
 
 ## 4. Hands untied, not a menu
 
+**We build a tool factory, not a parts catalogue.** The agent must be able to make a part we
+never anticipated. A named preset is a shortcut over a primitive, never the only way to reach
+a capability. If a user asks for something no builder covers, the answer is a primitive call,
+not "not supported".
+
 The agent is the user of this toolkit. The goal is every Hammer++ capability **and more**, available
-as operations the agent can combine freely — not a catalogue of prepared answers it has to choose
+as operations the agent can combine freely - not a catalogue of prepared answers it has to choose
 from. A canned option that is the only way to do something is a defect, however convenient it looks.
 
 - **Every shortcut sits on a primitive, and the primitive stays reachable.** If deleting a helper
