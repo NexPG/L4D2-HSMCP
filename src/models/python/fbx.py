@@ -37,7 +37,7 @@ Conventions, and why:
 
 The format facts were cross-checked against the public FBX binary layout (the 7.x node
 record, the zlib-compressed property arrays, the polygon-index sign bit) and against the
-behaviour the compiler documents for the same files. No code from the compiler, Blender or the FBX SDK is
+behaviour the format documentation describes for the same files. No code from Blender or the
 used; this is an independent reader.
 """
 

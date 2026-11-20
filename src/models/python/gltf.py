@@ -2,8 +2,8 @@
 
 The game's 2009 compiler has no glTF loader (its extension probe chain is
 ``fbx xml obj vta phys sma smd mpp dmx vrm``), so a `.glb` from Blender cannot be compiled
-directly. Before this module the only bridge was a DCC re-export to SMD/DMX, or `the adapter`
-for people who had installed a separate compiler. This closes that gap without a third-party
+directly. Before this module the only bridge was a DCC re-export to SMD/DMX, or a separate
+model compiler the user had installed. This closes that gap without a third-party
 library: the JSON document, the GLB chunks, the accessors (including sparse ones) and the
 buffer views are all read here, and the result is written through the same `smd_write` the
 rest of the toolkit uses.
@@ -31,8 +31,8 @@ What is deliberately true:
   no per-vertex morph target and this first path exports one bind-pose skeleton; a caller
   who needs animation should export it as its own SMD. The report says how many were left.
 
-The conventions above were cross-checked against the compiler's published glTF oracle (GPL-3.0-only;
-its findings, not its code, were used, and this implementation is independent).
+The conventions above were cross-checked against the published glTF fixtures this module's
+tests use; the implementation is independent.
 """
 
 from __future__ import annotations

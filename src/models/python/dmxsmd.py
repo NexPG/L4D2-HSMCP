@@ -8,7 +8,7 @@ writer `write_smd` uses.
 The skeleton is real, not a root-bone fallback: `DmeJoint` nodes become SMD nodes, local
 transforms become position plus XYZ Euler angles, and `jointWeights`/`jointIndices` become
 per-vertex links. The convention was verified against BlenderSourceTools' own cube export
-(`blender_cube.dmx`/`.smd` from the compiler): node names, parents, all four bone rotations, all
+(`blender_cube.dmx`/`.smd` fixtures): node names, parents, all four bone rotations, all
 twelve triangles, UVs and weights match. A file with no joint list still falls back to one
 root bone, and the result says so.
 

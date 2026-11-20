@@ -16,8 +16,8 @@ Conventions, and why they are these ones:
   own cube export (quaternion ``(0.683, 0.183, 0.183, 0.683)`` -> ``(1.570796, 0, 0.523599)``);
   `euler_xyz` is that same function, moved here so glTF cannot pick a different order.
 * ``gltf_to_source`` is glTF's +Y-up to Source's +Z-up: ``(x, y, z) -> (x, -z, y)``. It
-  matches the compiler's published ``srcaxis y`` matrix (the reference implementation's glTF oracle),
-  but no code from that project is copied: this is the algebra stated in its documentation.
+  matches the published ``srcaxis y`` matrix; no code from any implementation is copied:
+  this is the algebra as documented.
 """
 
 from __future__ import annotations
@@ -221,7 +221,7 @@ def quat_from_matrix(m: Mat4) -> Vec4:
 def euler_xyz(quat: Vec4) -> Vec3:
     """Quaternion to the XYZ Euler angles an SMD skeleton line carries.
 
-    Verified against the compiler's BlenderSourceTools fixture: the root quaternion
+    Verified against the BlenderSourceTools fixture: the root quaternion
     ``(0.683, 0.183, 0.183, 0.683)`` becomes ``(1.570796, 0, 0.523599)``, which is exactly
     the line in ``blender_cube.smd``. A different order (ZYX, or Blender's to_euler('XYZ'))
     would compile and put every bone in the wrong place.

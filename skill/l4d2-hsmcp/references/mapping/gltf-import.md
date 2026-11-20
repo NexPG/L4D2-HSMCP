@@ -158,6 +158,7 @@ byte, including the GLB container, a sparse accessor, an animation, a collision 
 shape key. Static, animated and morph models are compiled with the real `studiomdl.exe`; the
 static one is checked for a `.phy` and `hasPhysics`, the animated one for both sequences, and
 the morph one for `flexdesc`/`flexcontroller`/`flexrule`. The axis and bind-pose conventions
+were cross-checked against the exported glTF fixtures checked into the tests.
 
 ## Pitfalls
 

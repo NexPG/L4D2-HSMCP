@@ -132,6 +132,7 @@ describe.skipIf(!installed)("dmx_to_smd", () => {
   });
 
   it("writes a skeleton and weights, with the Euler convention the oracle proved", async () => {
+    // The quaternion and the expected angles are from the BlenderSourceTools fixture:
     // (0.6830127, 0.1830127, 0.1830127, 0.6830127) -> (1.570796, 0, 0.523599).
     const rootQuat = [0.6830127, 0.1830127, 0.1830127, 0.6830127];
     const transform = (position: number[], orientation: number[]) => ({

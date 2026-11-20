@@ -510,7 +510,7 @@ with a line here.
 
 - **The project is now GPL-3.0-or-later.** The `only` was removed at the owner's request.
   Everything still borrowed is MIT (Sycatle, EpicMorg, sourcepp), which is compatible with an
-  from the notices. `package.json`, README, `CONTRIBUTING.md`, `third_party/NOTICE`,
+  or-later GPL. `package.json`, README, `CONTRIBUTING.md`, `third_party/NOTICE`,
   `NOTICES.md`, `third_party/README.md` and the skill now state **GPL-3.0-or-later**, and
   README carries the standard "either version 3, or any later version" grant. The MIT
   notices are untouched and still govern the MIT portions.
@@ -591,7 +591,8 @@ with a line here.
 
 ## 0.0.92-alpha â€” 2026-11-19
 
-- **The project is TypeScript, Python and PowerShell only.** The four vendored source trees
+- **The project is TypeScript, Python and PowerShell only.** The vendored source trees
+  (sourcepp C++, EpicMorg C#) are gone. Nothing imported them at
   runtime, so no tool was lost with them; the toolchain that ships is the same `dist/` plus
   the Python sidecar.
 - **What replaced the trees is capability, not a gap.** Seven new tools close the work the
@@ -606,19 +607,20 @@ with a line here.
   - `read_wav` / `convert_wav` â€” a sound's format, duration and loop, and a conversion to the
     16-bit PCM mono/stereo at 22050/44100 Hz that L4D2 actually decodes. Peak and RMS are
     reported, so a silent or clipped source is visible before it ships.
-  either remains. sourcepp and EpicMorg stay, narrowed to the files that are genuinely
+- **Licences got smaller, not looser.** sourcepp and EpicMorg stay, narrowed to the files
+  that are genuinely
   translations â€” deleting a vendored tree removes the copy, not the obligation.
 - **The registry is data, not code.** `src/hammer/data/hammers.json` stays where it is and
   the sidecar reads it directly.
 
 ## 0.0.91-alpha â€” 2026-11-19
 
-
-  remaining C++ trees now use `include/` + `source/` instead of `src/` inside `src/`, with the
+- **`src/` tidied: no dumped trees, no stray files.** The C++ trees now use `include/` +
+  `source/` instead of `src/` inside `src/`, with the
   five CMake references updated. One icon serves both C# projects (`csharp/assets/`), and the
   Hammer build registry moved out of the C# code tree to `src/hammer/data/`.
-- **The layout is documented where it is decided.** `src/README.md` now says why the four
-  native trees keep their internal layout (the build systems require it), what is not imported
+- **The layout is documented where it is decided.** `src/README.md` now says why the native
+  trees keep their internal layout (the build systems require it), what is not imported
   (submodules, upstream docs), and that non-code data gets a `data/` directory beside
   the language directories.
 - **Nothing was built here and nothing pretends otherwise.** No CMake or dotnet is
@@ -641,14 +643,11 @@ with a line here.
 
 ## 0.0.89-alpha â€” 2026-11-18
 
-- **The four useful upstream implementations are now in the project.** They are filed by
+- **The useful upstream implementations are now in the project.** They are filed by
   module, not by repository: `src/formats/cpp/` (sourcepp: bsppp, vpkpp, vtfpp, mdlpp,
-  channel, the Core library and the build registry). Upstream READMEs, CI, docs, brand
-  images and benchmark suites are not imported; the code and the build manifest of each
-  language are.
-  `.vtx` exist, and refuses with an actionable message when the binary is absent. The
-  alternative to `run_studiomdl`: one binary, no Crowbar, DMX/glTF sources the 2009 compiler
-  cannot read.
+  kvpp, dmxpp) and `src/hammer/csharp/` (the Hammer shell channel, the Core library and the
+  build registry). Upstream READMEs, CI, docs, brand images and benchmark suites are not
+  imported; the code and the build manifest of each language are.
 - **`hammer_status` reports the exact build.** The editor's DLL is hashed and looked up in the
   vendored registry of 182 known builds: Hammer++ 8873 L4D2 x86 is identified as
   `hpp-l4d2-8873-x86`, with its shell support. An unknown build is `null`, not a guess.
@@ -685,6 +684,7 @@ with a line here.
   `formats/`, `core/` â€” and a module that holds more than one language splits by language
   underneath (`typescript/`, `python/`). Those directories carry source only: no assets, no
   licences, no upstream trees.
+- **No vendored repositories.** The parked upstream trees are gone.
   Everything used from them is ported into the module it serves and credited in
   `third_party/NOTICES.md` with the upstream file name; the trees could not be built here and
   nothing imported them.
@@ -742,11 +742,12 @@ with a line here.
   reported, because shipped Valve materials contain them. Behaviour ported from Hammer-MCP's
   `VmtMaterial`. Checked against 300 real materials from `pak01_dir.vpk`: 0 failures, and
   every `patch` has its `include`.
-  build commands, so the algorithm reference survives the removal of the temporary
-  `.3d-projects` folder. Nothing there is compiled or published. `THIRD-PARTY-NOTICES.md`
-  records the copyright lines and moves the three projects to the used table, and adds three
-  SourceMod navigation repositories as reference-only â€” including why `sourcepawn-navmesh`'s
-  GPL cannot cover the parser it credits to an unlicensed upstream.
+- **Upstream source vendored.** `vendor/sourcepp` (MIT) keeps the upstream tree, its
+  `LICENSE` file and the exact build commands, so the algorithm reference survives the
+  removal of the temporary `.3d-projects` folder. Nothing there is compiled or published.
+  `THIRD-PARTY-NOTICES.md` records the copyright lines and moves the project to the used
+  table, and adds three SourceMod navigation repositories as reference-only, including why
+  `sourcepawn-navmesh`'s GPL cannot cover the parser it credits to an unlicensed upstream.
 
 ## 0.0.85-alpha â€” 2026-11-18
 

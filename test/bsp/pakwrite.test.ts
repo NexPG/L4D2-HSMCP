@@ -1,4 +1,5 @@
 /**
+ * Writing a map's pakfile: the part of the job `bspzip` used to do.
  *
  * Three claims are worth testing and none of them is "a file appeared". The archive must
  * round-trip byte for byte through our own reader; an existing entry must be replaced rather

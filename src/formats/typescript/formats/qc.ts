@@ -120,6 +120,7 @@ interface Macro {
  * and body lines continue while they end with `\\`; the first line that does not end with
  * it is the last body line. The marker itself is not part of the body. An invocation
  * `$Name a b` replaces itself with the body, substituting `$Param$` tokens. This is the
+ * shape the compiler's own macro files use, and the tests below pin both the continuation and
  * parameter substitution.
  */
 function expandMacros(
@@ -249,7 +250,8 @@ function expandMacros(
  * scriplib expands a variable only in a **bare** token: `$attachment "a" "$Bone$Hand"` keeps
  * the literal text, while `$bonesaveframe $Bone$Pelvis position` becomes
  * `ValveBiped.Bip01_Pelvis`. The closing `$` is part of the syntax. The first definition of
- * `second` still produces `first.mdl` — so a redefinition is reported and ignored rather
+ * a name wins in studiomdl — `$definevariable Name first` then `second` still produces
+ * `first.mdl` — so a redefinition is reported and ignored rather
  * than silently replacing the first.
  *
  * Variables live across `$include`, which is why `loadQc` passes one map to every file.
