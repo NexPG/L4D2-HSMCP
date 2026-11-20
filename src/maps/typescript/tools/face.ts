@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
-import { alignFaces, copyFaceAlignment, setFaceMaterial, setFaceUv, setSmoothingGroups } from "../vmf/face.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
+import { gameFor } from "../../../core/typescript/games/resolve.js";
+import { alignFaces, normaliseMaterial, copyFaceAlignment, setFaceMaterial, setFaceUv, setSmoothingGroups } from "../vmf/face.js";
 import type { AlignMode } from "../vmf/face.js";
 import type { FaceSelector } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, GAME, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 const SELECTOR = {
   solidIds: z.array(z.number()).optional().describe("Only faces of these solids."),
@@ -213,6 +215,7 @@ export const alignFacesTool = defineTool({
       .optional()
       .describe("For 'fit': how many times the texture repeats across the face. Default once."),
     ...SELECTOR,
+    game: GAME,
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -235,7 +238,7 @@ export const alignFacesTool = defineTool({
     warnings: z.array(z.string()),
     nextStep: z.string(),
   },
-  handler: (args, ctx) => {
+  handler: async (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
     if (args.repeat && (args.repeat[0] <= 0 || args.repeat[1] <= 0)) {
@@ -243,8 +246,44 @@ export const alignFacesTool = defineTool({
         `fit needs a positive number of repeats on both axes, not ${args.repeat.join(" and ")}`,
       );
     }
+    // Hammer's Fit reads the texture's real size from the VTF. The offline path asks the
+    // sidecar for it; a lookup that fails leaves the 512 assumption and its warning.
+    let textureSizes: Map<string, [number, number]> | undefined;
+    if (args.mode === "fit") {
+      const { game } = gameFor(ctx.config, args.game);
+      if (game.gameDir) {
+        const materials = new Set<string>();
+        for (const match of before.matchAll(/"material"\s+"([^"]+)"/g)) {
+          materials.add(normaliseMaterial(match[1]!));
+          if (materials.size >= 32) break;
+        }
+        const sizes = new Map<string, [number, number]>();
+        for (const material of materials) {
+          try {
+            const info = (await callSidecar(
+              "material_preview",
+              { gameDir: game.gameDir, material, maxSize: 32 },
+              ctx.config,
+              60_000,
+            )) as { width?: number; height?: number };
+            if (
+              typeof info.width === "number" &&
+              typeof info.height === "number" &&
+              info.width > 0 &&
+              info.height > 0
+            ) {
+              sizes.set(material, [info.width, info.height]);
+            }
+          } catch {
+            // A missing texture is a missing size, not a failed alignment.
+          }
+        }
+        if (sizes.size > 0) textureSizes = sizes;
+      }
+    }
     const result = alignFaces(before, selectorFrom(args), {
       mode: args.mode as AlignMode,
+      ...(textureSizes ? { textureSizes } : {}),
       ...(args.scale !== undefined ? { scale: args.scale } : {}),
       ...(args.rotate !== undefined ? { rotate: args.rotate } : {}),
       ...(args.shift !== undefined ? { shift: args.shift as [number, number] } : {}),

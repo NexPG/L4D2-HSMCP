@@ -297,7 +297,28 @@ describe("alignFaces: the other modes", () => {
 
   it("says out loud that fit assumed a texture size it could not read", () => {
     const r = alignFaces(probe(), { solidIds: [FLOOR] }, { mode: "fit" });
-    expect(r.warnings.join(" ")).toMatch(/assumes a 512-texel texture/);
+    expect(r.warnings.join(" ")).toMatch(/assumed a 512-texel texture/);
+  });
+
+  it("fits to the texture's real size when one is given", () => {
+    const floorSide = read(probe())
+      .find((s) => s.id === FLOOR)!
+      .sides.find((s) => s.plane!.normal[2] > 0.9)!;
+    const material = normaliseMaterial(floorSide.material);
+    const r = alignFaces(probe(), { solidIds: [FLOOR], facing: "up" }, {
+      mode: "fit",
+      textureSizes: new Map([[material, [256, 128]]]),
+    });
+    const top = read(r.text)
+      .find((s) => s.id === FLOOR)!
+      .sides.find((s) => s.plane!.normal[2] > 0.9)!;
+    const span = (axis: typeof top.uaxis) =>
+      top.vertices.map(
+        (w) => (w[0] * axis!.axis[0] + w[1] * axis!.axis[1] + w[2] * axis!.axis[2]) / axis!.scale + axis!.offset,
+      );
+    expect(Math.max(...span(top.uaxis))).toBeCloseTo(256);
+    expect(Math.max(...span(top.vaxis))).toBeCloseTo(128);
+    expect(r.warnings.join(" ")).not.toMatch(/assumed a 512-texel texture/);
   });
 
   it("turns the axis pair inside the face's own plane", () => {

@@ -205,6 +205,13 @@ export interface AlignOptions {
   shift?: [number, number];
   /** For `fit`, how many times the texture repeats across the face. Default once. */
   repeat?: [number, number];
+  /**
+   * For `fit`: the real texture size in pixels, keyed by the material as the `.vmf` stores
+   * it. Without an entry the 512-texel assumption applies and a warning says so. Hammer knows
+   * the size because it reads the VTF; a fit that assumes 512 stretches a 256-wide texture to
+   * half its intended size.
+   */
+  textureSizes?: Map<string, [number, number]>;
 }
 
 export interface AlignChange {
@@ -465,8 +472,11 @@ export function alignFaces(
           `fit needs a positive number of repeats on both axes, not ${ru} and ${rv}`,
         );
       }
-      uScale = (su.hi - su.lo) / (TEXELS_ASSUMED * ru);
-      vScale = (sv.hi - sv.lo) / (TEXELS_ASSUMED * rv);
+      const size = options.textureSizes?.get(normaliseMaterial(side.material));
+      const texelsU = size?.[0] ?? TEXELS_ASSUMED;
+      const texelsV = size?.[1] ?? TEXELS_ASSUMED;
+      uScale = (su.hi - su.lo) / (texelsU * ru);
+      vScale = (sv.hi - sv.lo) / (texelsV * rv);
     }
     if (options.scale !== undefined) {
       // Tested explicitly against undefined rather than for truthiness: zero is falsy, so
@@ -508,10 +518,19 @@ export function alignFaces(
 
   if (faces.length === 0) warnings.push("nothing matched the selector, so nothing changed");
   if (options.mode === "fit") {
-    warnings.push(
-      `fit assumes a ${TEXELS_ASSUMED}-texel texture, because the .vmt is not read here. ` +
-        `Check the result against the real size with read_game_content if it matters.`,
-    );
+    const unknown = [
+      ...new Set(
+        faces
+          .map((face) => normaliseMaterial(face.side.material))
+          .filter((key) => !options.textureSizes?.has(key)),
+      ),
+    ];
+    if (unknown.length > 0) {
+      warnings.push(
+        `fit assumed a ${TEXELS_ASSUMED}-texel texture for ${unknown.join(", ")}; pass the ` +
+          "real size or check it with read_game_content",
+      );
+    }
   }
 
   const text = applySplices(source, splices);

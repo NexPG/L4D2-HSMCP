@@ -69,7 +69,7 @@ covered: this table is the summary.
 |---|---|---|
 | Texture browser | `read_game_content(kind: "material")` | verified |
 | Material assign | `set_face_material` | verified |
-| Texture alignment | `align_faces`, `copy_face_alignment`, `set_face_uv` | tool |
+| Texture alignment | `align_faces`, `copy_face_alignment`, `set_face_uv` | verified: fit reads the real VTF size (a 64x64 tool texture is no longer fitted as 512) |
 | Manual U/V vectors (skew) | `set_face_uv` | verified: skewed axes accepted by vbsp and the map loaded |
 | Smoothing groups | `set_smoothing_groups` | tool |
 | Lightmap scale | `set_lightmap_scale` | tool |

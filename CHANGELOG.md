@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.119-alpha - 2026-11-21
+
+- **`align_faces` fits to the texture's real size.** Hammer's Fit knows the VTF's dimensions;
+  the offline path assumed 512 texels and warned. It now asks the sidecar for each material's
+  VTF size (a 32-pixel preview decode is enough) and uses it, keyed by the material name as the
+  `.vmf` stores it. A 64x64 `TOOLS/TOOLSTRIGGER` face is no longer stretched as if it were 512;
+  the 512 fallback and its warning remain only for a material that cannot be read.
+- **`align_faces` takes `game`** for that lookup, like the other asset-aware tools.
+- **Tool count stays 164.** Tests: 151 files, 1440 passed, 33 skipped.
+
 ## 0.0.118-alpha - 2026-11-21
 
 - **The gas can is the spawner.** `weapon_scavenge_item_spawn` is the entity the player uses;

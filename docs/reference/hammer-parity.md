@@ -70,7 +70,7 @@ getting `ENOENT` on the first call.
 | Browse models by kind | `read_asset_catalog` | What Hammer's model browser shows grouped: escalators, stairs, doors, vehicles, foliage, street, interiors, lights, signs, plus every sky's LDR/HDR completeness |
 | Align to World | `align_faces` (`world`) | vbsp's own base-axis table |
 | Align to Face | `align_faces` (`face`) | Axes kept perpendicular by orthogonalisation, not by a cross product — vbsp's table is not consistently handed |
-| Fit | `align_faces` (`fit`) | Assumes a 512-texel texture and says so |
+| Fit | `align_faces` (`fit`) | Reads the texture's real size from the VTF through the sidecar; 512 texels only when the material cannot be read, and then it says so |
 | Scale / shift / rotate U,V | `align_faces` | |
 | U/V vectors by hand (skew) | `set_face_uv` | Writes the axis vectors, offsets, scales and `rotation`; refuses illegal axes |
 | Justify (top/left/…) | `align_faces` (`shift`) | Expressed as a shift rather than as nine buttons |
