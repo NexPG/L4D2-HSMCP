@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.118-alpha - 2026-11-21
+
+- **The gas can is the spawner.** `weapon_scavenge_item_spawn` is the entity the player uses;
+  there is no separate `weapon_scavenge_item` (Valve's level-design docs and the AlliedMods
+  plugins both say so), so the empty `FindByClassname` was never the bug. The spawner takes
+  `SpawnItem`, `TurnGlowsOn`/`Off` and `glowrange`, and the test campaign's cans now carry them.
+- **`jointeam Survivor` + `god` works.** The client becomes a survivor with the survivor HUD and
+  the teleported can glows in front of it, roughly 40--120 units away depending on where the
+  player looked when `ent_teleport` ran. A scavenge round restarts on its countdown and resets
+  teams, so the `e` press has to land inside a round the client is a survivor in; the pickup
+  remains unproven.
+- **Tool count stays 164.** Tests: 151 files, 1439 passed, 33 skipped.
+
 ## 0.0.117-alpha - 2026-11-21
 
 - **A killed run no longer leaves a hidden addon.** `addonsToHide` renames an archive to
