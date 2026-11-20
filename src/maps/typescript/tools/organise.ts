@@ -311,11 +311,12 @@ export const setCordonTool = defineTool({
   name: "set_cordon",
   description:
     "Sets the cordon box and whether it is on. The only piece of a map's organisation that " +
-    "changes what compiles: with the cordon on, vbsp is handed only what the box contains " +
-    "and everything outside it is simply not in the map. It is how a mapper tests one room " +
-    "of a city without waiting for the city, and it is also how a map ships with three " +
-    "quarters of itself missing -- vbsp does not warn, because from its point of view " +
-    "nothing is wrong. Setting it always reports whether it is active.",
+    "changes what compiles: with the cordon on, `run_compile` hands vbsp only what the box " +
+    "touches, and everything outside it is simply not in the map. It is how a mapper tests " +
+    "one room of a city without waiting for the city, and it is also how a map ships with " +
+    "three quarters of itself missing -- vbsp does not warn, because from its point of view " +
+    "nothing is wrong. `ignoreCordon: true` bypasses the filter on one compile. Setting it " +
+    "always reports whether it is active.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -376,7 +377,7 @@ export const setCordonTool = defineTool({
       active: result.active,
       warnings: result.warnings,
       nextStep: result.active
-        ? "Turn it off before the compile that ships, or the map is only what is in the box."
+        ? "Turn it off before the compile that ships, or run_compile will ship only what is in the box. ignoreCordon: true compiles the whole map with the box still on."
         : "The box is set and switched off, so the next compile takes the whole map.",
     };
   },

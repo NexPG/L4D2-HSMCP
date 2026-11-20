@@ -51,4 +51,6 @@ of that path, but deleting it must not remove the capability.
 
 These are not menus; they are capabilities that do not exist yet:
 
-- 3D-skybox composition beyond the builder: `build_skybox` copies, seals the room and places the camera, but what is worth copying is design work.
+- Hotspot / `.rect` lookup: `align_faces(fit)` uses the VTF size; Hammer++ reads a rectangle from a `.rect` file.
+- 4-way displacement blends: the writer sets one alpha channel; engine support for four-way is unverified.
+- HLMV's 3D canvas on a headless desktop: `preview_model` is the substitute.

@@ -67,7 +67,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `docs/reference/l4d2-complete-reference.md` | L4D2 mechanics, Director defaults, finale stages, infected/weapon stats, entities, console, limits |
 | `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |
 | `references/mapping/hammer-coverage.md` | every Hammer++ feature, its tool, and what is still a gap |
-| `references/mapping/3d-skybox.md` | sky_camera, scale 16, and the scaled-copy workflow |
+| `references/mapping/3d-skybox.md` | `build_skybox`, scale 16, and the copy/room/camera workflow |
 | `references/mechanics/coverage.md` | what of L4D2 is covered, and what is not yet |
 | `references/mechanics/weapons-and-items.md` | the spawn classes, how to place one, and the saferoom rules |
 | `references/mechanics/crescendo-and-panic.md` | triggered hordes, nav Battlefield/Battlestation, testing |

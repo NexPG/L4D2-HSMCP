@@ -23,14 +23,21 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { hollowSolidsTool } from "../../src/maps/typescript/tools/hollow.js";
+import { transformSolidsTool } from "../../src/maps/typescript/tools/modify.js";
+import { writeVmfFittingTool } from "../../src/maps/typescript/tools/build.js";
+import { writeHintBrushTool } from "../../src/maps/typescript/tools/optimise.js";
+import { writePortalTool } from "../../src/maps/typescript/tools/wiring.js";
 import { writeOverlay } from "../../src/maps/typescript/tools/overlay.js";
 import { moveVerticesTool } from "../../src/maps/typescript/tools/vertex.js";
 import { clipSolids } from "../../src/maps/typescript/vmf/clip.js";
 import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
 import type { SolidSpec } from "../../src/maps/typescript/vmf/build.js";
+import { applyVmfOps } from "../../src/maps/typescript/vmf/edit.js";
+import { setCordon } from "../../src/maps/typescript/vmf/organise.js";
 import { sealDisplacements } from "../../src/maps/typescript/vmf/dispseal.js";
 import { writeDisplacements } from "../../src/maps/typescript/vmf/dispwrite.js";
 import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
+import { readEntityLump } from "../../src/maps/typescript/bsp/entities.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -58,11 +65,16 @@ const SHELL: SolidSpec[] = [
 const room = (): string => insertSolids(SKELETON, SHELL, { material: "DEV/DEV_MEASUREGENERIC01" }).text;
 
 /** Compiles one `.vmf` with vbsp and returns what the compiler said about it. */
-async function compile(path: string): Promise<{
+async function compile(
+  path: string,
+  extra: Record<string, unknown> = {},
+): Promise<{
   ok: boolean;
   leaked: boolean;
   bspExists: boolean;
-  log: string;
+  bsp: string;
+  stages: Array<{ stage: string; clean: boolean; exitCode: number | null }>;
+  cordon: { applied: boolean; active: boolean; removedSolids: number; removedEntities: number };
 }> {
   return (await runCompile.handler(
     {
@@ -74,9 +86,17 @@ async function compile(path: string): Promise<{
       cull: false,
       timeoutMinutes: 10,
       confirm: true,
+      ...extra,
     } as never,
     ctx,
-  )) as { ok: boolean; leaked: boolean; bspExists: boolean; log: string };
+  )) as {
+    ok: boolean;
+    leaked: boolean;
+    bspExists: boolean;
+    bsp: string;
+    stages: Array<{ stage: string; clean: boolean; exitCode: number | null }>;
+    cordon: { applied: boolean; active: boolean; removedSolids: number; removedEntities: number };
+  };
 }
 
 describe.skipIf(!has.toolchain)("a clipped room compiled for real", () => {
@@ -238,6 +258,222 @@ describe.skipIf(!has.toolchain)("a displaced floor, with and without its seal", 
       const result = await compile(closed);
       expect(result.leaked).toBe(false);
       expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+    },
+    300_000,
+  );
+});
+
+describe.skipIf(!has.toolchain)("a cordon, applied before vbsp", () => {
+  it(
+    "the room compiles alone, and the leaky structure outside it is not in the BSP",
+    async () => {
+      // Five brushes and a light in an open-topped box, far from the room. Without the
+      // cordon the light sees the void and vbsp leaks; with it the box is never handed to
+      // the compiler. The control compile is what makes the second one evidence.
+      const withOutside = insertSolids(room(), [
+        { shape: "box", mins: [4000, -128, -32], maxs: [4256, 128, 0] },
+        { shape: "box", mins: [4000, -128, 0], maxs: [4032, 128, 128] },
+        { shape: "box", mins: [4224, -128, 0], maxs: [4256, 128, 128] },
+        { shape: "box", mins: [4032, -128, 0], maxs: [4224, -96, 128] },
+        { shape: "box", mins: [4032, 96, 0], maxs: [4224, 128, 128] },
+      ]);
+      const withLight = applyVmfOps(withOutside.text, [
+        { op: "add", keyvalues: { classname: "light", origin: "4128 0 32", _light: "255 255 255 200" } },
+      ]);
+      const cordoned = setCordon(
+        withLight.text,
+        { mins: [-400, -400, -100], maxs: [400, 400, 400] },
+        { active: true },
+      );
+
+      const path = join(scratch, "cordoned_room.vmf");
+      writeFileSync(path, cordoned.text);
+
+      // Control: the cordon is on, but the whole map is compiled. It must leak, or the
+      // second compile proves nothing about filtering.
+      const whole = await compile(path, { ignoreCordon: true });
+      expect(whole.leaked).toBe(true);
+
+      const onlyRoom = await compile(path);
+      expect(onlyRoom.cordon.active).toBe(true);
+      expect(onlyRoom.cordon.applied).toBe(true);
+      expect(onlyRoom.cordon.removedSolids).toBe(5);
+      expect(onlyRoom.cordon.removedEntities).toBe(1);
+      expect(onlyRoom.leaked).toBe(false);
+      expect(onlyRoom.bspExists).toBe(true);
+      expect(onlyRoom.ok).toBe(true);
+
+      // The BSP landed under the map's real name, not the temp copy's, and the outside
+      // light is not in its entity lump.
+      expect(onlyRoom.bsp).toBe(join(scratch, "cordoned_room.bsp"));
+      const lump = readEntityLump(onlyRoom.bsp);
+      expect(lump.text).not.toContain('"origin" "4128 0 32"');
+      expect(lump.text).toContain('"origin" "0 0 128"');
+    },
+    300_000,
+  );
+});
+
+describe.skipIf(!has.toolchain)("geometry tools the compiler has to believe", () => {
+  it(
+    "a rotated and scaled brush, a counter and a two-plane clip compile",
+    async () => {
+      const path = join(scratch, "shaped_room.vmf");
+      const added = insertSolids(room(), [
+        { shape: "box", mins: [-96, -96, 0], maxs: [96, 96, 96] },
+      ]);
+      writeFileSync(path, added.text);
+      const blockId = added.solidIds[0]!;
+
+      // Rotate about the brush's centre, then stretch it. Two calls because the tool
+      // refuses to combine transforms: a result must have one cause.
+      transformSolidsTool.handler(
+        {
+          path,
+          solidIds: [blockId],
+          rotate: { axis: [0, 0, 1], degrees: 30 },
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      transformSolidsTool.handler(
+        {
+          path,
+          solidIds: [blockId],
+          scale: { factor: [1.4, 0.8, 1.0] },
+          textureLock: false,
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      const shaped = readFileSync(path, "utf8");
+      const rotated = checkVmfSolids(path, shaped).solids.find((s) => s.id === blockId)!;
+      expect(rotated.valid).toBe(true);
+
+      // A counter is several brushes that must join: the fitting tool checks the assembly,
+      // vbsp checks that each part is a closed volume.
+      writeVmfFittingTool.handler(
+        {
+          path,
+          fittings: [
+            {
+              fitting: "counter",
+              mins: [-220, -220, 0],
+              maxs: [-160, -120, 56],
+              facing: "+x",
+            },
+          ],
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      // Two planes: Hammer's 3-point clip is two ordinary cuts, and each one is checked by
+      // the same volume conservation the single-clip test uses.
+      const beforeCut = readFileSync(path, "utf8");
+      const cutX = clipSolids(
+        beforeCut,
+        { ids: [blockId] },
+        { normal: [1, 0, 0], dist: 0 },
+        { keep: "both" },
+      );
+      expect(cutX.solids[0]?.otherId).not.toBeNull();
+      const ids = [cutX.solids[0]!.id, cutX.solids[0]!.otherId!];
+      const cutY = clipSolids(cutX.text, { ids }, { normal: [0, 1, 0], dist: 0 }, { keep: "both" });
+      expect(cutY.solids.every((s) => s.otherId !== null)).toBe(true);
+      writeFileSync(path, cutY.text);
+
+      // Mirror one of the four pieces. The tool's own check is that the volume is preserved
+      // by a reflection; the compile is the check that the planes still bound a brush.
+      transformSolidsTool.handler(
+        {
+          path,
+          solidIds: [cutY.solids[0]!.id],
+          mirror: { axis: "x" },
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      for (const solid of checkVmfSolids(path, readFileSync(path, "utf8")).solids) {
+        expect(
+          solid.valid,
+          `solid ${solid.id}: ${solid.findings.map((f) => f.message).join(" | ")}`,
+        ).toBe(true);
+      }
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+    },
+    300_000,
+  );
+});
+
+describe.skipIf(!has.toolchain)("visibility tools, compiled with vvis", () => {
+  it(
+    "a hint slab and an areaportal in a doorway survive vbsp and vvis",
+    async () => {
+      // The +x wall is split around a 64x128 doorway; the other five faces are unchanged.
+      // Beyond the doorway is a second sealed room, because an areaportal separates two
+      // areas of the map -- a doorway to the void leaks whatever is hung in it.
+      const shellWithDoor: SolidSpec[] = [
+        { shape: "box", mins: [-288, -288, -32], maxs: [288, 288, 0] },
+        { shape: "box", mins: [-288, -288, 256], maxs: [288, 288, 288] },
+        { shape: "box", mins: [-288, -288, 0], maxs: [-256, 288, 256] },
+        { shape: "box", mins: [-256, -288, 0], maxs: [256, -256, 256] },
+        { shape: "box", mins: [-256, 256, 0], maxs: [256, 288, 256] },
+        // +x wall, with the doorway at y -32..32, z 0..128.
+        { shape: "box", mins: [256, -288, 0], maxs: [288, -32, 256] },
+        { shape: "box", mins: [256, 32, 0], maxs: [288, 288, 256] },
+        { shape: "box", mins: [256, -32, 128], maxs: [288, 32, 256] },
+        // The annex on the far side: floor, ceiling and three walls, open only at the
+        // doorway where the portal goes.
+        { shape: "box", mins: [288, -128, -32], maxs: [576, 128, 0] },
+        { shape: "box", mins: [288, -128, 128], maxs: [576, 128, 160] },
+        { shape: "box", mins: [576, -128, 0], maxs: [608, 128, 128] },
+        { shape: "box", mins: [288, -160, 0], maxs: [576, -128, 128] },
+        { shape: "box", mins: [288, 128, 0], maxs: [576, 160, 128] },
+      ];
+      const path = join(scratch, "visibility_room.vmf");
+      writeFileSync(path, insertSolids(SKELETON, shellWithDoor, { material: "DEV/DEV_MEASUREGENERIC01" }).text);
+
+      writeHintBrushTool.handler(
+        {
+          path,
+          mins: [-64, -200, 64],
+          maxs: [64, 200, 80],
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      writePortalTool.handler(
+        {
+          path,
+          classname: "func_areaportal",
+          mins: [256, -32, 0],
+          maxs: [288, 32, 128],
+          backup: false,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      const result = await compile(path, { stages: ["vbsp", "vvis"] });
+      expect(result.leaked).toBe(false);
+      expect(result.stages.map((s) => s.stage)).toEqual(["vbsp", "vvis"]);
+      for (const stage of result.stages) {
+        expect(stage.clean, `${stage.stage} exit ${stage.exitCode}`).toBe(true);
+      }
       expect(result.ok).toBe(true);
     },
     300_000,

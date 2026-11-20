@@ -5,6 +5,28 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.122-alpha - 2026-11-21
+
+- **An active cordon now changes the compile, as it always claimed to.** `set_cordon` wrote the
+  block and `run_compile` passed the whole file to vbsp, so a "one-room test" compiled the city.
+  The compile copy is now filtered the way Hammer filters it: a brush whose bounds intersect the
+  box is kept whole, a point entity by its origin, a brush entity by its brushes, and an entity
+  with no origin and no brush is kept and reported. The filtered copy is compiled under the map's
+  own name in a temp directory and its `.bsp`/`.lin` moved back, so `changelevel` names still
+  match. `ignoreCordon: true` compiles the whole map. Proven by a control: a leaky open box
+  outside the cordon leaks when ignored and is absent from the BSP when applied.
+- **Five more Hammer++ rows are verified by the compiler, not by reading.** One room now also
+  proves a brush rotated 30 degrees, scaled non-uniformly and mirrored; a counter assembled from
+  several brushes; a two-plane (3-point) clip with four convex pieces; a hint slab; and a
+  `func_areaportal` filling a sealed doorway. The last two run vbsp **and vvis**. The first
+  areaportal attempt leaked because a doorway to the void is not two areas -- the test now has a
+  second sealed room beyond the doorway, which is what a portal actually separates.
+- **The coverage documents match the code again.** Propper++ (`brush_to_model`), the 3D-skybox
+  builder, displacement sealing and the overlay compile had all been recorded as gaps after they
+  were closed. `test/tools/coverage.test.ts` now fails when a Tool column names something not
+  registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
+- **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
+
 ## 0.0.121-alpha - 2026-11-21
 
 - **The displacement leak is explained, and `seal_displacements` repairs it.** The previous entry

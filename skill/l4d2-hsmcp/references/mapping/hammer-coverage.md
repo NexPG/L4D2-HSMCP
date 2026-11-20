@@ -28,12 +28,12 @@ covered: this table is the summary.
 | Clip | `clip_solids` | verified: both halves of a cut brush compiled with vbsp in a sealed room (`tools-compile.test.ts`) |
 | Hollow | `hollow_solids` | verified: six mitred walls from one block compiled with vbsp in a sealed room (`tools-compile.test.ts`) |
 | Vertex edit | `move_vertices` | verified: a broadened top edge compiled with vbsp in the same room as hollow and an overlay |
-| Move/rotate/scale/mirror | `transform_solids` | tool |
+| Move/rotate/scale/mirror | `transform_solids` | verified: a brush rotated 30 degrees and scaled non-uniformly compiled with vbsp |
 | Merge convex brushes | `merge_solids` | verified: merged platform passed vbsp; refuses a non-convex or overlapping union |
 | Move objects to floor/ceiling | `move_to_surface` | verified: dropped brush passed vbsp; optional align to the surface |
 | Delete | `delete_solids` | verified |
-| Carve | several clips | tool |
-| Fitting (door casing, counter, skirting) | `write_vmf_fitting` | tool |
+| Carve | several clips | verified through the same two-plane cut: four convex pieces compiled with vbsp. No dedicated tool, by design |
+| Fitting (door casing, counter, skirting) | `write_vmf_fitting` | verified: a counter assembled from several brushes compiled with vbsp |
 | Rotating door | `place_door` | verified: hinge origin and checkpoint name on the night-moscow door |
 | Water volume | `write_vmf_water` | verified on a fixture: Water shader checked, brush valid, `water_lod_control` added |
 
@@ -84,9 +84,9 @@ covered: this table is the summary.
 | Feature | Tool | Status |
 |---|---|---|
 | func_detail | `set_solid_class` | tool |
-| Hint/skip | `write_hint_brush` | tool |
-| Areaportal / occluder | `write_portal` | tool |
-| Visgroups / groups / cordon | `set_visgroup`, `auto_visgroups`, `group_solids`, `set_cordon` | tool: auto builds one group per entity class and per material, a solid joining its dominant material by face area |
+| Hint/skip | `write_hint_brush` | verified: vbsp and vvis accepted a hint slab in the two-room test |
+| Areaportal / occluder | `write_portal` | verified: a `func_areaportal` filling a sealed doorway compiled with vbsp and vvis |
+| Visgroups / groups / cordon | `set_visgroup`, `auto_visgroups`, `group_solids`, `set_cordon` | verified for the cordon: an active box filters the compile copy, and the leaky structure outside it is absent from the BSP (`tools-compile.test.ts`). Auto visgroups build one group per class and one per dominant material |
 
 ## Assets
 
@@ -147,17 +147,17 @@ its file-level result or named as view-only.
 | Keybind editor, Discord RPC, MP3 playback, model hotload, crash recovery, autosave | Application features with no file-level operation. `read_hammerpp` reports the settings and keybinding count; guarded writers take backups and support `dryRun` |
 | `vertices_plus` precise brush data | Kept, moved with geometry, dropped when a clip changes the loop; Hammer++ regenerates it |
 | Multiple cordons | `set_cordon` writes the compile-relevant half; the editor's cordon list is not map content |
-| 3-point clip | `clip_solids` with two plane cuts; the result is the same convex pieces |
+| 3-point clip | `clip_solids` with two plane cuts; verified: the four resulting pieces compiled with vbsp |
 | Polygon tool | `write_vmf_solid` shape `convex` |
 | UV lock | `move_vertices`/`transform_solids` move geometry; `set_face_uv` writes the resulting axes |
-| Propper++ (brush → model) | **gap**: no SMD/QC writer; `run_studiomdl` compiles a supplied source |
+| Propper++ (brush → model) | `brush_to_model`: VMF planes → SMD + QC, VMF UVs, brush or box collision; verified with the real compiler |
 | Hotspot texturing (`$rectanglemap`/`.rect`) | `align_faces(fit)` writes U/V; the rectangle lookup is editor-side and not implemented |
 | Particle/rope/fog/render-effect previews | Editor-only; `render_vmf_view`, `run_map_test`, `read_lightmap_budget` are the substitutes |
 
 These are not gaps in what a map can contain. They are the editor application's own surface,
-and the table above says which primitive stands in for each one. Propper++ is the one row
-that is a real capability gap, because it produces a model the map needs and the toolkit
-cannot yet write that model.
+and the table above says which primitive stands in for each one. Propper++ used to be the
+one row that was a real gap; `brush_to_model` closes it, so the remaining rows are editor
+presentation rather than map content.
 
 ## Hammer++ files
 
@@ -177,7 +177,9 @@ be. That is why geometry edits update or drop it rather than leave it behind.
 
 Ordered by how often a mapper needs it:
 
-1. **3D-skybox design** - `write_skybox_copy` makes the scaled copy and `write_sky_camera` places the camera; choosing what to copy, sealing the area and matching the view remain design work.
-2. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
+1. **Hotspot / `.rect` lookup** - the one Hammer++ data format with no path here. `align_faces(fit)` uses the VTF size; Hammer++ maps the face to a rectangle from a `.rect` file.
+2. **4-way displacement blends** - the writer can set alpha; whether L4D2's shaders support a four-way blend is unverified, so no tool promises one.
+3. **HLMV 3D viewport on a headless desktop** - `run_hlmv` launches the editor and `capture_window` returns its UI as an image; the 3D canvas itself stays black in a sandboxed session and needs an interactive desktop. `preview_model` closes the gap by compiling a sealed room with the model and capturing the engine's view; the HLMV canvas remains the environment's limit, not the toolkit's.
 
-Each of these is a row that keeps the project short of "everything Hammer++ can do".
+The rest is editor presentation: selection glow, gizmos, previews and drag interactions. Their
+results are already file-level operations, and the coverage table says which one stands in.

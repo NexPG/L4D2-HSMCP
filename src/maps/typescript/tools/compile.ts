@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, extname, join } from "node:path";
 import { clip } from "@projectsociety/mcp-core";
 import { z } from "zod";
@@ -19,6 +20,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { gameBlock, gameFor } from "../../../core/typescript/games/resolve.js";
 import { checkSkybox } from "../../../core/typescript/games/skybox.js";
+import { applyCordon } from "../vmf/cordon.js";
 import { GAME, GAME_BLOCK, resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 const FINDING = z.object({
@@ -67,7 +69,9 @@ export const runCompile = defineTool({
     "findings rather than its raw output. Takes minutes to hours: vvis on a large map " +
     "is the slow part, and -fast exists for iteration. Stops at the first stage that " +
     "fails, because vvis and vrad results are meaningless after a leak. Run " +
-    "read_vmf_lint first -- it catches before the compile most of what makes one fail.",
+    "read_vmf_lint first -- it catches before the compile most of what makes one fail. " +
+    "An active cordon is applied to the compile copy the way Hammer applies it; pass " +
+    "ignoreCordon: true to compile the whole map anyway.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -97,6 +101,14 @@ export const runCompile = defineTool({
       .array(z.enum(["vbsp", "vvis", "vrad"]))
       .default(["vbsp", "vvis", "vrad"])
       .describe("Stages to run, in order. vbsp alone is enough to check a map seals."),
+    ignoreCordon: z
+      .boolean()
+      .optional()
+      .describe(
+        "Compile the whole map even when its cordon is switched on. By default an active " +
+          "cordon filters the compile copy the way Hammer does: brushes outside the box and " +
+          "entities whose origin is outside it are not handed to vbsp.",
+      ),
     toolchain: TOOLCHAIN,
     cull: z
       .boolean()
@@ -130,6 +142,18 @@ export const runCompile = defineTool({
     stages: z.array(STAGE_RESULT),
     leaked: z.boolean(),
     pointfile: z.string().nullable(),
+    /**
+     * What the cordon did to the compile copy. `applied: false` with an active cordon means
+     * `ignoreCordon` was set or no box had a volume.
+     */
+    cordon: z.object({
+      active: z.boolean(),
+      applied: z.boolean(),
+      boxes: z.number(),
+      removedSolids: z.number(),
+      removedEntities: z.number(),
+      note: z.string().nullable(),
+    }),
     /** The sky check that ran before vbsp; `checked: false` means it could not run. */
     skybox: z.object({
       skyname: z.string().nullable(),
@@ -176,7 +200,6 @@ export const runCompile = defineTool({
       );
     }
     const game = toWindowsPath(gameDir);
-    const target = toWindowsPath(vmf);
     const timeoutMs = args.timeoutMinutes * 60_000;
 
     // A sky is part of the compiled result, not of the editor view: vbsp writes the name
@@ -221,6 +244,24 @@ export const runCompile = defineTool({
       );
     }
 
+    // The cordon is the one piece of the map's organisation that changes the compile: with
+    // it on, Hammer hands vbsp only what the box contains. This used to read the block and
+    // compile everything, so a one-room test built the whole map. The filtered copy lives
+    // in a temp directory under the original map's own name, and its .bsp and .lin are
+    // copied back, because vbsp derives the map name from the file it is given.
+    const cordon = applyCordon(vmfText, { ignore: args.ignoreCordon });
+    let compileVmf = vmf;
+    let tempDir: string | null = null;
+    if (cordon.applied) {
+      tempDir = mkdtempSync(join(tmpdir(), "hsmcp-cordon-"));
+      compileVmf = join(tempDir, basename(vmf));
+      writeFileSync(compileVmf, cordon.text);
+    }
+    const target = toWindowsPath(compileVmf);
+    const compiledBsp = join(dirname(compileVmf), `${basename(compileVmf, ".vmf")}.bsp`);
+    const compiledLin = join(dirname(compileVmf), `${basename(compileVmf, ".vmf")}.lin`);
+    const realLin = join(dirname(vmf), `${basename(vmf, ".vmf")}.lin`);
+
     // Resolved against what is on disk, for the stages actually being run: asking for the
     // ++ chain on a machine that has none of it is a normal state, not a fault.
     const chosen = chooseToolchain(ctx.config, args.toolchain, args.stages, profile);
@@ -257,39 +298,53 @@ export const runCompile = defineTool({
     const stages: Array<z.infer<typeof STAGE_RESULT>> = [];
     let leaked = false;
 
-    for (const stage of args.stages) {
-      const plan = plans[stage]!;
-      ctx.audit.record({ kind: "compile_start", data: { stage, vmf, toolchain: chain } });
-      const run = await runCompiler(ctx.config, plan.exe, plan.argv, timeoutMs, chain, profile);
-      const report = parseCompileLog(`${run.stdout}\n${run.stderr}`);
-      ctx.audit.record({
-        kind: "compile_end",
-        data: {
+    try {
+      for (const stage of args.stages) {
+        const plan = plans[stage]!;
+        ctx.audit.record({ kind: "compile_start", data: { stage, vmf, toolchain: chain } });
+        const run = await runCompiler(ctx.config, plan.exe, plan.argv, timeoutMs, chain, profile);
+        const report = parseCompileLog(`${run.stdout}\n${run.stderr}`);
+        ctx.audit.record({
+          kind: "compile_end",
+          data: {
+            stage,
+            toolchain: chain,
+            exitCode: run.code,
+            clean: stageClean(report, run.code, run.timedOut),
+            ms: run.durationMs,
+          },
+        });
+
+        stages.push({
           stage,
-          toolchain: chain,
           exitCode: run.code,
+          durationMs: run.durationMs,
+          timedOut: run.timedOut,
+          findings: report.findings,
           clean: stageClean(report, run.code, run.timedOut),
-          ms: run.durationMs,
-        },
-      });
+          stdoutTail: clip(run.stdout.split(/\r?\n/).slice(-40).join("\n"), 4000),
+        });
 
-      stages.push({
-        stage,
-        exitCode: run.code,
-        durationMs: run.durationMs,
-        timedOut: run.timedOut,
-        findings: report.findings,
-        clean: stageClean(report, run.code, run.timedOut),
-        stdoutTail: clip(run.stdout.split(/\r?\n/).slice(-40).join("\n"), 4000),
-      });
+        if (report.leaked) leaked = true;
+        // Carrying on past a failed stage wastes an hour of vvis on a map that already
+        // cannot produce meaningful visibility.
+        if (!report.clean || run.timedOut) break;
+      }
 
-      if (report.leaked) leaked = true;
-      // Carrying on past a failed stage wastes an hour of vvis on a map that already
-      // cannot produce meaningful visibility.
-      if (!report.clean || run.timedOut) break;
+      // The compiler wrote beside the filtered copy, so the two artefacts a caller can read
+      // afterwards are moved back under the map's real name. A stale `.lin` from an earlier
+      // compile is removed when this one did not leak: read_leak must not report a leak the
+      // current .bsp does not have.
+      if (tempDir) {
+        if (existsSync(compiledBsp)) copyFileSync(compiledBsp, bsp);
+        if (existsSync(compiledLin)) copyFileSync(compiledLin, realLin);
+        else rmSync(realLin, { force: true });
+      }
+    } finally {
+      if (tempDir) rmSync(tempDir, { recursive: true, force: true });
     }
 
-    const pointfile = join(dirname(vmf), `${basename(vmf, ".vmf")}.lin`);
+    const pointfile = realLin;
     const bspExists = existsSync(bsp);
 
     return {
@@ -305,6 +360,19 @@ export const runCompile = defineTool({
       stages,
       leaked,
       pointfile: existsSync(pointfile) ? pointfile : null,
+      cordon: {
+        active: cordon.active,
+        applied: cordon.applied,
+        boxes: cordon.boxes.length,
+        removedSolids: cordon.removedSolids,
+        removedEntities: cordon.removedEntities,
+        note:
+          cordon.warnings[0] ??
+          (cordon.applied
+            ? `${cordon.removedSolids} brush(es) and ${cordon.removedEntities} entit(ies) ` +
+              `outside the cordon were left out of the compile`
+            : null),
+      },
       skybox: { skyname, ...skybox },
       ok: stages.every((s) => s.clean && !s.timedOut) && bspExists,
     };

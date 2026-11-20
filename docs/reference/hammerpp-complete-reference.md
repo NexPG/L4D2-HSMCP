@@ -98,6 +98,7 @@ The official feature list is organised as a list of highlights. The grouping bel
 | Paint alpha | Blend by height/slope; 4-way blends are an option (`Enable4WayBlends`) but need engine shader support |
 | Subdivide | Raise power; resamples the grid |
 | Sew | Joins two displacement edges |
+| Create sealing brush | `seal_displacements` duplicates each displaced world brush without its `dispinfo` and tool-textures the copy; `write_displacement` takes `seal: true` to do both in one call. Verified by vbsp: the bare room leaks, the sealed one compiles |
 | Invert alpha | SDK2013 option |
 | Detail sprites | `detail.vbsp` + `detailmaterial` on worldspawn; only displacement faces scatter them |
 | Displacement vertex explosion | Fixed in build 8871 |
@@ -396,21 +397,21 @@ question asked of the Hammer++-specific layer.
 |---|---|---|
 | File new/open/save/export | `write_vmf`, `read_vmf`, writers, `export_vmf_map` | verified |
 | Brush primitives, polygon, arch | `write_vmf_solid` (box/wedge/cylinder/convex/cone/stairs/arch/sphere/torus) | verified for primitives; compound shapes checked by `read_vmf_solids` |
-| 3-point clip, entity clip | `clip_solids` (plane clips, repeated) | tool |
-| Vertex edit / UV lock | `move_vertices`, `transform_solids` | tool |
+| 3-point clip, entity clip | `clip_solids` (plane clips, repeated) | verified: two cuts, four pieces, vbsp clean |
+| Vertex edit / UV lock | `move_vertices`, `transform_solids` | verified: a moved edge, a rotation with texture lock and a non-uniform scale all compiled |
 | Merge / hollow / move to floor | `merge_solids`, `hollow_solids`, `move_to_surface` | verified |
-| Cordon / visgroups / groups | `set_cordon`, `set_visgroup`, `group_solids` | tool |
+| Cordon / visgroups / groups | `set_cordon`, `set_visgroup`, `group_solids` | verified for the cordon: `run_compile` filters the copy, and the outside leak disappears from the BSP |
 | Instances, create from selection, prefab | `write_instance`, `create_instance_from_selection`, `insert_prefab` | verified |
-| Propper++ (brush → model) | No writer yet; `run_studiomdl` compiles a supplied QC/SMD | **gap** (source-model authoring) |
+| Propper++ (brush → model) | `brush_to_model`: VMF planes → SMD + QC, VMF UVs, brush or box collision; `run_studiomdl` compiles it | verified with the real compiler (`.phy`, `read_model_info`) |
 | Hotspot texturing | `align_faces(fit)` only; `.rect` lookup is editor-side | **gap** (editor-side; result is U/V, which `set_face_uv` can write) |
 | Texture browser/face sheet | `read_game_content`, `set_face_material`, `align_faces`, `set_face_uv` | verified |
 | Smoothing groups / lightmap scale | `set_smoothing_groups`, `set_lightmap_scale` | tool |
-| Overlays | `write_overlay` | tool |
+| Overlays | `write_overlay` | verified: vbsp accepted an overlay in the sealed-room compile test |
 | Entity tool / properties / I/O | `edit_vmf`, `read_entity_report`, `validate_io` | verified |
 | `editor_text` | `edit_vmf` | tool (no in-game effect) |
 | Color picker | `edit_vmf` `rendercolor` | verified |
 | Lighting/fog/sky/particle/rope/render preview | No editor viewport; `render_vmf_*`, `run_map_test`, `read_lightmap_budget` | partial (view-only) |
-| 3D skybox preview | `write_sky_camera` + `write_skybox_copy`; layout manual | partial |
+| 3D skybox | `build_skybox` copies, seals the room and places `sky_camera`; `write_sky_camera`/`write_skybox_copy` are the halves | verified by vbsp; the view is still the eye's |
 | Model/particle/sound browsers | `read_game_content`, `read_model_info`, `read_asset_catalog` | verified |
 | Model hotload | `preview_asset` re-reads; no live editor | view-only |
 | Physics tool | Entity origin/angles via `edit_vmf`; brush posing is not saved | view-only |
@@ -418,25 +419,21 @@ question asked of the Hammer++-specific layer.
 | Pointfile | `read_leak` | verified |
 | Tools++ flags/limits | `run_compile` (`toolchain: "plusplus"`), `read_map_geometry`, `read_map_report` | verified |
 | Crash recovery/autosave, keybinds, Discord, MP3 | Application state | not applicable |
-| Propper++ atlas/merge | A model-authoring pipeline; no tool yet | **gap** |
+| Propper++ atlas/merge | `brush_to_model` covers several solids, per-material SMD groups and `$concave`; a texture atlas is a Propper++ convenience, not something a map needs | optional |
 | 4-way displacement blends | `paint_displacement`/`sculpt_displacement` can write alpha; engine support unverified | **gap (verification)** |
 
 ## 9. Priority backlog from this pass
 
-1. **Propper++ equivalent.** A brush → model pipeline (write QC/SMD, `run_studiomdl`) is the
-   largest genuine Hammer++ feature with no agent path. It needs a mesh writer, not a map
-   writer.
-2. **Preview-map fallback for models.** HLMV's blank canvas is an environment limit; a
-   sealed room + `prop_dynamic` + `mat_fullbright` + `run_map_test` screenshot would make
-   model shape visible on any desktop.
-3. **Hotspot / `.rect` lookup.** The result is U/V; a small reader could map a face to a
-   rectangle from `$rectanglemap`.
-4. **4-way blends.** Verify whether L4D2 shaders support them before offering a writer.
-5. **Editor launch/capture.** Done: `open_in_hammer` launches Hammer++ on a VMF and returns
+1. **Hotspot / `.rect` lookup.** The result is U/V; a small reader could map a face to a
+   rectangle from `$rectanglemap`. The last Hammer++ data format with no path here.
+2. **4-way blends.** Verify whether L4D2 shaders support them before offering a writer.
+3. **Editor launch/capture.** Done: `open_in_hammer` launches Hammer++ on a VMF and returns
    a real capture of the editor viewport. It is a look, not a control channel; the UI is
    still a person at a mouse.
-6. **Settings reader.** Done as `read_hammerpp`: the INI by section, the game configuration
+4. **Settings reader.** Done as `read_hammerpp`: the INI by section, the game configuration
    and build programs, the FGD mount and the keybinding count.
+5. **Propper++ and the model preview.** Done: `brush_to_model` writes the SMD/QC the compiler
+   reads, and `preview_model` builds a sealed room when HLMV's canvas is blank.
 
 The rest of Hammer++ is either already reachable at the file level or is a mouse
 interaction whose result the writers already express.

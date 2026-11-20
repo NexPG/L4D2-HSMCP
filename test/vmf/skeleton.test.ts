@@ -230,7 +230,7 @@ describe("a map created and built through tools alone", () => {
       ctx,
     )) as unknown as { sealed: boolean };
     expect(r.sealed).toBe(true);
-  });
+  }, 30_000);
 
   it("reads as leaking the moment a wall is left out, so the test above means something", async () => {
     const path = await build("holed.vmf", SHELL.slice(0, 5));
@@ -239,7 +239,7 @@ describe("a map created and built through tools alone", () => {
       ctx,
     )) as unknown as { sealed: boolean };
     expect(r.sealed).toBe(false);
-  });
+  }, 30_000);
 
   it.skipIf(!has.toolchain)(
     "seals for vbsp too, which was not written here",

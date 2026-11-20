@@ -48,11 +48,11 @@ getting `ENOENT` on the first call.
 | Block tool — cone | `write_vmf_solid` | |
 | Block tool — stairs | `write_vmf_solid` | Says when the rise exceeds the 18 units a player climbs |
 | Arbitrary convex solid | `write_vmf_solid` (`convex`) | Face by face, for what the primitives do not reach |
-| Selection: move / rotate / scale | `transform_solids` | Texture lock on by default, refused where it cannot be exact |
+| Selection: move / rotate / scale | `transform_solids` | Texture lock on by default, refused where it cannot be exact. A 30-degree turn and a non-uniform scale compiled with vbsp |
 | Copy / paste | `clone_solids` | Fresh solid and side ids; materials and alignment copied byte for byte |
 | Flip / mirror | `transform_solids` | |
 | Delete | `delete_solids` | |
-| **Clip tool** | `clip_solids` | Front, back or both. Both must sum to the original volume or the write is refused |
+| **Clip tool** | `clip_solids` | Front, back or both. Both must sum to the original volume or the write is refused. Two cuts (the 3-point clip) compiled with vbsp |
 | **Vertex manipulation** | `move_vertices` | Refuses what Hammer refuses: a move that leaves a face non-planar. A broadened edge compiled with vbsp |
 | Make Hollow | `hollow_solids` | Mitred. Hammer's own version overlaps at the corners. Verified by vbsp |
 | **Carve** | *not implemented, on purpose* | Its result comes from `clip_solids` repeated. An operation whose correct use is "don't" is not a gap |
@@ -124,7 +124,7 @@ getting `ENOENT` on the first call.
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Rotating door | `place_door` | Origin is the hinge; model hull read with `read_model_info`; checkpoint names checked |
 | Create instance from selection | `create_instance_from_selection` | Writes the instance file, recentres it and leaves one `func_instance`; a brush entity is taken whole |
-| Areaportals | `write_portal` | |
+| Areaportals | `write_portal` | Verified: a `func_areaportal` filling a sealed doorway compiled with vbsp and vvis |
 | Occluders | `write_portal` | |
 | Map Properties | `set_map_properties` | worldspawn only. Says when `detailvbsp` and `detailmaterial` are set apart |
 | Any map property | `set_worldspawn` | Any worldspawn key, including mod keys; `id` and `classname` protected |
@@ -137,7 +137,7 @@ getting `ENOENT` on the first call.
 | Visgroups | `set_visgroup`, `read_map_organisation` | Writes both halves: a membership with no declaration is dropped by Hammer without a word |
 | Auto Visgroups | `auto_visgroups` | Fills the tree from what the file contains: one group per entity class and one per material, a solid joining its dominant material by face area |
 | Groups | `group_solids` | |
-| Cordon | `set_cordon` | The one setting that changes what compiles |
+| Cordon | `set_cordon` | The one setting that changes what compiles. `run_compile` now filters the copy, and the outside leak is absent from the BSP |
 | Hide / show | *the 3D view* | A visgroup's visibility flag is written; what an editor draws is not this toolkit's business |
 | Selection sets | *not applicable* | Selectors are per call by design. State living in the server is state the tests would have to simulate |
 

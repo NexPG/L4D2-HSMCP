@@ -50,6 +50,23 @@ is exactly what the old default existed to prevent.
 for it explicitly. Leaving it out on a stock compile means "no culling", because that is the only
 thing stock can do.
 
+## The cordon changes the compile copy
+
+A cordon is a box and an on/off flag in the `.vmf`, and it exists to make a test compile cheap.
+Hammer filters the copy it hands to vbsp; `run_compile` now does the same. A brush whose bounds
+**intersect** the box is kept whole -- a brush that straddles the edge is not clipped, because
+clipping at compile time would change the map. A point entity is kept when its origin is inside;
+a brush entity when at least one of its brushes is; an entity with no origin and no brush is kept
+and reported, because nothing can place it. Multiple active cordons are a union.
+
+The filtered copy is written under the map's own name in a temporary directory, compiled there,
+and its `.bsp` and `.lin` are moved back beside the original. The name matters: vbsp derives the
+map name from the file it is given, and a `map.cordon.bsp` would break every `changelevel` that
+names `map`. Pass `ignoreCordon: true` to compile the whole map with the cordon left on.
+
+The block itself is never removed from the `.vmf`. Only the compile copy is filtered, so a mapper
+who opens the file still sees the cordon they drew.
+
 ## What the Hammer++ chain buys, and what it does not
 
 One flag is exposed — `cull` — because one is all that could be measured here.
