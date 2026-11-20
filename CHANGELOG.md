@@ -19,7 +19,9 @@ with a line here.
   a click on `PLAY CAMPAIGN` opened its flyout. `SetCursorPos` plus `mouse_event` does not move
   the game's cursor at all. Full menu navigation is still flaky -- the mode carousel and the
   flyout share screen space and a trained sequence of clicks has not been settled -- so a
-  campaign start from the menu is not proven yet.
+  campaign start from the menu is not proven yet. A console-less scavenge run showed why no
+  pickup could be tested: with `+map` the local client joins the **infected** team (the Spitter
+  spawn screen and `SCORE 0 / 16` are in the screenshot), so `e` was never a survivor use key.
 - **Tool count stays 164.** Tests: 151 files, 1437 passed, 33 skipped.
 
 ## 0.0.114-alpha - 2026-11-21
