@@ -5,5 +5,5 @@
 	"addonAuthor"	"NexPG"
 	"addonVersion"	"1"
 	"addonTag"	"misc"
-	"addonDesc"	"Bots keep pain pills and adrenaline in a one-slot hidden inventory until their total health is below 20. Medkits are left alone."
+	"addonDesc"	"Bots carry pain pills and adrenaline but cannot use them while total health is at least 20. The items stay in their inventory."
 }

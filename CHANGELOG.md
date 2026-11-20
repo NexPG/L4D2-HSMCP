@@ -7,19 +7,19 @@ with a line here.
 
 ## 0.0.131-alpha - 2026-11-21
 
-- **A working VScript addon: bots keep pills and adrenaline until they need them.**
+- **A working VScript addon: bots carry pills and adrenaline but cannot use them above 20 HP.**
   `addons/hsmcp-bot-meds` is a pure addon (no SourceMod): a `mapspawn_addon` starts a
-  `logic_script` think function, and a bot that brings pain pills or adrenaline into its hands
-  while total health (permanent plus temporary) is at least 20 has the item moved into a
-  one-slot hidden inventory. Below 20 the item is returned so the bot can use it. A second
-  item while the slot is full is put back into the world for a human; death, round end and
-  chapter transition are handled. Verified on `c1m1_hotel`: stored at 30 HP, returned at
-  10 HP, 15+10 temporary health counted as 25, full-slot extra dropped, death drop once. The
+  `logic_script` think function. When a bot brings pain pills or adrenaline into its hands
+  while total health (permanent plus temporary) is at least 20, the poller switches it to
+  another carried weapon; the item stays in the inventory, so the bot can carry it or give it
+  to a teammate. Below 20 the addon does nothing and the bot is free to use it. This replaced
+  an earlier hidden-inventory prototype that removed the item; the request was to let the bot
+  keep it. Verified on `c1m1_hotel`: three bots at 30 HP were switched to the pistol and still
+  carried all three pills; at 10 HP there were no lock lines and no `pills_used` above 20. The
   ready VPK is installed in `left4dead2/addons/hsmcp_bot_meds.vpk`.
-- **Medkits are deliberately out of scope by default.** Bots still use them exactly as
-  vanilla; the code has a disabled `HSMCP_BOT_MEDS_MEDKITS` switch with the same rule. The
-  first observation of "they use medkits in the safe room" was vanilla behaviour, not a
-  failure of the pill rule.
+- **Medkits are deliberately out of scope.** Bots use them exactly as vanilla; the request was
+  pills and adrenaline. The "they use medkits in the safe room" observation was vanilla
+  behaviour, not a failure of the pill rule.
 - **The addon exposed a real VScript-checker mistake.** `read_vscript` said event hooks need
   a `logic_script`, even in `mapspawn_addon.nut`, which the engine loads as a global script.
   The message now distinguishes the four global addon scripts from files that need a loader,

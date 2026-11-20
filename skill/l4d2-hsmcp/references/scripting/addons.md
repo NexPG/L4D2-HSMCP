@@ -90,14 +90,15 @@ The useful calls for healing items:
 | `player.SetHealthBuffer(n)` | clears or restores temporary health |
 | `Entities.FindByClassname(prev, "weapon_pain_pills")` | iterate carried and world items |
 
-`DropItem` creates a world entity; to keep a hidden inventory, record the class and kill the
-new world entity immediately. Find it by class and null owner near the player, excluding the
-world items that were already there.
+A hidden inventory is possible (`DropItem`, kill the new world entity, `GiveItem` later), but
+it is not always the right answer: the request that prompted this page wanted the bot to keep
+carrying the item. The alternative is a **carry lock**: when the item is in hand and the bot
+is above the threshold, call `SwitchToItem` on another carried weapon. The item stays in the
+inventory, no entity is created or destroyed, and the bot can still give it to a teammate.
 
-The classes are `weapon_pain_pills`, `weapon_adrenaline` and `weapon_first_aid_kit`. A
-one-slot hidden inventory is per bot: a second item of the same category is dropped for a
-human, not stacked. Death, round end and chapter transition need explicit handling, because a
-stored item is not in the bot's inventory and would vanish.
+The classes are `weapon_pain_pills`, `weapon_adrenaline` and `weapon_first_aid_kit`. A hidden
+inventory needs death, round end and chapter transition handling because the item is not in the
+bot's inventory; a carry lock needs none of that.
 
 ## Testing without a map edit
 
@@ -126,8 +127,8 @@ marker, not the mapspawn line, as the wait marker.
 
 ## The verified addon
 
-`addons/hsmcp-bot-meds` is the working example: bots keep pills/adrenaline in a one-slot
-hidden inventory while total health is at least 20, and get the item back below 20. Medkits
-are left alone (the code has a disabled switch for them). Verified on `c1m1_hotel`:
-stored at 30 HP, returned at 10 HP, temporary health counted, a full slot drops the extra,
-and death drops the stored item once.
+`addons/hsmcp-bot-meds` is the working example: bots keep pills/adrenaline in their inventory,
+but a poller switches them away from the item while total health is at least 20. Below 20 it
+does nothing, so the bot can use the item. Medkits are left alone. Verified on `c1m1_hotel`:
+three bots at 30 HP were switched to the pistol and still carried all three pills; at 10 HP
+there were no lock lines and no `pills_used` event above 20.
