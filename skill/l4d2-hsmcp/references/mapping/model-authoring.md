@@ -114,7 +114,7 @@ the absence instead of hiding it.
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
-| Open in HLMV | `run_hlmv`; captures and closes by default, `close:false` leaves it for a person |
+| Open in HLMV | `run_hlmv`; creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
 | Reformat or resize a shipped VTF | `convert_vtf` — decode, resize, re-encode, verify |

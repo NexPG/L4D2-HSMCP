@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.141-alpha - 2026-11-21
+
+- **HLMV opens stock models instead of the red ERROR card.** HLMV cannot load a model from a
+  VPK unless the model's directory exists loose; `run_hlmv` now creates that empty directory
+  tree before launching. Verified on `models/props_doors/checkpoint_door_02.mdl`: the model
+  loads and the UI is captured. The 3D viewport is still black in this desktop capture, so
+  `preview_model` remains the rendered fallback; the load itself is no longer an error.
+- **Tool count: 219.** Tests: 172 files, 1599 passed, 33 skipped.
+
 ## 0.0.140-alpha - 2026-11-21
 
 - **Gameplay wiring has its missing entities.** `write_item_spawns` places the L4D2

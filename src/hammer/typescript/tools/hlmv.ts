@@ -26,7 +26,9 @@ export const runHlmvTool = defineTool({
     "id. HLMV closes by default after a short look, so repeated calls do not leave windows " +
     "behind; pass close:false to leave it open, and use close_windows to clear old ones. " +
     "HLMV is a GUI, so there is no screenshot and no machine-readable result without the " +
-    "screenshot option: use read_model_info for bounds, sequences and materials. Guarded.",
+    "screenshot option: use read_model_info for bounds, sequences and materials. A stock " +
+    "model lives in a VPK and HLMV only opens it when its directory exists loose; the tool " +
+    "creates that empty directory tree first, which removes the red ERROR card. Guarded.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -108,6 +110,12 @@ export const runHlmvTool = defineTool({
     // the assets a mapper wants to look at. A genuinely missing custom model still shows
     // as HLMV's error window, which the capture preserves.
     const loose = existsSync(path);
+    if (!loose) {
+      // HLMV cannot open a model from a VPK unless the model's folder exists as a loose
+      // directory. The folder is empty; the engine still supplies the file. Without it the
+      // viewer shows the red ERROR card even for a stock model.
+      mkdirSync(dirname(path), { recursive: true });
+    }
     // HLMV may hand the window to a second process; the snapshot is what keeps this tool
     // from closing a person's editor along with the one it started.
     const before = new Set(processIds(["hlmv"]));
