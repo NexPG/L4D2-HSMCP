@@ -7,16 +7,15 @@ with a line here.
 
 ## 0.0.131-alpha - 2026-11-21
 
-- **A working VScript addon: bots carry pills and adrenaline but cannot use them above 20 HP.**
-  `addons/hsmcp-bot-meds` is a pure addon (no SourceMod): a `mapspawn_addon` starts a
+- **A local VScript addon test: bots carry pills and adrenaline but cannot use them above 20 HP.**
+  The addon is test content and is not part of this repository. A `mapspawn_addon` starts a
   `logic_script` think function. When a bot brings pain pills or adrenaline into its hands
   while total health (permanent plus temporary) is at least 20, the poller switches it to
   another carried weapon; the item stays in the inventory, so the bot can carry it or give it
   to a teammate. Below 20 the addon does nothing and the bot is free to use it. This replaced
   an earlier hidden-inventory prototype that removed the item; the request was to let the bot
   keep it. Verified on `c1m1_hotel`: three bots at 30 HP were switched to the pistol and still
-  carried all three pills; at 10 HP there were no lock lines and no `pills_used` above 20. The
-  ready VPK is installed in `left4dead2/addons/hsmcp_bot_meds.vpk`.
+  carried all three pills; at 10 HP there were no lock lines and no `pills_used` above 20.
 - **Medkits are deliberately out of scope.** Bots use them exactly as vanilla; the request was
   pills and adrenaline. The "they use medkits in the safe room" observation was vanilla
   behaviour, not a failure of the pill rule.

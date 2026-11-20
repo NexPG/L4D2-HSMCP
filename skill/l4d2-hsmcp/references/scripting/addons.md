@@ -125,10 +125,11 @@ Put a `printl("[MYTAG] ...")` in the addon and read `left4dead2/console.log`. A 
 can happen before `-condebug` starts writing, so use a banner from the first tick or a probe
 marker, not the mapspawn line, as the wait marker.
 
-## The verified addon
+## A verified pattern
 
-`addons/hsmcp-bot-meds` is the working example: bots keep pills/adrenaline in their inventory,
-but a poller switches them away from the item while total health is at least 20. Below 20 it
-does nothing, so the bot can use the item. Medkits are left alone. Verified on `c1m1_hotel`:
-three bots at 30 HP were switched to the pistol and still carried all three pills; at 10 HP
-there were no lock lines and no `pills_used` event above 20.
+A local test addon (kept outside this repository, because addons are test content) used this
+pattern: bots keep pills/adrenaline in their inventory, but a poller switches them away from
+the item while total health is at least 20. Below 20 it does nothing, so the bot can use the
+item. Medkits were left alone. Verified on `c1m1_hotel`: three bots at 30 HP were switched to
+the pistol and still carried all three pills; at 10 HP there were no lock lines and no
+`pills_used` event above 20.
