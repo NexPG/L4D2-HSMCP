@@ -123,6 +123,8 @@ The official feature list is organised as a list of highlights. The grouping bel
 | Feature | Notes |
 |---|---|
 | Entity tool | Point entities; brush entities via tying a brush |
+| Light and atmosphere entities | `write_light` writes a point light, `light_environment`, `light_dynamic`, `env_sun` or `shadow_control` with the keys each needs; `write_postprocess` wires a tonemap controller through `logic_auto` and writes `env_fade`, `env_shake` or L4D2's `color_correction` |
+| Decals, ropes and sprites | `write_decal` projects `infodecal` onto a surface; `write_rope` writes the linked `move_rope`/`keyframe_rope` pair; `write_sprite` writes a sprite, or a beam/laser with the `info_target`s it needs |
 | Object Properties | Keyvalues, flags, inputs/outputs, model browser, color picker |
 | Right-click a keyvalue | Reset to the FGD default |
 | Color picker | RGB/HSV, palette saved per VMF; `C` with a light/prop selected |

@@ -28,6 +28,13 @@ import { setFaceUvTool, setSmoothingGroupsTool } from "../../src/maps/typescript
 import { readBspFacesTool } from "../../src/maps/typescript/tools/bsp.js";
 import { readBspFaces } from "../../src/maps/typescript/bsp/faces.js";
 import { writeVmfTerrain } from "../../src/maps/typescript/tools/terrain.js";
+import {
+  writeDecalTool,
+  writeLightTool,
+  writePostprocessTool,
+  writeRopeTool,
+  writeSpriteTool,
+} from "../../src/maps/typescript/tools/dressing.js";
 import { writeInstance } from "../../src/maps/typescript/tools/instance.js";
 import { writeWeather } from "../../src/scripts/typescript/tools/weather.js";
 import {
@@ -709,6 +716,68 @@ describe.skipIf(!has.toolchain)("weather, compiled", () => {
       expect(lump.text).toContain('"classname" "func_precipitation"');
       expect(lump.text).toContain('"preciptype" "0"');
       expect(lump.text).toContain('"classname" "env_fog_controller"');
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("world dressing, compiled", () => {
+  it(
+    "lights, a tonemap controller, a decal, a rope and a beam reach vbsp",
+    async () => {
+      const path = join(scratch, "dressing_room.vmf");
+      writeFileSync(path, room());
+
+      await writeLightTool.handler(
+        { path, kind: "point", origin: [0, 0, 96], brightness: 250, confirm: true } as never,
+        ctx,
+      );
+      await writeLightTool.handler(
+        {
+          path,
+          kind: "environment",
+          origin: [0, 0, 128],
+          angles: [-45, 30, 0],
+          brightness: 300,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      await writePostprocessTool.handler(
+        { path, kind: "tonemap", exposureMin: 0.5, exposureMax: 2, confirm: true } as never,
+        ctx,
+      );
+      await writeDecalTool.handler(
+        { path, material: "decals/blood1", positions: [[0, 0, 1]], confirm: true } as never,
+        ctx,
+      );
+      await writeRopeTool.handler(
+        { path, start: [0, 0, 128], end: [128, 0, 128], confirm: true } as never,
+        ctx,
+      );
+      await writeSpriteTool.handler(
+        { path, kind: "beam", start: [0, 0, 64], end: [128, 0, 64], confirm: true } as never,
+        ctx,
+      );
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+
+      const lump = readEntityLump(result.bsp);
+      for (const className of [
+        "light",
+        "light_environment",
+        "env_tonemap_controller",
+        "logic_auto",
+        "infodecal",
+        "move_rope",
+        "keyframe_rope",
+        "env_beam",
+        "info_target",
+      ]) {
+        expect(lump.text, className).toContain(`"classname" "${className}"`);
+      }
     },
     300_000,
   );

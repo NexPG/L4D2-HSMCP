@@ -54,6 +54,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
+| `references/mapping/world-dressing.md` | light, postprocess, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **173 tools**.
+Last checked against the tool list on 21/11/2026: **178 tools**.
 
 ## The file itself
 
@@ -130,6 +130,11 @@ getting `ENOENT` on the first call.
 | Map Properties | `set_map_properties` | worldspawn only. Says when `detailvbsp` and `detailmaterial` are set apart |
 | Any map property | `set_worldspawn` | Any worldspawn key, including mod keys; `id` and `classname` protected |
 | Fog | `edit_vmf` | Source reads it from an `env_fog_controller`, not from worldspawn — `set_map_properties` offered fog keys for one commit and produced none in game |
+| Lights | `write_light` | Point, `light_environment`, `light_dynamic`, `env_sun`, `shadow_control`; `_light` is the four-number colour+brightness form, and the sun gets angles. Compiles |
+| Postprocess | `write_postprocess` | Tonemap controller wired through a `logic_auto` (it has no setting keyvalues), fade, shake, and L4D2's `color_correction` |
+| Decals | `write_decal` | `infodecal` projected onto a face; a sized overlay is `write_overlay` |
+| Ropes | `write_rope` | The `move_rope`/`keyframe_rope` pair linked by `NextKey`; one alone renders nothing |
+| Sprites, beams, lasers | `write_sprite` | Creates the two `info_target`s a beam needs and the end target a laser needs; `.spr` paths |
 
 ## Organisation
 

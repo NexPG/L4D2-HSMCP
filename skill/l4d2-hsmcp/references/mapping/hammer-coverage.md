@@ -75,7 +75,11 @@ covered: this table is the summary.
 | Manual U/V vectors (skew) | `set_face_uv` | verified: skewed axes accepted by vbsp and the map loaded |
 | Smoothing groups | `set_smoothing_groups` | verified: group 13 reached the BSP as the mask 4096 on all six faces |
 | Lightmap scale | `set_lightmap_scale` | verified: scale 32 produced the expected FACES luxel dimensions |
-| Light entities | `edit_vmf` | verified |
+| Light entities | `write_light` for point/environment/dynamic/sun/shadow, `edit_vmf` for the rest | verified: the five kinds compile into the entity lump; `_light` is the four-number form and `light_environment` gets angles/ambient (`tools-compile.test.ts`) |
+| Postprocess | `write_postprocess` | verified: a tonemap controller wired to `logic_auto` with three `OnMapSpawn` outputs compiles; `color_correction` is the L4D2 class name, not `colorcorrection` |
+| Decals | `write_decal` for `infodecal`, `write_overlay` for a sized overlay | verified: decals written at surface points reach the entity lump |
+| Ropes | `write_rope` | verified: the `move_rope`/`keyframe_rope` pair links by `NextKey` and compiles |
+| Sprites, beams, lasers | `write_sprite` | verified: a sprite and a beam with its two `info_target`s compile; a laser without a target gets one |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |
 | Cubemap placement | `edit_vmf` (`env_cubemap`) | tool: the entity is internal and must be in the VMF before compile |
 | Build cubemaps in engine | `run_build_cubemaps` | verified HDR/LDR/both; `pack` copies them into an `outBsp` |

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-173 tools. This page groups them by the job you are doing; each tool's own description is the
+178 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -134,6 +134,16 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation |
 | `write_weather` | add rain/snow/ash as `func_precipitation` and distance fog as `env_fog_controller` |
 | `clone_solids` | copy selected brushes with fresh ids, optionally move/rotate/scale/mirror the copy |
+
+## World dressing
+
+| Tool | Use |
+|---|---|
+| `write_light` | `light`, `light_environment`, `light_dynamic`, `env_sun`, `shadow_control` with the keys each needs |
+| `write_postprocess` | `env_tonemap_controller` wired through a `logic_auto`, `env_fade`, `env_shake`, `color_correction` |
+| `write_decal` | `infodecal` at one or more points on a surface |
+| `write_rope` | a linked `move_rope` + `keyframe_rope` pair |
+| `write_sprite` | `env_sprite`, or an `env_beam`/`env_laser` with the targets it needs |
 
 ## Displacements
 

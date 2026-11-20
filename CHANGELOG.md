@@ -5,27 +5,29 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
-## 0.0.122-alpha - 2026-11-21
+## 0.0.129-alpha - 2026-11-21
 
-- **An active cordon now changes the compile, as it always claimed to.** `set_cordon` wrote the
-  block and `run_compile` passed the whole file to vbsp, so a "one-room test" compiled the city.
-  The compile copy is now filtered the way Hammer filters it: a brush whose bounds intersect the
-  box is kept whole, a point entity by its origin, a brush entity by its brushes, and an entity
-  with no origin and no brush is kept and reported. The filtered copy is compiled under the map's
-  own name in a temp directory and its `.bsp`/`.lin` moved back, so `changelevel` names still
-  match. `ignoreCordon: true` compiles the whole map. Proven by a control: a leaky open box
-  outside the cordon leaks when ignored and is absent from the BSP when applied.
-- **Five more Hammer++ rows are verified by the compiler, not by reading.** One room now also
-  proves a brush rotated 30 degrees, scaled non-uniformly and mirrored; a counter assembled from
-  several brushes; a two-plane (3-point) clip with four convex pieces; a hint slab; and a
-  `func_areaportal` filling a sealed doorway. The last two run vbsp **and vvis**. The first
-  areaportal attempt leaked because a doorway to the void is not two areas -- the test now has a
-  second sealed room beyond the doorway, which is what a portal actually separates.
-- **The coverage documents match the code again.** Propper++ (`brush_to_model`), the 3D-skybox
-  builder, displacement sealing and the overlay compile had all been recorded as gaps after they
-  were closed. `test/tools/coverage.test.ts` now fails when a Tool column names something not
-  registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
-- **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
+- **World dressing has builders, not just `edit_vmf`.** Five tools encode the rules the
+  compiler does not enforce. `write_light` writes a `light`, `light_environment`,
+  `light_dynamic`, `env_sun` or `shadow_control`; its `_light`/`_ambient` are the four-number
+  colour-plus-brightness form, and the environment gets angles and a pitch. `write_postprocess`
+  wires an `env_tonemap_controller` through a `logic_auto` because the controller has no
+  setting keyvalues at all, and writes `env_fade`, `env_shake` or `color_correction`.
+  `write_decal` places `infodecal` on a surface, `write_rope` writes the linked
+  `move_rope`/`keyframe_rope` pair, and `write_sprite` writes a sprite or a beam/laser with
+  the `info_target`s those entities need to point at. Every builder reads its entity back and
+  checks key names against the installed FGD when the sidecar is there.
+- **L4D2 spells it `color_correction`.** The class is missing under the `colorcorrection`
+  name other Source games use; the builder writes the game's own spelling and warns when the
+  `.raw` file is absent or is not a `.raw`.
+- **All five compile.** The sealed-room case in `tools-compile.test.ts` writes every entity
+  and requires vbsp to emit `light`, `light_environment`, `env_tonemap_controller`,
+  `logic_auto`, `infodecal`, `move_rope`, `keyframe_rope`, `env_beam` and `info_target` in the
+  entity lump. The unit file reads each one back, including three separate `OnMapSpawn`
+  outputs in a `connections` block.
+- **Docs and skill pages move with the tools.** `references/mapping/world-dressing.md` states
+  the rules per family; the coverage, parity and Hammer++ references name the builders.
+- **Tool count: 178.** Tests: 163 files, 1532 passed, 33 skipped.
 
 ## 0.0.128-alpha - 2026-11-21
 
@@ -101,6 +103,28 @@ with a line here.
 - **Weather compiles.** A rain volume and a fog controller reach the entity lump in the sealed
   room.
 - **Tool count: 167.** Tests: 156 files, 1490 passed, 33 skipped.
+
+## 0.0.122-alpha - 2026-11-21
+
+- **An active cordon now changes the compile, as it always claimed to.** `set_cordon` wrote the
+  block and `run_compile` passed the whole file to vbsp, so a "one-room test" compiled the city.
+  The compile copy is now filtered the way Hammer filters it: a brush whose bounds intersect the
+  box is kept whole, a point entity by its origin, a brush entity by its brushes, and an entity
+  with no origin and no brush is kept and reported. The filtered copy is compiled under the map's
+  own name in a temp directory and its `.bsp`/`.lin` moved back, so `changelevel` names still
+  match. `ignoreCordon: true` compiles the whole map. Proven by a control: a leaky open box
+  outside the cordon leaks when ignored and is absent from the BSP when applied.
+- **Five more Hammer++ rows are verified by the compiler, not by reading.** One room now also
+  proves a brush rotated 30 degrees, scaled non-uniformly and mirrored; a counter assembled from
+  several brushes; a two-plane (3-point) clip with four convex pieces; a hint slab; and a
+  `func_areaportal` filling a sealed doorway. The last two run vbsp **and vvis**. The first
+  areaportal attempt leaked because a doorway to the void is not two areas -- the test now has a
+  second sealed room beyond the doorway, which is what a portal actually separates.
+- **The coverage documents match the code again.** Propper++ (`brush_to_model`), the 3D-skybox
+  builder, displacement sealing and the overlay compile had all been recorded as gaps after they
+  were closed. `test/tools/coverage.test.ts` now fails when a Tool column names something not
+  registered, when a catalogue count drifts, or when a registered tool is absent from the skill.
+- **Tool count: 166.** Tests: 155 files, 1483 passed, 33 skipped.
 
 ## 0.0.121-alpha - 2026-11-21
 
