@@ -1,8 +1,11 @@
 # Model authoring for L4D2
 
-The toolkit compiles a model with the game's own `studiomdl` and inspects it with
+The toolkit compiles a model with **StudioMDL++** when Tools++ is installed (stock
+`studiomdl.exe` otherwise; the result says which compiler ran) and inspects it with
 `read_model_info`, `run_hlmv`, `preview_asset` and `preview_model` (the engine fallback when
-HLMV's 3D canvas is blank). It also reads and writes the source
+HLMV's 3D canvas is blank). `run_hlmv` prefers HLMV++ and falls back to stock HLMV when the
+latest viewer crashes on the machine; `viewer` and `fallbackReason` say what happened. It
+also reads and writes the source
 formats itself: an SMD or DMX can be inspected, and a simple mesh can be built from JSON
 without a DCC. Complex sculpting, UV painting and animation still belong in Blender.
 
@@ -42,7 +45,7 @@ Source units (a player is 72 tall).
    link; the tool refuses anything else and reads the file back.
 2. `write_qc` — `$modelname`, `$body` pointing at that SMD, `$cdmaterials`, `$surfaceprop`,
    and `$staticprop: true`.
-3. `run_studiomdl` — compiles, then proves the `.mdl`, `.vvd` and `.dx90.vtx` exist.
+3. `run_studiomdl` - compiles with StudioMDL++/studiomdl, then proves the `.mdl`, `.vvd` and `.dx90.vtx` exist.
 4. `write_vmt` + `write_vtf` — the material and its texture; both are native.
 5. `read_model_info` — bounds to place it, `hasPhysics` to know whether it is solid.
 
@@ -112,16 +115,16 @@ the absence instead of hiding it.
 | Convert FBX geometry, skeleton, weights and animations | `fbx_to_smd` (optionally with a `qc` block) |
 | Turn a VMF brush into a model | `brush_to_model` (Propper++ path) |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
-| Compile a QC | `run_studiomdl` (reads `$modelname`, proves the `.mdl` and companions exist) |
+| Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
-| Open in HLMV | `run_hlmv`; creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
+| Open in HLMV | `run_hlmv`; prefers HLMV++, probes it, falls back to stock HLMV on a crash, creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
 | Reformat or resize a shipped VTF | `convert_vtf` — decode, resize, re-encode, verify |
 | Look at a texture directly | `extract_vtf` — any VTF to a PNG, no VMT needed; `face` selects a cubemap side |
 | Build a cubemap | `write_cubemap_vtf` — six named PNG faces, verified one by one |
 | Look at a material | `preview_asset` (VTF → PNG) |
-| Look at a model | `preview_asset` (HLMV), or `preview_model` when the canvas is blank |
+| Look at a model | `run_hlmv` (HLMV++ first, stock fallback), or `preview_model` when the canvas is blank |
 | Find a stock model or material | `read_game_content`, `read_asset_catalog` |
 | Place the model | `edit_vmf` (`prop_static` / `prop_dynamic`) |
 

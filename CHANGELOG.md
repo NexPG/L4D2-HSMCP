@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.142-alpha - 2026-11-21
+
+- **The newest viewer that actually works.** `run_hlmv` prefers HLMV++ and probes it for
+  4.5 s. The current L4D2 HLMV++ build loads a model and then crashes with `0xc0000005`
+  (fault offset `0x64616564`) on this machine; the tool detects that, launches stock HLMV,
+  and reports `viewer: "hlmv"` plus `fallbackReason`. On a machine where HLMV++ survives,
+  `viewer` is `"hlmv++"`. Older HLMV++ L4D2 builds and Windows 7/8 compatibility layers were
+  tried and did not help; the evidence is in
+  `skill/l4d2-hsmcp/troubleshooting/hlmv-screenshot.md`.
+- **StudioMDL++ is the default model compiler.** `run_studiomdl` uses
+  `studiomdl++.exe` from Tools++ when it is installed, falls back to stock `studiomdl.exe`,
+  and reports `compiler` in the result so a build never hides which chain ran. The brush
+  compile test asserts the field.
+- **Tool count: 219.** Tests: 172 files, 1612 passed, 33 skipped.
+
 ## 0.0.141-alpha - 2026-11-21
 
 - **HLMV opens stock models instead of the red ERROR card.** HLMV cannot load a model from a

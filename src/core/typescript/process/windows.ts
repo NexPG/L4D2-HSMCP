@@ -21,7 +21,7 @@ function wait(ms: number): Promise<void> {
 export type WindowKind = "hlmv" | "hammer";
 
 const WINDOW_NAMES: Record<WindowKind, string[]> = {
-  hlmv: ["hlmv"],
+  hlmv: ["hlmv", "hlmvplusplus"],
   hammer: ["hammerplusplus", "hammer", "wc"],
 };
 
@@ -126,6 +126,34 @@ export function processIds(names: readonly string[]): number[] {
 /** PIDs that were not in the snapshot. Pure, so the diff can be tested without processes. */
 export function newPids(after: readonly number[], before: ReadonlySet<number>): number[] {
   return [...new Set(after)].filter((pid) => !before.has(pid));
+}
+
+/**
+ * PIDs of the named processes that own a main window.
+ *
+ * HLMV++ starts a second process and puts the window there, while the process the caller
+ * spawned may already be gone. Capturing by the spawned pid therefore fails with
+ * `GetWindowRect failed`; the window pid is the only useful one.
+ */
+export function windowPids(names: readonly string[]): number[] {
+  if (names.length === 0) return [];
+  const quoted = names.map((name) => `'${name.replace(/'/g, "''")}'`).join(",");
+  const script =
+    `$items = @(Get-Process -Name @(${quoted}) -ErrorAction SilentlyContinue | ` +
+    `Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { $_.Id }); $items -join ' '`;
+  try {
+    const raw = execFileSync(
+      "powershell",
+      ["-NoProfile", "-NonInteractive", "-Command", script],
+      { encoding: "utf8", windowsHide: true, timeout: 15_000 },
+    ).trim();
+    return raw
+      .split(/\s+/)
+      .map(Number)
+      .filter((value) => Number.isInteger(value) && value > 0);
+  } catch {
+    return [];
+  }
 }
 
 /** True while the pid exists. `process.kill(pid, 0)` is the portable existence check. */

@@ -32,12 +32,12 @@ still reachable. See `references/tools/primitives.md`.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.141-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.142-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.141-alpha`.
+the last entry. The current skill version is `0.0.142-alpha`.
 
 ## Route the task first
 
@@ -178,16 +178,19 @@ the last entry. The current skill version is `0.0.141-alpha`.
 - **A full Survival wave.** Setup and HUD are verified; the round still starts from the
   map's own `trigger_finale` or `ForcePanicEvent`, which the map author must place.
 - **HLMV's 3D canvas in a headless session.** The editor launches and its UI captures; the
-  viewport needs an interactive desktop. `preview_model` is the fallback: it builds a sealed
-  dev-textured room, compiles it, generates a nav and captures the real game view, and it
-  uses the same blank-viewport measurement to decide whether HLMV is worth trying first.
+  viewport needs an interactive desktop. HLMV++ is tried first, but the current L4D2 build
+  crashes after ~3 s on this machine with `0xc0000005`, so `run_hlmv` probes it and falls
+  back to stock HLMV, reporting `viewer` and `fallbackReason`. `preview_model` is the rendered
+  fallback: it builds a sealed dev-textured room, compiles it, generates a nav and captures
+  the real game view, and it uses the same blank-viewport measurement to decide whether HLMV
+  is worth trying first.
 - **A player-driven finale start in `+map`.** `ForceFinaleStart` without a spawned player
   is not the player-facing path; the last proof is the campaign menu or a reachable +use
   button in a live round.
 - **A general VScript API wrapper.** Scripts are authored and attached, but what they call
   at runtime is the map's own logic.
 - **Model import from DCC formats.** glTF/GLB and FBX (binary 7.x and ASCII) are read
-  natively, and QC/SMD compilation with `studiomdl` is covered. FBX animations are exported
+  natively, and QC/SMD compilation with StudioMDL++/studiomdl is covered. FBX animations are exported
   as one SMD per stack with `$sequence` lines, and `collision: "box"`/`"hull"` writes the
   `_phys.smd`; shape keys go through `fbx_to_dmx` as DMX flexes, while `fbx_to_smd` counts
   them because SMD has no morph target.

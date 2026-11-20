@@ -213,11 +213,13 @@ describe.skipIf(!installed || !has.toolchain)("brush -> SMD -> studiomdl", () =>
           ok: boolean;
           model: string | null;
           warning: string | null;
+          compiler: "studiomdl++" | "studiomdl";
           files: { name: string }[];
         };
         compiledModel = compile.model;
         expect(compile.warning).toBeNull();
         expect(compile.ok).toBe(true);
+        expect(["studiomdl++", "studiomdl"]).toContain(compile.compiler);
         expect(compile.files.map((f) => f.name)).toEqual(
           expect.arrayContaining(["box.mdl", "box.vvd", "box.dx90.vtx", "box.phy"]),
         );

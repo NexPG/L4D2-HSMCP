@@ -70,8 +70,9 @@ function runProcess(exe: string, args: readonly string[], timeoutMs: number): Pr
 export const runStudiomdlTool = defineTool({
   name: "run_studiomdl",
   description:
-    "Compiles a QC into a Source model with the game's own studiomdl.exe, then proves the " +
-    "result: `$modelname` is read from the QC, and the .mdl (plus the .vvd/.vtx/.phy files " +
+    "Compiles a QC into a Source model, preferring StudioMDL++ when it is installed and " +
+    "falling back to the game's own studiomdl.exe otherwise, then proves the result: " +
+    "`$modelname` is read from the QC, and the .mdl (plus the .vvd/.vtx/.phy files " +
     "studiomdl wrote beside it) must exist. The QC and SMDs are yours; this is the compiler " +
     "step, not a model template. `-nop4` and `-game` are fixed; no free-form flags. " +
     "Long-running and guarded. The compiled model is the product, not a test artefact.",
@@ -95,6 +96,7 @@ export const runStudiomdlTool = defineTool({
     timedOut: z.boolean(),
     durationMs: z.number(),
     ok: z.boolean(),
+    compiler: z.enum(["studiomdl++", "studiomdl"]),
     logTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
@@ -105,7 +107,11 @@ export const runStudiomdlTool = defineTool({
     const { game: profile } = gameFor(ctx.config, args.game);
     const gameDir = profile.gameDir ?? ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
-    const exe = join(profile.binDir ?? join(dirname(gameDir), "bin"), "studiomdl.exe");
+    const stockExe = join(profile.binDir ?? join(dirname(gameDir), "bin"), "studiomdl.exe");
+    const plusPlusBin = profile.plusPlusBinDir ?? ctx.config.plusPlusBinDir;
+    const modernExe = plusPlusBin ? join(plusPlusBin, "studiomdl++.exe") : null;
+    const modern = modernExe !== null && existsSync(modernExe);
+    const exe = modern ? modernExe : stockExe;
     if (!existsSync(exe)) {
       throw new Error(
         `${exe} does not exist. Install the Left 4 Dead 2 Authoring Tools (Steam app 563) ` +
@@ -164,6 +170,7 @@ export const runStudiomdlTool = defineTool({
       timedOut: run.timedOut,
       durationMs: run.durationMs,
       ok: run.code === 0 && !run.timedOut && (model === null || modelExists),
+      compiler: modern ? "studiomdl++" : "studiomdl",
       logTail: log
         .split(/\r?\n/)
         .map((line) => line.trim())
