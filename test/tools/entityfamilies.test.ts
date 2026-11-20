@@ -4,8 +4,10 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
+  writeBrushEntityTool,
   writeLogicTool,
   writeMoverTool,
+  writePointEntityTool,
   writeTriggerTool,
 } from "../../src/maps/typescript/tools/entityfamilies.js";
 import { readEntities } from "../../src/maps/typescript/vmf/edit.js";
@@ -252,5 +254,54 @@ describe("write_logic", () => {
     expect(entity.classname).toBe("math_counter");
     expect(entity.keyvalues["startvalue"]).toBe("2");
     expect(entity.keyvalues["max"]).toBe("10");
+  });
+});
+
+describe("universal entity primitives", () => {
+  it("writes an arbitrary brush entity, not just a named preset", async () => {
+    const path = map();
+    const result = (await writeBrushEntityTool.handler(
+      {
+        path,
+        classname: "func_button",
+        bounds: { mins: [0, 0, 0], maxs: [64, 64, 64] },
+        targetname: "my_button",
+        keyvalues: { wait: "2", speed: "40" },
+        outputs: [
+          { output: "OnPressed", target: "door", input: "Open", parameter: "", delay: 0, times: -1 },
+        ],
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; solidIds: number[] };
+    const entity = entities(path).find((entry) => entry.id === result.entityId)!;
+    expect(entity.classname).toBe("func_button");
+    expect(entity.solidCount).toBe(1);
+    expect(entity.keyvalues["wait"]).toBe("2");
+    expect(result.solidIds).toHaveLength(1);
+    expect(readFileSync(path, "utf8")).toContain("OnPressed");
+  });
+
+  it("writes an arbitrary point entity with keyvalues and outputs", async () => {
+    const path = map();
+    const result = (await writePointEntityTool.handler(
+      {
+        path,
+        classname: "env_entity_maker",
+        origin: [0, 0, 64],
+        targetname: "maker",
+        keyvalues: { EntityTemplate: "template_name" },
+        outputs: [
+          { output: "OnSpawnedEntity", target: "template", input: "Kill", parameter: "", delay: 0, times: -1 },
+        ],
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number };
+    const entity = entities(path).find((entry) => entry.id === result.entityId)!;
+    expect(entity.classname).toBe("env_entity_maker");
+    expect(entity.keyvalues["origin"]).toBe("0 0 64");
+    expect(entity.keyvalues["EntityTemplate"]).toBe("template_name");
+    expect(readFileSync(path, "utf8")).toContain("OnSpawnedEntity");
   });
 });

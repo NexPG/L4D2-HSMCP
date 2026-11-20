@@ -13,6 +13,8 @@ of that path, but deleting it must not remove the capability.
 | Copy one face's alignment | `copy_face_alignment` | Exact uaxis/vaxis, optional material and lightmap scale; `align_faces` is the computed alternative |
 | Copy / paste | `clone_solids` | Fresh ids, byte-for-byte materials and alignment |
 | Any entity, keyvalue or output | `edit_vmf` | `add`, `update`, `remove`, `addOutput`, `removeOutput` |
+| Any brush entity with a volume | `write_brush_entity` | class is a string, not an enum; keys and outputs pass through |
+| Any point entity with an origin | `write_point_entity` | class is a string, not an enum |
 | Any compiled-map entity | `edit_bsp_entities` | add/update/remove in lump 0; append-only, no other lump moves |
 | Any worldspawn key | `set_worldspawn` | `worldspawn` is not an `entity` block, so `edit_vmf` cannot reach it |
 | Any VScript | `write_vscript` | The Squirrel source is yours; `logic_script` wiring is a convenience |
@@ -37,6 +39,7 @@ of that path, but deleting it must not remove the capability.
 | `group_solids`, `set_visgroup`, `set_cordon` | `edit_vmf` plus the VMF `editor` blocks |
 | `write_displacement`, `subdivide_displacements`, `sculpt_displacement`, `paint_displacement` | Direct `dispinfo` editing, which is its own format |
 | `write_campaign` | The mission KeyValues format; `keyvalues` at mission, mode and chapter level covers anything the spec does not model |
+| `write_trigger`, `write_mover`, `write_logic` | `write_brush_entity` / `write_point_entity` with the class and keys; the named builders only add defaults |
 
 ## Rules for new tools
 

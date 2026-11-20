@@ -14,20 +14,22 @@ checks still need a person or a second client. Read
 [What is not supported](#what-is-not-supported) before promising the rest.
 
 **Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
-`edit_vmf`, `set_worldspawn`, `transform_solids`, `clone_solids`, `write_vscript`); the
-named helpers are shortcuts, not the limit of what is possible. If a helper cannot express
-what you need, the primitive can. See `references/tools/primitives.md`.
+`edit_vmf`, `write_brush_entity`, `write_point_entity`, `set_worldspawn`, `transform_solids`,
+`clone_solids`, `write_vscript`); the named helpers are shortcuts, not the limit of what is
+possible. If a helper cannot express what you need, the primitive can. The classname on
+`write_brush_entity`/`write_point_entity` is a string, so a class with no named builder is
+still reachable. See `references/tools/primitives.md`.
 
 **Addon provenance.** Every addon or campaign packed with `run_vpk_pack` gets an
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.134-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.135-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.134-alpha`.
+the last entry. The current skill version is `0.0.135-alpha`.
 
 ## Route the task first
 

@@ -434,4 +434,118 @@ export const writeLogicTool = defineTool({
   },
 });
 
-export const entityFamilyTools = [writeTriggerTool, writeMoverTool, writeLogicTool];
+// ---------------------------------------------------------------------------
+// Universal entity primitives
+// ---------------------------------------------------------------------------
+
+export const writeBrushEntityTool = defineTool({
+  name: "write_brush_entity",
+  description:
+    "The universal brush-entity primitive: any classname, a box volume, arbitrary " +
+    "keyvalues and outputs, with the class read back and the keys checked against the FGD. " +
+    "Use it for a class the named builders do not cover (`func_button`, `func_door`, " +
+    "`func_illusionary`, a custom mod entity); the named builders are shortcuts over this " +
+    "path, not the limit of what a map can contain. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    classname: z.string().min(1).describe("Any brush entity class, e.g. func_button."),
+    bounds: BOUNDS,
+    targetname: z.string().optional(),
+    keyvalues: z.record(z.string()).default({}),
+    outputs: z.array(OUTPUT).default([]),
+    material: z.string().default("TOOLS/TOOLSNODRAW"),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    solidIds: z.array(z.number()),
+    classname: z.string(),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    if (!insideWorld(args.bounds.mins) || !insideWorld(args.bounds.maxs)) {
+      throw new Error("the brush volume leaves Source's world");
+    }
+    const keyvalues: Record<string, string> = {
+      classname: args.classname,
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+      ...(args.keyvalues ?? {}),
+    };
+    const warnings = await fgdWarnings(args.classname, keyvalues, ctx);
+    const brush = await addBrushEntity(path, keyvalues, args.bounds, args.material, ctx);
+    await addOutputs(path, brush.id!, args.outputs ?? [], ctx);
+    return {
+      path,
+      entityId: brush.id,
+      solidIds: brush.solidIds,
+      classname: args.classname,
+      keyvalues,
+      warnings,
+      nextStep:
+        "Compile and use it. A brush entity with the right class and volume is still a " +
+        "behaviour; the FGD inputs/outputs say what can drive it.",
+    };
+  },
+});
+
+export const writePointEntityTool = defineTool({
+  name: "write_point_entity",
+  description:
+    "The universal point-entity primitive: any classname, origin, arbitrary keyvalues and " +
+    "outputs, with the class read back and the keys checked against the FGD. Use it for a " +
+    "class without a named builder; `edit_vmf` is the lower-level path, this adds the FGD " +
+    "check and the connections write in one call. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    classname: z.string().min(1).describe("Any point entity class, e.g. env_entity_maker."),
+    origin: VEC3.default([0, 0, 0]),
+    targetname: z.string().optional(),
+    keyvalues: z.record(z.string()).default({}),
+    outputs: z.array(OUTPUT).default([]),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classname: z.string(),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const origin = args.origin ?? [0, 0, 0];
+    if (!insideWorld(origin)) throw new Error("the entity leaves Source's world");
+    const keyvalues: Record<string, string> = {
+      classname: args.classname,
+      origin: vec(origin),
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+      ...(args.keyvalues ?? {}),
+    };
+    const warnings = await fgdWarnings(args.classname, keyvalues, ctx);
+    const [id = null] = await addEntities(path, [keyvalues], ctx);
+    verifyEntities(path, [id], [args.classname]);
+    await addOutputs(path, id!, args.outputs ?? [], ctx);
+    return {
+      path,
+      entityId: id,
+      classname: args.classname,
+      keyvalues,
+      warnings,
+      nextStep:
+        "Compile and drive it. The FGD lists the inputs and outputs; this tool writes the entity.",
+    };
+  },
+});
+
+export const entityFamilyTools = [writeTriggerTool, writeMoverTool, writeLogicTool, writeBrushEntityTool, writePointEntityTool];

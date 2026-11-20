@@ -3,7 +3,8 @@
 `edit_vmf` can add any class. It cannot know that `trigger_teleport` needs a `target`, that a
 mover is a brush with an origin at its centre, or that a `logic_relay`'s behaviour is in its
 `connections` block. These three builders encode those rules and check the keys against the
-installed FGD.
+installed FGD. They are shortcuts: `write_brush_entity` and `write_point_entity` accept any
+classname, so a class with no named builder is still one call away.
 
 ## Triggers
 

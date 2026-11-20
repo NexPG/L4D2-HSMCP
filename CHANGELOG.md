@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.135-alpha - 2026-11-21
+
+- **The entity layer has universal primitives, not a closed menu.** `write_brush_entity`
+  takes any classname, a box volume, arbitrary keyvalues and outputs; `write_point_entity`
+  does the same for a point class at an origin. The trigger/mover/logic builders are
+  shortcuts over this path, and a class with no named builder is still one call away.
+  This is the design rule in `references/tools/primitives.md`: every capability must be
+  reachable through a general operation, and deleting a convenience tool must not remove it.
+- **Tool count: 198.** Tests: 167 files, 1580 passed, 33 skipped.
+
 ## 0.0.134-alpha - 2026-11-21
 
 - **UI materials and cubemap layout.** `write_loading_screen` turns a PNG into the VTF and
