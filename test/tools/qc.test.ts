@@ -309,6 +309,19 @@ $Loop
     expect(parsed.diagnostics.map((d) => d.rule)).not.toContain("qc-no-body");
   });
 
+  it("rejects a non-positive fps and reports a negative event frame", () => {
+    const parsed = parseQc(
+      [
+        '$modelname "props/a.mdl"',
+        '$body "a.smd"',
+        '$sequence "walk" "a.smd" {\n\tfps 0\n\tevent AE_CL_PLAYSOUND -3\n}',
+      ].join("\n"),
+    );
+    const rules = parsed.diagnostics.map((d) => d.rule);
+    expect(rules).toContain("qc-sequence-fps");
+    expect(rules).toContain("qc-sequence-event-frame");
+    expect(parsed.diagnostics.find((d) => d.rule === "qc-sequence-fps")?.severity).toBe("error");
+  });
   it("checks the sequence activity weight and flags", () => {
     const parsed = parseQc(
       [

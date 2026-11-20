@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.116-alpha - 2026-11-21
+
+- **FBX in-between shapes become their own flexes.** A `BlendShapeChannel` with several shapes
+  used to keep only the largest-weight shape; now every shape exports, the largest keeping the
+  channel name and the others taking the weight as a suffix (`Smile_25`). Source flexes are one
+  control each, so an in-between is a flex an animator drives. Fixture and test added.
+- **`$sequence` blocks are checked further:** `fps` must be greater than zero, and an `event`
+  whose last argument is a negative frame is reported. Tests cover both.
+- **Scavenge: the team can be switched.** Typing `jointeam Survivor` into the console puts the
+  local client on the survivors (the HUD, the four survivors and the gas-can glow are all in
+  the screenshot), and `ent_teleport` moves a can to the crosshair. The picked-up count still
+  stayed 16: a scavenge round restarts on a wipe and the restart resets the team, which also
+  destroys the scheduled timers. The pickup needs a stable round (or a re-join after each
+  restart), and remains unproven.
+- **Campaign menu:** Enter on `PLAY CAMPAIGN` does not open the mode flyout -- it is a
+  pointer-only hover menu, while SendInput absolute clicks do reach the game. The exact click
+  sequence is still not settled.
+- **Tool count stays 164.** Tests: 151 files, 1439 passed, 33 skipped.
+
 ## 0.0.115-alpha - 2026-11-21
 
 - **Flex normal deltas.** `gltf_to_dmx` reads a morph target's `NORMAL` accessor and the

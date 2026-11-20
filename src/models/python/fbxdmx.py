@@ -101,40 +101,49 @@ def _shape_deltas(
             )
             if len(shapes) > 1:
                 notes.append(
-                    f"{_object_name(node)}: {len(shapes)} in-between shapes; only shape "
-                    f"{chosen + 1} was exported as the flex"
+                    f"{_object_name(node)}: {len(shapes)} in-between shapes; each is exported "
+                    "as its own flex, since Source flexes are one control each"
                 )
-            shape = scene.objects[shapes[chosen]]
-            indices = _numbers(shape.find("Indexes"))
-            vertices = _numbers(shape.find("Vertices"))
-            if not indices or not vertices:
-                notes.append(
-                    f"{_object_name(node)}: the shape has no Indexes/Vertices; skipped"
-                )
-                continue
-            deltas: dict[int, tuple[float, float, float]] = {}
-            # Most exporters write one position per affected control point; a few write the
-            # whole mesh. The lengths distinguish them.
-            full = len(vertices) == len(base_positions)
-            for slot, raw_index in enumerate(indices):
-                control = int(raw_index)
-                if control < 0 or control * 3 + 2 >= len(base_positions):
+            for shape_index, shape_id in enumerate(shapes):
+                shape = scene.objects[shape_id]
+                indices = _numbers(shape.find("Indexes"))
+                vertices = _numbers(shape.find("Vertices"))
+                if not indices or not vertices:
+                    notes.append(
+                        f"{_object_name(node)}: shape {shape_index + 1} has no "
+                        "Indexes/Vertices; skipped"
+                    )
                     continue
-                if full:
-                    offset = control * 3
-                else:
-                    offset = slot * 3
-                    if offset + 2 >= len(vertices):
+                deltas: dict[int, tuple[float, float, float]] = {}
+                # Most exporters write one position per affected control point; a few write
+                # the whole mesh. The lengths distinguish them.
+                full = len(vertices) == len(base_positions)
+                for slot, raw_index in enumerate(indices):
+                    control = int(raw_index)
+                    if control < 0 or control * 3 + 2 >= len(base_positions):
                         continue
-                delta = (
-                    vertices[offset] - base_positions[control * 3],
-                    vertices[offset + 1] - base_positions[control * 3 + 1],
-                    vertices[offset + 2] - base_positions[control * 3 + 2],
-                )
-                if any(abs(component) > 1e-9 for component in delta):
-                    deltas[control] = delta
-            if deltas:
-                morphs[_object_name(node)] = deltas
+                    if full:
+                        offset = control * 3
+                    else:
+                        offset = slot * 3
+                        if offset + 2 >= len(vertices):
+                            continue
+                    delta = (
+                        vertices[offset] - base_positions[control * 3],
+                        vertices[offset + 1] - base_positions[control * 3 + 1],
+                        vertices[offset + 2] - base_positions[control * 3 + 2],
+                    )
+                    if any(abs(component) > 1e-9 for component in delta):
+                        deltas[control] = delta
+                if not deltas:
+                    continue
+                if shape_index == chosen:
+                    name = _object_name(node)
+                else:
+                    weight = weights[shape_index] if shape_index < len(weights) else shape_index + 1
+                    suffix = f"{weight:g}".replace(".", "_")
+                    name = f"{_object_name(node)}_{suffix}"
+                morphs[name] = deltas
     return morphs, notes
 
 

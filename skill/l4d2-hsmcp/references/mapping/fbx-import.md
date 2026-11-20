@@ -98,8 +98,10 @@ one `DmeMesh`, and one flex per `BlendShapeChannel`.
 - A `BlendShapeChannel` owns one or more `Shape` geometries. The delta is that shape's
   `Vertices` minus the base mesh at the control points its `Indexes` names; both are in the
   same mesh space, so the same node transform that places the geometry places the delta.
-- A channel with several shapes is an in-between chain. The shape with the largest
-  `FullWeights` entry becomes the flex; the others are named in `warnings`.
+- A channel with several shapes is an in-between chain. Every shape becomes its own flex: the
+  one with the largest `FullWeights` entry keeps the channel name, the others get the weight as
+  a suffix (`Smile_25`). Source flexes are one control each, so an in-between is a flex an
+  animator drives, not a curve the engine interpolates.
 - The graph is shared with the glTF path (`dmxmodel.py`), including the detail that makes
   flexes work: `DmeMesh.deltaStateWeights` and `deltaStateWeightsLagged` carry one `(0, 0)`
   per control. Without them the compiler writes the payload and `flexrule = 0`.

@@ -282,7 +282,7 @@ function tetrahedron(): Buffer {
 }
 
 /** Two LimbNode bones, a skinned triangle and a cluster binding bone 201. */
-function skinnedTriangle(animated = false, morph = false): Buffer {
+function skinnedTriangle(animated = false, morph = false, inBetween = false): Buffer {
   const writer = new Binary();
   header(writer, 2, 1);
   const bind = [
@@ -343,13 +343,22 @@ function skinnedTriangle(animated = false, morph = false): Buffer {
             writer.node(
               "Deformer",
               [i64(601), str("BlendShapeChannel::Smile"), str("BlendShapeChannel")],
-              [() => writer.node("FullWeights", [floats([100])], [])],
+              [() => writer.node("FullWeights", [floats(inBetween ? [25, 100] : [100])], [])],
             ),
           () =>
             writer.node("Geometry", [i64(602), str("Geometry::SmileShape"), str("Shape")], [
               () => writer.node("Indexes", [ints([0, 1, 2])], []),
               () => writer.node("Vertices", [doubles([4, 0, 0, 68, 0, 0, 4, 64, 0])], []),
             ]),
+          ...(inBetween
+            ? [
+                () =>
+                  writer.node("Geometry", [i64(603), str("Geometry::Smile25Shape"), str("Shape")], [
+                    () => writer.node("Indexes", [ints([0, 1, 2])], []),
+                    () => writer.node("Vertices", [doubles([1, 0, 0, 65, 0, 0, 1, 64, 0])], []),
+                  ]),
+              ]
+            : []),
         ]
       : []),
     () =>
@@ -385,6 +394,7 @@ function skinnedTriangle(animated = false, morph = false): Buffer {
           () => connection(writer, 600, 100),
           () => connection(writer, 601, 600),
           () => connection(writer, 602, 601),
+          ...(inBetween ? [() => connection(writer, 603, 601)] : []),
         ]
       : []),
     ]);
@@ -670,6 +680,39 @@ describe.skipIf(!has.sidecar)("FBX", () => {
     expect(read.elementTypes.DmeCombinationInputControl).toBe(1);
     expect(read.elementTypes.DmeCombinationOperator).toBe(1);
     expect(read.elementTypes.DmeMesh).toBe(1);
+  });
+
+  it("exports every in-between shape as its own flex", async () => {
+    const path = join(scratch, "inbetween.fbx");
+    writeFileSync(path, skinnedTriangle(false, true, true));
+    const out = join(scratch, "inbetween.dmx");
+    const result = (await fbxToDmxTool.handler(
+      {
+        path,
+        output: out,
+        axis: "auto",
+        scale: 1,
+        useNodeTransforms: true,
+        flipV: true,
+        models: [],
+        material: "debug/debugempty",
+        overwrite: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as {
+      verified: boolean;
+      morphTargetCount: number;
+      morphTargets: Array<{ name: string; deltas: number }>;
+      warnings: string[];
+    };
+    expect(result.verified).toBe(true);
+    expect(result.morphTargetCount).toBe(2);
+    expect(result.morphTargets.map((target) => target.name).sort()).toEqual([
+      "Smile",
+      "Smile_25",
+    ]);
+    expect(result.warnings.some((line) => line.includes("in-between"))).toBe(true);
   });
 
   it(

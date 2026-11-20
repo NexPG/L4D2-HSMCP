@@ -482,6 +482,31 @@ function checkSequenceBlock(
         ),
       );
     }
+    if (command === "fps" && inner.args.length > 0 && isNumber(inner.args[0]) && Number(inner.args[0]) <= 0) {
+      diagnostics.push(
+        grammarDiagnostic(
+          "error",
+          "qc-sequence-fps",
+          `$sequence "${statement.args[0] ?? ""}" block: fps must be greater than zero, got ${inner.args[0]}`,
+          file,
+          inner.line,
+        ),
+      );
+    }
+    if (command === "event" && inner.args.length > 0) {
+      const frame = inner.args[inner.args.length - 1]!;
+      if (isNumber(frame) && Number(frame) < 0) {
+        diagnostics.push(
+          grammarDiagnostic(
+            "warning",
+            "qc-sequence-event-frame",
+            `$sequence "${statement.args[0] ?? ""}" block: event ${inner.args.join(" ")} has a negative frame`,
+            file,
+            inner.line,
+          ),
+        );
+      }
+    }
     if (command === "event" && inner.args.length < 1) {
       diagnostics.push(
         grammarDiagnostic(
