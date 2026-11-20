@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **188 tools**.
+Last checked against the tool list on 21/11/2026: **191 tools**.
 
 ## The file itself
 
@@ -259,6 +259,9 @@ map and looking, or by not happening at all.
 | `write_content_manifest` | the manifests are hand-edited text; a missing line is a silently unloaded asset |
 | `write_localization` | localization files are hand-edited, and closecaption's UTF-16LE is easy to get wrong |
 | `write_workshop_vdf` | Workshop Manager is a GUI; this writes the same build file offline |
+| `write_trigger` | the trigger tool, with the volume, the class rules and outputs in one call |
+| `write_mover` | a brush mover as a volume with its origin, direction/speed or path target |
+| `write_logic` | a point logic entity and its connections, which the editor does not validate |
 | `read_soundscript` | nothing: Hammer has no sound browser |
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-188 tools. This page groups them by the job you are doing; each tool's own description is the
+191 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -32,6 +32,13 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |
 
+## Entity families
+
+| Tool | Use |
+|---|---|
+| `write_trigger` | a trigger as a brush volume: multiple, once, hurt, push, teleport, look, gravity |
+| `write_mover` | `func_movelinear`, `func_rotating` or `func_tracktrain` with the volume and origin |
+| `write_logic` | `logic_auto`, relay, timer, branch, compare, case, `math_counter`, `math_remap` with connections |
 ## Shipping an addon
 
 | Tool | Use |

@@ -33,6 +33,7 @@ import { displacementTools } from "./maps/typescript/tools/displacement.js";
 import { reviewTools } from "./maps/typescript/tools/review.js";
 import { diffTools } from "./maps/typescript/tools/diff.js";
 import { dressingTools } from "./maps/typescript/tools/dressing.js";
+import { entityFamilyTools } from "./maps/typescript/tools/entityfamilies.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
 import { exportMapTools } from "./maps/typescript/tools/exportmap.js";
 import { faceTools } from "./maps/typescript/tools/face.js";
@@ -157,6 +158,7 @@ export const allTools: AnyToolDef[] = [
   ...displacementTools,
   ...diffTools,
   ...dressingTools,
+  ...entityFamilyTools,
   ...reviewTools,
   ...exportMapTools,
   ...finaleTools,

@@ -41,6 +41,11 @@ import {
   writeFinaleSetupTool,
   writeSpawnPointsTool,
 } from "../../src/campaigns/typescript/tools/campaignbuild.js";
+import {
+  writeLogicTool,
+  writeMoverTool,
+  writeTriggerTool,
+} from "../../src/maps/typescript/tools/entityfamilies.js";
 import { writeWeather } from "../../src/scripts/typescript/tools/weather.js";
 import {
   paintDisplacementTool,
@@ -832,6 +837,65 @@ describe.skipIf(!has.toolchain)("campaign wiring, compiled", () => {
         "info_landmark",
         "trigger_finale",
       ]) {
+        expect(lump.text, className).toContain(`"classname" "${className}"`);
+      }
+    },
+    300_000,
+  );
+});
+describe.skipIf(!has.toolchain)("entity families, compiled", () => {
+  it(
+    "a trigger, a mover and a logic relay reach vbsp",
+    async () => {
+      const path = join(scratch, "entity_families.vmf");
+      writeFileSync(path, room());
+
+      await writeTriggerTool.handler(
+        {
+          path,
+          kind: "multiple",
+          bounds: { mins: [-64, -64, 0], maxs: [64, 64, 64] },
+          targetname: "family_trigger",
+          keyvalues: {},
+          outputs: [
+            { output: "OnStartTouch", target: "family_relay", input: "Trigger", parameter: "", delay: 0, times: -1 },
+          ],
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      await writeMoverTool.handler(
+        {
+          path,
+          kind: "movelinear",
+          bounds: { mins: [128, -32, 0], maxs: [192, 32, 64] },
+          targetname: "family_mover",
+          movedir: [0, 1, 0],
+          keyvalues: {},
+          outputs: [],
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      await writeLogicTool.handler(
+        {
+          path,
+          kind: "relay",
+          origin: [0, 0, 96],
+          targetname: "family_relay",
+          keyvalues: {},
+          outputs: [],
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      const result = await compile(path);
+      expect(result.leaked).toBe(false);
+      expect(result.bspExists).toBe(true);
+      expect(result.ok).toBe(true);
+      const lump = readEntityLump(result.bsp);
+      for (const className of ["trigger_multiple", "func_movelinear", "logic_relay"]) {
         expect(lump.text, className).toContain(`"classname" "${className}"`);
       }
     },

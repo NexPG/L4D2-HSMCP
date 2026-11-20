@@ -18,6 +18,17 @@ checks still need a person or a second client. Read
 named helpers are shortcuts, not the limit of what is possible. If a helper cannot express
 what you need, the primitive can. See `references/tools/primitives.md`.
 
+**Addon provenance.** Every addon or campaign packed with `run_vpk_pack` gets an
+`addonAICredit` entry in `addoninfo.txt` by default:
+
+```
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.133-alpha"
+```
+
+The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
+write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
+the last entry. The current skill version is `0.0.133-alpha`.
+
 ## Route the task first
 
 | Task | Read |
@@ -56,6 +67,7 @@ what you need, the primitive can. See `references/tools/primitives.md`.
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
 | `references/mapping/world-dressing.md` | light, postprocess, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
+| `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |

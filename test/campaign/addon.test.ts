@@ -30,6 +30,7 @@ const pack = (args: Record<string, unknown>) =>
     entries: string[];
     entryCount: number;
     addoninfoWritten: boolean;
+    aiCredit: string | null;
     verified: { compared: number; missingFromVpk: string[]; extraInVpk: string[] };
   }>;
 
@@ -58,6 +59,8 @@ describe.skipIf(!has.sidecar || !has.vpk)("run_vpk_pack", () => {
     expect(readFileSync(out).length).toBeGreaterThan(0);
     // The manifest really is the conventional one, not a placeholder.
     expect(readFileSync(join(dir, "addoninfo.txt"), "utf8")).toContain('"addontitle"');
+    expect(r.aiCredit).toMatch(/^Created by AI via L4D2-HSMCP /);
+    expect(readFileSync(join(dir, "addoninfo.txt"), "utf8")).toContain("addonAICredit");
   }, 120_000);
 
   it("refuses to replace an archive unasked, and replaces it when told", async () => {

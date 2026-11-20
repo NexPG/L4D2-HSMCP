@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
@@ -15,6 +15,22 @@ function quote(text: string): string {
   return `"${text}"`;
 }
 
+export const AI_CREDIT_KEY = "addonAICredit";
+
+/** Version of the toolkit that produced the addon, read from package.json. */
+export function toolkitVersion(): string {
+  try {
+    const text = readFileSync(new URL("../../../../package.json", import.meta.url), "utf8");
+    return (JSON.parse(text) as { version?: string }).version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+export function aiCredit(): string {
+  return `Created by AI via L4D2-HSMCP ${toolkitVersion()}`;
+}
+
 export interface AddonInfo {
   title: string;
   description?: string;
@@ -25,7 +41,7 @@ export interface AddonInfo {
 }
 
 /** The conventional Left 4 Dead 2 addon manifest. */
-export function addonInfoText(info: AddonInfo): string {
+export function addonInfoText(info: AddonInfo, credit = true): string {
   const lines = [
     quote("addoninfo"),
     "{",
@@ -42,6 +58,18 @@ export function addonInfoText(info: AddonInfo): string {
   lines.push("}");
   lines.push("");
   return lines.join("\n");
+}
+
+function ensureAddonCredit(path: string, config: import("../../../core/typescript/config.js").Config): boolean {
+  const text = readFileSync(path, "utf8");
+  if (text.toLowerCase().includes(AI_CREDIT_KEY.toLowerCase())) return false;
+  const close = text.lastIndexOf("}");
+  if (close < 0) return false;
+  const before = text.slice(0, close);
+  const line = `${before.endsWith("\n") ? "" : "\n"}\t"${AI_CREDIT_KEY}"\t${quote(aiCredit())}\n`;
+  const updated = before + line + text.slice(close);
+  writeGuarded(path, updated, config);
+  return true;
 }
 
 const ADDON_INFO = z.object({
@@ -76,6 +104,10 @@ export const runVpkPackTool = defineTool({
       .boolean()
       .default(false)
       .describe("Copy the finished .vpk into the game's left4dead2/addons directory."),
+    credit: z
+      .boolean()
+      .default(true)
+      .describe("Append the addonAICredit line naming L4D2-HSMCP and its version."),
     overwrite: z.boolean().default(false),
     confirm: z.boolean().default(false),
   },
@@ -87,6 +119,7 @@ export const runVpkPackTool = defineTool({
     staging: z.string(),
     addoninfoWritten: z.boolean(),
     installedPath: z.string().nullable(),
+    aiCredit: z.string().nullable(),
     verified: z.object({
       compared: z.number(),
       missingFromVpk: z.array(z.string()),
@@ -110,6 +143,10 @@ export const runVpkPackTool = defineTool({
         `${dir} has no addoninfo.txt; pass \`addoninfo\` or write one first. ` +
           `The game reads the title from it, and an addon without one is hard to identify in the menu.`,
       );
+    }
+
+    if (args.credit !== false) {
+      ensureAddonCredit(join(dir, "addoninfo.txt"), ctx.config);
     }
 
     const parent = dirname(dir);
@@ -199,6 +236,7 @@ export const runVpkPackTool = defineTool({
       staging: dir,
       addoninfoWritten,
       installedPath,
+      aiCredit: args.credit === false ? null : aiCredit(),
       verified: { compared: expected.size, missingFromVpk, extraInVpk },
     };
   },

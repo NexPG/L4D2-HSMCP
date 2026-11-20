@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.133-alpha - 2026-11-21
+
+- **Every packed addon carries AI provenance.** `run_vpk_pack` appends
+  `"addonAICredit" "Created by AI via L4D2-HSMCP <version>"` to `addoninfo.txt` by default;
+  the version is read from the toolkit's `package.json`, so it moves with the build. The same
+  key is asked for in the skill when a manifest is written by hand, and `validate_addon`
+  reports its absence as information.
+- **Triggers, movers and logic have guided builders.** `write_trigger` writes the brush volume
+  and the class-specific keys (`wait`, `damage`/`damagetype`, `speed`/`pushdir`, `gravity`) and
+  refuses a teleport or look trigger with no `target`; `write_mover` writes
+  `func_movelinear`, `func_rotating` or `func_tracktrain` with the origin at the volume centre
+  and refuses a tracktrain with no path; `write_logic` writes the point class and its
+  `connections`, with `RefireTime`, `InitialValue`, `startvalue`/`max` defaults. L4D2 has no
+  `func_pendulum`, so the mover enum does not offer one.
+- **Compiled:** a sealed room with a `trigger_multiple`, a `func_movelinear` and a
+  `logic_relay` reaches vbsp with no leak and all three classes in the entity lump.
+- **Tool count: 191.** Tests: 166 files, 1572 passed, 33 skipped.
+
 ## 0.0.132-alpha - 2026-11-21
 
 - **Shipping an addon has an offline path.** Four tools close the gap between a working
