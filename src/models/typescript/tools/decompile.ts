@@ -39,6 +39,8 @@ import {
 import type { ModelBone } from "../formats/mdlbones.js";
 import { readPhy, readPhyGeometry, readPhyText } from "../formats/phy.js";
 import { readEyeData } from "../formats/mdleyes.js";
+import { jiggleQcLines, readJiggleBones } from "../formats/mdljiggle.js";
+import type { MdlJiggleBone } from "../formats/mdljiggle.js";
 import type { PhyText } from "../formats/phy.js";
 import { flexRuleExpression } from "../formats/mdlflex.js";
 import { buildVta } from "../formats/mdlvta.js";
@@ -499,6 +501,7 @@ function qcText(
   shadowReplacements: LodReplacement[],
   ikChains: MdlIkChain[],
   ikLocks: MdlIkLock[],
+  jiggles: MdlJiggleBone[],
   includedModels: MdlIncludedModel[],
   defineBones: string[] | null,
   warnings: string[],
@@ -544,6 +547,8 @@ function qcText(
         `${fmt(lock.positionWeight)} ${fmt(lock.localQWeight)}`,
     );
   }
+  for (const jiggle of jiggles) lines.push(...jiggleQcLines(jiggle));
+  if (jiggles.length > 0) lines.push("");
 
   const flexBlock = (body: FlexBodyDef): string[] => [
     `\tflexfile "${body.vta}"`,
@@ -960,22 +965,23 @@ export const decompileModelTool = defineTool({
     } else if (args.model) {
       if (!game.gameDir) throw new Error("the game directory is not resolved; run health first");
       modelPath = normalizeModelPath(args.model);
-      const vpk = openGameVpk(game.gameDir);
-      const loose = join(game.gameDir, modelPath);
-      mdlBytes = existsSync(loose) ? readFileSync(loose) : vpk?.read(modelPath) ?? null;
+      const gameDir = game.gameDir;
+      const vpk = openGameVpk(gameDir);
+      // A locally compiled model is loose while its stock namesakes are in the VPK; every
+      // sibling has to be resolved the same way, or a model that exists cannot be read.
+      const readSibling = (path: string): Buffer | null => {
+        const loose = join(gameDir, path);
+        return existsSync(loose) ? readFileSync(loose) : (vpk?.read(path) ?? null);
+      };
+      mdlBytes = readSibling(modelPath);
       const siblings = modelSiblings(modelPath);
-      vvdBytes = vpk?.read(siblings.vvd) ?? null;
+      vvdBytes = readSibling(siblings.vvd);
       for (const candidate of siblings.vtx) {
-        const bytes = vpk?.read(candidate);
-        if (bytes) {
-          vtxBytes = bytes;
-          break;
-        }
+        vtxBytes = readSibling(candidate);
+        if (vtxBytes) break;
       }
-      phyBytes = vpk?.read(modelPath.replace(/\.mdl$/i, ".phy")) ?? null;
-      const aniPath = modelPath.replace(/\.mdl$/i, ".ani");
-      const looseAni = join(game.gameDir, aniPath);
-      aniBytes = existsSync(looseAni) ? readFileSync(looseAni) : vpk?.read(aniPath) ?? null;
+      phyBytes = readSibling(modelPath.replace(/\.mdl$/i, ".phy"));
+      aniBytes = readSibling(modelPath.replace(/\.mdl$/i, ".ani"));
     } else {
       throw new Error("give `model` (engine path) or `path` (local .mdl)");
     }
@@ -1349,6 +1355,7 @@ export const decompileModelTool = defineTool({
       shadowReplacements,
       readIkChains(mdlBytes),
       readIkLocks(mdlBytes),
+      readJiggleBones(mdlBytes, bones),
       readIncludedModels(mdlBytes),
       args.defineBones ? defineBoneLines(bones) : null,
       warnings,

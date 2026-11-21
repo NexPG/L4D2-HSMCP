@@ -26,6 +26,12 @@ export interface ModelBone {
   /** Scale applied to animation rotation values. */
   rotationScale: Vec3;
   flags: number;
+  /** Absolute file offset of this bone record. */
+  baseOffset: number;
+  /** `proctype`: 5 is `STUDIO_PROC_JIGGLE`. */
+  proctype: number;
+  /** Procedural data, relative to `baseOffset`; 0 when none. */
+  procindex: number;
 }
 
 export interface ModelHeaderInfo {
@@ -153,6 +159,9 @@ export function readMdlBones(mdl: Buffer): ModelBone[] {
       positionScale,
       rotationScale,
       flags: mdl.readInt32LE(base + 160),
+      baseOffset: base,
+      proctype: mdl.readInt32LE(base + 164),
+      procindex: mdl.readInt32LE(base + 168),
     });
   }
   return bones;

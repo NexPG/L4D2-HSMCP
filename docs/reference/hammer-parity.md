@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **241 tools**.
+Last checked against the tool list on 21/11/2026: **242 tools**.
 
 ## The file itself
 
@@ -248,6 +248,7 @@ map and looking, or by not happening at all.
 | `read_model_animation` | nothing: Hammer cannot show a compiled model's sequences, events, pose parameters, IK chains or `$includemodel` entries |
 | `read_model_flexes` | nothing: Hammer cannot inspect a compiled model's flex descriptors, rules or vertex deltas |
 | `read_model_eyes` | nothing: the editor cannot show eyeballs or lids, and L4D2's compiler has no `$eyeball` command to recreate them |
+| `read_model_jiggle` | nothing: the editor cannot show a jigglebone's stiffness, constraints or boing parameters |
 | `read_vta` | nothing: a VTA is a compiler input the editor never shows |
 | `write_vta` | nothing: flex targets are authored in a 3D package, not in Hammer |
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |
