@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.147-alpha - 2026-11-21
+
+- **`render_bsp_view` renders the compiled map.** It reconstructs face loops from
+  FACES/FACES_HDR, SURFEDGES, EDGES and VERTEXES, takes each face's colour from the baked
+  lightmap average (LDR or HDR), and renders with the existing Source-camera rasteriser. No
+  textures, props, fog or particles: form, occlusion and baked light. Verified on
+  `c1m1_hotel`: 10,840 faces, 8,829 with HDR averages, and polygon areas match the BSP's own
+  face area to within 1% on the sampled faces.
+- **The scene face picked up optional baked `colour`/`shade`.** A VMF scene still uses the
+  material hash and fixed light; a BSP scene supplies the lightmap average and sets shade 1.
+- **Tool count: 228.** Tests: 182 files, 1636 passed, 33 skipped.
+
 ## 0.0.146-alpha - 2026-11-21
 
 - **`read_bsp_lightmaps` reads the baked luxels, not just the budget.** LDR is three bytes

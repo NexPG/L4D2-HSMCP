@@ -126,3 +126,42 @@ export function readLightmapBudget(
 
   return { header, faceCount, facesWithLightmap, totalLuxels, litAreaUnits, faces };
 }
+
+/**
+ * Per-face average RGB from the baked lighting lump, for a renderer that wants a face colour
+ * without a texture. LDR is three bytes per luxel and HDR four; only the first three bytes of
+ * an HDR luxel are the visible RGB.
+ */
+export function readFaceLightmapAverages(
+  path: string,
+  hdr: boolean,
+): { source: "ldr" | "hdr"; averages: Map<number, [number, number, number]> } {
+  const budget = readLightmapBudget(path, hdr ? 58 : 7);
+  const lump = budget.header.lumps[hdr ? 53 : 8];
+  const averages = new Map<number, [number, number, number]>();
+  if (!lump || lump.length === 0 || lump.compressed) {
+    return { source: hdr ? "hdr" : "ldr", averages };
+  }
+  const bytes = readAt(path, lump.offset, lump.length);
+  const stride = hdr ? 4 : 3;
+  for (const face of budget.faces) {
+    if (!face.hasLightmap) continue;
+    const length = face.luxels * stride;
+    if (face.lightofs < 0 || face.lightofs + length > bytes.length) continue;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    for (let i = 0; i < face.luxels; i += 1) {
+      const at = face.lightofs + i * stride;
+      r += bytes[at]!;
+      g += bytes[at + 1]!;
+      b += bytes[at + 2]!;
+    }
+    averages.set(face.index, [
+      Math.round(r / face.luxels),
+      Math.round(g / face.luxels),
+      Math.round(b / face.luxels),
+    ]);
+  }
+  return { source: hdr ? "hdr" : "ldr", averages };
+}

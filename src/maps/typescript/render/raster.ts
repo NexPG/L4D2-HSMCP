@@ -200,7 +200,7 @@ export function displayList(scene: Scene, camera: Camera): {
       // Half-Lambert, so a face turned away is dark rather than black: a black face in a
       // flat-shaded picture reads as a hole, and a hole is what a leak looks like.
       const lambert = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
-      const shade = 0.45 + 0.55 * Math.max(0, lambert);
+      const shade = face.shade ?? 0.45 + 0.55 * Math.max(0, lambert);
 
       faces.push({
         brushId: brush.id,
@@ -208,7 +208,7 @@ export function displayList(scene: Scene, camera: Camera): {
         material: face.material,
         points: clipped,
         shade,
-        colour: colourFor(face.material),
+        colour: face.colour ?? colourFor(face.material),
         sky: isSkyMaterial(face.material),
       });
     }

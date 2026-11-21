@@ -24,6 +24,7 @@ of that path, but deleting it must not remove the capability.
 | Any VScript | `write_vscript` | The Squirrel source is yours; `logic_script` wiring is a convenience |
 | Any VMF-side check | `read_vmf`, `read_vmf_solids`, `read_vmf_lint`, `read_entity_report` | |
 | Any compiled-map question | `read_bsp_info`, `read_bsp_entities`, `read_map_report` | |
+| See a compiled map | `render_bsp_view` | Source camera, face loops from BSP, baked lightmap average per face |
 | Baked lightmap, PVS or compiled overlay data | `read_bsp_lightmaps`, `read_bsp_vis`, `read_bsp_overlays` | RGB luxels and a PNG per face; cluster vectors; 352-byte overlay records |
 | Compile with either chain | `run_compile` | Stock or Hammer++/Tools++ |
 | Run the game | `run_map_test`, `run_nav_generate` | Watches the log; does not type into a live console |

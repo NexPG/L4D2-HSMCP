@@ -89,6 +89,7 @@ import { sequencesTools } from "./maps/typescript/tools/sequences.js";
 import { previewTools } from "./assets/typescript/tools/preview.js";
 import { renameTools } from "./maps/typescript/tools/rename.js";
 import { renderTools } from "./maps/typescript/tools/render.js";
+import { renderBspTools } from "./maps/typescript/tools/renderbsp.js";
 import { reportTools } from "./maps/typescript/tools/report.js";
 import { rulesTools } from "./maps/typescript/tools/rules.js";
 import { runtimeTools } from "./scripts/typescript/tools/runtime.js";
@@ -163,6 +164,7 @@ export const allTools: AnyToolDef[] = [
   ...measureTools2,
   ...rulesTools,
   ...renderTools,
+  ...renderBspTools,
   ...planTools,
   ...prefabTools,
   ...bspLumpTools,

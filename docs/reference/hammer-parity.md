@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **227 tools**.
+Last checked against the tool list on 21/11/2026: **228 tools**.
 
 ## The file itself
 
@@ -330,6 +330,7 @@ map and looking, or by not happening at all.
 | `read_vmf_rooms` | nothing: Hammer has no idea what a room is |
 | `read_vmf_surfaces` | nothing: no readout says which faces are buried between brushes |
 | `render_vmf_view` | the 3D viewport, which needs a person at a mouse |
+| `render_bsp_view` | the compiled-map view: face loops and baked lightmap colours, without the editor |
 | `render_vmf_plan` | the 2D view, which has no dimensions on it and no idea what a room is |
 | `render_vmf_tour` | walking the map yourself, after a compile. Nothing offline shows a whole place in one look |
 | `measure_vmf_clearance` | the tape measure tool, which measures between two points you pick — not the free width at a place |

@@ -141,6 +141,13 @@ export interface SceneFace {
    */
   loop: Vec3[];
   area: number;
+  /**
+   * A baked colour for this face, when the caller has one (a compiled BSP lightmap average).
+   * The VMF scene leaves it absent, so the material hash and the fixed light still apply.
+   */
+  colour?: [number, number, number];
+  /** A baked shade, or 1 for a face whose colour already contains its lighting. */
+  shade?: number;
 }
 
 export interface SceneBrush {

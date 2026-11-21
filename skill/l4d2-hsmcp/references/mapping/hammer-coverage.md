@@ -127,6 +127,7 @@ covered: this table is the summary.
 | Prefabs | `insert_prefab` | verified: paste a saved `.vmf` fragment; ids remapped, move and yaw about a pivot; brush entities and entity angles turn with it |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
 | Visual capture | `capture_window`, `run_map_test` screenshot, `run_hlmv` screenshot | tool: real MCP image; `screen` captures a 3D game canvas, `window` captures occluded UI/dialogs |
+| Compiled BSP view | `render_bsp_view` | **verified on `c1m1_hotel`**: 10,840 faces, 8,829 with HDR lightmap averages, face loops whose polygon area matches the BSP face area; PNG from the player start |
 
 ## Compile, run, nav, campaign
 
