@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **238 tools**.
+Last checked against the tool list on 21/11/2026: **240 tools**.
 
 ## The file itself
 
@@ -119,6 +119,8 @@ getting `ENOENT` on the first call.
 | Preview a model | `run_hlmv` | Launches HLMV, optionally captures the window; the screenshot comes back as a real image block |
 | See a GUI | `capture_window` | Captures any window by process id or name; PrintWindow works while occluded, screen mode is the 3D fallback |
 | Model browser | `read_model_info` | Bounds, skins, sequences, materials |
+| `read_surfaceprops` | nothing: the editor does not show the surface property table or its inheritance |
+| `check_surfaceprop` | nothing: Hammer lets any string into `$surfaceprop` and never checks it |
 | Look at a model or texture | `preview_asset` | Material: base VTF decoded to a PNG. Model: HLMV viewport captured
 | Look at a model in the engine | `preview_model` | When HLMV's 3D canvas is blank, builds a sealed room, compiles it, generates a nav and captures the real game view; the model's lowest point is placed on the pedestal |
 | Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it |

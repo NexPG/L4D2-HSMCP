@@ -22,6 +22,7 @@ import { autosaveTools } from "./maps/typescript/tools/autosave.js";
 import { clipTools } from "./maps/typescript/tools/clip.js";
 import { compileTools } from "./maps/typescript/tools/compile.js";
 import { contentTools } from "./assets/typescript/tools/content.js";
+import { surfacePropsTools } from "./assets/typescript/tools/surfaceprops.js";
 import { particleTools } from "./assets/typescript/tools/particles.js";
 import { cubemapTools } from "./textures/typescript/tools/cubemap.js";
 import { cubemapGridTools } from "./maps/typescript/tools/cubemapgrid.js";
@@ -161,6 +162,7 @@ export const allTools: AnyToolDef[] = [
   ...reportTools,
   ...vmfTools,
   ...contentTools,
+  ...surfacePropsTools,
   ...particleTools,
   ...wavTools,
   ...soundscriptTools,
