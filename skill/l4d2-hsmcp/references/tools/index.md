@@ -233,7 +233,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
 | `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials, structural faults and a command catalogue that checks argument shapes |
 | `check_model` | QC or MDL: geometry, bodygroups, LODs, hitboxes, sequences, materials |
-| `decompile_model` | compiled `.mdl` -> QC + reference SMD + animation SMDs + collision SMD, with the original bone weights and decoded in-MDL sequences |
+| `decompile_model` | compiled `.mdl` -> QC + reference SMD + animation SMDs + collision SMD, with the original bone weights, attachments and custom hitboxes |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |

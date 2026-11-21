@@ -38,12 +38,12 @@ invisible in a screenshot.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.157-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.158-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.157-alpha`.
+the last entry. The current skill version is `0.0.158-alpha`.
 
 ## Route the task first
 
@@ -206,11 +206,12 @@ the last entry. The current skill version is `0.0.157-alpha`.
   exists.
 - **Model decompilation.** `decompile_model` turns a compiled `.mdl` back into a QC, a
   reference SMD, one animation SMD per decodable sequence, and a collision SMD, with the
-  bind-pose skeleton and per-vertex bone weights. It round-trips through studiomdl (the
-  recompiled hull matches the source within 8 units, and a 31-frame prop spin keeps all 31
-  frames). It is LOD 0/model 0 only for now: external `.ani` and sectioned clips,
-  multi-blend sequences, flexes, hitboxes, attachments, bodygroup alternatives and skin
-  families are not extracted, and its `warnings` say so.
+  bind-pose skeleton and per-vertex bone weights. It writes attachments and custom hitboxes,
+  and round-trips through studiomdl (the recompiled hull matches the source within 8 units, a
+  31-frame prop spin keeps all 31 frames, and smoker's 4 attachments and 17 hitboxes come
+  back). It is LOD 0/model 0 only for now: external `.ani` and sectioned clips, multi-blend
+  sequences, flexes, skin families and bodygroup alternatives are not extracted, and its
+  `warnings` say so.
 - **3D-skybox composition.** `build_skybox` copies a selection, seals the room and places
   `sky_camera` in one call; choosing what is worth copying is design work. `write_sky_camera`
   and `write_skybox_copy` remain as the halves.

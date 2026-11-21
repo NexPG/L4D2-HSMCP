@@ -116,7 +116,7 @@ export function readMdlBones(mdl: Buffer): ModelBone[] {
   return bones;
 }
 
-function eulerToQuaternion(x: number, y: number, z: number): [number, number, number, number] {
+export function eulerToQuaternion(x: number, y: number, z: number): [number, number, number, number] {
   const cx = Math.cos(x / 2);
   const sx = Math.sin(x / 2);
   const cy = Math.cos(y / 2);
@@ -131,11 +131,22 @@ function eulerToQuaternion(x: number, y: number, z: number): [number, number, nu
   ];
 }
 
-/** Source's quaternion-to-Euler order, in radians: pitch, yaw, roll. */
+/**
+ * Source's quaternion-to-Euler conversion, in radians, returning `[roll, pitch, yaw]`.
+ *
+ * This is the inverse of `eulerToQuaternion` and the order an SMD `time` line writes. At
+ * `pitch = ±90°` roll and yaw are not separable; yaw is set to zero and roll carries the
+ * combined turn, matching `QuaternionAngles` in the engine.
+ */
 export function quaternionToEuler([x, y, z, w]: [number, number, number, number]): Vec3 {
-  const sinPitch = Math.max(-1, Math.min(1, -2 * (y * z - w * x)));
+  const sinPitch = Math.max(-1, Math.min(1, 2 * (w * y - x * z)));
   const pitch = Math.asin(sinPitch);
-  const yaw = Math.atan2(2 * (x * z + w * y), 1 - 2 * (x * x + y * y));
-  const roll = Math.atan2(2 * (x * y + w * z), 1 - 2 * (x * x + z * z));
-  return [pitch, yaw, roll];
+  const r01 = 2 * (x * y - w * z);
+  const r11 = 1 - 2 * (x * x + z * z);
+  if (Math.abs(sinPitch) > 0.9999) {
+    return [Math.atan2(sinPitch > 0 ? r01 : -r01, r11), pitch, 0];
+  }
+  const roll = Math.atan2(2 * (y * z + w * x), 1 - 2 * (x * x + y * y));
+  const yaw = Math.atan2(2 * (x * y + w * z), 1 - 2 * (y * y + z * z));
+  return [roll, pitch, yaw];
 }
