@@ -9,7 +9,8 @@ import { editVmf } from "./vmfedit.js";
 
 const VEC3 = z.array(z.number()).length(3);
 
-const FIXUP = { none: "0", prefix: "1", postfix: "2" } as const;
+// base.fgd: 0 = prefix, 1 = postfix, 2 = none.
+const FIXUP = { prefix: "0", postfix: "1", none: "2" } as const;
 
 function value(block: KvBlock, key: string): string | null {
   const found = block.entries.find(

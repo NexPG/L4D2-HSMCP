@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **249 tools**.
+Last checked against the tool list on 22/11/2026: **250 tools**.
 
 ## The file itself
 
@@ -127,6 +127,7 @@ getting `ENOENT` on the first call.
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Rotating door | `place_door` | Origin is the hinge; model hull read with `read_model_info`; checkpoint names checked |
 | Create instance from selection | `create_instance_from_selection` | Writes the instance file, recentres it and leaves one `func_instance`; a brush entity is taken whole |
+| Collapse instances | `collapse_instances` | Expands them recursively the way vbsp does: ids, full pitch/yaw/roll, prefix/postfix/none, outputs and cycle checks |
 | Areaportals | `write_portal` | Verified: a `func_areaportal` filling a sealed doorway compiled with vbsp and vvis |
 | Occluders | `write_portal` | |
 | Map Properties | `set_map_properties` | worldspawn only. Says when `detailvbsp` and `detailmaterial` are set apart |

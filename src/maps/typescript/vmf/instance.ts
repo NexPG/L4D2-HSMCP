@@ -47,7 +47,8 @@ export interface ExtractInstanceResult {
   warnings: string[];
 }
 
-const FIXUP = { none: "0", prefix: "1", postfix: "2" } as const;
+// `func_instance.fixup_style` is 0 = prefix, 1 = postfix, 2 = none (base.fgd).
+const FIXUP = { prefix: "0", postfix: "1", none: "2" } as const;
 
 export function extractInstance(
   target: string,

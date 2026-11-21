@@ -27,6 +27,8 @@ describe("extractInstance", () => {
     expect(instance.solids[0]!.mins[0]).toBeCloseTo(-32, 3);
     expect(instance.solids[0]!.maxs[0]).toBeCloseTo(32, 3);
     expect(r.targetText).toMatch(/"origin"\s+"32 32 32"/);
+    // base.fgd: 0 = prefix, 1 = postfix, 2 = none.
+    expect(r.targetText).toMatch(/"fixup_style"\s+"0"/);
   });
 
   it("takes a brush entity whole", () => {

@@ -59,7 +59,7 @@ describe("write_instance", () => {
     const read = readFileSync(target, "utf8");
     expect(read).toContain('"classname" "func_instance"');
     expect(read).toContain('"file" "small.vmf"');
-    expect(read).toContain('"fixup_style" "1"');
+    expect(read).toContain('"fixup_style" "0"');
   });
 
   it("refuses a missing instance file", async () => {

@@ -64,6 +64,7 @@ import { inputTools } from "./hammer/typescript/tools/input.js";
 import { hollowTools } from "./maps/typescript/tools/hollow.js";
 import { instanceTools } from "./maps/typescript/tools/instance.js";
 import { instanceCreateTools } from "./maps/typescript/tools/instancecreate.js";
+import { instanceCollapseTools } from "./maps/typescript/tools/instancecollapse.js";
 import { lightmapTools } from "./maps/typescript/tools/lightmap.js";
 import { lightmapReadTools } from "./maps/typescript/tools/lightmaps.js";
 import { materialsTools } from "./textures/typescript/tools/materials.js";
@@ -231,6 +232,7 @@ export const allTools: AnyToolDef[] = [
   ...mergeTools,
   ...snapTools,
   ...instanceCreateTools,
+  ...instanceCollapseTools,
   ...clipTools,
   ...vertexTools,
   ...hollowTools,
