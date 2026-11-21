@@ -10,9 +10,9 @@ with a line here.
 - **`run_input` sends a real key to a window.** Focuses with `SetForegroundWindow` /
   `SwitchToThisWindow` / `AttachThreadInput`, sends virtual-key down/up with `keybd_event`, and
   reports `focused` plus the `foreground` handle. That report is the point: a silent "sent"
-  was the failure mode. In this window station even Notepad stayed unfocused (foreground
-  remained another window), so the game `E` pickup is still manual here; on an interactive
-  desktop the standard focus path is the one to try.
+  was the failure mode. Notepad stayed unfocused here, but the game window reported
+  `focused: true`; ten synthetic `E` presses still left the rifle in the world, so Source's
+  raw-input path ignored `keybd_event`. The game `E` pickup is still manual.
 - **Density has a precise answer.** On stock `c1m1_hotel` copies,
   `ConfigurableWeaponDensity 0` left 0 `weapon_spawn` at 30 s and `100` left 6; specific
   `weapon_ammo_spawn` (1) and `weapon_first_aid_kit_spawn` (9) did not change. Density controls

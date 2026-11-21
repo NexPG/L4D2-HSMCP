@@ -128,11 +128,12 @@ Limits found in the same runs:
   `weapon_ammo_spawn` (1) and `weapon_first_aid_kit_spawn` (9) were unchanged, which matches
   the wiki: density controls `weapon_spawn`, not the specific `weapon_*_spawn` points.
 - Pickup and rescue interaction are still not automated. A `weapon_first_aid_kit` and a
-  `weapon_rifle` item, each with an `OnPlayerPickup` echo, a VScript teleport onto the item,
-  and a PowerShell `SendKeys('e')` produced no pickup event; the rifle class count stayed 1.
-  The medkit's base (`WeaponSpawnSingle`) does not inherit `Weapon`, so `OnPlayerPickup` may
-  not exist on it; the rifle is the right probe and still needs a real `E` press. A real
-  rescue needs a dead survivor and a living one opening the closet.
+  `weapon_rifle` item, each with an `OnPlayerPickup` echo, a VScript teleport in front of the
+  item, and `run_input` (10 synthetic `E` presses, `focused: true`) produced no pickup event;
+  the rifle class count stayed 1. Focus is not the blocker: Source's raw-input path ignored
+  the synthetic `keybd_event`. The medkit's base also lacks `OnPlayerPickup`; the rifle has it
+  and still needs a real `E`. A real rescue needs a dead survivor and a living one opening the
+  closet.
 - `director_force_panic_event` needs the Director running; `director_start` first. In the
   two-room map the no-border control spawned 30 infected (all x<-96); a border at x=-100
   spawned 1 at x=-39; a border at x=120 spawned 0. The count drop is the smaller allowed area,
