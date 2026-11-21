@@ -125,7 +125,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_vmf` | entities, outputs and brush counts, without judgement |
 | `read_vmf_solids` | rebuild brushes from planes and check they are closed |
 | `read_vmf_lint` | check against the installed FGD and compiler rules |
-| `normalize_vmf_io` | rewrite Hammer++ ESC I/O values to L4D2 commas |
+| `normalize_vmf_io` | rewrite `connections` separators: commas to ESC (default, L4D2's form) or ESC to commas |
 | `read_vmf_leak` | sealed or not, without compiling |
 | `read_vmf_rooms` | rooms, openings and how they connect |
 | `read_vmf_surfaces` | faces sorted into floor, wall, ceiling, slope |
@@ -234,7 +234,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
 | `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials, structural faults and a command catalogue that checks argument shapes |
 | `check_model` | QC or MDL: geometry, bodygroups, LODs, hitboxes, sequences, materials |
-| `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks, and flex VTA frames with their controllers and rules |
+| `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks, flex VTA frames with their controllers and rules, and `$collisionjoints` ragdolls with their constraints |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |

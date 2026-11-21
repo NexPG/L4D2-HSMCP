@@ -206,13 +206,14 @@ Hammer++ writes entity outputs either as comma-separated fields or with the ESC 
 (ESC)**.
 
 - **L4D2 needs the comma form.** `IOParamNewDelimiter=0`.
-- Garry's Mod uses ESC by default; L4D2 does not. A map saved with ESC on compiles and every
-  output silently does nothing — doors, triggers, finales, changelevels.
-- The project's writer uses commas. `read_vmf_lint` reports `io-esc-delimiter`;
-  `normalize_vmf_io` rewrites an affected VMF and explains that the next Hammer++ save will
-  put the ESC bytes back unless the setting is turned off.
-- This install was found with `IOParamNewDelimiter=1` and was changed to `0`; a backup is at
-  `hammerplusplus_settings.ini.hsmcp-bak`.
+- L4D2 uses ESC (0x1b) between output parts: stock `c1m1_hotel` has 1,695 outputs and
+  zero commas, `c2m1_highway` 324 and `c5m1_waterfront` 249. Hammer++'s "Use special I/O
+  delimiter (ESC)" is the canonical setting, not a bug.
+- The comma form is pre-Orange-Box legacy; it still fires in some engines, so a file that
+  already uses it is not broken. `normalize_vmf_io` defaults to commas -> ESC and can go
+  the other way on request; it only rewrites `connections` blocks.
+- Do not tell a user to turn the ESC setting off, and do not flag ESC in a lint: that would
+  report almost every Valve map as faulty.
 
 ### 3.2 Brush precision (`vertices_plus`)
 

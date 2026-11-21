@@ -282,10 +282,11 @@ def _load_vmf(path: str, req: dict[str, Any] | None = None) -> tuple[Any, dict[s
     that must be something the caller asked for rather than something that happens to a
     map one day because an option gained a default.
     """
-    from srctools import Keyvalues, VMF
+    from srctools import VMF
 
-    with open(path, encoding="utf8", errors="replace") as f:
-        vmf = VMF.parse(Keyvalues.parse(f))
+    from vmftext import parse_vmf_keyvalues
+
+    vmf = VMF.parse(parse_vmf_keyvalues(path))
 
     if not (req or {}).get("collapseInstances"):
         return vmf, {"collapsed": 0, "requested": False}

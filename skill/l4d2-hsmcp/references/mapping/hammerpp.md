@@ -6,10 +6,10 @@ read before touching the editor's settings or trusting a VMF that came out of Ha
 ## The three settings that decide whether the map works
 
 1. **I/O delimiter.** L4D2 needs commas. In
-   `bin/hammerplusplus/hammerplusplus_settings.ini`, `IOParamNewDelimiter=0` (Options →
-   `Use special I/O delimiter (ESC)` off). ESC-separated outputs compile and silently do
-   nothing. `health` reports the setting; `read_vmf_lint` reports `io-esc-delimiter`;
-   `normalize_vmf_io` repairs a file.
+   ESC between output parts is L4D2's own form (stock maps use it exclusively), so the
+   Hammer++ "Use special I/O delimiter (ESC)" setting is correct. Only a legacy
+   comma-separated file needs `normalize_vmf_io`; it defaults to commas -> ESC and touches
+   nothing but `connections` blocks.
 2. **The right build.** Plain L4D2 is 32-bit; current Hammer++ builds are x64. Use the last
    **x86** build or the `x86-64` beta. A 64-bit editor can save the VMF, but its bundled
    tools may not match the game.

@@ -530,7 +530,7 @@ ceiling; `read_map_report` turns that into a verdict.
 | Safe room never activates | Door not named `checkpoint_exit`/`checkpoint_entrance`, no CHECKPOINT | `read_vmf_lint`, nav dump |
 | Finale never starts | No player +use, trigger not over FINALE, no script, disabled start | `check_finale`, campaign-menu test |
 | Finale starts and never ends | No `FinaleEscapeStarted` wiring/escape trigger | `check_finale` |
-| I/O does nothing | Hammer++ ESC delimiter | `health`, `normalize_vmf_io`, `io-esc-delimiter` |
+| I/O does nothing | legacy comma delimiter in a modern build (stock L4D2 maps are all ESC) | `health`, `normalize_vmf_io` |
 | `Entity <name> encountered an error in RunScript()` | `logic_script` file not installed/mounted | `run_map_test(scriptsDir:)`, VPK contents |
 | `Missing stringtable dictionary` | Nav generated before the dictionary bake | `run_nav_generate` `stringtableDictionary` |
 

@@ -22,7 +22,14 @@
  * pairs. Only counts are decoded: the second header word is called a bone index by some
  * readers, but on stock static props it is 0 for most pieces and a large number for one, so
  * it is not reliable as a bone index and is deliberately not reported as one.
+ *
+ * The text section after the solid blobs is where the ragdoll lives: `solid` blocks with
+ * parent/mass/massbias, `ragdollconstraint`, `collisionrules` and `editparams`. It is
+ * KeyValues, so it is parsed with the same reader the VMF layer uses.
  */
+import { parse as parseKeyValues } from "../../../formats/typescript/kv/parse.js";
+import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
+
 export interface PhySolid {
   index: number;
   /** Convex pieces in this solid. More than one means `$concave` is required. */
@@ -42,6 +49,8 @@ export interface PhyReport {
   maxConvexPieces: number;
   /** The trailing KeyValues block, usually `prop_data`. */
   collisionText: string | null;
+  /** The structured text section; null when the file carries none. */
+  ragdoll: PhyText | null;
 }
 
 export class PhyFormatError extends Error {
@@ -58,6 +67,48 @@ export interface PhySolidGeometry {
 
 export interface PhyGeometry {
   solids: PhySolidGeometry[];
+}
+
+/** One `solid { ... }` block: the ragdoll's per-bone collision body. */
+export interface PhySolidText {
+  index: number;
+  /** The bone the solid is attached to, by name. */
+  name: string;
+  /** The parent solid's name, or null for the root. */
+  parent: string | null;
+  mass: number;
+  surfaceprop: string | null;
+  damping: number;
+  rotdamping: number;
+  inertia: number;
+  volume: number;
+  massbias: number;
+}
+
+/** One `ragdollconstraint { ... }` block, in degrees and Source units. */
+export interface PhyConstraint {
+  parent: number;
+  child: number;
+  limits: {
+    x: [number, number];
+    y: [number, number];
+    z: [number, number];
+  };
+  friction: { x: number; y: number; z: number };
+}
+
+/** The PHY text section: everything a ragdoll needs and a single hull does not. */
+export interface PhyText {
+  solids: PhySolidText[];
+  constraints: PhyConstraint[];
+  /** Pairs a `collisionrules` block forbids, as solid indices; null when absent. */
+  collisionPairs: Array<[number, number]> | null;
+  /** False when the file carries `selfcollisions`, i.e. `$noselfcollisions` was written. */
+  selfCollisions: boolean;
+  rootName: string | null;
+  totalMass: number | null;
+  /** `editparams.concave`, i.e. whether the collision is concave. */
+  concave: boolean;
 }
 
 type Vec3 = [number, number, number];
@@ -151,6 +202,124 @@ function readCollisionText(bytes: Buffer, offset: number): string | null {
   return text.length > 0 ? text : null;
 }
 
+/** Offset just past the last solid blob, where the KeyValues text section starts. */
+function solidDataEnd(bytes: Buffer): number {
+  if (bytes.length < 16) return bytes.length;
+  const headerSize = bytes.readInt32LE(0);
+  const solidCount = bytes.readInt32LE(8);
+  if (solidCount < 0 || solidCount > 100_000) return bytes.length;
+  let position = Math.max(16, Math.min(headerSize, bytes.length));
+  for (let index = 0; index < solidCount; index += 1) {
+    if (position + 4 > bytes.length) break;
+    const size = bytes.readInt32LE(position);
+    position += 4 + Math.max(0, size);
+    if (position > bytes.length) return bytes.length;
+  }
+  return position;
+}
+
+function fieldsOf(block: KvBlock): Map<string, string> {
+  const fields = new Map<string, string>();
+  for (const entry of block.entries) {
+    if (entry.kind === "pair") fields.set(entry.key.toLowerCase(), entry.value);
+  }
+  return fields;
+}
+
+function numberField(fields: Map<string, string>, key: string, fallback = 0): number {
+  const value = Number(fields.get(key));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+/**
+ * Parses the KeyValues text section: solids, constraints, collision rules and editparams.
+ *
+ * A file with no text section (older props) returns null rather than an empty ragdoll, so
+ * the decompiler can tell "one hull" from "the ragdoll data was lost".
+ */
+export function readPhyText(bytes: Buffer): PhyText | null {
+  if (bytes.length < 16) return null;
+  const from = solidDataEnd(bytes);
+  let at = bytes.indexOf("solid", from);
+  if (at < 0) at = bytes.indexOf("solid", 16);
+  if (at < 0) return null;
+  const text = bytes
+    .subarray(at)
+    .toString("latin1")
+    .replace(/\0+$/g, "");
+  let nodes;
+  try {
+    nodes = parseKeyValues(text);
+  } catch {
+    return null;
+  }
+
+  const solids: PhySolidText[] = [];
+  const constraints: PhyConstraint[] = [];
+  let collisionPairs: Array<[number, number]> | null = null;
+  let selfCollisions = true;
+  let rootName: string | null = null;
+  let totalMass: number | null = null;
+  let concave = false;
+
+  for (const node of nodes) {
+    if (node.kind !== "block") continue;
+    const name = node.name.toLowerCase();
+    if (name === "solid") {
+      const fields = fieldsOf(node);
+      solids.push({
+        index: numberField(fields, "index", solids.length),
+        name: fields.get("name") ?? "",
+        parent: fields.get("parent") ?? null,
+        mass: numberField(fields, "mass"),
+        surfaceprop: fields.get("surfaceprop") ?? null,
+        damping: numberField(fields, "damping"),
+        rotdamping: numberField(fields, "rotdamping"),
+        inertia: numberField(fields, "inertia"),
+        volume: numberField(fields, "volume"),
+        massbias: numberField(fields, "massbias"),
+      });
+    } else if (name === "ragdollconstraint") {
+      const fields = fieldsOf(node);
+      const limit = (axis: string): [number, number] => [
+        numberField(fields, `${axis}min`),
+        numberField(fields, `${axis}max`),
+      ];
+      constraints.push({
+        parent: numberField(fields, "parent", -1),
+        child: numberField(fields, "child", -1),
+        limits: { x: limit("x"), y: limit("y"), z: limit("z") },
+        friction: {
+          x: numberField(fields, "xfriction"),
+          y: numberField(fields, "yfriction"),
+          z: numberField(fields, "zfriction"),
+        },
+      });
+    } else if (name === "collisionrules") {
+      collisionPairs = [];
+      for (const entry of node.entries) {
+        if (entry.kind !== "pair") continue;
+        const key = entry.key.toLowerCase();
+        if (key === "selfcollisions") {
+          selfCollisions = false;
+          continue;
+        }
+        if (key !== "collisionpair") continue;
+        const [a, b] = entry.value.split(",").map((part) => Number(part.trim()));
+        if (Number.isFinite(a) && Number.isFinite(b)) collisionPairs.push([a!, b!]);
+      }
+    } else if (name === "editparams") {
+      const fields = fieldsOf(node);
+      rootName = fields.get("rootname") || null;
+      totalMass = fields.has("totalmass") ? numberField(fields, "totalmass") : null;
+      concave = (fields.get("concave") ?? "0") !== "0";
+    }
+  }
+
+  if (solids.length === 0) return null;
+  return { solids, constraints, collisionPairs, selfCollisions, rootName, totalMass, concave };
+}
+
 /**
  * Reads the collision report. A malformed solid stops that solid's parse and keeps the
  * solids already read; it does not throw the file away. A `.phy` whose header is wrong is
@@ -230,5 +399,6 @@ export function readPhy(bytes: Buffer): PhyReport {
     solids,
     maxConvexPieces,
     collisionText: readCollisionText(bytes, position),
+    ragdoll: readPhyText(bytes),
   };
 }

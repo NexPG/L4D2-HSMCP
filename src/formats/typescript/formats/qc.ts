@@ -351,13 +351,19 @@ function expandVariables(
  * `{`. This is how every QC that ships with a Source game is written; a command that spans a
  * line break without a block is not something studiomdl accepts either.
  */
+/** Strips the UTF-8 BOM a Windows editor leaves behind; scriplib skips it, the lexer does not. */
+function stripBom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
 export function parseQc(
   source: string,
   path = "<text>",
   variables: Map<string, string> = new Map(),
   macros: Map<string, Macro> = new Map(),
+  declaredBones?: ReadonlySet<string>,
 ): QcFile {
-  const raw = lexQc(source);
+  const raw = lexQc(stripBom(source));
   const macroExpansion = expandMacros(raw, macros, path);
   const expansion = expandVariables(macroExpansion.tokens, variables, path);
   const tokens = expansion.tokens;
@@ -407,7 +413,7 @@ export function parseQc(
   file.diagnostics.push(...macroExpansion.diagnostics, ...expansion.diagnostics);
   const local = validateStatements(statements, path);
   file.diagnostics.push(...local);
-  file.diagnostics.push(...validateGrammar(statements, path));
+  file.diagnostics.push(...validateGrammar(statements, path, declaredBones));
   return file;
 }
 
@@ -443,7 +449,7 @@ const QC_COMMANDS = new Set([
   "$noforcedfade", "$noselfcollisions", "$obsolete", "$origin", "$pivot",
   "$proceduralbones", "$renamebone", "$rollingdrag", "$root", "$rotdamping",
   "$screenalign", "$sequencegroup", "$sequencegroupsize", "$shadowlod", "$texrendermode",
-  "$upaxis", "$worldalign",
+  "$upaxis", "$worldalign", "$lod",
 ]);
 
 /** The command names the structural validator knows; exported for `read_qc` to report. */
@@ -622,8 +628,11 @@ function validateCommand(
         if (innerCommand === "studio" && inner.args.length < 1) {
           fail("qc-bodygroup-studio", "studio needs a model file", "warning");
         }
-        if (innerCommand === "blank" && inner.args.length !== 1) {
-          fail("qc-bodygroup-blank", "blank needs exactly one body index", "warning");
+        if (innerCommand === "blank" && inner.args.length > 1) {
+          // `blank` takes no argument at all; the decompiler writes the bare form for an
+          // empty alternative and studiomdl accepts it. An index is tolerated because some
+          // hand-written QCs use it as a comment-like marker.
+          fail("qc-bodygroup-blank", "blank takes no argument (a body index is tolerated)", "warning");
         }
       }
       break;
@@ -784,7 +793,11 @@ function validateCommand(
  * Blocks owned by `$jigglebone`, `$texturegroup` and `$model` are likewise left to the
  * compiler: their inner vocabulary is large and version-specific.
  */
-function validateGrammar(statements: readonly QcStatement[], file: string): QcDiagnostic[] {
+function validateGrammar(
+  statements: readonly QcStatement[],
+  file: string,
+  declaredBones?: ReadonlySet<string>,
+): QcDiagnostic[] {
   const diagnostics: QcDiagnostic[] = [];
   // These blocks have their own vocabulary (KeyValues, the sequence block, a bodygroup's
   // studio/blank, jigglebone constants). The owner validates what it understands and the
@@ -810,7 +823,7 @@ function validateGrammar(statements: readonly QcStatement[], file: string): QcDi
     }
   };
   walk(statements, null);
-  checkSkeleton(statements, file, diagnostics);
+  checkSkeleton(statements, file, diagnostics, declaredBones);
   return diagnostics;
 }
 
@@ -823,6 +836,7 @@ function checkSkeleton(
   statements: readonly QcStatement[],
   file: string,
   diagnostics: QcDiagnostic[],
+  declaredElsewhere?: ReadonlySet<string>,
 ): void {
   const bones = walkQc(statements).filter(
     (statement) => statement.command.toLowerCase() === "$definebone" && statement.args.length >= 2,
@@ -848,7 +862,7 @@ function checkSkeleton(
   for (const bone of bones) {
     const name = bone.args[0]!;
     const parent = bone.args[1]!;
-    if (parent !== "" && !parentOf.has(parent)) {
+    if (parent !== "" && !parentOf.has(parent) && !declaredElsewhere?.has(parent.toLowerCase())) {
       diagnostics.push(
         grammarDiagnostic(
           "warning",
@@ -1025,7 +1039,7 @@ function seedMacros(
   depth: number,
 ): void {
   if (depth > 16 || chain.includes(path) || !existsSync(path)) return;
-  const tokens = lexQc(readFileSync(path, "utf8"));
+  const tokens = lexQc(stripBom(readFileSync(path, "utf8")));
   expandMacros(tokens, macros, path);
   for (let i = 0; i < tokens.length; i += 1) {
     if (tokens[i]!.text.toLowerCase() !== "$include") continue;
@@ -1035,6 +1049,58 @@ function seedMacros(
       seedMacros(target, macros, [...chain, path], depth + 1);
     }
   }
+}
+
+/**
+ * Collects every bone name declared anywhere in the include tree.
+ *
+ * `$definebone` lines for a viewmodel live in one shared `bones.qci`, and the 49 QCs that
+ * include it declare only the bones they add. Checking each file on its own therefore
+ * warns about a parent that is declared perfectly well one include away. This pre-pass has
+ * to follow `$cd`/`$pushd`/`$popd` because the include loader does.
+ */
+function seedDeclaredBones(
+  path: string,
+  bones: Set<string>,
+  chain: string[],
+  depth: number,
+  startDir: string,
+): string {
+  if (depth > 16 || chain.includes(path) || !existsSync(path)) return startDir;
+  const tokens = lexQc(stripBom(readFileSync(path, "utf8")));
+  let qdir = startDir;
+  const stack: string[] = [];
+  let index = 0;
+  while (index < tokens.length) {
+    const line = tokens[index]!.line;
+    const texts: string[] = [];
+    while (index < tokens.length && tokens[index]!.line === line) {
+      texts.push(tokens[index]!.text);
+      index += 1;
+    }
+    const command = texts[0]!.toLowerCase();
+    if (command === "$definebone") {
+      if (texts[1]) bones.add(texts[1].toLowerCase());
+    } else if (command === "$pushd") {
+      stack.push(qdir);
+      if (texts[1]) qdir = resolve(qdir, texts[1].replace(/\\/g, "/"));
+    } else if (command === "$popd") {
+      qdir = stack.pop() ?? qdir;
+    } else if (command === "$cd") {
+      if (texts[1]) qdir = resolve(qdir, texts[1].replace(/\\/g, "/"));
+    } else if (command === "$include") {
+      for (const arg of texts.slice(1)) {
+        qdir = seedDeclaredBones(
+          resolve(qdir, arg.replace(/\\/g, "/")),
+          bones,
+          [...chain, path],
+          depth + 1,
+          qdir,
+        );
+      }
+    }
+  }
+  return qdir;
 }
 
 /**
@@ -1049,7 +1115,9 @@ export function loadQc(path: string, options: LoadQcOptions = {}): QcFile {
   const variables = new Map<string, string>();
   const macros = new Map<string, Macro>();
   seedMacros(absolute, macros, [], 0);
-  const root = parseQc(readFileSync(absolute, "utf8"), absolute, variables, macros);
+  const declaredBones = new Set<string>();
+  seedDeclaredBones(absolute, declaredBones, [], 0, dirname(absolute));
+  const root = parseQc(readFileSync(absolute, "utf8"), absolute, variables, macros, declaredBones);
 
   const loadIncludes = (file: QcFile, chain: string[], depth: number, startDir: string): string => {
     // scriplib keeps one global `qdir`; `$pushd`, `$popd` and `$cd` change it while the
@@ -1107,7 +1175,13 @@ export function loadQc(path: string, options: LoadQcOptions = {}): QcFile {
           });
           continue;
         }
-        const child = parseQc(readFileSync(target, "utf8"), target, variables, macros);
+        const child = parseQc(
+          readFileSync(target, "utf8"),
+          target,
+          variables,
+          macros,
+          declaredBones,
+        );
         file.includes.push(target);
         file.included.push(child);
         qdir = loadIncludes(child, [...chain, target], depth + 1, qdir);

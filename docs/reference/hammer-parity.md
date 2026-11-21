@@ -348,7 +348,7 @@ map and looking, or by not happening at all.
 | `read_fgd_class` | the entity dialog, one class at a time |
 | `read_vmf_solids` | the red "invalid solid" outline, and no reason |
 | `read_vmf_lint` | nothing |
-| `normalize_vmf_io` | turns Hammer++'s ESC-separated outputs into the comma form L4D2 reads |
+| `normalize_vmf_io` | converts legacy comma outputs to ESC (L4D2's own form) or back; only `connections` blocks |
 | `write_vmf_fitting` | prefabs, which are a saved lump of geometry at whatever size somebody once drew it. Nothing in Hammer knows how tall a counter is |
 | `write_hint_brush` | a brush you texture yourself and hope |
 | `read_campaign` | nothing: the game reads mission files, the editor never shows them |

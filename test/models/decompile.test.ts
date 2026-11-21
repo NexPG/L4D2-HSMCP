@@ -14,7 +14,9 @@ import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { decompileModelTool } from "../../src/models/typescript/tools/decompile.js";
 import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";
 import { readAttachments, readHitboxSets } from "../../src/models/typescript/formats/mdlmeta.js";
-import { readAnimations, readSequences } from "../../src/models/typescript/formats/mdlanim.js";
+import { readAnimations, readSequences, decodeAnimation } from "../../src/models/typescript/formats/mdlanim.js";
+import { readMdlBones } from "../../src/models/typescript/formats/mdlbones.js";
+import { readPhy, readPhyGeometry } from "../../src/models/typescript/formats/phy.js";
 import { parseModelGeometry } from "../../src/models/typescript/formats/mdlmesh.js";
 import type { Vec3 } from "../../src/models/typescript/formats/mdlmesh.js";
 import { loadGameModel, modelSiblings } from "../../src/assets/typescript/game/models.js";
@@ -106,19 +108,21 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       warnings: string[];
     };
     expect(r.triangleCount).toBe(5515);
-    expect(r.collisionTriangles).toBe(634);
+    // One solid with 16 convex pieces: the compiler's frame for a single hull depends on the
+    // root pose, and this model's pose is one the reader cannot reproduce yet. It says so
+    // rather than writing a rotated hull.
+    expect(r.collisionTriangles).toBe(0);
+    expect(r.collisionSmd).toBeNull();
     expect(existsSync(r.qc)).toBe(true);
     expect(existsSync(r.smd)).toBe(true);
-    expect(r.collisionSmd).not.toBeNull();
-    expect(existsSync(r.collisionSmd!)).toBe(true);
+    expect(r.warnings.join(" ")).toMatch(/collision frame could not be reproduced/);
 
     const qc = readFileSync(r.qc, "utf8");
     expect(qc).toContain('$modelname "hsmcp_decompile_test/car.mdl"');
     expect(qc).toContain('$body "Body" "cara_84sedan_ref.smd"');
     expect(qc).toContain("$staticprop");
     expect(qc).toContain("$cdmaterials \"models/props_vehicles/\"");
-    expect(qc).toContain("$collisionmodel \"cara_84sedan_phys.smd\"");
-    expect(qc).toContain("$concave");
+    expect(qc).not.toContain("$collisionmodel");
     expect(qc).toContain('$sequence "idle" "cara_84sedan_idle.smd" fps 30.000000');
     expect(r.warnings.join(" ")).toMatch(/shadow LODs use a/);
 
@@ -627,6 +631,23 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(rebuiltSet.hitboxes).toHaveLength(sourceSet.hitboxes.length);
     expect(rebuiltSet.hitboxes[0]!.group).toBe(sourceSet.hitboxes[0]!.group);
     expect(rebuiltSet.hitboxes[0]!.min[0]).toBeCloseTo(sourceSet.hitboxes[0]!.min[0], 3);
+
+    // A survivor-scale model is a ragdoll: one solid per bone, constraints and all.
+    expect(readFileSync(decompiled.qc, "utf8")).toContain("$collisionjoints");
+    const sourcePhy = archive().read("models/infected/smoker.phy")!;
+    const rebuiltPhy = readFileSync(join(outputModelDir(), "smoker.phy"));
+    const sourceText = readPhy(sourcePhy);
+    const rebuiltText = readPhy(rebuiltPhy);
+    expect(rebuiltText.ragdoll?.solids).toHaveLength(sourceText.ragdoll!.solids.length);
+    expect(rebuiltText.ragdoll?.constraints).toHaveLength(sourceText.ragdoll!.constraints.length);
+    expect(rebuiltText.ragdoll?.rootName).toBe(sourceText.ragdoll!.rootName);
+    expect(rebuiltText.ragdoll?.totalMass).toBe(sourceText.ragdoll!.totalMass);
+    expect(rebuiltText.ragdoll!.solids.map((solid) => solid.name)).toEqual(
+      sourceText.ragdoll!.solids.map((solid) => solid.name),
+    );
+    expect(rebuiltText.ragdoll!.solids.map((solid) => solid.parent)).toEqual(
+      sourceText.ragdoll!.solids.map((solid) => solid.parent),
+    );
   });
 
   it.skipIf(!has.toolchain)("recompiles to the same hull as the source", { timeout: 30_000 }, async () => {
@@ -662,6 +683,170 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       expect(Math.abs(a.min[axis]! - b.min[axis]!)).toBeLessThan(8);
       expect(Math.abs(a.max[axis]! - b.max[axis]!)).toBeLessThan(8);
     }
+  });
+
+  /**
+   * Counts triangles whose geometric normal agrees with the average vertex normal. Source
+   * models are stored with the opposite order (studiomdl flips SMD winding), so a
+   * recompile that matches the source must reproduce both counts, whichever way they lean.
+   */
+  const orientation = (geometry: {
+    meshes: Array<{ vertices: Array<{ position: Vec3; normal: Vec3 }>; triangles: number[] }>;
+  }): { agree: number; disagree: number } => {
+    let agree = 0;
+    let disagree = 0;
+    for (const mesh of geometry.meshes) {
+      for (let t = 0; t + 2 < mesh.triangles.length; t += 3) {
+        const a = mesh.vertices[mesh.triangles[t]!]!;
+        const b = mesh.vertices[mesh.triangles[t + 1]!]!;
+        const c = mesh.vertices[mesh.triangles[t + 2]!]!;
+        const e1 = b.position.map((value, axis) => value - a.position[axis]!) as Vec3;
+        const e2 = c.position.map((value, axis) => value - a.position[axis]!) as Vec3;
+        const n: Vec3 = [
+          e1[1] * e2[2] - e1[2] * e2[1],
+          e1[2] * e2[0] - e1[0] * e2[2],
+          e1[0] * e2[1] - e1[1] * e2[0],
+        ];
+        const average = [0, 1, 2].map(
+          (axis) => (a.normal[axis]! + b.normal[axis]! + c.normal[axis]!) / 3,
+        );
+        const dot = n[0] * average[0]! + n[1] * average[1]! + n[2] * average[2]!;
+        if (dot > 0) agree += 1;
+        else disagree += 1;
+      }
+    }
+    return { agree, disagree };
+  };
+
+  it.skipIf(!has.toolchain)("recompiles triangles in the source winding", { timeout: 30_000 }, async () => {
+    const outDir = join(scratch, "gascan-winding");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "props_junk/gascan001a.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/gascan.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const source = loadGameModel(archive(), "models/props_junk/gascan001a.mdl")!;
+    const rebuilt = readLooseGeometry("models/hsmcp_decompile_test/gascan.mdl")!;
+    const sourceOrientation = orientation(source);
+    // Pin the convention itself: a straight dump of the VTX order compiles agree > disagree.
+    expect(sourceOrientation).toEqual({ agree: 0, disagree: 1988 });
+    expect(orientation(rebuilt)).toEqual(sourceOrientation);
+  });
+
+  it.skipIf(!has.toolchain)("restores the root rotation of every sequence", { timeout: 60_000 }, async () => {
+    const outDir = join(scratch, "v_bat-roots");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "weapons/melee/v_bat.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/v_bat.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 10 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const source = archive().read("models/weapons/melee/v_bat.mdl")!;
+    const rebuilt = readFileSync(join(outputModelDir(), "v_bat.mdl"));
+    const sourceAnimations = readAnimations(source);
+    const rebuiltAnimations = readAnimations(rebuilt);
+    const sourceBones = readMdlBones(source);
+    const rebuiltBones = readMdlBones(rebuilt);
+    const sourceSequences = readSequences(source, sourceAnimations);
+    const rebuiltSequences = readSequences(rebuilt, rebuiltAnimations);
+    expect(sourceSequences.length).toBeGreaterThan(0);
+    for (const sequence of sourceSequences) {
+      const rebuiltSequence = rebuiltSequences.find((entry) => entry.name === sequence.name);
+      expect(rebuiltSequence, sequence.name).toBeDefined();
+      const before = decodeAnimation(source, sourceAnimations[sequence.firstAnimation]!, sourceBones)!;
+      const after = decodeAnimation(
+        rebuilt,
+        rebuiltAnimations[rebuiltSequence!.firstAnimation]!,
+        rebuiltBones,
+      )!;
+      // studiomdl yaws the root bone +90 degrees; without the correction every one of these
+      // would be off by pi/2 on Z.
+      const first = before[0]!.bones[0]!.rotation;
+      const again = after[0]!.bones[0]!.rotation;
+      for (let axis = 0; axis < 3; axis += 1) {
+        expect(Math.abs(first[axis]! - again[axis]!), sequence.name).toBeLessThan(1e-3);
+      }
+    }
+  });
+
+  it.skipIf(!has.toolchain)("recompiles a single-hull prop collision in the compiler's frame", { timeout: 30_000 }, async () => {
+    const outDir = join(scratch, "gascan-collision");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "props_junk/gascan001a.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/gascan.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string; collisionSmd: string | null; collisionTriangles: number; warnings: string[] };
+    expect(decompiled.collisionSmd).not.toBeNull();
+    expect(decompiled.collisionTriangles).toBe(20);
+    const qc = readFileSync(decompiled.qc, "utf8");
+    expect(qc).toContain('$collisionmodel "gascan001a_phys.smd"');
+    expect(qc).toContain("$concave");
+
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+
+    const source = archive().read("models/props_junk/gascan001a.mdl")!;
+    const rebuilt = readFileSync(join(outputModelDir(), "gascan.mdl"));
+    const hull = (bytes: Buffer): number[] => [
+      bytes.readFloatLE(104),
+      bytes.readFloatLE(108),
+      bytes.readFloatLE(112),
+      bytes.readFloatLE(116),
+      bytes.readFloatLE(120),
+      bytes.readFloatLE(124),
+    ];
+    hull(source).forEach((value, axis) => {
+      expect(Math.abs(value - hull(rebuilt)[axis]!)).toBeLessThan(1);
+    });
+
+    const sourcePhy = archive().read("models/props_junk/gascan001a.phy")!;
+    const rebuiltPhy = readFileSync(join(outputModelDir(), "gascan.phy"));
+    const box = (bytes: Buffer): number[] => {
+      const points = readPhyGeometry(bytes).solids.flatMap((solid) => solid.vertices);
+      const lo = [Infinity, Infinity, Infinity];
+      const hi = [-Infinity, -Infinity, -Infinity];
+      for (const point of points) {
+        for (let axis = 0; axis < 3; axis += 1) {
+          lo[axis] = Math.min(lo[axis]!, point[axis]!);
+          hi[axis] = Math.max(hi[axis]!, point[axis]!);
+        }
+      }
+      return [...lo, ...hi];
+    };
+    box(sourcePhy).forEach((value, axis) => {
+      expect(Math.abs(value - box(rebuiltPhy)[axis]!)).toBeLessThan(0.01);
+    });
   });
 
   it("writes flex deltas as a VTA and references it from a $model block", async () => {

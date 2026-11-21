@@ -313,9 +313,70 @@ $Loop
         "$declareanimation \"a\" \"a_anim.smd\"",
         "$declaresequence \"s\" \"s.smd\"",
         "$collisionmodel \"a_phys.smd\" { $mass 10 $concave }",
+        "$lod 25 { replacemodel \"a.smd\" \"a_lod1.smd\" }",
       ].join("\n"),
     );
     expect(decompiled.diagnostics.map((d) => d.rule)).not.toContain("qc-unknown-command");
+  });
+
+  it("ignores a UTF-8 BOM instead of reading it as part of the first command", () => {
+    const parsed = parseQc("\ufeff" + VIEWMODEL);
+    expect(parsed.diagnostics.map((d) => d.rule)).not.toContain("qc-no-modelname");
+    expect(qcModelName(parsed)).toBe("models/weapons/v_test.mdl");
+  });
+
+  it("accepts the bare blank a decompiler writes for an empty bodygroup value", () => {
+    const parsed = parseQc(
+      [
+        '$modelname "a.mdl"',
+        '$bodygroup "parts"',
+        "{",
+        '\tstudio "a.smd"',
+        "\tblank",
+        "}",
+      ].join("\n"),
+    );
+    expect(parsed.diagnostics.map((d) => d.rule)).not.toContain("qc-bodygroup-blank");
+
+    const tooMany = parseQc('$modelname "a.mdl"\n$bodygroup "parts" { blank 0 1 }\n');
+    expect(tooMany.diagnostics.map((d) => d.rule)).toContain("qc-bodygroup-blank");
+  });
+
+  it("does not report a $definebone parent that an included QCI declares", () => {
+    const dir = mkdtempSync(join(scratch, "bones-"));
+    writeFileSync(
+      join(dir, "bones.qci"),
+      ['$definebone "ValveBiped.Bip01" "" 0 0 0 0 0 0', '$definebone "ValveBiped.weapon_bone" "ValveBiped.Bip01" 0 0 0 0 0 0'].join(
+        "\n",
+      ),
+      "utf8",
+    );
+    writeFileSync(
+      join(dir, "a.qc"),
+      [
+        '$modelname "a.mdl"',
+        '$include "bones.qci"',
+        '$definebone "ValveBiped.sight" "ValveBiped.weapon_bone" 1 0 0 0 0 0',
+        '$definebone "ValveBiped.sling" "ValveBiped.Bip01" 0 1 0 0 0 0',
+      ].join("\n"),
+      "utf8",
+    );
+    const file = loadQc(join(dir, "a.qc"));
+    expect(file.includes).toHaveLength(1);
+    const rules = flattenQc(file).flatMap((entry) => entry.diagnostics.map((d) => d.rule));
+    expect(rules).not.toContain("qc-definebone-parent");
+
+    // The same QC without the include must still report both parents.
+    writeFileSync(
+      join(dir, "b.qc"),
+      [
+        '$modelname "a.mdl"',
+        '$definebone "ValveBiped.sight" "ValveBiped.weapon_bone" 1 0 0 0 0 0',
+      ].join("\n"),
+      "utf8",
+    );
+    const bare = loadQc(join(dir, "b.qc"));
+    expect(bare.diagnostics.map((d) => d.rule)).toContain("qc-definebone-parent");
   });
 
   it("reports a malformed known command, a bad sequence number and an unknown command", () => {

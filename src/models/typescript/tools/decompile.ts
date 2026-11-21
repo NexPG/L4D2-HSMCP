@@ -31,7 +31,8 @@ import type { ModelGeometry, ModelMesh, ModelVertex, Vec3 } from "../formats/mdl
 import { modelSiblings } from "../../../assets/typescript/game/models.js";
 import { quaternionToEuler, readMdlBones, readModelHeaderInfo } from "../formats/mdlbones.js";
 import type { ModelBone } from "../formats/mdlbones.js";
-import { readPhy, readPhyGeometry } from "../formats/phy.js";
+import { readPhy, readPhyGeometry, readPhyText } from "../formats/phy.js";
+import type { PhyText } from "../formats/phy.js";
 import { flexRuleExpression } from "../formats/mdlflex.js";
 import { buildVta } from "../formats/mdlvta.js";
 import type { VtaFrame } from "../formats/mdlvta.js";
@@ -179,7 +180,12 @@ function referenceSmd(
       // material line followed by many triangles is legal in the format but this compiler
       // treats the following lines as new materials.
       lines.push(smdMaterial);
-      for (let corner = 0; corner < 3; corner += 1) {
+      // studiomdl flips the winding of every SMD triangle when it builds the VTX. Writing the
+      // corners in their stored order therefore compiles a model whose faces point inwards.
+      // Measured on `gascan001a`: source and artist SMDs have geometric normals opposite the
+      // vertex normals (the compiler will flip them back), while a straight dump compiles with
+      // them agreeing. Swapping corners 1 and 2 restores the source orientation exactly.
+      for (const corner of [0, 2, 1] as const) {
         const vertex = mesh.vertices[mesh.triangles[t + corner]!]!;
         lines.push(writeVertexLine(vertex, boneCount, staticProp));
       }
@@ -206,9 +212,17 @@ function animationSmd(bones: ModelBone[], frames: AnimationFrame[]): string {
     lines.push(`time ${frameIndex}`);
     for (let index = 0; index < boneCount; index += 1) {
       const bone = frame.bones[index] ?? { position: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
+      // studiomdl yaws every root bone by +90 degrees when compiling an SMD animation, while
+      // the .mdl stores the final value. Writing the stored value therefore rotates the whole
+      // animation one quarter turn on every recompile; subtracting it restores the source.
+      // Crowbar has the same correction (`rot.z - 90` for `parent = -1`).
+      const rotation: Vec3 =
+        index === 0 || bones[index]?.parent === -1
+          ? [bone.rotation[0], bone.rotation[1], bone.rotation[2] - Math.PI / 2]
+          : bone.rotation;
       lines.push(
         `${index} ${fmt(bone.position[0])} ${fmt(bone.position[1])} ${fmt(bone.position[2])} ` +
-          `${fmt(bone.rotation[0])} ${fmt(bone.rotation[1])} ${fmt(bone.rotation[2])}`,
+          `${fmt(rotation[0])} ${fmt(rotation[1])} ${fmt(rotation[2])}`,
       );
     }
   }
@@ -216,38 +230,219 @@ function animationSmd(bones: ModelBone[], frames: AnimationFrame[]): string {
   return `${lines.join("\n")}\n`;
 }
 
-function collisionSmd(phyBytes: Buffer, staticProp: boolean): { text: string; triangles: number } | null {
+/** A compiled `.phy` turned into the collision SMD and the options its QC needs. */
+interface CollisionModel {
+  text: string;
+  triangles: number;
+  jointed: boolean;
+  ragdoll: PhyText | null;
+  mass: number;
+  concave: boolean;
+  maxConvexPieces: number;
+  /** Convex pieces per solid, for `$concaveperjoint`. */
+  pieces: number[];
+  /** False when the single-hull frame could not be reproduced; do not write it. */
+  usable: boolean;
+  warnings: string[];
+}
+
+function quatMultiply(
+  a: [number, number, number, number],
+  b: [number, number, number, number],
+): [number, number, number, number] {
+  return [
+    a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+    a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+  ];
+}
+
+function rotateByQuaternion(
+  q: [number, number, number, number],
+  v: Vec3,
+): Vec3 {
+  const [x, y, z, w] = q;
+  const ix = w * v[0] + y * v[2] - z * v[1];
+  const iy = w * v[1] + z * v[0] - x * v[2];
+  const iz = w * v[2] + x * v[1] - y * v[0];
+  const iw = -x * v[0] - y * v[1] - z * v[2];
+  return [
+    ix * w + iw * -x + iy * -z - iz * -y,
+    iy * w + iw * -y + iz * -x - ix * -z,
+    iz * w + iw * -z + ix * -y - iy * -x,
+  ];
+}
+
+/** Resolves parent-relative bind transforms into model space for a jointed PHY. */
+function absoluteBones(
+  bones: ModelBone[],
+): Array<{ position: Vec3; rotation: [number, number, number, number] }> {
+  const out: Array<{ position: Vec3; rotation: [number, number, number, number] }> = [];
+  for (const bone of bones) {
+    if (bone.parent < 0 || !out[bone.parent]) {
+      out.push({ position: [...bone.position] as Vec3, rotation: [...bone.rotation] });
+      continue;
+    }
+    const parent = out[bone.parent]!;
+    const offset = rotateByQuaternion(parent.rotation, bone.position);
+    out.push({
+      position: [
+        parent.position[0] + offset[0],
+        parent.position[1] + offset[1],
+        parent.position[2] + offset[2],
+      ],
+      rotation: quatMultiply(parent.rotation, bone.rotation),
+    });
+  }
+  return out;
+}
+
+/**
+ * Writes the collision SMD from a `.phy`.
+ *
+ * Two conventions, both verified by recompiling and comparing the PHY back:
+ * - `$collisionmodel` (one solid, no parents) stores model-space vertices in Havok axes and
+ *   metres, so `(x, -y, z) / 0.0254` is the whole conversion.
+ * - `$collisionjoints` stores each solid in its bone's local frame, in metres, with an
+ *   axis convention of its own: `(x, z, -y) / 0.0254`, then the bone's absolute bind
+ *   transform. A straight dump compiles a model with no collision at all (studiomdl writes
+ *   a zero-byte collision block), which is how this was found.
+ */
+function collisionSmd(
+  phyBytes: Buffer,
+  bones: ModelBone[],
+  staticProp: boolean,
+  rootRotation: Vec3 | null,
+): CollisionModel | null {
   const geometry = readPhyGeometry(phyBytes);
   if (geometry.solids.length === 0) return null;
-  const lines: string[] = [
-    "version 1",
-    "nodes",
-    '0 "phys" -1',
-    "end",
-    "skeleton",
-    "time 0",
-    "0 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000",
-    "end",
-    "triangles",
-  ];
+  const ragdoll = readPhyText(phyBytes);
+  const report = readPhy(phyBytes);
+  const warnings: string[] = [];
+  // The static-prop axis swap belongs to the VVD render vertices; the PHY is already stored
+  // in its own frame, so applying it here would rotate the collision a second time.
+  void staticProp;
+
+  const byName = new Map(bones.map((bone) => [bone.name.toLowerCase(), bone]));
+  const textSolids = ragdoll?.solids ?? [];
+  const named = textSolids.length === geometry.solids.length;
+  const missing = named
+    ? textSolids.filter((solid) => !byName.has(solid.name.toLowerCase()))
+    : [];
+  const jointed =
+    (geometry.solids.length > 1 || textSolids.some((solid) => solid.parent !== null)) &&
+    named &&
+    missing.length === 0 &&
+    bones.length > 0;
+  if (!jointed && (geometry.solids.length > 1 || textSolids.some((solid) => solid.parent !== null))) {
+    warnings.push(
+      named
+        ? `The .phy is jointed but ${missing.length > 0 ? `${missing.length} solid name(s) have no matching bone` : "the model has no bones"}; wrote a single $collisionmodel.`
+        : "The .phy text names fewer solids than the file has; wrote a single $collisionmodel.",
+    );
+  }
+
+  const mass = jointed
+    ? (ragdoll?.totalMass ?? textSolids.reduce((sum, solid) => sum + solid.mass, 0))
+    : (textSolids[0]?.mass ?? keyValueNumber(report.collisionText, "mass", 10));
+
+  const lines: string[] = ["version 1", "nodes"];
   let triangles = 0;
-  for (const solid of geometry.solids) {
-    for (const [a, b, c] of solid.triangles) {
-      lines.push("phys");
-      for (const index of [a, b, c]) {
-        const vertex = solid.vertices[index];
-        if (!vertex) continue;
-        const position: Vec3 = staticProp ? [vertex[1], -vertex[0], vertex[2]] : vertex;
-        lines.push(
-          `  0 ${fmt(position[0])} ${fmt(position[1])} ${fmt(position[2])} ` +
-            `0.000000 0.000000 1.000000 0.000000 0.000000 1 0 1.000000`,
-        );
+  let usable = true;
+
+  if (jointed) {
+    for (const bone of bones) lines.push(`${bone.index} "${bone.name.replace(/"/g, "")}" ${bone.parent}`);
+    lines.push("end", "skeleton", "time 0");
+    for (const bone of bones) {
+      const [rx, ry, rz] = bone.rotationEuler;
+      lines.push(
+        `${bone.index} ${fmt(bone.position[0])} ${fmt(bone.position[1])} ${fmt(bone.position[2])} ` +
+          `${fmt(rx)} ${fmt(ry)} ${fmt(rz)}`,
+      );
+    }
+    lines.push("end", "triangles");
+    const absolute = absoluteBones(bones);
+    for (let index = 0; index < geometry.solids.length; index += 1) {
+      const solid = geometry.solids[index]!;
+      const bone = byName.get(textSolids[index]!.name.toLowerCase())!;
+      const pose = absolute[bone.index]!;
+      for (const triangle of solid.triangles) {
+        lines.push("phys");
+        for (const corner of triangle) {
+          const vertex = solid.vertices[corner];
+          if (!vertex) continue;
+          // Havok bone-local metres -> Source bone-local units -> model space.
+          const local: Vec3 = [vertex[0] / 0.0254, vertex[2] / 0.0254, -vertex[1] / 0.0254];
+          const rotated = rotateByQuaternion(pose.rotation, local);
+          const position: Vec3 = [
+            pose.position[0] + rotated[0],
+            pose.position[1] + rotated[1],
+            pose.position[2] + rotated[2],
+          ];
+          lines.push(
+            `  ${bone.index} ${fmt(position[0])} ${fmt(position[1])} ${fmt(position[2])} ` +
+              `0.000000 0.000000 1.000000 0.000000 0.000000 1 ${bone.index} 1.000000`,
+          );
+        }
+        triangles += 1;
       }
-      triangles += 1;
+    }
+  } else {
+    lines.push('0 "phys" -1', "end", "skeleton", "time 0",
+      "0 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000", "end", "triangles");
+    // studiomdl builds a single `$collisionmodel` in the frame of the root bone's pose, and
+    // the frame it picks is the first sequence's root. For the common pitched root the
+    // conversion below is exact (verified on `gascan001a` at every quarter turn of the
+    // written root: the PHY comes back byte-identical). Other root poses use a different
+    // frame that has not been reproduced, and a rotated hull is worse than none, so those
+    // are skipped with a warning instead of guessed.
+    const pitch = rootRotation?.[0] ?? 0;
+    const frameKnown = rootRotation !== null && Math.abs(Math.abs(pitch) - Math.PI / 2) < 0.05;
+    if (!frameKnown) {
+      usable = false;
+      warnings.push(
+        "The .phy has one hull, but its root pose is not a pitched ±90° pose, so the " +
+          "compiler's collision frame could not be reproduced; no collision model was written. " +
+          "Rebuilding this hull by hand and checking it in HLMV is safer than a rotated hull.",
+      );
+    }
+    const theta = (rootRotation?.[2] ?? 0) - Math.PI / 2;
+    const sin = Math.sin(theta);
+    const cos = Math.cos(theta);
+    for (const solid of geometry.solids) {
+      for (const [a, b, c] of solid.triangles) {
+        lines.push("phys");
+        for (const index of [a, b, c]) {
+          const vertex = solid.vertices[index];
+          if (!vertex) continue;
+          const position: Vec3 = [
+            (-sin * vertex[0] + cos * vertex[2]) / 0.0254,
+            -vertex[1] / 0.0254,
+            (cos * vertex[0] + sin * vertex[2]) / 0.0254,
+          ];
+          lines.push(
+            `  0 ${fmt(position[0])} ${fmt(position[1])} ${fmt(position[2])} ` +
+              `0.000000 0.000000 1.000000 0.000000 0.000000 1 0 1.000000`,
+          );
+        }
+        triangles += 1;
+      }
     }
   }
   lines.push("end");
-  return { text: `${lines.join("\n")}\n`, triangles };
+  return {
+    text: `${lines.join("\n")}\n`,
+    triangles,
+    jointed,
+    ragdoll,
+    mass,
+    concave: report.maxConvexPieces > 1 || ragdoll?.concave === true,
+    maxConvexPieces: report.maxConvexPieces,
+    pieces: report.solids.map((solid) => solid.convexPieces),
+    usable,
+    warnings,
+  };
 }
 
 function materialDirs(geometry: ModelGeometry): string[] {
@@ -324,7 +519,7 @@ function qcText(
   bones: ModelBone[],
   bodyFile: string,
   targetModelName: string,
-  collision: { smdName: string; mass: number; concave: boolean } | null,
+  collision: (CollisionModel & { smdName: string }) | null,
   sequences: Array<{
     name: string;
     fps: number;
@@ -516,8 +711,86 @@ function qcText(
   }
 
   if (collision) {
-    lines.push("", `$collisionmodel "${collision.smdName}"`, "{", `\t$mass ${fmt(collision.mass)}`);
-    if (collision.concave) lines.push("\t$concave");
+    const ragdoll = collision.ragdoll;
+    const solids = ragdoll?.solids ?? [];
+    const mostUsed = (values: number[]): number => {
+      const counts = new Map<number, number>();
+      for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+      let best = 0;
+      let bestCount = -1;
+      for (const [value, count] of counts) {
+        if (count > bestCount) {
+          best = value;
+          bestCount = count;
+        }
+      }
+      return best;
+    };
+    const common = {
+      inertia: mostUsed(solids.map((solid) => solid.inertia)),
+      damping: mostUsed(solids.map((solid) => solid.damping)),
+      rotdamping: mostUsed(solids.map((solid) => solid.rotdamping)),
+    };
+
+    lines.push(
+      "",
+      `$${collision.jointed ? "collisionjoints" : "collisionmodel"} "${collision.smdName}"`,
+      "{",
+      `\t$mass ${fmt(collision.mass)}`,
+    );
+    if (solids.length > 0) {
+      lines.push(
+        `\t$inertia ${fmt(common.inertia)}`,
+        `\t$damping ${fmt(common.damping)}`,
+        `\t$rotdamping ${fmt(common.rotdamping)}`,
+      );
+    }
+    if (collision.jointed && ragdoll?.rootName) {
+      lines.push(`\t$rootbone "${ragdoll.rootName}"`);
+    }
+    if (collision.concave) {
+      lines.push("\t$concave");
+      if (collision.jointed) lines.push(`\t$maxconvexpieces ${collision.maxConvexPieces}`);
+    }
+    if (collision.jointed && collision.pieces.some((pieces) => pieces > 1)) {
+      lines.push("\t$concaveperjoint");
+    }
+    if (collision.jointed) {
+      for (let index = 0; index < solids.length; index += 1) {
+        const solid = solids[index]!;
+        const name = solid.name.replace(/"/g, "");
+        if (solid.massbias > 0) lines.push(`\t$jointmassbias "${name}" ${fmt(solid.massbias)}`);
+        if (solid.damping !== common.damping) lines.push(`\t$jointdamping "${name}" ${fmt(solid.damping)}`);
+        if (solid.inertia !== common.inertia) lines.push(`\t$jointinertia "${name}" ${fmt(solid.inertia)}`);
+        if (solid.rotdamping !== common.rotdamping) {
+          lines.push(`\t$jointrotdamping "${name}" ${fmt(solid.rotdamping)}`);
+        }
+        const constraint = ragdoll?.constraints.find((entry) => entry.child === index);
+        if (!constraint) continue;
+        for (const axis of ["x", "y", "z"] as const) {
+          const [min, max] = constraint.limits[axis];
+          // studiomdl divides the QC friction by 5, so the file stores it multiplied.
+          const friction = constraint.friction[axis] * 5;
+          lines.push(
+            `\t$jointconstrain "${name}" ${axis} limit ${fmt(min)} ${fmt(max)} ${fmt(friction)}`,
+          );
+        }
+      }
+      if (ragdoll && !ragdoll.selfCollisions) {
+        lines.push("\t$noselfcollisions");
+      } else if (ragdoll?.collisionPairs?.length) {
+        lines.push("");
+        for (const [a, b] of ragdoll.collisionPairs) {
+          const first = solids[a];
+          const second = solids[b];
+          if (first && second) {
+            lines.push(
+              `\t$jointcollide "${first.name.replace(/"/g, "")}" "${second.name.replace(/"/g, "")}"`,
+            );
+          }
+        }
+      }
+    }
     lines.push("}");
   }
   lines.push("");
@@ -542,7 +815,11 @@ export const decompileModelTool = defineTool({
     "`flexcontroller` lines and the rules rebuilt from the MDL's postfix ops. The QC has " +
     "`$modelname`, `$cdmaterials`, `$surfaceprop`, `$staticprop`, eye/illumination points, " +
     "`$attachment` lines, custom `$hboxset`/`$hbox` lines, `$texturegroup` skin families and " +
-    "`$collisionmodel` (with `$concave` when the collision has more than one convex piece). " +
+    "the `.phy` collision. A jointed `.phy` becomes `$collisionjoints` with every solid, its " +
+    "parent, mass, massbias, damping and `$jointconstrain` limits, so a ragdoll stays a " +
+    "ragdoll; a single hull becomes `$collisionmodel` (with `$concave` when the collision has " +
+    "more than one convex piece) for the pitched roots whose frame is reproduced exactly. " +
+    "Other single-hull root poses are reported instead of being written rotated. " +
     "Sequences whose data is inside the `.mdl` or an external `.ani` are decoded into " +
     "animation SMDs; multi-blend clips become `$sequence` blocks with all their animations " +
     "and pose ranges. Bodygroup presets are the remaining gap and are reported. " +
@@ -967,24 +1244,23 @@ export const decompileModelTool = defineTool({
       animationFiles.push(path);
     }
 
-    let collision: { smdName: string; mass: number; concave: boolean } | null = null;
+    let collision: (CollisionModel & { smdName: string }) | null = null;
     let collisionTriangles = 0;
     if (writeCollision && phyBytes) {
-      const smdCollision = collisionSmd(phyBytes, staticProp);
-      if (smdCollision) {
+      const rootRotation = sequenceDefs[0]?.clips[0]?.frames[0]?.bones[0]?.rotation ?? null;
+      const smdCollision = collisionSmd(phyBytes, bones, staticProp, rootRotation);
+      if (smdCollision && smdCollision.usable) {
         writeFileSync(collisionPath, smdCollision.text, "latin1");
         collisionTriangles = smdCollision.triangles;
-        const report = readPhy(phyBytes);
-        collision = {
-          smdName: `${base}_phys.smd`,
-          mass: keyValueNumber(report.collisionText, "mass", 10),
-          concave: report.maxConvexPieces > 1,
-        };
+        warnings.push(...smdCollision.warnings);
+        collision = { ...smdCollision, smdName: `${base}_phys.smd` };
+      } else if (smdCollision) {
+        warnings.push(...smdCollision.warnings);
       } else {
-        warnings.push("The .phy had no readable collision geometry; no $collisionmodel was written.");
+        warnings.push("The .phy had no readable collision geometry; no collision model was written.");
       }
     } else if (writeCollision) {
-      warnings.push("No .phy is installed; no $collisionmodel was written. The prop is non-solid unless its solid key is 2.");
+      warnings.push("No .phy is installed; no collision model was written. The prop is non-solid unless its solid key is 2.");
     }
 
     const qc = qcText(

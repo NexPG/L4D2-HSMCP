@@ -100,10 +100,14 @@ is many, and their `editparams` block says `"concave" "1"`.
 `decompile_model` is the reverse direction: a compiled `.mdl` becomes a QC, a reference SMD,
 one animation SMD per decodable sequence, and, when a `.phy` is installed, a collision SMD.
 It applies the VVD fixup order and the static-prop axis swap, writes the bind-pose skeleton
-and each vertex's bone weights, and derives `$collisionmodel`/`$concave` from the collision
-file. Sequences whose data lives in the `.mdl` are decoded frame by frame (raw vectors and
-quaternions, or the RLE streams) and written as SMD `time <frame>` blocks with a `$sequence`
-line at the source fps; the SMD `time` is a frame number, not seconds.
+and each vertex's bone weights, and derives the collision from the `.phy`: a jointed file
+becomes `$collisionjoints` with every solid, its parent, mass, massbias, damping and
+`$jointconstrain` limits (so a ragdoll stays a ragdoll), and a single hull becomes
+`$collisionmodel`/`$concave`. A single hull's compiler frame follows the first sequence's
+root; the pitched-root case is reproduced exactly, and other root poses are reported instead
+of being written rotated. Sequences whose data lives in the `.mdl` are decoded frame by frame
+(raw vectors and quaternions, or the RLE streams) and written as SMD `time <frame>` blocks
+with a `$sequence` line at the source fps; the SMD `time` is a frame number, not seconds.
 
 Every body part's alternatives are written as separate SMDs and a `$bodygroup` block, with
 `blank` for an empty value, so a model with several bodygroup values keeps them. Every VTX LOD

@@ -475,18 +475,83 @@ export const readVmfLint = defineTool({
   },
 });
 
+/**
+ * Rewrites only the separators inside `connections` blocks.
+ *
+ * A VMF stores each output as `"OnFoo" "target,Input,param,delay,times"`; with Hammer++'s
+ * "Use special I/O delimiter (ESC)" setting the commas are 0x1b. Both forms exist in the
+ * wild, and the file's own form is the one to preserve: stock L4D2 maps are ESC, so the
+ * normal form of a rewrite is commas to ESC, not the other way round.
+ */
+function convertVmfIo(
+  text: string,
+  to: "esc" | "comma",
+): { text: string; outputs: number; separators: number } {
+  const from = to === "esc" ? "," : "\u001b";
+  const toChar = to === "esc" ? "\u001b" : ",";
+  const countBraces = (line: string): number => {
+    let delta = 0;
+    let quoted = false;
+    for (const char of line) {
+      if (char === '"') quoted = !quoted;
+      else if (!quoted && char === "{") delta += 1;
+      else if (!quoted && char === "}") delta -= 1;
+    }
+    return delta;
+  };
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let depth = 0;
+  let blockDepth = -1;
+  let pending = false;
+  let outputs = 0;
+  let separators = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (blockDepth < 0 && /^connections$/i.test(trimmed)) pending = true;
+    else if (pending && trimmed === "{") {
+      blockDepth = depth;
+      pending = false;
+    }
+    let rewritten = line;
+    if (blockDepth >= 0 && depth === blockDepth + 1) {
+      const match = /^(\s*"[^"]*"\s+")([^"]*)(".*)$/.exec(line);
+      if (match && match[2]!.includes(from)) {
+        const replaced = match[2]!.split(from).join(toChar);
+        separators += match[2]!.split(from).length - 1;
+        outputs += 1;
+        rewritten = `${match[1]}${replaced}${match[3]}`;
+      }
+    }
+    depth += countBraces(line);
+    if (blockDepth >= 0 && depth <= blockDepth) {
+      blockDepth = -1;
+      pending = false;
+    }
+    out.push(rewritten);
+  }
+  return { text: out.join("\n"), outputs, separators };
+}
+
 export const normalizeVmfIo = defineTool({
   name: "normalize_vmf_io",
   description:
-    "Rewrites Hammer++'s ESC-separated entity outputs to the comma form L4D2 reads. A VMF " +
-    "saved with `Use special I/O delimiter (ESC)` on has `\\x1b` between the parts of every " +
-    "output; the map can compile and every output does nothing. This replaces those bytes " +
-    "with commas in the `connections` blocks and reports how many outputs changed. Turn the " +
-    "setting off in Hammer++ as well, or the next save undoes it. Guarded.",
+    "Rewrites the entity-output separators inside `connections` blocks to one style. " +
+    "`to: \"esc\"` (the default, and what stock L4D2 maps use) converts legacy comma " +
+    "outputs to Hammer++'s ESC form; `to: \"comma\"` converts ESC to the legacy form. " +
+    "Only the `connections` blocks are touched, so a comma in a comment or a brush key " +
+    "survives. Running it on a file that already uses the target style changes nothing. " +
+    "Guarded.",
   realm: "map",
   guarded: true,
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    to: z
+      .enum(["esc", "comma"])
+      .default("esc")
+      .describe(
+        "Target separator: `esc` (0x1b) is the L4D2/Hammer++ form; `comma` is the legacy form.",
+      ),
     dryRun: z.boolean().default(false),
     backup: z.boolean().default(true),
     confirm: CONFIRM,
@@ -494,7 +559,9 @@ export const normalizeVmfIo = defineTool({
   outputSchema: {
     path: z.string(),
     written: z.boolean(),
-    replaced: z.number(),
+    to: z.string(),
+    outputs: z.number(),
+    separators: z.number(),
     bytesBefore: z.number(),
     bytesAfter: z.number(),
     note: z.string(),
@@ -502,14 +569,8 @@ export const normalizeVmfIo = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    // ESC is only a separator in VMF I/O; replacing it inside the connections block is
-    // equivalent to replacing it in the file, and avoids touching a quoted comment that
-    // happens to contain the byte.
-    let replaced = 0;
-    const after = before.replace(/\u001b/g, () => {
-      replaced += 1;
-      return ",";
-    });
+    const converted = convertVmfIo(before, args.to);
+    const after = converted.text;
     const write = writeGuarded(path, after, ctx.config, {
       dryRun: args.dryRun,
       backup: args.backup,
@@ -518,15 +579,16 @@ export const normalizeVmfIo = defineTool({
     return {
       path,
       written: write.written,
-      replaced,
+      to: args.to,
+      outputs: converted.outputs,
+      separators: converted.separators,
       bytesBefore: before.length,
       bytesAfter: after.length,
       note:
-        replaced === 0
-          ? "No ESC bytes. The file already uses the comma form."
-          : "ESC bytes replaced with commas. Set IOParamNewDelimiter=0 in " +
-            "hammerplusplus_settings.ini (Use special I/O delimiter off) or the next Hammer++ " +
-            "save will put them back.",
+        converted.outputs === 0
+          ? `No ${args.to === "esc" ? "comma-form" : "ESC-form"} outputs. Every connection ` +
+            `already uses the ${args.to} separator.`
+          : `${converted.outputs} output(s), ${converted.separators} separator(s) rewritten to ${args.to}.`,
     };
   },
 });

@@ -14,12 +14,12 @@ from typing import Any
 
 
 def vmf_displacements(req: dict[str, Any]) -> dict[str, Any]:
-    from srctools import Keyvalues
     from srctools.vmf import VMF
 
+    from vmftext import parse_vmf_keyvalues
+
     path = req["path"]
-    with open(path, encoding="utf8") as fh:
-        vmf = VMF.parse(Keyvalues.parse(fh))
+    vmf = VMF.parse(parse_vmf_keyvalues(path))
 
     out: list[dict[str, Any]] = []
     for solid in vmf.brushes:
