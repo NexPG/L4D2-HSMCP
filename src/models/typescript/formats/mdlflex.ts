@@ -2,12 +2,17 @@
  * Flex descriptors, controllers, rules and per-vertex deltas from a version-49 `.mdl`.
  *
  * The MDL stores flexes in two places: the header names descriptors/controllers/rules, and
- * each mesh record points at `mstudioflex_t` records with `mstudiovertanim_t` deltas. The
- * deltas are 16-bit fixed point with a 1/4096 scale and are relative to the mesh's LOD-0
- * vertex range; the caller adds the mesh's global vertex start.
+ * each mesh record points at `mstudioflex_t` records with `mstudiovertanim_t` deltas.
  *
- * A VTA is the compiler input that carries these deltas, so this module only reads; the
- * decompiler writes the `.vta` and the `flexfile`/`flexcontroller`/flex-rule lines.
+ * The delta fields are a union: StudioMDL's `WriteModel` calls `SetDeltaFloat`, so a normal
+ * flex stores position and normal deltas as **float16**, not fixed point. Only the extra
+ * wrinkle value of a `STUDIO_VERT_ANIM_WRINKLE` record is fixed point, scaled by
+ * `flVertAnimFixedPointScale` when `STUDIOHDR_FLAGS_VERT_ANIM_FIXED_POINT_SCALE` is set
+ * (1/4096 otherwise). Reading the halves as fixed point inflates every delta by ~4096 and
+ * makes a VTA round-trip look like a wrong-vertex bug.
+ *
+ * The deltas are relative to the mesh's LOD-0 vertex range; the caller adds the mesh's
+ * global vertex start.
  */
 export type Vec3 = [number, number, number];
 
@@ -16,6 +21,8 @@ export interface FlexVertex {
   index: number;
   delta: Vec3;
   normalDelta: Vec3;
+  /** Wrinkle delta for a `STUDIO_VERT_ANIM_WRINKLE` flex, in model units. */
+  wrinkle?: number;
 }
 
 export interface MdlFlex {
@@ -51,8 +58,34 @@ export interface MdlFlexData {
   rules: MdlFlexRule[];
 }
 
-/** `g_VertAnimFixedPointScale` in the engine. */
+/** `g_VertAnimFixedPointScale`, the default scale for a wrinkle value. */
 export const VERT_ANIM_SCALE = 1 / 4096;
+
+/** `STUDIOHDR_FLAGS_VERT_ANIM_FIXED_POINT_SCALE`: the header names a custom scale. */
+const FIXED_POINT_FLAG = 1 << 21;
+
+/**
+ * Decodes an IEEE-754 half. StudioMDL writes the position and normal deltas with
+ * `SetDeltaFloat`, so these are halves; treating the bits as `short / 4096` is the
+ * mistake this function exists to prevent.
+ */
+export function halfToFloat(raw: number): number {
+  const bits = raw & 0xffff;
+  const sign = (bits & 0x8000) === 0 ? 1 : -1;
+  const exponent = (bits >> 10) & 0x1f;
+  const mantissa = bits & 0x3ff;
+  if (exponent === 0) return sign * mantissa * 2 ** -24;
+  if (exponent === 31) return mantissa === 0 ? sign * Infinity : Number.NaN;
+  return sign * (1 + mantissa / 1024) * 2 ** (exponent - 15);
+}
+
+/** The scale for the fixed-point wrinkle value, or the legacy 1/4096. */
+export function vertAnimFixedPointScale(mdl: Buffer): number {
+  if (mdl.length < 396) return VERT_ANIM_SCALE;
+  if (((mdl.readUInt32LE(152) & FIXED_POINT_FLAG) === 0)) return VERT_ANIM_SCALE;
+  const scale = mdl.readFloatLE(392);
+  return Number.isFinite(scale) && scale > 0 ? scale : VERT_ANIM_SCALE;
+}
 
 const FLEX_SIZE = 60;
 const FLEX_DESC_SIZE = 4;
@@ -129,6 +162,7 @@ export function readMeshFlexes(mdl: Buffer, meshBase: number): MdlFlex[] {
   const count = mdl.readInt32LE(meshBase + 16);
   const offset = mdl.readInt32LE(meshBase + 20);
   if (count <= 0 || count > 10_000 || offset <= 0) return [];
+  const wrinkleScale = vertAnimFixedPointScale(mdl);
   const flexes: MdlFlex[] = [];
   for (let i = 0; i < count; i += 1) {
     const base = meshBase + offset + i * FLEX_SIZE;
@@ -144,15 +178,18 @@ export function readMeshFlexes(mdl: Buffer, meshBase: number): MdlFlex[] {
       vertices.push({
         index: mdl.readUInt16LE(at),
         delta: [
-          mdl.readInt16LE(at + 4) * VERT_ANIM_SCALE,
-          mdl.readInt16LE(at + 6) * VERT_ANIM_SCALE,
-          mdl.readInt16LE(at + 8) * VERT_ANIM_SCALE,
+          halfToFloat(mdl.readUInt16LE(at + 4)),
+          halfToFloat(mdl.readUInt16LE(at + 6)),
+          halfToFloat(mdl.readUInt16LE(at + 8)),
         ],
         normalDelta: [
-          mdl.readInt16LE(at + 10) * VERT_ANIM_SCALE,
-          mdl.readInt16LE(at + 12) * VERT_ANIM_SCALE,
-          mdl.readInt16LE(at + 14) * VERT_ANIM_SCALE,
+          halfToFloat(mdl.readUInt16LE(at + 10)),
+          halfToFloat(mdl.readUInt16LE(at + 12)),
+          halfToFloat(mdl.readUInt16LE(at + 14)),
         ],
+        ...(vertAnimType === 1
+          ? { wrinkle: mdl.readInt16LE(at + 16) * wrinkleScale }
+          : {}),
       });
     }
     flexes.push({

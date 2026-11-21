@@ -1,11 +1,9 @@
 /**
  * `read_model_flexes`: the facial/procedural shape keys in a compiled `.mdl`.
  *
- * Flexes are the one model feature still not written by `decompile_model`: the compiler
- * rebuilds its own vertex array from SMD triangles, so a VTA index does not survive, and a
- * DMX shape-key round-trip needs more work before the deltas can be trusted. This tool is the
- * read side: descriptors, controllers, rules and the per-vertex deltas, so the data can be
- * inspected and compared instead of guessed at.
+ * The deltas are float16 (see `mdlflex.ts`). This tool is the read side: descriptors,
+ * controllers, rules and the per-vertex deltas, so the data can be inspected and compared
+ * before or after `decompile_model` writes it as a VTA.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
@@ -43,6 +41,8 @@ const FLEX_REPORT = z.object({
       position: z.tuple([z.number(), z.number(), z.number()]).nullable(),
       delta: z.tuple([z.number(), z.number(), z.number()]),
       normalDelta: z.tuple([z.number(), z.number(), z.number()]),
+      /** Present on a wrinkle flex; the fixed-point extra channel. */
+      wrinkle: z.number().optional(),
     }),
   ),
 });
@@ -54,8 +54,8 @@ export const readModelFlexesTool = defineTool({
     "rules (as QC-style expressions when the postfix ops are understood), and every " +
     "body-part model's per-vertex position and normal deltas. `sample` returns the first " +
     "`maxVertices` deltas of each flex, with the vertex position so they can be compared " +
-    "across models. This is the read side only; `decompile_model` still reports flexes as a " +
-    "gap because a VTA/DMX round-trip is not proven. Pass an engine model path or a local " +
+    "across models. `decompile_model` writes the same data as a VTA; this tool is how to " +
+    "check it. Pass an engine model path or a local " +
     "`.mdl`; the VVD/VTX beside it are used for the deltas, and the header is read without " +
     "them when they are absent.",
   realm: "map",
@@ -188,6 +188,7 @@ export const readModelFlexesTool = defineTool({
                 position: geometry?.lod0Vertices[vertex.index]?.position ?? null,
                 delta: vertex.delta,
                 normalDelta: vertex.normalDelta,
+                ...(vertex.wrinkle !== undefined ? { wrinkle: vertex.wrinkle } : {}),
               })),
             };
           }),
@@ -214,8 +215,8 @@ export const readModelFlexesTool = defineTool({
       flexRuleCount: flex.rules.length,
       flexVertexCount,
       note:
-        "Flexes are read only. `decompile_model` does not write them because the compiler " +
-        "rebuilds its own vertex array; a VTA or DMX delta can land on the wrong vertices.",
+        "Deltas are float16 in the .mdl; `decompile_model` writes them as VTA frames with " +
+        "the original controllers and rules.",
     };
   },
 });

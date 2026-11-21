@@ -7,10 +7,11 @@
  * materials, surface property, eye/illumination points, attachments, custom hitboxes and its
  * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
  * alternative is written as its own SMD and `$bodygroup` block, and every VTX LOD becomes a
- * `$lod`/`replacemodel` line, and flex deltas become VTA files plus a `flexfile` block and
- * controller/rule lines. Multi-blend sequences become `$sequence` blocks with one SMD per
- * animation and their pose-parameter ranges. It does not yet write flexes; the result says so
- * instead of producing a quiet, incomplete model.
+ * `$lod`/`replacemodel` line. Flex deltas are written as a `.vta` next to the reference SMD,
+ * with a `$model { flexfile ... }` block, the original flex controllers and the rules
+ * rebuilt from the MDL's postfix ops. Multi-blend sequences become `$sequence` blocks with
+ * one SMD per animation and their pose-parameter ranges. Bodygroup presets are the remaining
+ * gap; the result says so instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -31,6 +32,9 @@ import { modelSiblings } from "../../../assets/typescript/game/models.js";
 import { quaternionToEuler, readMdlBones, readModelHeaderInfo } from "../formats/mdlbones.js";
 import type { ModelBone } from "../formats/mdlbones.js";
 import { readPhy, readPhyGeometry } from "../formats/phy.js";
+import { flexRuleExpression } from "../formats/mdlflex.js";
+import { buildVta } from "../formats/mdlvta.js";
+import type { VtaFrame } from "../formats/mdlvta.js";
 import {
   animationSkippedReason,
   decodeAnimation,
@@ -63,7 +67,8 @@ function readMdlCString(bytes: Buffer, offset: number): string {
   return bytes.subarray(offset, end < 0 ? bytes.length : end).toString("latin1");
 }
 
-function safeBase(path: string): string {  return (
+function safeBase(path: string): string {
+  return (
     basename(path, ".mdl")
       .replace(/[^A-Za-z0-9_]+/g, "_")
       .replace(/^_+|_+$/g, "")
@@ -277,14 +282,47 @@ interface LodBlockDef {
 
 interface BodyGroupDef {
   name: string;
-  models: Array<{ smd: string | null }>;
+  models: Array<{ file: string | null }>;
+}
+
+interface FlexBodyDef {
+  /** SMD the flex belongs to; the key of the map is this file name. */
+  vta: string;
+  frames: VtaFrame[];
+}
+
+/** `flexcontroller` and `%rule` lines rebuilt from the MDL's controller and postfix-op lists. */
+function flexQcLines(geometry: ModelGeometry, warnings: string[]): string[] {
+  const lines: string[] = [];
+  for (const controller of geometry.flex.controllers) {
+    const type = controller.type.replace(/["\s]+/g, "");
+    const name = controller.name.replace(/"/g, "");
+    if (!type || !name) continue;
+    lines.push(
+      `\tflexcontroller ${type} range ${fmt(controller.min)} ${fmt(controller.max)} "${name}"`,
+    );
+  }
+  for (const rule of geometry.flex.rules) {
+    const descriptor = geometry.flex.descriptors[rule.flex];
+    if (!descriptor) continue;
+    const expression = flexRuleExpression(rule, geometry.flex);
+    if (!expression) {
+      warnings.push(
+        `Flex rule for "${descriptor}" uses an operator this decompiler does not know; ` +
+          "the rule was not written.",
+      );
+      continue;
+    }
+    lines.push(`\t%${descriptor.replace(/[^A-Za-z0-9_]/g, "")} = ${expression}`);
+  }
+  return lines;
 }
 
 function qcText(
   geometry: ModelGeometry,
   header: ReturnType<typeof readModelHeaderInfo>,
   bones: ModelBone[],
-  base: string,
+  bodyFile: string,
   targetModelName: string,
   collision: { smdName: string; mass: number; concave: boolean } | null,
   sequences: Array<{
@@ -300,8 +338,10 @@ function qcText(
   hitboxSets: MdlHitboxSet[],
   autoHitboxes: boolean,
   bodyGroups: BodyGroupDef[],
+  flexBodies: Map<string, FlexBodyDef>,
   lodBlocks: LodBlockDef[],
   shadowReplacements: LodReplacement[],
+  warnings: string[],
 ): string {
   const modelname = targetModelName
     .replace(/\\/g, "/")
@@ -310,18 +350,44 @@ function qcText(
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
     `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
-    `// are written. Flexes and bodygroup presets are not.`,
-    `// presets are not.`,
+    `// are written. Flex deltas are written as VTA frames; bodygroup presets are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
   ];
+
+  const flexBlock = (body: FlexBodyDef): string[] => [
+    `\tflexfile "${body.vta}"`,
+    "\t{",
+    ...body.frames.map(
+      (frame) => `\t\tflex "${frame.name.replace(/"/g, "")}" frame ${frame.frame}`,
+    ),
+    "\t}",
+    ...flexQcLines(geometry, warnings),
+  ];
+  const modelBlock = (name: string, file: string, body: FlexBodyDef): string[] => [
+    `$model "${name.replace(/"/g, "")}" "${file}" {`,
+    ...flexBlock(body),
+    "}",
+  ];
+
   if (bodyGroups.length === 0) {
-    lines.push(`$body "Body" "${base}_ref.smd"`);
+    const flex = flexBodies.get(bodyFile);
+    if (flex) lines.push(...modelBlock("Body", bodyFile, flex));
+    else lines.push(`$body "Body" "${bodyFile}"`);
   } else {
     for (const group of bodyGroups) {
+      // `$bodygroup` only understands `studio`/`blank`; a flex has to be a `$model`, which
+      // can name one file. Source itself cannot give alternatives their own flexes, so the
+      // handler warns when a flex is not model 0 of its part.
+      const first = group.models[0]?.file;
+      const flex = first ? flexBodies.get(first) : undefined;
+      if (flex && first) {
+        lines.push(...modelBlock(group.name, first, flex));
+        continue;
+      }
       lines.push(`$bodygroup "${group.name.replace(/"/g, "")}"`, "{");
       for (const model of group.models) {
-        lines.push(model.smd ? `\tstudio "${model.smd}"` : "\tblank");
+        lines.push(model.file ? `\tstudio "${model.file}"` : "\tblank");
       }
       lines.push("}");
     }
@@ -369,7 +435,7 @@ function qcText(
   // sequence; otherwise the reference SMD is a single-frame bind pose, so a one-frame idle is
   // honest: it compiles, and it is not pretending to be the original animation set.
   if (sequences.length === 0) {
-    lines.push(`$sequence "idle" "${base}_ref.smd" fps 1`);
+    lines.push(`$sequence "idle" "${bodyFile}" fps 1`);
   } else {
     for (const sequence of sequences) {
       const name = sequence.name.replace(/"/g, "");
@@ -468,18 +534,18 @@ function keyValueNumber(text: string | null, key: string, fallback: number): num
 export const decompileModelTool = defineTool({
   name: "decompile_model",
   description:
-    "Decompiles a compiled model into a QC, reference SMDs and a collision SMD when a " +
+    "Decompiles a compiled model into a QC, reference meshes and a collision SMD when a " +
     "`.phy` is installed. The reference meshes have the model's real triangles, materials, " +
-    "UVs, bone weights and bind-pose skeleton; each bodygroup alternative gets its own SMD " +
+    "UVs, bone weights and bind-pose skeleton; each bodygroup alternative gets its own file " +
     "and `$bodygroup` block, every VTX LOD becomes `$lod`/`replacemodel` lines, and flex " +
-    "deltas become VTA files with a `flexfile` block, controllers and rules. The QC " +
-    "has `$modelname`, `$body`, `$cdmaterials`, " +
-    "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
-    "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
-    "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
-    "inside the `.mdl` or an external `.ani` are decoded into animation SMDs; multi-blend " +
-    "clips become `$sequence` blocks with all their animations and pose ranges. Flexes are " +
-    "not extracted yet, and the result lists that gap. " +
+    "deltas become a `.vta` with a `$model { flexfile ... }` block, the original " +
+    "`flexcontroller` lines and the rules rebuilt from the MDL's postfix ops. The QC has " +
+    "`$modelname`, `$cdmaterials`, `$surfaceprop`, `$staticprop`, eye/illumination points, " +
+    "`$attachment` lines, custom `$hboxset`/`$hbox` lines, `$texturegroup` skin families and " +
+    "`$collisionmodel` (with `$concave` when the collision has more than one convex piece). " +
+    "Sequences whose data is inside the `.mdl` or an external `.ani` are decoded into " +
+    "animation SMDs; multi-blend clips become `$sequence` blocks with all their animations " +
+    "and pose ranges. Bodygroup presets are the remaining gap and are reported. " +
     "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
     "model path or a local `.mdl`.",
   realm: "map",
@@ -534,6 +600,11 @@ export const decompileModelTool = defineTool({
     lodFiles: z.array(z.string()),
     shadowLods: z.number(),
     shadowFiles: z.array(z.string()),
+    flexDescriptors: z.number(),
+    flexFiles: z.array(z.string()),
+    flexes: z.array(
+      z.object({ file: z.string(), name: z.string(), vertices: z.number() }),
+    ),
     triangleCount: z.number(),
     collisionTriangles: z.number(),
     boneCount: z.number(),
@@ -720,11 +791,15 @@ export const decompileModelTool = defineTool({
     }
 
     const bodyFiles = new Set<string>();
+    const warnings: string[] = [];
     const bodyGroups: BodyGroupDef[] = [];
-    const bodySources: Array<{ smd: string; meshes: ModelMesh[] }> = [];
+    const bodySources: Array<{ file: string; meshes: ModelMesh[] }> = [];
+    const isFlexBody = (meshes: ModelMesh[]): boolean =>
+      meshes.some((mesh) => (mesh.flexes?.length ?? 0) > 0);
     const lod0Files: Array<Array<string | null>> = geometry.bodyParts.map((part) =>
       part.models.map(() => null),
     );
+    let bodyFile = `${base}_ref.smd`;
     for (const [partIndex, part] of geometry.bodyParts.entries()) {
       if (part.models.length === 0) continue;
       const partToken = safeToken(part.name, `bodypart_${partIndex}`);
@@ -734,7 +809,7 @@ export const decompileModelTool = defineTool({
       };
       for (const [modelIndex, model] of part.models.entries()) {
         if (model.triangleCount <= 0 || model.meshes.length === 0) {
-          group.models.push({ smd: null });
+          group.models.push({ file: null });
           continue;
         }
         const modelToken = safeToken(model.name, `model_${modelIndex}`);
@@ -745,10 +820,10 @@ export const decompileModelTool = defineTool({
           fileBase = `${base}_${partToken}_${modelToken}_${suffix}`;
         }
         bodyFiles.add(fileBase.toLowerCase());
-        const smd = `${fileBase}.smd`;
-        group.models.push({ smd });
-        lod0Files[partIndex]![modelIndex] = smd;
-        bodySources.push({ smd, meshes: model.meshes });
+        const file = `${fileBase}.smd`;
+        group.models.push({ file });
+        lod0Files[partIndex]![modelIndex] = file;
+        bodySources.push({ file, meshes: model.meshes });
       }
       bodyGroups.push(group);
     }
@@ -757,9 +832,36 @@ export const decompileModelTool = defineTool({
     const useBodyGroups =
       bodyGroups.length > 1 || (bodyGroups[0]?.models.length ?? 0) > 1;
     if (!useBodyGroups) {
+      bodyFile = `${base}_ref.smd`;
       bodyGroups.length = 0;
       bodySources.length = 0;
-      lod0Files[0]![0] = `${base}_ref.smd`;
+      lod0Files[0]![0] = bodyFile;
+    }
+    const flexBodies: Array<{ file: string; vta: string; meshes: ModelMesh[] }> = [];
+    const addFlexBody = (file: string, meshes: ModelMesh[]): void => {
+      flexBodies.push({ file, vta: `${file.replace(/\.smd$/i, "")}_flex.vta`, meshes });
+    };
+    if (useBodyGroups) {
+      for (const group of bodyGroups) {
+        for (const [modelIndex, model] of group.models.entries()) {
+          if (!model.file) continue;
+          const source = bodySources.find((entry) => entry.file === model.file);
+          if (!source || !isFlexBody(source.meshes)) continue;
+          // A `$bodygroup` cannot carry a `flexfile`; only a `$model` can, and it names one
+          // file. Source itself cannot give the other alternatives their own flexes.
+          if (modelIndex > 0) {
+            warnings.push(
+              `Body part "${group.name}" has flexes on alternative ${modelIndex}; a ` +
+                "$bodygroup cannot carry a flexfile and the flexes were not written for " +
+                "that alternative.",
+            );
+            continue;
+          }
+          addFlexBody(source.file, source.meshes);
+        }
+      }
+    } else if (isFlexBody(geometry.meshes)) {
+      addFlexBody(bodyFile, geometry.meshes);
     }
 
     // LOD replacements are grouped by the VTX switch distance. Each bodygroup model's LOD 0
@@ -779,14 +881,14 @@ export const decompileModelTool = defineTool({
             // Source allows one shadow LOD per model; keep the first and still write its
             // source so the file exists if the list is corrected later.
             shadowLods += 1;
-            const smd = `${from.replace(/\.smd$/i, "")}_shadow.smd`;
+            const smd = `${from.replace(/\.(smd|dmx)$/i, "")}_shadow.smd`;
             lodSources.push({ smd, meshes: lod.meshes });
             if (!shadowReplacements.some((replacement) => replacement.from === from)) {
               shadowReplacements.push({ from, to: smd });
             }
             continue;
           }
-          const smd = `${from.replace(/\.smd$/i, "")}_lod${lodIndex}.smd`;
+          const smd = `${from.replace(/\.(smd|dmx)$/i, "")}_lod${lodIndex}.smd`;
           lodSources.push({ smd, meshes: lod.meshes });
           const replacements = lodBlocksByDistance.get(lod.switchDistance) ?? [];
           replacements.push({ from, to: smd });
@@ -807,7 +909,8 @@ export const decompileModelTool = defineTool({
       smdPath,
       ...(writeCollision && phyBytes ? [collisionPath] : []),
       ...sequenceDefs.flatMap((sequence) => sequence.files.map((file) => join(outDir, file))),
-      ...bodySources.map((source) => join(outDir, source.smd)),
+      ...bodySources.map((source) => join(outDir, source.file)),
+      ...flexBodies.map((body) => join(outDir, body.vta)),
       ...lodSources.map((source) => join(outDir, source.smd)),
     ];
     for (const target of targets) {
@@ -817,20 +920,33 @@ export const decompileModelTool = defineTool({
       }
     }
 
-    const warnings: string[] = [];
     const staticProp = ((header?.flags ?? 0) & STATIC_PROP) !== 0;
     const smd = referenceSmd(geometry.meshes, geometry.materials, bones, staticProp);
     writeFileSync(smdPath, smd, "latin1");
 
     const bodygroupFiles: string[] = [];
     for (const source of bodySources) {
-      const path = join(outDir, source.smd);
+      const path = join(outDir, source.file);
       writeFileSync(
         path,
         referenceSmd(source.meshes, geometry.materials, bones, staticProp),
         "latin1",
       );
       bodygroupFiles.push(path);
+    }
+
+    const flexFiles: string[] = [];
+    const flexSummary: Array<{ file: string; name: string; vertices: number }> = [];
+    const flexByFile = new Map<string, FlexBodyDef>();
+    for (const body of flexBodies) {
+      const built = buildVta(geometry, body.meshes, bones, staticProp);
+      writeFileSync(join(outDir, body.vta), built.text, "latin1");
+      flexFiles.push(join(outDir, body.vta));
+      warnings.push(...built.warnings.map((warning) => `${body.vta}: ${warning}`));
+      flexByFile.set(body.file, { vta: body.vta, frames: built.frames });
+      for (const frame of built.frames) {
+        flexSummary.push({ file: body.vta, name: frame.name, vertices: frame.vertices });
+      }
     }
 
     const lodFiles: string[] = [];
@@ -875,7 +991,7 @@ export const decompileModelTool = defineTool({
       geometry,
       header,
       bones,
-      base,
+      bodyFile,
       targetModelName,
       collision,
       sequenceDefs,
@@ -883,8 +999,10 @@ export const decompileModelTool = defineTool({
       hitboxSets,
       autoHitboxes,
       bodyGroups,
+      flexByFile,
       lodBlocks,
       shadowReplacements,
+      warnings,
     );
     writeFileSync(qcPath, qc, "latin1");
     warnings.push(
@@ -922,10 +1040,25 @@ export const decompileModelTool = defineTool({
           : ""),
     );
     if (geometry.flex.descriptors.length > 0) {
-      warnings.push(
-        `${geometry.flex.descriptors.length} flex descriptors are present in the .mdl, but ` +
-          "flex/VTA data is not written yet; the mesh is LOD 0.",
-      );
+      const deltaVertices = flexSummary.reduce((sum, flex) => sum + flex.vertices, 0);
+      if (flexFiles.length > 0) {
+        warnings.push(
+          `${geometry.flex.descriptors.length} flex descriptors were written as VTA frames ` +
+            `(${flexSummary.length} frames, ${deltaVertices} vertices); the QC carries the ` +
+            "original controllers and rule expressions.",
+        );
+        if (geometry.flex.rules.length === 0) {
+          warnings.push(
+            "The source has flex descriptors but no rule records; the frames are written, but " +
+              "nothing drives them until a rule is added.",
+          );
+        }
+      } else {
+        warnings.push(
+          `${geometry.flex.descriptors.length} flex descriptors are present, but no mesh ` +
+            "carries their deltas; no VTA was written.",
+        );
+      }
     }
     if (skippedSequences.length > 0) {
       warnings.push(
@@ -963,6 +1096,10 @@ export const decompileModelTool = defineTool({
           path,
           bytes: existsSync(path) ? readFileSync(path).length : 0,
         })),
+        ...flexFiles.map((path) => ({
+          path,
+          bytes: existsSync(path) ? readFileSync(path).length : 0,
+        })),
         ...(collision
           ? [{ path: collisionPath, bytes: existsSync(collisionPath) ? readFileSync(collisionPath).length : 0 }]
           : []),
@@ -981,6 +1118,9 @@ export const decompileModelTool = defineTool({
       lodFiles,
       shadowLods,
       shadowFiles: shadowReplacements.map((replacement) => join(outDir, replacement.to)),
+      flexDescriptors: geometry.flex.descriptors.length,
+      flexFiles,
+      flexes: flexSummary,
       triangleCount: geometry.meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
       collisionTriangles,
       boneCount: bones.length,

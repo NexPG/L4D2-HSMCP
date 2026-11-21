@@ -16,6 +16,7 @@ import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js
 import { readAttachments, readHitboxSets } from "../../src/models/typescript/formats/mdlmeta.js";
 import { readAnimations, readSequences } from "../../src/models/typescript/formats/mdlanim.js";
 import { parseModelGeometry } from "../../src/models/typescript/formats/mdlmesh.js";
+import type { Vec3 } from "../../src/models/typescript/formats/mdlmesh.js";
 import { loadGameModel, modelSiblings } from "../../src/assets/typescript/game/models.js";
 import { openGameVpk } from "../../src/assets/typescript/game/vpkcontent.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
@@ -23,6 +24,44 @@ import { ctx as sharedCtx, has } from "../support/env.js";
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-decompile-"));
 const outputModelDir = (): string => join(ctx.config.gameDir!, "models", "hsmcp_decompile_test");
+const archive = (): NonNullable<ReturnType<typeof openGameVpk>> => openGameVpk(ctx.config.gameDir!)!;
+
+/** Every `rebuilt` point must sit on one of `intended`: the flex is a surface, not an order. */
+function expectSameSurface(intended: Vec3[], rebuilt: Vec3[], tolerance = 0.005): void {
+  const cell = (point: Vec3): string =>
+    point.map((value) => Math.round(value * 100)).join(",");
+  const grid = new Map<string, Vec3[]>();
+  for (const point of intended) {
+    const key = cell(point);
+    const list = grid.get(key);
+    if (list) list.push(point);
+    else grid.set(key, [point]);
+  }
+  let worst = 0;
+  for (const point of rebuilt) {
+    const center = point.map((value) => Math.round(value * 100));
+    let best = Number.POSITIVE_INFINITY;
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dz = -1; dz <= 1; dz += 1) {
+          const list = grid.get(`${center[0]! + dx},${center[1]! + dy},${center[2]! + dz}`);
+          for (const candidate of list ?? []) {
+            best = Math.min(
+              best,
+              Math.hypot(
+                point[0] - candidate[0],
+                point[1] - candidate[1],
+                point[2] - candidate[2],
+              ),
+            );
+          }
+        }
+      }
+    }
+    worst = Math.max(worst, best);
+  }
+  expect(worst).toBeLessThan(tolerance);
+}
 
 /** Parses a model the test compiled into the game directory, not one inside a VPK. */
 const readLooseGeometry = (enginePath: string) => {
@@ -624,4 +663,178 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       expect(Math.abs(a.max[axis]! - b.max[axis]!)).toBeLessThan(8);
     }
   });
+
+  it("writes flex deltas as a VTA and references it from a $model block", async () => {
+    const outDir = join(scratch, "boomette-flex");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "infected/boomette.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/boomette_flex.mdl",
+      } as never,
+      ctx,
+    )) as {
+      qc: string;
+      flexFiles: string[];
+      flexes: Array<{ file: string; name: string; vertices: number }>;
+      warnings: string[];
+    };
+    expect(r.flexes).toEqual([
+      { file: "boomette_ref_flex.vta", name: "presser", vertices: 1068 },
+    ]);
+    expect(r.flexFiles).toHaveLength(1);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain('$model "Body" "boomette_ref.smd" {');
+    expect(qc).toContain('flexfile "boomette_ref_flex.vta"');
+    expect(qc).toContain('flex "presser" frame 1');
+    expect(qc).toContain('flexcontroller presser range 0.000000 1.000000 "presser"');
+    expect(qc).toContain("%presser = presser");
+    expect(qc).not.toContain('$body "Body"');
+
+    const source = loadGameModel(archive(), "models/infected/boomette.mdl")!;
+    const vta = readFileSync(r.flexFiles[0]!, "latin1");
+    expect(vta.startsWith("version 1\nnodes\n")).toBe(true);
+    expect(vta).toContain("skeleton");
+    expect(vta).toContain("vertexanimation");
+    expect(vta).toContain("time 1 # presser");
+    const basis = vta
+      .split("vertexanimation")[1]!
+      .split("time 1 #")[0]!
+      .split("\n")
+      .filter((line) => /^ {4}\d+ /.test(line));
+    expect(basis).toHaveLength(source.lod0Vertices.length);
+    expect(r.warnings.join(" ")).toMatch(/flex descriptors were written as VTA frames/);
+  });
+
+  it.skipIf(!has.toolchain)(
+    "recompiles boomette's flex onto the same deformed surface",
+    { timeout: 60_000 },
+    async () => {
+      const outDir = join(scratch, "boomette-flex-roundtrip");
+      const decompiled = (await decompileModelTool.handler(
+        {
+          model: "infected/boomette.mdl",
+          outDir,
+          overwrite: true,
+          confirm: true,
+          modelname: "hsmcp_decompile_test/boomette_flex.mdl",
+        } as never,
+        ctx,
+      )) as { qc: string };
+      const compiled = (await runStudiomdlTool.handler(
+        { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+        ctx,
+      )) as { ok: boolean; modelExists: boolean };
+      expect(compiled.ok).toBe(true);
+      expect(compiled.modelExists).toBe(true);
+
+      const source = loadGameModel(archive(), "models/infected/boomette.mdl")!;
+      const sourceFlex = source.meshes[0]!.flexes![0]!;
+      const sourceDelta = new Map(sourceFlex.vertices.map((vertex) => [vertex.index, vertex]));
+      const intended: Vec3[] = source.lod0Vertices.map((vertex, index) => {
+        const delta = sourceDelta.get(index);
+        return vertex.position.map((value, axis) => value + (delta?.delta[axis] ?? 0)) as Vec3;
+      });
+
+      const rebuilt = readLooseGeometry("models/hsmcp_decompile_test/boomette_flex.mdl")!;
+      const flex = rebuilt.meshes.flatMap((mesh) => mesh.flexes ?? [])[0]!;
+      expect(flex.vertices).toHaveLength(1068);
+      expect(rebuilt.flex.descriptors).toEqual(["presser"]);
+      expect(rebuilt.flex.controllers).toEqual([
+        { type: "presser", name: "presser", min: 0, max: 1 },
+      ]);
+      const rebuiltDelta = new Map(flex.vertices.map((vertex) => [vertex.index, vertex]));
+      const deformed: Vec3[] = rebuilt.lod0Vertices.map((vertex, index) => {
+        const delta = rebuiltDelta.get(index);
+        return vertex.position.map((value, axis) => value + (delta?.delta[axis] ?? 0)) as Vec3;
+      });
+      expectSameSurface(intended, deformed);
+    },
+  );
+
+  it("writes the flex body as a $model beside the bodygroups", async () => {
+    const outDir = join(scratch, "morph-flex");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "infected/common_morph_test.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/morph_flex.mdl",
+      } as never,
+      ctx,
+    )) as {
+      qc: string;
+      flexes: Array<{ file: string; name: string; vertices: number }>;
+      bodygroups: number;
+    };
+    expect(r.bodygroups).toBe(4);
+    expect(r.flexes).toEqual([
+      {
+        file: "common_morph_test_bodypart_0_infected_body_morph_flex.vta",
+        name: "fatness",
+        vertices: 593,
+      },
+    ]);
+    const qc = readFileSync(r.qc, "utf8");
+    // A `$bodygroup` can only name a file; the flex has to be a `$model` with the block.
+    expect(qc).toContain('$model "bodypart_0" "common_morph_test_bodypart_0_infected_body_morph.smd" {');
+    expect(qc).toContain('flex "fatness" frame 1');
+    expect(qc).toContain('$bodygroup "bodypart_1"');
+    expect(qc.match(/^\tstudio /gm)).toHaveLength(5);
+  });
+
+  it.skipIf(!has.toolchain)(
+    "recompiles common_morph_test's flex with its bodygroups",
+    { timeout: 90_000 },
+    async () => {
+      const outDir = join(scratch, "morph-flex-roundtrip");
+      const decompiled = (await decompileModelTool.handler(
+        {
+          model: "infected/common_morph_test.mdl",
+          outDir,
+          overwrite: true,
+          confirm: true,
+          modelname: "hsmcp_decompile_test/morph_flex.mdl",
+        } as never,
+        ctx,
+      )) as { qc: string };
+      const compiled = (await runStudiomdlTool.handler(
+        { qc: decompiled.qc, timeoutMinutes: 10 } as never,
+        ctx,
+      )) as { ok: boolean; modelExists: boolean };
+      expect(compiled.ok).toBe(true);
+      expect(compiled.modelExists).toBe(true);
+
+      const source = loadGameModel(archive(), "models/infected/common_morph_test.mdl")!;
+      const sourceMesh = source.bodyParts[0]!.models[0]!.meshes[0]!;
+      const sourceFlex = sourceMesh.flexes![0]!;
+      const start = sourceMesh.vertexStart;
+      const sourceDelta = new Map(
+        sourceFlex.vertices.map((vertex) => [vertex.index - start, vertex]),
+      );
+      const intended: Vec3[] = sourceMesh.vertices.map((vertex, index) => {
+        const delta = sourceDelta.get(index);
+        return vertex.position.map((value, axis) => value + (delta?.delta[axis] ?? 0)) as Vec3;
+      });
+
+      const rebuilt = readLooseGeometry("models/hsmcp_decompile_test/morph_flex.mdl")!;
+      expect(rebuilt.bodyParts[1]!.models).toHaveLength(5);
+      expect(rebuilt.flex.descriptors).toEqual(["fatness"]);
+      const mesh = rebuilt.bodyParts[0]!.models[0]!.meshes[0]!;
+      const flex = mesh.flexes![0]!;
+      expect(flex.vertices.length).toBeGreaterThan(0);
+      const rebuiltStart = mesh.vertexStart;
+      const rebuiltDelta = new Map(
+        flex.vertices.map((vertex) => [vertex.index - rebuiltStart, vertex]),
+      );
+      const deformed: Vec3[] = mesh.vertices.map((vertex, index) => {
+        const delta = rebuiltDelta.get(index);
+        return vertex.position.map((value, axis) => value + (delta?.delta[axis] ?? 0)) as Vec3;
+      });
+      expectSameSurface(intended, deformed, 0.01);
+    },
+  );
 });

@@ -5,6 +5,33 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.168-alpha - 2026-11-21
+
+- **Flexes are written as a VTA.** `decompile_model` now emits `<body>_flex.vta` next to the
+  reference SMD and references it from a `$model { flexfile ... }` block:
+  - the basis frame lists every fixed LOD-0 vertex in VVD order;
+  - each flex frame holds the deformed position and normal (`base + delta`);
+  - the QC carries the source `flexcontroller` lines (type, range, name) and the rules
+    rebuilt from the MDL's postfix ops, e.g. `%presser = presser`;
+  - a part with flexes becomes a `$model` block because `$bodygroup` only understands
+    `studio`/`blank`; its other alternatives stay bodygroups.
+- **The flex reader was decoding the wrong format.** `mstudiovertanim_t` is a union, and
+  StudioMDL's `WriteModel` writes the position and normal deltas with `SetDeltaFloat`:
+  they are **float16**, not `short / 4096`. `read_model_flexes` and `ModelGeometry.flex`
+  now return the true values; only a wrinkle's extra channel is fixed point. `FlexVertex`
+  exposes `wrinkle`.
+- **Verified by recompiling and comparing the deformed surface**, not the index order (the
+  compiler welds corners, so its vertex order is allowed to differ):
+  - `boomette`: 1,068/1,068 deltas, all 5,409 deformed positions within 0.00025 units;
+  - `common_morph_test`: 593 source deltas → 356 after welding, all 1,720 deformed
+    positions within 0.002; the five head alternatives, two blank parts and 32 skin
+    families still compile.
+- **Removed the DMX flex experiment.** StudioMDL++ drops DMX mesh deltas, and the stock
+  compiler needs minutes on a character mesh and stack-overflows on full `boomette`; the
+  VTA/SMD path compiles in about a second.
+- **Remaining gap:** bodygroup presets; `warnings` say so.
+- **Tool count: 231.** Tests: 194 files, 1701 passed, 33 skipped.
+
 ## 0.0.167-alpha - 2026-11-21
 
 - **Multi-blend sequences are written as `$sequence` blocks.** The blend list is read from

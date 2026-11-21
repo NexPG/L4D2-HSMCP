@@ -1,8 +1,9 @@
 /**
  * `read_model_flexes`: the read side of the MDL flex system.
  *
- * The decompiler reports flexes as a gap, so this tool is how an agent can still tell what a
- * model's face is made of: descriptors, controllers, rules and sampled per-vertex deltas.
+ * The decompiler writes flexes as a VTA; this tool is how an agent can still inspect what a
+ * model's face is made of before or after that: descriptors, controllers, rules and sampled
+ * per-vertex deltas.
  */
 import { describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";

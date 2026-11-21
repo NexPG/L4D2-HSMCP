@@ -38,12 +38,12 @@ invisible in a screenshot.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.167-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.168-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.167-alpha`.
+the last entry. The current skill version is `0.0.168-alpha`.
 
 ## Route the task first
 
@@ -212,11 +212,12 @@ the last entry. The current skill version is `0.0.167-alpha`.
   31-frame prop spin keeps all 31 frames, smoker's 4 attachments and 17 hitboxes come back,
   arcade_button's three skin families match, brokenglass's three alternatives and
   checkpoint_door's blank+studio part survive, and hospital_bed's 900/618/409 LODs come
-  back). Remaining gap: flex writing; its `warnings` say so.
+  back). Flex deltas become a `.vta` with a `$model { flexfile ... }` block, the original
+  controllers and rules. Remaining gap: bodygroup presets; its `warnings` say so.
 - **Model flex inspection.** `read_model_flexes` reports a compiled model's flex
   descriptors, controllers and rules, plus sampled position/normal deltas with the vertex
-  position. Use it to compare a source and a recompiled model; flex writing is still a
-  decompiler gap.
+  position. Use it to compare a source and a recompiled model; the decompiler writes the
+  same data as a VTA.
 - **3D-skybox composition.** `build_skybox` copies a selection, seals the room and places
   `sky_camera` in one call; choosing what is worth copying is design work. `write_sky_camera`
   and `write_skybox_copy` remain as the halves.
