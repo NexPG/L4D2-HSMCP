@@ -148,7 +148,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(Math.sign(doorRight[2]!)).not.toBe(Math.sign(doorLeft[2]!));
   });
 
-  it("skips multi-blend sequences instead of writing one blend as the whole clip", async () => {
+  it("writes multi-blend sequences as $sequence blocks", async () => {
     const outDir = join(scratch, "v_bat");
     const r = (await decompileModelTool.handler(
       {
@@ -160,12 +160,47 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       } as never,
       ctx,
     )) as {
+      qc: string;
       skippedSequences: Array<{ name: string; reason: string }>;
       animationFiles: string[];
     };
-    const aims = r.skippedSequences.find((sequence) => sequence.name === "aims");
-    expect(aims?.reason).toMatch(/blends 3 animations/);
-    expect(r.animationFiles.length).toBeGreaterThan(0);
+    expect(r.skippedSequences).toHaveLength(0);
+    expect(r.animationFiles).toHaveLength(17);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain('$sequence "aims" {');
+    expect(qc).toContain('"v_bat_aims.smd" "v_bat_aims_2.smd" "v_bat_aims_3.smd"');
+    expect(qc).toContain("blendwidth 3");
+    expect(qc).toContain('blend "ver_aims" -1.000000 1.000000');
+  });
+
+  it.skipIf(!has.toolchain)("recompiles v_bat's three-way blend", async () => {
+    const outDir = join(scratch, "v_bat-roundtrip");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "weapons/melee/v_bat.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/v_bat.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 10 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const rebuilt = readFileSync(join(outputModelDir(), "v_bat.mdl"));
+    const aims = readSequences(rebuilt, readAnimations(rebuilt)).find(
+      (sequence) => sequence.name === "aims",
+    )!;
+    expect(aims.blendCount).toBe(3);
+    expect(aims.groupSizes).toEqual([3, 1]);
+    expect(aims.paramIndices).toEqual([0, -1]);
+    expect(aims.paramStart[0]).toBeCloseTo(-1, 5);
+    expect(aims.paramEnd[0]).toBeCloseTo(1, 5);
   });
 
   it.skipIf(!has.toolchain)("recompiles the gift's 31-frame spin", { timeout: 30_000 }, async () => {

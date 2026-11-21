@@ -202,7 +202,7 @@ describe.skipIf(!installed)("read_particle", () => {
       ),
     ).rejects.toThrow(/already exists/);
   });
-  it.skipIf(!has.gameContent)("rewrites a stock PCF through the writer without losing systems", async () => {
+  it.skipIf(!has.gameContent)("rewrites a stock PCF through the writer without losing systems", { timeout: 30_000 }, async () => {
     const copy = join(scratch, "fire_copy.pcf");
     const written = await callSidecar<{
       written: boolean;

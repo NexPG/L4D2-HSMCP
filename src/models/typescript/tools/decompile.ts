@@ -8,7 +8,8 @@
  * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
  * alternative is written as its own SMD and `$bodygroup` block, and every VTX LOD becomes a
  * `$lod`/`replacemodel` line, and flex deltas become VTA files plus a `flexfile` block and
- * controller/rule lines. It does not yet write multi-blend sequences; the result says so
+ * controller/rule lines. Multi-blend sequences become `$sequence` blocks with one SMD per
+ * animation and their pose-parameter ranges. It does not yet write flexes; the result says so
  * instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
@@ -55,8 +56,14 @@ function normalizeModelPath(model: string): string {
   return path;
 }
 
-function safeBase(path: string): string {
-  return (
+/** Reads a null-terminated MDL string at an absolute offset. */
+function readMdlCString(bytes: Buffer, offset: number): string {
+  if (offset < 0 || offset >= bytes.length) return "";
+  const end = bytes.indexOf(0, offset);
+  return bytes.subarray(offset, end < 0 ? bytes.length : end).toString("latin1");
+}
+
+function safeBase(path: string): string {  return (
     basename(path, ".mdl")
       .replace(/[^A-Za-z0-9_]+/g, "_")
       .replace(/^_+|_+$/g, "")
@@ -280,7 +287,15 @@ function qcText(
   base: string,
   targetModelName: string,
   collision: { smdName: string; mass: number; concave: boolean } | null,
-  sequences: Array<{ name: string; smd: string; fps: number; activityName: string; loop: boolean }>,
+  sequences: Array<{
+    name: string;
+    fps: number;
+    activityName: string;
+    loop: boolean;
+    files: string[];
+    blendWidth?: number;
+    blends: Array<{ name: string; start: number; end: number }>;
+  }>,
   attachments: MdlAttachment[],
   hitboxSets: MdlHitboxSet[],
   autoHitboxes: boolean,
@@ -295,7 +310,7 @@ function qcText(
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
     `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
-    `// are written. Flexes, multi-blend sequences and bodygroup presets are not.`,
+    `// are written. Flexes and bodygroup presets are not.`,
     `// presets are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
@@ -358,10 +373,30 @@ function qcText(
   } else {
     for (const sequence of sequences) {
       const name = sequence.name.replace(/"/g, "");
-      const args = [`"${name}"`, `"${sequence.smd}"`, `fps ${fmt(sequence.fps)}`];
-      if (sequence.activityName) args.push(`activity ${sequence.activityName}`);
-      if (sequence.loop) args.push("loop");
-      lines.push(`$sequence ${args.join(" ")}`);
+      if (sequence.files.length <= 1 && sequence.blends.length === 0) {
+        const args = [
+          `"${name}"`,
+          `"${sequence.files[0] ?? sequence.name}"`,
+          `fps ${fmt(sequence.fps)}`,
+        ];
+        if (sequence.activityName) args.push(`activity ${sequence.activityName}`);
+        if (sequence.loop) args.push("loop");
+        lines.push(`$sequence ${args.join(" ")}`);
+        continue;
+      }
+      // A multi-blend sequence is a `$sequence` block: all source SMDs, then the blend
+      // width and the pose-parameter ranges. `blendwidth` is only needed when the two group
+      // sizes differ, which is how studiomdl decides the rows.
+      lines.push(`$sequence "${name}" {`);
+      lines.push(`\t${sequence.files.map((file) => `"${file}"`).join(" ")}`);
+      lines.push(`\tfps ${fmt(sequence.fps)}`);
+      if (sequence.activityName) lines.push(`\tactivity ${sequence.activityName}`);
+      if (sequence.loop) lines.push("\tloop");
+      if (sequence.blendWidth !== undefined) lines.push(`\tblendwidth ${sequence.blendWidth}`);
+      for (const blend of sequence.blends) {
+        lines.push(`\tblend "${blend.name}" ${fmt(blend.start)} ${fmt(blend.end)}`);
+      }
+      lines.push("}");
     }
   }
 
@@ -443,7 +478,8 @@ export const decompileModelTool = defineTool({
     "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
     "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
     "inside the `.mdl` or an external `.ani` are decoded into animation SMDs; multi-blend " +
-    "clips and flexes are not extracted yet, and the result lists those gaps. " +
+    "clips become `$sequence` blocks with all their animations and pose ranges. Flexes are " +
+    "not extracted yet, and the result lists that gap. " +
     "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
     "model path or a local `.mdl`.",
   realm: "map",
@@ -578,46 +614,75 @@ export const decompileModelTool = defineTool({
 
     const animations = readAnimations(mdlBytes);
     const sequences = readSequences(mdlBytes, animations);
-    const clips: Array<{
-      sequence: (typeof sequences)[number];
-      animation: (typeof animations)[number];
-      frames: AnimationFrame[];
-    }> = [];
-    const skippedSequences: Array<{ name: string; reason: string }> = [];
-    for (const sequence of sequences) {
-      const blendTotal = sequence.groupSizes[0] * sequence.groupSizes[1];
-      if (blendTotal > 1) {
-        skippedSequences.push({
-          name: sequence.name,
-          reason: `sequence blends ${blendTotal} animations and multi-blend sequences are not written yet`,
-        });
-        continue;
+    const poseParamNames: string[] = [];
+    const poseParamCount = mdlBytes.readInt32LE(300);
+    const poseParamOffset = mdlBytes.readInt32LE(304);
+    if (poseParamCount > 0 && poseParamCount < 10_000 && poseParamOffset > 0) {
+      for (let i = 0; i < poseParamCount; i += 1) {
+        const at = poseParamOffset + i * 20;
+        if (at + 4 > mdlBytes.length) break;
+        poseParamNames.push(readMdlCString(mdlBytes, at + mdlBytes.readInt32LE(at)));
       }
-      const animation = animations[sequence.firstAnimation];
-      if (!animation) {
-        skippedSequences.push({ name: sequence.name, reason: "sequence has no animation index" });
-        continue;
-      }
-      const frames = decodeAnimation(mdlBytes, animation, bones, aniBytes ?? undefined);
-      if (!frames) {
-        skippedSequences.push({
-          name: sequence.name,
-          reason:
-            animationSkippedReason(animation, aniBytes !== null) ??
-            "animation data could not be decoded",
-        });
-        continue;
-      }
-      clips.push({ sequence, animation, frames });
     }
 
+    const sequenceDefs: Array<{
+      name: string;
+      fps: number;
+      activityName: string;
+      loop: boolean;
+      blendWidth?: number;
+      blends: Array<{ name: string; start: number; end: number }>;
+      files: string[];
+      clips: Array<{ smd: string; frames: AnimationFrame[] }>;
+    }> = [];
+    const skippedSequences: Array<{ name: string; reason: string }> = [];
     const usedNames = new Set<string>();
-    const sequenceDefs = clips.map((clip, index) => {
-      let name = clip.sequence.name || `sequence_${index}`;
+    for (const [index, sequence] of sequences.entries()) {
+      const blendTotal = sequence.groupSizes[0] * sequence.groupSizes[1];
+      if (blendTotal <= 0 || blendTotal > 64 || sequence.animIndexOffset <= 0) {
+        skippedSequences.push({
+          name: sequence.name,
+          reason: `sequence has no valid blend list (${blendTotal} animations)`,
+        });
+        continue;
+      }
+      const animationIndices: number[] = [];
+      for (let blend = 0; blend < blendTotal; blend += 1) {
+        const at = sequence.baseOffset + sequence.animIndexOffset + blend * 2;
+        if (at + 2 > mdlBytes.length) break;
+        animationIndices.push(mdlBytes.readInt16LE(at));
+      }
+      if (animationIndices.length !== blendTotal) {
+        skippedSequences.push({ name: sequence.name, reason: "blend list is truncated" });
+        continue;
+      }
+      const decoded: Array<{ animation: (typeof animations)[number]; frames: AnimationFrame[] }> = [];
+      let failure: string | null = null;
+      for (const animationIndex of animationIndices) {
+        const animation = animations[animationIndex];
+        if (!animation) {
+          failure = `blend animation ${animationIndex} does not exist`;
+          break;
+        }
+        const frames = decodeAnimation(mdlBytes, animation, bones, aniBytes ?? undefined);
+        if (!frames) {
+          failure =
+            animationSkippedReason(animation, aniBytes !== null) ??
+            "animation data could not be decoded";
+          break;
+        }
+        decoded.push({ animation, frames });
+      }
+      if (failure || decoded.length !== blendTotal) {
+        skippedSequences.push({ name: sequence.name, reason: failure ?? "blend decode failed" });
+        continue;
+      }
+
+      let name = sequence.name || `sequence_${index}`;
       let suffix = 1;
       while (usedNames.has(name)) {
         suffix += 1;
-        name = `${clip.sequence.name || `sequence_${index}`}_${suffix}`;
+        name = `${sequence.name || `sequence_${index}`}_${suffix}`;
       }
       usedNames.add(name);
       const filePart =
@@ -625,15 +690,34 @@ export const decompileModelTool = defineTool({
           .replace(/[^A-Za-z0-9_]+/g, "_")
           .replace(/^_+|_+$/g, "")
           .slice(0, 48) || `seq_${index}`;
-      return {
+      const files = decoded.map((_, blend) =>
+        blend === 0 ? `${base}_${filePart}.smd` : `${base}_${filePart}_${blend + 1}.smd`,
+      );
+      const blends: Array<{ name: string; start: number; end: number }> = [];
+      for (let axis = 0; axis < 2; axis += 1) {
+        const paramIndex = sequence.paramIndices[axis]!;
+        if (paramIndex < 0) continue;
+        const paramName = poseParamNames[paramIndex];
+        if (!paramName) continue;
+        blends.push({
+          name: paramName,
+          start: sequence.paramStart[axis]!,
+          end: sequence.paramEnd[axis]!,
+        });
+      }
+      sequenceDefs.push({
         name,
-        smd: `${base}_${filePart}.smd`,
-        fps: clip.animation.fps > 0 ? clip.animation.fps : 30,
-        activityName: clip.sequence.activityName,
-        loop: (clip.sequence.flags & 1) !== 0,
-        frames: clip.frames,
-      };
-    });
+        fps: decoded[0]!.animation.fps > 0 ? decoded[0]!.animation.fps : 30,
+        activityName: sequence.activityName,
+        loop: (sequence.flags & 1) !== 0,
+        ...(sequence.groupSizes[0] !== sequence.groupSizes[1]
+          ? { blendWidth: sequence.groupSizes[0] }
+          : {}),
+        blends,
+        files,
+        clips: decoded.map((entry, blend) => ({ smd: files[blend]!, frames: entry.frames })),
+      });
+    }
 
     const bodyFiles = new Set<string>();
     const bodyGroups: BodyGroupDef[] = [];
@@ -722,7 +806,7 @@ export const decompileModelTool = defineTool({
       qcPath,
       smdPath,
       ...(writeCollision && phyBytes ? [collisionPath] : []),
-      ...sequenceDefs.map((sequence) => join(outDir, sequence.smd)),
+      ...sequenceDefs.flatMap((sequence) => sequence.files.map((file) => join(outDir, file))),
       ...bodySources.map((source) => join(outDir, source.smd)),
       ...lodSources.map((source) => join(outDir, source.smd)),
     ];
@@ -761,9 +845,9 @@ export const decompileModelTool = defineTool({
     }
 
     const animationFiles: string[] = [];
-    for (const sequence of sequenceDefs) {
-      const path = join(outDir, sequence.smd);
-      writeFileSync(path, animationSmd(bones, sequence.frames), "latin1");
+    for (const clip of sequenceDefs.flatMap((sequence) => sequence.clips)) {
+      const path = join(outDir, clip.smd);
+      writeFileSync(path, animationSmd(bones, clip.frames), "latin1");
       animationFiles.push(path);
     }
 
@@ -794,7 +878,7 @@ export const decompileModelTool = defineTool({
       base,
       targetModelName,
       collision,
-      sequenceDefs.map(({ frames: _frames, ...sequence }) => sequence),
+      sequenceDefs,
       attachments,
       hitboxSets,
       autoHitboxes,
@@ -831,10 +915,11 @@ export const decompileModelTool = defineTool({
       );
     }
     warnings.push(
-      `${clips.length} of ${sequences.length} sequences were decoded from the .mdl; ` +
+      `${sequenceDefs.length} of ${sequences.length} sequences were decoded from the .mdl or ` +
+        "external .ani; multi-blend clips are written as `$sequence` blocks. " +
         (sequenceDefs.length === 0
           ? "A one-frame `$sequence \"idle\"` is written so the reference mesh can compile."
-          : "Each decoded sequence is a real SMD."),
+          : ""),
     );
     if (geometry.flex.descriptors.length > 0) {
       warnings.push(

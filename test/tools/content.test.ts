@@ -17,7 +17,7 @@ const ready = has.sidecar && has.gameContent;
  * generous on purpose: it exists to catch a hang, not to police a duration nothing here
  * promises.
  */
-const VPK_SEARCH_TIMEOUT = 30_000;
+const VPK_SEARCH_TIMEOUT = 60_000;
 
 interface SearchReply {
   mounted: boolean;

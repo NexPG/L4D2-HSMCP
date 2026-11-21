@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.167-alpha - 2026-11-21
+
+- **Multi-blend sequences are written as `$sequence` blocks.** The blend list is read from
+  `animindexindex`, every animation is decoded to its own SMD, and the QC gets:
+  - all animation SMDs on the block's first line;
+  - `fps`, `activity`/`loop` where present;
+  - `blendwidth` when the two group sizes differ;
+  - `blend "<pose param>" <start> <end>` for each axis, using the MDL's pose-parameter names.
+- **Verified by recompile:** `v_bat` has 13 sequences and 17 animation SMDs (13 sequences,
+  2 of them 3-wide). `aims` comes back with `blendCount 3`, `groupSizes [3,1]`,
+  `paramIndices [0,-1]` and the `-1..1` range intact; `idle01` keeps its own range.
+- **Remaining gap:** flex writing and bodygroup presets; the decompiler's `warnings` say so.
+- **Test stability:** the particle rewrite and VPK search tests now allow more time under a
+  loaded full-suite run.
+- **Tool count: 231.** Tests: 194 files, 1696 passed, 33 skipped.
+
 ## 0.0.166-alpha - 2026-11-21
 
 - **External `.ani` animations are decoded.** The model's anim-block table is read from the

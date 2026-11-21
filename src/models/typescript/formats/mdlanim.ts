@@ -8,8 +8,9 @@
  * as SMD skeleton frames a person can inspect.
  *
  * External `.ani` blocks (whole clips and frame-by-bone clips) are read through the model's
- * anim-block table. Multi-blend sequences are not decoded yet. Unsupported clips are reported
- * as skipped rather than emitted with the bind pose pretending to be an animation.
+ * anim-block table. Multi-blend sequences are decoded as their individual animations and
+ * assembled by the decompiler into a `$sequence` block. Unsupported clips are reported as
+ * skipped rather than emitted with the bind pose pretending to be an animation.
  */
 import type { ModelBone } from "./mdlbones.js";
 import { quaternionToEuler } from "./mdlbones.js";
@@ -27,6 +28,12 @@ export interface MdlSequence {
   /** Declared blend count; `groupSizes[0] * groupSizes[1]` animations are indexed. */
   blendCount: number;
   groupSizes: [number, number];
+  /** Absolute offset of the descriptor; the animation-index list is relative to it. */
+  baseOffset: number;
+  animIndexOffset: number;
+  paramIndices: [number, number];
+  paramStart: [number, number];
+  paramEnd: [number, number];
 }
 
 export interface MdlAnimationDesc {
@@ -153,6 +160,11 @@ export function readSequences(mdl: Buffer, animations: MdlAnimationDesc[]): MdlS
       firstAnimation,
       blendCount,
       groupSizes,
+      baseOffset: base,
+      animIndexOffset,
+      paramIndices: [mdl.readInt32LE(base + 76), mdl.readInt32LE(base + 80)],
+      paramStart: [mdl.readFloatLE(base + 84), mdl.readFloatLE(base + 88)],
+      paramEnd: [mdl.readFloatLE(base + 92), mdl.readFloatLE(base + 96)],
     });
   }
   return sequences;
