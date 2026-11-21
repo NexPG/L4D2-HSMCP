@@ -27,11 +27,12 @@ with a line here.
   `ConfigurableWeaponDensity 0` left 0 `weapon_spawn` at 30 s and `100` left 6; specific
   `weapon_ammo_spawn` (1) and `weapon_first_aid_kit_spawn` (9) were unchanged, matching the
   wiki's split between configurable and specific spawners.
-- **Pickup and rescue interaction remain manual.** A `weapon_first_aid_kit` entity, a VScript
-  teleport onto it and an `OnPlayerPickup` echo produced no event; a PowerShell
-  `SendKeys('e')` did not reach the game window. A real rescue needs a dead survivor and a
-  living one opening the closet. The entity and the RESCUE_CLOSET nav bit are verified; the
-  `E` press is not.
+- **Pickup and rescue interaction remain manual.** A `weapon_first_aid_kit` and a
+  `weapon_rifle`, each with an `OnPlayerPickup` echo, a VScript teleport onto the item and a
+  PowerShell `SendKeys('e')` produced no pickup event; the rifle stayed in the world. The
+  medkit's base lacks `OnPlayerPickup`; the rifle has it and still needs a real `E` press. A
+  real rescue needs a dead survivor and a living one opening the closet. The entity and the
+  RESCUE_CLOSET nav bit are verified; the interaction is not.
 - **Tool count: 223.** Tests: 176 files, 1630 passed, 33 skipped.
 
 ## 0.0.143-alpha - 2026-11-21
