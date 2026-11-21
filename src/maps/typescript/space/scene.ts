@@ -168,6 +168,10 @@ export interface SceneFace {
     /** Packed RGB, row-major, three bytes per pixel. */
     data: Uint8Array;
     uvs: Array<[number, number]>;
+    /** One alpha byte per texel, when the VTF carries alpha. */
+    alpha?: Uint8Array;
+    /** Alpha is a cutout: a texel below mid-alpha is not drawn. */
+    alphaTest?: boolean;
   };
   /**
    * A per-face RGB multiplier, 0..1. A model has no lightmap, so its baked ambient cube is
@@ -179,6 +183,8 @@ export interface SceneFace {
    * of a solid, so the outward normal is not enough to cull it.
    */
   twoSided?: boolean;
+  /** A liquid surface: drawn blended, after the opaque world. */
+  water?: boolean;
 }
 
 export interface SceneBrush {

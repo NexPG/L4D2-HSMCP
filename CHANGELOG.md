@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.152-alpha - 2026-11-21
+
+- **Water is drawn as a blended surface.** `liquids/water*`, `sewer_slime` and toxin
+  materials become liquid faces with a Fresnel-style alpha; the rasteriser draws all opaque
+  faces first, then blends water far-to-near without writing depth, so the bed stays visible.
+  Verified on `c2m1_highway` from its first player start: water faces drawn, road and banks
+  visible through them.
+- **Distance fog from `env_fog_controller`.** The renderer picks the controller named by the
+  `fog_volume` containing the camera (smallest box wins) and falls back to the nearest enabled
+  controller; fog is linear between `fogstart` and `fogend`, scaled by `fogmaxdensity`.
+  Verified on `c1m1_hotel` (`fog_topfloors`, 1..2500) and `c2m1_highway` (`fog_master`).
+- **VTF alpha and material cutouts.** The native decoder now returns per-pixel alpha for
+  DXT1/DXT3/DXT5 and BGRA/RGBA/ABGR; materials with `$alphatest`/`$translucent` are alpha-tested
+  per pixel. This fixed outdoor foliage cards, which had drawn as opaque black rectangles.
+- **One MDL material directory applies to every material.** `urban_trees_dryleaves01` has two
+  materials and one directory entry; without sharing it the bark material fell back to white.
+- **Tool count: 228.** Tests: 187 files, 1647 passed, 33 skipped.
+
 ## 0.0.151-alpha - 2026-11-21
 
 - **`render_bsp_view` draws static props.** It reads the `sprp` game lump (L4D2 version 9,

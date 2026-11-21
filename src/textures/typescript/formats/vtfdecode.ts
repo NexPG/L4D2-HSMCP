@@ -14,6 +14,8 @@ export interface DecodedVtf {
   format: string;
   /** RGB, three bytes per pixel, row-major from the top left. */
   rgb: Uint8Array;
+  /** One alpha byte per pixel, when the format carries alpha. */
+  alpha?: Uint8Array;
 }
 
 const FORMAT_DXT1 = 13;
@@ -73,20 +75,21 @@ function decodeDxt(
   width: number,
   height: number,
   format: number,
-): Uint8Array {
+): { rgb: Uint8Array; alpha: Uint8Array } {
   const rgb = new Uint8Array(width * height * 3);
+  const outAlpha = new Uint8Array(width * height).fill(255);
   const bw = Math.ceil(width / 4);
   const bh = Math.ceil(height / 4);
   const blockBytes = format === FORMAT_DXT1 || format === FORMAT_DXT1_ONE_BIT_ALPHA ? 8 : 16;
   let at = 0;
   for (let by = 0; by < bh; by += 1) {
     for (let bx = 0; bx < bw; bx += 1) {
-      if (at + blockBytes > data.length) return rgb;
+      if (at + blockBytes > data.length) return { rgb, alpha: outAlpha };
       const block = data.subarray(at, at + blockBytes);
       at += blockBytes;
       const colourOffset = format === FORMAT_DXT1 || format === FORMAT_DXT1_ONE_BIT_ALPHA ? 0 : 8;
       const colours = dxtColorBlock(block.subarray(colourOffset, colourOffset + 8));
-      let alpha: number[] = new Array(16).fill(255);
+      const alpha: number[] = new Array(16).fill(255);
       if (format === FORMAT_DXT3) {
         for (let i = 0; i < 16; i += 1) {
           const nibble = i % 2 === 0 ? block[i >> 1]! & 0x0f : block[i >> 1]! >> 4;
@@ -123,15 +126,12 @@ function decodeDxt(
           rgb[out] = colour[0];
           rgb[out + 1] = colour[1];
           rgb[out + 2] = colour[2];
-          if (format === FORMAT_DXT1_ONE_BIT_ALPHA && colour[3] === 0) {
-            // One-bit alpha is not part of the RGB image; the colour is still the palette.
-          }
+          outAlpha[y * width + x] = alpha[py * 4 + px]!;
         }
       }
-      void alpha;
     }
   }
-  return rgb;
+  return { rgb, alpha: outAlpha };
 }
 
 function decodeUncompressed(
@@ -139,8 +139,11 @@ function decodeUncompressed(
   width: number,
   height: number,
   format: number,
-): Uint8Array {
+): { rgb: Uint8Array; alpha?: Uint8Array } {
   const rgb = new Uint8Array(width * height * 3);
+  const hasAlpha =
+    format === FORMAT_RGBA8888 || format === FORMAT_ABGR8888 || format === FORMAT_BGRA8888;
+  const alpha = hasAlpha ? new Uint8Array(width * height).fill(255) : undefined;
   const bytesPerPixel =
     format === FORMAT_RGB888 || format === FORMAT_BGR888 ? 3 : 4;
   for (let i = 0; i < width * height; i += 1) {
@@ -168,8 +171,12 @@ function decodeUncompressed(
       rgb[out + 1] = data[at + 1]!;
       rgb[out + 2] = data[at + 2]!;
     }
+    if (alpha) {
+      if (format === FORMAT_ABGR8888) alpha[i] = data[at]!;
+      else alpha[i] = data[at + 3]!;
+    }
   }
-  return rgb;
+  return { rgb, ...(alpha ? { alpha } : {}) };
 }
 
 /**
@@ -209,7 +216,9 @@ export function decodeVtf(bytes: Buffer): DecodedVtf | null {
   const format = VTF_FORMATS[formatId] ?? String(formatId);
 
   if (formatId === FORMAT_DXT1 || formatId === FORMAT_DXT1_ONE_BIT_ALPHA || formatId === FORMAT_DXT3 || formatId === FORMAT_DXT5) {
-    return { width, height, format, rgb: decodeDxt(bytes.subarray(start), width, height, formatId) };
+    const decoded = decodeDxt(bytes.subarray(start), width, height, formatId);
+    const alpha = new Uint8Array(decoded.alpha);
+    return { width, height, format, rgb: decoded.rgb, alpha };
   }
   if (
     formatId === FORMAT_BGRA8888 ||
@@ -219,11 +228,13 @@ export function decodeVtf(bytes: Buffer): DecodedVtf | null {
     formatId === FORMAT_RGB888 ||
     formatId === FORMAT_BGR888
   ) {
+    const decoded = decodeUncompressed(bytes.subarray(start), width, height, formatId);
     return {
       width,
       height,
       format,
-      rgb: decodeUncompressed(bytes.subarray(start), width, height, formatId),
+      rgb: decoded.rgb,
+      ...(decoded.alpha ? { alpha: decoded.alpha } : {}),
     };
   }
   return null;

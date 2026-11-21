@@ -1,4 +1,4 @@
-/**
+﻿/**
  * `.mdl` + `.vvd` + `.vtx` out of the game's VPKs, and the material each mesh draws with.
  *
  * `read_game_content` names a model; this opens the three binary siblings and returns the
@@ -10,7 +10,7 @@ import type { GameVpk } from "./vpkcontent.js";
 import { materialTexture } from "./vpkcontent.js";
 import { materialIndexForSkin, parseModelGeometry } from "../../../models/typescript/formats/mdlmesh.js";
 import type { ModelGeometry } from "../../../models/typescript/formats/mdlmesh.js";
-import type { DecodedVtf } from "../../../textures/typescript/formats/vtfdecode.js";
+import type { MaterialTexture } from "./vpkcontent.js";
 
 /** Where the three files of a model are, from its `.mdl` path. */
 export function modelSiblings(mdlPath: string): { vvd: string; vtx: string } {
@@ -41,7 +41,7 @@ export function modelMaterialPath(material: string): string {
 export interface ModelTextureSet {
   geometry: ModelGeometry;
   /** Decoded base textures by material index; null when the VMT/VTF is missing. */
-  textures: Array<DecodedVtf | null>;
+  textures: Array<MaterialTexture | null>;
   /** Material path per mesh after the skin remap, for reporting. */
   meshMaterials: string[];
 }
@@ -55,8 +55,8 @@ export interface ModelTextureSet {
 export function loadModelTextures(vpk: GameVpk, mdlPath: string, skin: number): ModelTextureSet | null {
   const geometry = loadGameModel(vpk, mdlPath);
   if (!geometry) return null;
-  const cache = new Map<number, DecodedVtf | null>();
-  const textures: Array<DecodedVtf | null> = [];
+  const cache = new Map<number, MaterialTexture | null>();
+  const textures: Array<MaterialTexture | null> = [];
   const meshMaterials: string[] = [];
   for (const mesh of geometry.meshes) {
     const index = materialIndexForSkin(geometry, mesh.materialIndex, skin);

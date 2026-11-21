@@ -78,9 +78,15 @@ export interface DisplayFace {
     height: number;
     data: Uint8Array;
     uvs: Array<[number, number]>;
+    alpha?: Uint8Array;
+    alphaTest?: boolean;
   };
   /** RGB multiplier 0..1 for a textured face without a lightmap (a model's ambient). */
   modulate?: [number, number, number];
+  /** 0..1 for a blended surface; absent means opaque. */
+  alpha?: number;
+  /** Whether this face is a liquid surface rather than a solid. */
+  water?: boolean;
   /** Whether this face is a piece of sky rather than a piece of the world. */
   sky: boolean;
   /** Draw both sides; a model card is a surface rather than a solid boundary. */
@@ -107,6 +113,8 @@ export interface RenderResult extends Framebuffer {
   facesCulled: number;
   /** Faces dropped entirely behind the near plane. */
   facesBehind: number;
+  /** Blended liquid faces drawn after the opaque pass. */
+  waterFaces: number;
 }
 
 /**
@@ -277,6 +285,8 @@ export function displayList(scene: Scene, camera: Camera): {
               height: face.texture.height,
               data: face.texture.data,
               uvs: cut.uvSets[set++]!,
+              ...(face.texture.alpha ? { alpha: face.texture.alpha } : {}),
+              ...(face.texture.alphaTest ? { alphaTest: true } : {}),
             };
           }
         }
@@ -293,6 +303,23 @@ export function displayList(scene: Scene, camera: Camera): {
       const lambert = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
       const shade = face.shade ?? 0.45 + 0.55 * Math.max(0, lambert);
 
+      // Water is more opaque at a grazing angle (Fresnel). The engine also refracts and
+      // reflects; this keeps the part that changes what you see -- the world tinted and
+      // readable through the surface instead of a flat opaque plane.
+      let alpha = 1;
+      if (face.water) {
+        const eye: [number, number, number] = [
+          camera.origin[0] - face.loop[0]![0],
+          camera.origin[1] - face.loop[0]![1],
+          camera.origin[2] - face.loop[0]![2],
+        ];
+        const length = Math.hypot(eye[0], eye[1], eye[2]) || 1;
+        const cos = Math.abs(
+          (n[0] * eye[0] + n[1] * eye[1] + n[2] * eye[2]) / length,
+        );
+        alpha = Math.max(0.35, Math.min(0.9, 0.5 + 0.35 * (1 - cos)));
+      }
+
       faces.push({
         brushId: brush.id,
         sideId: face.sideId,
@@ -304,6 +331,7 @@ export function displayList(scene: Scene, camera: Camera): {
         ...(lightmap ? { lightmap } : {}),
         ...(texture ? { texture } : {}),
         ...(face.modulate ? { modulate: face.modulate } : {}),
+        ...(face.water ? { water: true, alpha } : {}),
         sky: isSkyMaterial(face.material),
       });
     }
@@ -367,8 +395,31 @@ function sampleRgb(
   return [blend(0), blend(1), blend(2)];
 }
 
+/** Bilinear alpha sample, for a material whose alpha is a cutout. */
+function sampleAlpha(
+  grid: { width: number; height: number; alpha: Uint8Array },
+  u: number,
+  v: number,
+  wrap = false,
+): number {
+  const coord = (value: number, size: number): number =>
+    wrap ? ((value % size) + size) % size : Math.max(0, Math.min(size - 1, value));
+  const x = coord(u, grid.width);
+  const y = coord(v, grid.height);
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const x1 = wrap ? (x0 + 1) % grid.width : Math.min(grid.width - 1, x0 + 1);
+  const y1 = wrap ? (y0 + 1) % grid.height : Math.min(grid.height - 1, y0 + 1);
+  const fx = x - x0;
+  const fy = y - y0;
+  const at = (px: number, py: number): number => py * grid.width + px;
+  const top = grid.alpha[at(x0, y0)]! * (1 - fx) + grid.alpha[at(x1, y0)]! * fx;
+  const bottom = grid.alpha[at(x0, y1)]! * (1 - fx) + grid.alpha[at(x1, y1)]! * fx;
+  return top * (1 - fy) + bottom * fy;
+}
+
 /** Fills a convex polygon with a z-buffer in 1/z, which interpolates linearly on screen. */
-function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
+function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace, blend = false): boolean {
   const { sx, sy } = planeScale(camera);
   const n = face.points.length;
   const px = new Float64Array(n);
@@ -492,10 +543,20 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       const t = span > 0 ? (x + 0.5 - xLo) / span : 0;
       const invZ = izLo + (izHi - izLo) * t;
       const at = y * fb.width + x;
+      if (texture && texUvs && texture.alphaTest && texture.alpha) {
+        const tu = (tuzLo + (tuzHi - tuzLo) * t) / invZ;
+        const tv = (tvzLo + (tvzHi - tvzLo) * t) / invZ;
+        const alpha = texture.alpha;
+        if (sampleAlpha({ width: texture.width, height: texture.height, alpha }, tu, tv, true) < 128) {
+          continue;
+        }
+      }
       if (invZ <= fb.invDepth[at]!) continue;
-      fb.invDepth[at] = invZ;
-      fb.ids[at] = face.brushId;
-      fb.sky[at] = face.sky ? 1 : 0;
+      if (!blend) {
+        fb.invDepth[at] = invZ;
+        fb.ids[at] = face.brushId;
+        fb.sky[at] = face.sky ? 1 : 0;
+      }
       let rr: number;
       let gg: number;
       let bb: number;
@@ -531,9 +592,17 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
         gg = baseG;
         bb = baseB;
       }
-      fb.rgb[at * 3] = rr;
-      fb.rgb[at * 3 + 1] = gg;
-      fb.rgb[at * 3 + 2] = bb;
+      if (blend) {
+        const alpha = face.alpha ?? 1;
+        const out = at * 3;
+        fb.rgb[out] = Math.round(rr * alpha + fb.rgb[out]! * (1 - alpha));
+        fb.rgb[out + 1] = Math.round(gg * alpha + fb.rgb[out + 1]! * (1 - alpha));
+        fb.rgb[out + 2] = Math.round(bb * alpha + fb.rgb[out + 2]! * (1 - alpha));
+      } else {
+        fb.rgb[at * 3] = rr;
+        fb.rgb[at * 3 + 1] = gg;
+        fb.rgb[at * 3 + 2] = bb;
+      }
       drew = true;
     }
   }
@@ -560,9 +629,31 @@ export function render(scene: Scene, camera: Camera): RenderResult {
 
   const { faces, considered, culled, behind } = displayList(scene, camera);
   let drawn = 0;
-  for (const face of faces) if (fillFace(fb, camera, face)) drawn += 1;
+  let waterFaces = 0;
+  const opaque: DisplayFace[] = [];
+  const blended: DisplayFace[] = [];
+  for (const face of faces) {
+    if (face.alpha !== undefined && face.alpha < 1) blended.push(face);
+    else opaque.push(face);
+  }
+  for (const face of opaque) if (fillFace(fb, camera, face)) drawn += 1;
+  // Far to near, so two water surfaces blend in the order the eye sees them.
+  blended.sort((a, b) => {
+    const depth = (face: DisplayFace): number => {
+      let max = 0;
+      for (const point of face.points) if (point.z > max) max = point.z;
+      return max;
+    };
+    return depth(b) - depth(a);
+  });
+  for (const face of blended) {
+    if (fillFace(fb, camera, face, true)) {
+      drawn += 1;
+      waterFaces += 1;
+    }
+  }
 
-  return { ...fb, facesConsidered: considered, facesDrawn: drawn, facesCulled: culled, facesBehind: behind };
+  return { ...fb, facesConsidered: considered, facesDrawn: drawn, facesCulled: culled, facesBehind: behind, waterFaces };
 }
 
 /**

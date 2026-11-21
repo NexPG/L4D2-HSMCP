@@ -127,7 +127,7 @@ covered: this table is the summary.
 | Prefabs | `insert_prefab` | verified: paste a saved `.vmf` fragment; ids remapped, move and yaw about a pivot; brush entities and entity angles turn with it |
 | Model authoring (HLMV, studiomdl) | `read_text_file`, `write_text_file`, `run_studiomdl`, `run_hlmv`, `capture_window` | tool: sample compiled and HLMV launched; screenshot returns an image block, 3D canvas depends on the desktop |
 | Visual capture | `capture_window`, `run_map_test` screenshot, `run_hlmv` screenshot | tool: real MCP image; `screen` captures a 3D game canvas, `window` captures occluded UI/dialogs |
-| Compiled BSP view | `render_bsp_view` | **verified on `c1m1_hotel`**: 10,840 faces, 9,116 textured from VMT/VTF, 8,828 with per-pixel HDR lightmap sampling; 1,748 static props read from the `sprp` lump, 188/188 models loaded from MDL/VVD/VTX, 54 drawn from a lobby camera with 57,626 triangles; 24,541-sample HDR ambient cube grid; PNG from any camera |
+| Compiled BSP view | `render_bsp_view` | **verified on `c1m1_hotel`**: 10,840 faces, 9,116 textured from VMT/VTF, 8,828 with per-pixel HDR lightmap sampling; 1,748 static props read from the `sprp` lump, 188/188 models loaded from MDL/VVD/VTX, 54 drawn from a lobby camera with 57,626 triangles; 24,541-sample HDR ambient cube grid; **water** blended on `c2m1_highway` and `c3m2_swamp`; **fog** from `env_fog_controller` via the camera's `fog_volume`; VTF alpha cutouts for foliage; PNG from any camera |
 
 ## Compile, run, nav, campaign
 

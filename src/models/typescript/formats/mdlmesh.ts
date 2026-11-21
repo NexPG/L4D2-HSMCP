@@ -146,7 +146,7 @@ function readMaterials(mdl: Buffer, header: MdlHeader): { materials: string[]; s
     const base = header.materialOffset + i * 64;
     if (base + 64 > mdl.length) break;
     const name = readName(mdl, base + mdl.readInt32LE(base)).replace(/\\/g, "/");
-    const dir = (materialDirs[i] ?? "").replace(/\\/g, "/");
+    const dir = (materialDirs[i] ?? materialDirs[0] ?? "").replace(/\\/g, "/");
     const joined = dir && !name.startsWith("models/") && !name.startsWith("materials/")
       ? `${dir.replace(/\/?$/, "/")}${name}`
       : name;

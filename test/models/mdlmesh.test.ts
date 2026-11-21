@@ -39,6 +39,19 @@ describe.skipIf(!hasVpk)("model geometry", () => {
     expect(set!.textures[0]!.width).toBeGreaterThan(1);
   });
 
+  it("carries alpha and the cutout flag for foliage", () => {
+    const archive = vpk()!;
+    const set = loadModelTextures(archive, "models/props_foliage/urban_trees_dryleaves01.mdl", 0);
+    expect(set).not.toBeNull();
+    // Two materials share one directory entry; the second must not fall back to a bare name.
+    expect(set!.meshMaterials).toHaveLength(2);
+    expect(set!.meshMaterials[1]).toMatch(/^models\/props_foliage\//);
+    const leaves = set!.textures[0]!;
+    expect(leaves.alpha).toBeDefined();
+    expect(leaves.alpha!.length).toBe(leaves.width * leaves.height);
+    expect(leaves.alphaTest).toBe(true);
+  });
+
   it("prefixes a bare material with materials/ and keeps a full path as is", () => {
     expect(modelMaterialPath("models/props_junk/wood_crate001a")).toBe(
       "models/props_junk/wood_crate001a",

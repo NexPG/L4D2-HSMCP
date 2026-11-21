@@ -61,8 +61,14 @@ export function openGameVpk(gameDir: string): GameVpk | null {
   };
 }
 
+/** A decoded base texture plus what its VMT says about alpha. */
+export interface MaterialTexture extends DecodedVtf {
+  /** `$alphatest` or `$translucent`: the alpha channel is a cutout, not decoration. */
+  alphaTest: boolean;
+}
+
 /** The material's base texture, decoded from its VMT and VTF. Null when anything is missing. */
-export function materialTexture(vpk: GameVpk, material: string): DecodedVtf | null {
+export function materialTexture(vpk: GameVpk, material: string): MaterialTexture | null {
   const vmtPath = `materials/${material.replace(/\\/g, "/").replace(/\.vmt$/i, "")}.vmt`;
   const vmtBytes = vpk.read(vmtPath);
   if (!vmtBytes) return null;
@@ -73,5 +79,10 @@ export function materialTexture(vpk: GameVpk, material: string): DecodedVtf | nu
   const texture = base.replace(/^materials\//i, "").replace(/\.vtf$/i, "");
   const vtfBytes = vpk.read(`materials/${texture}.vtf`);
   if (!vtfBytes) return null;
-  return decodeVtf(vtfBytes);
+  const decoded = decodeVtf(vtfBytes);
+  if (!decoded) return null;
+  // `$alphatest` is a cutout; `$translucent` and `$blendTintByBaseAlpha` also put meaning in
+  // alpha. A material with an alpha channel but none of these is opaque artwork.
+  const alphaTest = /\$(alphatest|translucent|blendtintbybasealpha)\s+(?!0\b)\S+/i.test(vmt);
+  return { ...decoded, alphaTest };
 }

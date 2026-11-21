@@ -4,9 +4,10 @@
  * `render_vmf_view` draws the source map from its brushes. This draws what vbsp/vrad actually
  * produced: face loops from FACES/SURFEDGES/EDGES/VERTEXES, textures from the game's VMT/VTF,
  * baked light from the lightmap, static props from the `sprp` game lump and their
- * MDL/VVD/VTX, and the ambient cube at each prop's leaf. It is the closest headless substitute
- * for Hammer++'s compiled 3D view and lighting preview: form, occlusion, texture, props and
- * light, without dynamic entities, fog or particles.
+ * MDL/VVD/VTX, the ambient cube at each prop's leaf, blended water surfaces and the map's
+ * `env_fog_controller`. It is the closest headless substitute for Hammer++'s compiled 3D view
+ * and lighting preview: form, occlusion, texture, props, water, fog and light, without
+ * dynamic entities or particles.
  */
 import { z } from "zod";
 import { IMAGE_KEY } from "@projectsociety/mcp-core";
@@ -29,8 +30,32 @@ import { MASK_SIGHT } from "../space/scene.js";
 import type { Scene, SceneBrush, SceneFace } from "../space/scene.js";
 import { encodePng } from "../render/png.js";
 import { frameBox, isSkyMaterial, render } from "../render/raster.js";
+import { applyFog, readFogFor } from "../render/fog.js";
 import type { Camera } from "../render/camera.js";
 import type { Vec3 } from "../vmf/solid.js";
+
+/** Whether a material is a liquid surface rather than a solid face. */
+function isWaterMaterial(material: string): boolean {
+  const name = material.toLowerCase().replace(/\\/g, "/");
+  return (
+    name.includes("/water") ||
+    name.startsWith("water") ||
+    name.includes("sewer_slime") ||
+    name.includes("toxin") ||
+    name.endsWith("/slime") ||
+    name.startsWith("slime")
+  );
+}
+
+/** A murky tint for water whose VMT has no base texture to sample (L4D2 water uses $abovewater). */
+function waterTint(material: string): [number, number, number] {
+  const name = material.toLowerCase();
+  if (name.includes("slime") || name.includes("toxin")) return [0.32, 0.42, 0.16];
+  if (name.includes("swamp") || name.includes("plank") || name.includes("beneath")) {
+    return [0.30, 0.42, 0.30];
+  }
+  return [0.24, 0.38, 0.42];
+}
 
 /** The yaw/pitch/roll matrix in Source's row-vector convention. */
 function angleMatrix(angles: Vec3): [Vec3, Vec3, Vec3] {
@@ -233,6 +258,8 @@ function addProps(
                     [vb.uv[0] * decoded.width, vb.uv[1] * decoded.height] as [number, number],
                     [vc.uv[0] * decoded.width, vc.uv[1] * decoded.height] as [number, number],
                   ],
+                  ...(decoded.alpha ? { alpha: decoded.alpha } : {}),
+                  ...(decoded.alphaTest ? { alphaTest: true } : {}),
                 },
               }
             : {}),
@@ -265,8 +292,9 @@ export const renderBspViewTool = defineTool({
     "and lit per pixel by its baked lightmap grid, sampled with a perspective-correct UV; the " +
     "face average and material colour are fallbacks. Static props are read from the `sprp` " +
     "game lump, their MDL/VVD/VTX geometry from the game's VPKs, and lit by the baked ambient " +
-    "cube at their leaf. No dynamic entities, fog or particles: this shows compiled form, " +
-    "occlusion, texture, props and light. Camera convention is Source's (angles " +
+    "cube at their leaf. Liquid surfaces are alpha-blended and `env_fog_controller` supplies " +
+    "distance fog. No dynamic entities or particles: this shows compiled form, occlusion, " +
+    "texture, props, water, fog and light. Camera convention is Source's (angles " +
     "pitch/yaw/roll, fov horizontal). Omit origin/angles to frame the whole map.",
   realm: "map",
   inputSchema: {
@@ -301,6 +329,13 @@ export const renderBspViewTool = defineTool({
       .max(2_000_000)
       .default(250_000)
       .describe("Budget for model triangles; once reached, farther props are skipped."),
+    fog: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Apply the map's `env_fog_controller` for the camera's `fog_volume` (or the nearest " +
+          "enabled controller). Off shows the geometry without distance fog.",
+      ),
   },
   outputSchema: {
     path: z.string(),
@@ -314,6 +349,13 @@ export const renderBspViewTool = defineTool({
     lightmapFaces: z.number(),
     gradientFaces: z.number(),
     textureFaces: z.number(),
+    waterFaces: z.number(),
+    waterFacesTotal: z.number(),
+    fogName: z.string().nullable(),
+    fogStart: z.number(),
+    fogEnd: z.number(),
+    fogColor: z.array(z.number()),
+    fogMaxDensity: z.number(),
     propsTotal: z.number(),
     propsDrawn: z.number(),
     propsCulled: z.number(),
@@ -393,6 +435,7 @@ export const renderBspViewTool = defineTool({
     };
     let gradientFaces = 0;
     let textureFaces = 0;
+    let waterFaceCount = 0;
     const vpk = ctx.config.gameDir ? openGameVpk(ctx.config.gameDir) : null;
     const textureCache = new Map<string, ReturnType<typeof materialTexture>>();
     const textureFor = (
@@ -413,16 +456,25 @@ export const renderBspViewTool = defineTool({
         const t = point[0] * vVec[0] + point[1] * vVec[1] + point[2] * vVec[2] + vVec[3];
         return [s / texture!.width, t / texture!.height] as [number, number];
       });
-      return { width: texture.width, height: texture.height, data: texture.rgb, uvs };
+      return {
+        width: texture.width,
+        height: texture.height,
+        data: texture.rgb,
+        uvs,
+        ...(texture.alpha ? { alpha: texture.alpha } : {}),
+        ...(texture.alphaTest ? { alphaTest: true } : {}),
+      };
     };
 
     const faces: SceneFace[] = polygons.faces.map((polygon) => {
       const sky = (polygon.flags & 0x4) !== 0 || isSkyMaterial(polygon.material);
+      const water = !sky && isWaterMaterial(polygon.material);
       const average = averages.averages.get(polygon.index);
-      const lightmap = sky ? null : lightmapFor(polygon);
-      const texture = sky ? null : textureFor(polygon);
+      const lightmap = sky || water ? null : lightmapFor(polygon);
+      const texture = sky || water ? null : textureFor(polygon);
       if (lightmap) gradientFaces += 1;
       if (texture) textureFaces += 1;
+      if (water) waterFaceCount += 1;
       return {
         sideId: null,
         material: polygon.material,
@@ -431,9 +483,11 @@ export const renderBspViewTool = defineTool({
         area: 0,
         ...(sky
           ? { colour: [92, 132, 178] as [number, number, number], shade: 1 }
-          : average
-            ? { colour: average, shade: 1 }
-            : {}),
+          : water
+            ? { colour: waterTint(polygon.material), shade: 1, water: true }
+            : average
+              ? { colour: average, shade: 1 }
+              : {}),
         ...(lightmap ? { lightmap } : {}),
         ...(texture ? { texture } : {}),
       };
@@ -535,13 +589,40 @@ export const renderBspViewTool = defineTool({
       notes.push("Static props were disabled; only the compiled world geometry is drawn.");
     }
     const fb = render(scene, camera);
+    let fogName: string | null = null;
+    let fogStart = 0;
+    let fogEnd = 0;
+    let fogColor: [number, number, number] = [0, 0, 0];
+    let fogMaxDensity = 0;
+    if (args.fog !== false) {
+      const choice = readFogFor(path, origin);
+      if (choice.fog) {
+        fogName = choice.fog.name;
+        fogStart = choice.fog.start;
+        fogEnd = choice.fog.end;
+        fogColor = choice.fog.color;
+        fogMaxDensity = choice.fog.maxDensity;
+        applyFog(fb, choice.fog);
+        notes.push(
+          `Fog: ${choice.fog.name ?? "(unnamed controller)"} from ${choice.fog.start} to ` +
+            `${choice.fog.end}, colour ${choice.fog.color.join(" ")} ` +
+            `(max density ${choice.fog.maxDensity}), chosen by ` +
+            `${choice.volumes > 0 ? `${choice.volumes} containing fog_volume(s)` : "nearest controller"}.`,
+        );
+      } else {
+        notes.push("No enabled `env_fog_controller` supplied fog for this camera.");
+      }
+    } else {
+      notes.push("Fog was disabled; the picture has no distance fog.");
+    }
     const png = encodePng(fb.rgb, fb.width, fb.height);
     notes.push(
       "Faces are textured from the game's VMT/VTF and multiplied by the baked lightmap, " +
         "sampled per pixel with perspective-correct UVs. Static props are drawn from their " +
-        "MDL/VVD/VTX with the prop transform. No dynamic entities, fog or particles: this " +
-        "shows compiled form, occlusion, texture, props and light, not what the place looks " +
-        "like.",
+        "MDL/VVD/VTX with the prop transform; liquid surfaces are blended and the map's " +
+        "`env_fog_controller` supplies distance fog. No dynamic entities, particles or water " +
+        "refraction: this shows compiled form, occlusion, texture, props, water and light, " +
+        "not what the place looks like.",
     );
     if (lighting === "none") {
       notes.push("Lighting was disabled, so faces use the stable material colour and one light.");
@@ -564,6 +645,13 @@ export const renderBspViewTool = defineTool({
       lightmapFaces: averages.averages.size,
       gradientFaces,
       textureFaces,
+      waterFaces: fb.waterFaces,
+      waterFacesTotal: waterFaceCount,
+      fogName,
+      fogStart,
+      fogEnd,
+      fogColor: [...fogColor],
+      fogMaxDensity,
       propsTotal,
       propsDrawn,
       propsCulled,
