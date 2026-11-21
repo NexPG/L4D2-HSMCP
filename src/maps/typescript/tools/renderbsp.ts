@@ -27,11 +27,11 @@ export const renderBspViewTool = defineTool({
   name: "render_bsp_view",
   description:
     "Renders a COMPILED .bsp from a camera and returns the picture. Face loops come from the " +
-    "BSP (FACES/HDR, SURFEDGES, EDGES, VERTEXES), and each face's colour is its baked " +
-    "lightmap: per-corner samples are interpolated across the polygon, with the face average " +
-    "as the fallback. Faces without a lightmap use the same stable material colour as " +
-    "render_vmf_view. No textures, props, fog or particles: this shows form, occlusion and " +
-    "baked light. Camera convention is Source's (angles pitch/yaw/roll, fov horizontal). " +
+    "BSP (FACES/HDR, SURFEDGES, EDGES, VERTEXES), and each face's colour is sampled per pixel " +
+    "from its baked lightmap grid with a perspective-correct UV; the face average and the " +
+    "material colour are fallbacks. Faces without a lightmap use the stable material colour " +
+    "as render_vmf_view does. No textures, props, fog or particles: this shows form, occlusion " +
+    "and baked light. Camera convention is Source's (angles pitch/yaw/roll, fov horizontal). " +
     "Omit origin/angles to frame the whole map.",
   realm: "map",
   inputSchema: {
@@ -92,14 +92,29 @@ export const renderBspViewTool = defineTool({
       lighting !== "none" && lightingLump && !lightingLump.compressed && lightingLump.length > 0
         ? readAt(path, lightingLump.offset, lightingLump.length)
         : null;
-    const stride = useHdr ? 4 : 3;
-    const gradientFor = (polygon: (typeof polygons.faces)[number]): Array<[number, number, number]> | null => {
+    const stride = 4;
+    const lightmapFor = (
+      polygon: (typeof polygons.faces)[number],
+    ): NonNullable<SceneFace["lightmap"]> | null => {
       if (!lightingBytes) return null;
       const surface = surfaceByIndex.get(polygon.index);
       const lightFace = lightFaceByIndex.get(polygon.index);
       if (!surface || !lightFace || !lightFace.hasLightmap) return null;
       const [sizeX, sizeY] = lightFace.sizeLuxels;
       if (sizeX < 0 || sizeY < 0) return null;
+      const width = sizeX + 1;
+      const height = sizeY + 1;
+      const bytes = width * height * stride;
+      if (lightFace.lightofs < 0 || lightFace.lightofs + bytes > lightingBytes.length) {
+        return null;
+      }
+      const data = new Uint8Array(width * height * 3);
+      for (let luxel = 0; luxel < width * height; luxel += 1) {
+        const at = lightFace.lightofs + luxel * stride;
+        data[luxel * 3] = lightingBytes[at]!;
+        data[luxel * 3 + 1] = lightingBytes[at + 1]!;
+        data[luxel * 3 + 2] = lightingBytes[at + 2]!;
+      }
       const [uVec, vVec] = surface.textureVecs;
       const sValues = polygon.points.map(
         (point) => point[0] * uVec[0] + point[1] * uVec[1] + point[2] * uVec[2] + uVec[3],
@@ -112,23 +127,19 @@ export const renderBspViewTool = defineTool({
       const tMin = Math.min(...tValues);
       const tMax = Math.max(...tValues);
       if (sMax - sMin <= 0 || tMax - tMin <= 0) return null;
-      const colours: Array<[number, number, number]> = [];
-      for (let index = 0; index < polygon.points.length; index += 1) {
-        const u = Math.round(((sValues[index]! - sMin) / (sMax - sMin)) * sizeX);
-        const v = Math.round(((tValues[index]! - tMin) / (tMax - tMin)) * sizeY);
-        const at = lightFace.lightofs + (v * (sizeX + 1) + u) * stride;
-        if (at < 0 || at + 3 > lightingBytes.length) return null;
-        colours.push([lightingBytes[at]!, lightingBytes[at + 1]!, lightingBytes[at + 2]!]);
-      }
-      return colours;
+      const uvs: Array<[number, number]> = sValues.map((s, index) => [
+        ((s - sMin) / (sMax - sMin)) * sizeX,
+        ((tValues[index]! - tMin) / (tMax - tMin)) * sizeY,
+      ]);
+      return { width, height, data, uvs };
     };
     let gradientFaces = 0;
 
     const faces: SceneFace[] = polygons.faces.map((polygon) => {
       const sky = (polygon.flags & 0x4) !== 0 || isSkyMaterial(polygon.material);
       const average = averages.averages.get(polygon.index);
-      const gradient = sky ? null : gradientFor(polygon);
-      if (gradient) gradientFaces += 1;
+      const lightmap = sky ? null : lightmapFor(polygon);
+      if (lightmap) gradientFaces += 1;
       return {
         sideId: null,
         material: polygon.material,
@@ -140,7 +151,7 @@ export const renderBspViewTool = defineTool({
           : average
             ? { colour: average, shade: 1 }
             : {}),
-        ...(gradient ? { colours: gradient } : {}),
+        ...(lightmap ? { lightmap } : {}),
       };
     });
     const brush: SceneBrush = {
@@ -196,9 +207,9 @@ export const renderBspViewTool = defineTool({
     const fb = render(scene, camera);
     const png = encodePng(fb.rgb, fb.width, fb.height);
     notes.push(
-      "Face colour is the baked lightmap, sampled at each polygon corner and interpolated " +
-        "across it. No textures, props, fog or particles: this shows compiled form, occlusion " +
-        "and light, not what the place looks like.",
+      "Face colour is the baked lightmap, sampled per pixel from the face's grid with a " +
+        "perspective-correct UV. No textures, props, fog or particles: this shows compiled " +
+        "form, occlusion and light, not what the place looks like.",
     );
     if (lighting === "none") {
       notes.push("Lighting was disabled, so faces use the stable material colour and one light.");

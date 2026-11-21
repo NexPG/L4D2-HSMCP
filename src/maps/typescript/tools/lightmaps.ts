@@ -6,8 +6,9 @@
  * toolkit can inspect it directly: average colour, darkest/brightest luxel, a few samples,
  * and — for one face — the lightmap as a PNG.
  *
- * Source stores three bytes per luxel in the LIGHTING lump; the HDR variant is a separate
- * lump with the same layout. Compressed BSPs are refused rather than decoded as records.
+ * Source stores four bytes per luxel in the LIGHTING lump (RGB plus alpha for LDR, RGBE for
+ * HDR); the first three bytes are the visible RGB. Compressed BSPs are refused rather than
+ * decoded as records.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -103,9 +104,8 @@ export const readBspLightmapsTool = defineTool({
       );
     }
     const bytes = readAt(path, lump.offset, lump.length);
-    const stride = useHdr ? 4 : 3;
+    const stride = 4;
     const pack = (raw: Uint8Array, luxels: number): Uint8Array => {
-      if (stride === 3) return raw;
       const rgb = new Uint8Array(luxels * 3);
       for (let i = 0; i < luxels; i += 1) {
         rgb[i * 3] = raw[i * 4]!;

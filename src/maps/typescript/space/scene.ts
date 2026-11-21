@@ -150,6 +150,17 @@ export interface SceneFace {
   shade?: number;
   /** Per-corner baked colours, parallel to `loop`; used instead of `colour` when present. */
   colours?: Array<[number, number, number]>;
+  /**
+   * A baked lightmap grid for per-pixel sampling, with one UV per `loop` corner. When both
+   * this and `colours` are present, the grid wins.
+   */
+  lightmap?: {
+    width: number;
+    height: number;
+    /** Packed RGB, row-major, three bytes per luxel. */
+    data: Uint8Array;
+    uvs: Array<[number, number]>;
+  };
 }
 
 export interface SceneBrush {

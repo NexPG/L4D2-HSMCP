@@ -65,6 +65,13 @@ export interface DisplayFace {
   colour: [number, number, number];
   /** Per-corner colours, parallel to `points`; takes precedence over `colour`. */
   colours?: Array<[number, number, number]>;
+  /** Per-pixel lightmap grid, with UVs parallel to `points` after near clipping. */
+  lightmap?: {
+    width: number;
+    height: number;
+    data: Uint8Array;
+    uvs: Array<[number, number]>;
+  };
   /** Whether this face is a piece of sky rather than a piece of the world. */
   sky: boolean;
 }
@@ -155,6 +162,34 @@ function clipNear(points: readonly ViewPoint[], near: number): ViewPoint[] {
   return out;
 }
 
+/** The same clip, carrying one UV per corner so a lightmap survives a near-plane cut. */
+function clipNearWithUv(
+  points: readonly ViewPoint[],
+  uvs: ReadonlyArray<readonly [number, number]>,
+  near: number,
+): { points: ViewPoint[]; uvs: Array<[number, number]> } {
+  const outPoints: ViewPoint[] = [];
+  const outUvs: Array<[number, number]> = [];
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]!;
+    const b = points[(i + 1) % points.length]!;
+    const ua = uvs[i]!;
+    const ub = uvs[(i + 1) % points.length]!;
+    const aIn = a.z >= near;
+    const bIn = b.z >= near;
+    if (aIn) {
+      outPoints.push(a);
+      outUvs.push([ua[0], ua[1]]);
+    }
+    if (aIn !== bIn) {
+      const t = (near - a.z) / (b.z - a.z);
+      outPoints.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: near });
+      outUvs.push([ua[0] + (ub[0] - ua[0]) * t, ua[1] + (ub[1] - ua[1]) * t]);
+    }
+  }
+  return { points: outPoints, uvs: outUvs };
+}
+
 /**
  * The faces a camera could see, in view space, shaded -- everything before rasterisation.
  *
@@ -193,7 +228,22 @@ export function displayList(scene: Scene, camera: Camera): {
       }
 
       const view = face.loop.map((p) => toView(camera, basis, p));
-      const clipped = clipNear(view, camera.near);
+      let clipped: ViewPoint[];
+      let lightmap: DisplayFace["lightmap"];
+      if (face.lightmap && face.lightmap.uvs.length === face.loop.length) {
+        const cut = clipNearWithUv(view, face.lightmap.uvs, camera.near);
+        clipped = cut.points;
+        if (clipped.length >= 3) {
+          lightmap = {
+            width: face.lightmap.width,
+            height: face.lightmap.height,
+            data: face.lightmap.data,
+            uvs: cut.uvs,
+          };
+        }
+      } else {
+        clipped = clipNear(view, camera.near);
+      }
       if (clipped.length < 3) {
         behind += 1;
         continue;
@@ -212,6 +262,7 @@ export function displayList(scene: Scene, camera: Camera): {
         shade,
         colour: face.colour ?? colourFor(face.material),
         ...(face.colours ? { colours: face.colours } : {}),
+        ...(lightmap ? { lightmap } : {}),
         sky: isSkyMaterial(face.material),
       });
     }
@@ -245,6 +296,33 @@ export function displayList(scene: Scene, camera: Camera): {
   return { faces, considered, culled, behind };
 }
 
+/** Bilinear lightmap sample; the grid is RGB, three bytes per luxel. */
+function sampleLightmap(
+  lightmap: NonNullable<DisplayFace["lightmap"]>,
+  u: number,
+  v: number,
+): [number, number, number] {
+  const x = Math.max(0, Math.min(lightmap.width - 1, u));
+  const y = Math.max(0, Math.min(lightmap.height - 1, v));
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const x1 = Math.min(lightmap.width - 1, x0 + 1);
+  const y1 = Math.min(lightmap.height - 1, y0 + 1);
+  const fx = x - x0;
+  const fy = y - y0;
+  const at = (px: number, py: number): number => (py * lightmap.width + px) * 3;
+  const c00 = at(x0, y0);
+  const c10 = at(x1, y0);
+  const c01 = at(x0, y1);
+  const c11 = at(x1, y1);
+  const blend = (offset: number): number => {
+    const top = lightmap.data[c00 + offset]! * (1 - fx) + lightmap.data[c10 + offset]! * fx;
+    const bottom = lightmap.data[c01 + offset]! * (1 - fx) + lightmap.data[c11 + offset]! * fx;
+    return Math.max(0, Math.min(255, Math.round(top * (1 - fy) + bottom * fy)));
+  };
+  return [blend(0), blend(1), blend(2)];
+}
+
 /** Fills a convex polygon with a z-buffer in 1/z, which interpolates linearly on screen. */
 function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
   const { sx, sy } = planeScale(camera);
@@ -270,6 +348,9 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
 
   const perVertex =
     face.colours && face.colours.length === n ? face.colours : null;
+  const lightmap =
+    face.lightmap && face.lightmap.uvs.length === n ? face.lightmap : null;
+  const uvs = lightmap?.uvs ?? null;
   const baseR = Math.round(face.colour[0] * face.shade);
   const baseG = Math.round(face.colour[1] * face.shade);
   const baseB = Math.round(face.colour[2] * face.shade);
@@ -289,6 +370,10 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
     let rHi = baseR;
     let gHi = baseG;
     let bHi = baseB;
+    let uzLo = 0;
+    let vzLo = 0;
+    let uzHi = 0;
+    let vzHi = 0;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const ya = py[i]!;
@@ -298,6 +383,14 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       const t = (scanY - ya) / (yb - ya);
       const x = px[i]! + (px[j]! - px[i]!) * t;
       const z = iz[i]! + (iz[j]! - iz[i]!) * t;
+      let uz = 0;
+      let vz = 0;
+      if (lightmap && uvs) {
+        const a = uvs[i]!;
+        const b = uvs[j]!;
+        uz = a[0] * iz[i]! + (b[0] * iz[j]! - a[0] * iz[i]!) * t;
+        vz = a[1] * iz[i]! + (b[1] * iz[j]! - a[1] * iz[i]!) * t;
+      }
       let cr = baseR;
       let cg = baseG;
       let cb = baseB;
@@ -311,6 +404,8 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       if (x < xLo) {
         xLo = x;
         izLo = z;
+        uzLo = uz;
+        vzLo = vz;
         rLo = cr;
         gLo = cg;
         bLo = cb;
@@ -318,6 +413,8 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       if (x > xHi) {
         xHi = x;
         izHi = z;
+        uzHi = uz;
+        vzHi = vz;
         rHi = cr;
         gHi = cg;
         bHi = cb;
@@ -336,15 +433,25 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       fb.invDepth[at] = invZ;
       fb.ids[at] = face.brushId;
       fb.sky[at] = face.sky ? 1 : 0;
-      fb.rgb[at * 3] = perVertex
-        ? Math.max(0, Math.min(255, Math.round(rLo + (rHi - rLo) * t)))
-        : baseR;
-      fb.rgb[at * 3 + 1] = perVertex
-        ? Math.max(0, Math.min(255, Math.round(gLo + (gHi - gLo) * t)))
-        : baseG;
-      fb.rgb[at * 3 + 2] = perVertex
-        ? Math.max(0, Math.min(255, Math.round(bLo + (bHi - bLo) * t)))
-        : baseB;
+      let rr: number;
+      let gg: number;
+      let bb: number;
+      if (lightmap) {
+        const u = (uzLo + (uzHi - uzLo) * t) / invZ;
+        const v = (vzLo + (vzHi - vzLo) * t) / invZ;
+        [rr, gg, bb] = sampleLightmap(lightmap, u, v);
+      } else if (perVertex) {
+        rr = Math.max(0, Math.min(255, Math.round(rLo + (rHi - rLo) * t)));
+        gg = Math.max(0, Math.min(255, Math.round(gLo + (gHi - gLo) * t)));
+        bb = Math.max(0, Math.min(255, Math.round(bLo + (bHi - bLo) * t)));
+      } else {
+        rr = baseR;
+        gg = baseG;
+        bb = baseB;
+      }
+      fb.rgb[at * 3] = rr;
+      fb.rgb[at * 3 + 1] = gg;
+      fb.rgb[at * 3 + 2] = bb;
       drew = true;
     }
   }

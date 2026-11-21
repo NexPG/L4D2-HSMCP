@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.149-alpha - 2026-11-21
+
+- **Per-pixel lightmap sampling in `render_bsp_view`.** The rasteriser interpolates
+  perspective-correct lightmap UVs across the polygon and samples the face grid bilinearly;
+  a face cut by the near plane keeps its UVs. Corner colours remain as a fallback for a face
+  without a readable grid, and the face average/material colour is the last resort.
+- **Both lightmap formats are four bytes per luxel.** LDR is RGB+alpha and HDR is RGBE in
+  L4D2; the first three bytes are visible RGB. The LDR reader had assumed three and produced
+  shifted/garbage samples on a vrad-lit test room. Verified: a smoothly lit wall/floor/ceiling
+  gradient; `c1m1_hotel` has 8,828 per-pixel lightmapped faces.
+- **Tool count: 228.** Tests: 182 files, 1636 passed, 33 skipped.
+
 ## 0.0.148-alpha - 2026-11-21
 
 - **`render_bsp_view` interpolates the lightmap, not just its average.** Each face corner

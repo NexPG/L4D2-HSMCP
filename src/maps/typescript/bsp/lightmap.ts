@@ -144,8 +144,8 @@ export function readLightmapBudget(
 
 /**
  * Per-face average RGB from the baked lighting lump, for a renderer that wants a face colour
- * without a texture. LDR is three bytes per luxel and HDR four; only the first three bytes of
- * an HDR luxel are the visible RGB.
+ * without a texture. Both LDR and HDR store four bytes per luxel in L4D2 (LDR is RGB+alpha,
+ * HDR is RGBE); only the first three bytes are the visible RGB.
  */
 export function readFaceLightmapAverages(
   path: string,
@@ -158,7 +158,7 @@ export function readFaceLightmapAverages(
     return { source: hdr ? "hdr" : "ldr", averages };
   }
   const bytes = readAt(path, lump.offset, lump.length);
-  const stride = hdr ? 4 : 3;
+  const stride = 4;
   for (const face of budget.faces) {
     if (!face.hasLightmap) continue;
     const length = face.luxels * stride;
