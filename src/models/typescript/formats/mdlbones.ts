@@ -158,6 +158,62 @@ export function readMdlBones(mdl: Buffer): ModelBone[] {
   return bones;
 }
 
+/** Quaternion product, in the engine's `x y z w` order. */
+export function quatMultiply(
+  a: [number, number, number, number],
+  b: [number, number, number, number],
+): [number, number, number, number] {
+  return [
+    a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+    a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+  ];
+}
+
+export function rotateByQuaternion(
+  q: [number, number, number, number],
+  v: Vec3,
+): Vec3 {
+  const [x, y, z, w] = q;
+  const ix = w * v[0] + y * v[2] - z * v[1];
+  const iy = w * v[1] + z * v[0] - x * v[2];
+  const iz = w * v[2] + x * v[1] - y * v[0];
+  const iw = -x * v[0] - y * v[1] - z * v[2];
+  return [
+    ix * w + iw * -x + iy * -z - iz * -y,
+    iy * w + iw * -y + iz * -x - ix * -z,
+    iz * w + iw * -z + ix * -y - iy * -x,
+  ];
+}
+
+export interface AbsoluteBone {
+  position: Vec3;
+  rotation: [number, number, number, number];
+}
+
+/** Resolves parent-relative bind transforms into model space. */
+export function absoluteBoneTransforms(bones: ModelBone[]): AbsoluteBone[] {
+  const out: AbsoluteBone[] = [];
+  for (const bone of bones) {
+    if (bone.parent < 0 || !out[bone.parent]) {
+      out.push({ position: [...bone.position] as Vec3, rotation: [...bone.rotation] });
+      continue;
+    }
+    const parent = out[bone.parent]!;
+    const offset = rotateByQuaternion(parent.rotation, bone.position);
+    out.push({
+      position: [
+        parent.position[0] + offset[0],
+        parent.position[1] + offset[1],
+        parent.position[2] + offset[2],
+      ],
+      rotation: quatMultiply(parent.rotation, bone.rotation),
+    });
+  }
+  return out;
+}
+
 export function eulerToQuaternion(x: number, y: number, z: number): [number, number, number, number] {
   const cx = Math.cos(x / 2);
   const sx = Math.sin(x / 2);

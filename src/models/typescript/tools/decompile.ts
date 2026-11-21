@@ -29,9 +29,16 @@ import { openGameVpk } from "../../../assets/typescript/game/vpkcontent.js";
 import { parseModelGeometry } from "../formats/mdlmesh.js";
 import type { ModelGeometry, ModelMesh, ModelVertex, Vec3 } from "../formats/mdlmesh.js";
 import { modelSiblings } from "../../../assets/typescript/game/models.js";
-import { quaternionToEuler, readMdlBones, readModelHeaderInfo } from "../formats/mdlbones.js";
+import {
+  absoluteBoneTransforms,
+  quaternionToEuler,
+  readMdlBones,
+  readModelHeaderInfo,
+  rotateByQuaternion,
+} from "../formats/mdlbones.js";
 import type { ModelBone } from "../formats/mdlbones.js";
 import { readPhy, readPhyGeometry, readPhyText } from "../formats/phy.js";
+import { readEyeData } from "../formats/mdleyes.js";
 import type { PhyText } from "../formats/phy.js";
 import { flexRuleExpression } from "../formats/mdlflex.js";
 import { buildVta } from "../formats/mdlvta.js";
@@ -250,69 +257,6 @@ interface CollisionModel {
   warnings: string[];
 }
 
-function quatMultiply(
-  a: [number, number, number, number],
-  b: [number, number, number, number],
-): [number, number, number, number] {
-  return [
-    a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
-    a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
-    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
-    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
-  ];
-}
-
-function rotateByQuaternion(
-  q: [number, number, number, number],
-  v: Vec3,
-): Vec3 {
-  const [x, y, z, w] = q;
-  const ix = w * v[0] + y * v[2] - z * v[1];
-  const iy = w * v[1] + z * v[0] - x * v[2];
-  const iz = w * v[2] + x * v[1] - y * v[0];
-  const iw = -x * v[0] - y * v[1] - z * v[2];
-  return [
-    ix * w + iw * -x + iy * -z - iz * -y,
-    iy * w + iw * -y + iz * -x - ix * -z,
-    iz * w + iw * -z + ix * -y - iy * -x,
-  ];
-}
-
-/** Resolves parent-relative bind transforms into model space for a jointed PHY. */
-function absoluteBones(
-  bones: ModelBone[],
-): Array<{ position: Vec3; rotation: [number, number, number, number] }> {
-  const out: Array<{ position: Vec3; rotation: [number, number, number, number] }> = [];
-  for (const bone of bones) {
-    if (bone.parent < 0 || !out[bone.parent]) {
-      out.push({ position: [...bone.position] as Vec3, rotation: [...bone.rotation] });
-      continue;
-    }
-    const parent = out[bone.parent]!;
-    const offset = rotateByQuaternion(parent.rotation, bone.position);
-    out.push({
-      position: [
-        parent.position[0] + offset[0],
-        parent.position[1] + offset[1],
-        parent.position[2] + offset[2],
-      ],
-      rotation: quatMultiply(parent.rotation, bone.rotation),
-    });
-  }
-  return out;
-}
-
-/**
- * Writes the collision SMD from a `.phy`.
- *
- * Two conventions, both verified by recompiling and comparing the PHY back:
- * - `$collisionmodel` (one solid, no parents) stores model-space vertices in Havok axes and
- *   metres, so `(x, -y, z) / 0.0254` is the whole conversion.
- * - `$collisionjoints` stores each solid in its bone's local frame, in metres, with an
- *   axis convention of its own: `(x, z, -y) / 0.0254`, then the bone's absolute bind
- *   transform. A straight dump compiles a model with no collision at all (studiomdl writes
- *   a zero-byte collision block), which is how this was found.
- */
 function collisionSmd(
   phyBytes: Buffer,
   bones: ModelBone[],
@@ -366,7 +310,7 @@ function collisionSmd(
       );
     }
     lines.push("end", "triangles");
-    const absolute = absoluteBones(bones);
+    const absolute = absoluteBoneTransforms(bones);
     for (let index = 0; index < geometry.solids.length; index += 1) {
       const solid = geometry.solids[index]!;
       const bone = byName.get(textSolids[index]!.name.toLowerCase())!;
@@ -491,7 +435,11 @@ interface FlexBodyDef {
 }
 
 /** `flexcontroller` and `%rule` lines rebuilt from the MDL's controller and postfix-op lists. */
-function flexQcLines(geometry: ModelGeometry, warnings: string[]): string[] {
+function flexQcLines(
+  geometry: ModelGeometry,
+  warnings: string[],
+  declaredDescriptors: ReadonlySet<string>,
+): string[] {
   const lines: string[] = [];
   for (const controller of geometry.flex.controllers) {
     const type = controller.type.replace(/["\s]+/g, "");
@@ -504,6 +452,11 @@ function flexQcLines(geometry: ModelGeometry, warnings: string[]): string[] {
   for (const rule of geometry.flex.rules) {
     const descriptor = geometry.flex.descriptors[rule.flex];
     if (!descriptor) continue;
+    const safe = descriptor.replace(/[^A-Za-z0-9_]/g, "");
+    // A rule can drive a descriptor that no flex frame moves (`%biter = bite` on the
+    // survivors). That descriptor exists only as a local variable, and studiomdl rejects
+    // the rule with "Rule for unknown flex" unless `localvar` names it first.
+    if (!declaredDescriptors.has(descriptor)) lines.push(`\tlocalvar ${safe}`);
     const expression = flexRuleExpression(rule, geometry.flex);
     if (!expression) {
       warnings.push(
@@ -512,7 +465,7 @@ function flexQcLines(geometry: ModelGeometry, warnings: string[]): string[] {
       );
       continue;
     }
-    lines.push(`\t%${descriptor.replace(/[^A-Za-z0-9_]/g, "")} = ${expression}`);
+    lines.push(`\t%${safe} = ${expression}`);
   }
   return lines;
 }
@@ -599,7 +552,11 @@ function qcText(
       (frame) => `\t\tflex "${frame.name.replace(/"/g, "")}" frame ${frame.frame}`,
     ),
     "\t}",
-    ...flexQcLines(geometry, warnings),
+    ...flexQcLines(
+      geometry,
+      warnings,
+      new Set(body.frames.map((frame) => frame.name)),
+    ),
   ];
   const modelBlock = (name: string, file: string, body: FlexBodyDef): string[] => [
     `$model "${name.replace(/"/g, "")}" "${file}" {`,
@@ -1171,6 +1128,16 @@ export const decompileModelTool = defineTool({
 
     const bodyFiles = new Set<string>();
     const warnings: string[] = [];
+    const eyeData = readEyeData(mdlBytes);
+    if (eyeData.eyeballs.length > 0 || eyeData.mouths.length > 0) {
+      warnings.push(
+        `The .mdl has ${eyeData.eyeballs.length} eyeball(s) and ${eyeData.mouths.length} ` +
+          "mouth(s). L4D2's studiomdl has no `$eyeball`/`$eyelid`/`$mouth` command (both the " +
+          "stock and StudioMDL++ binaries reject it), so they are not written; eyes in this " +
+          "branch are authored in DMX. The model's eyelid flexes are still written with the " +
+          "other flexes.",
+      );
+    }
     const bodyGroups: BodyGroupDef[] = [];
     const bodySources: Array<{ file: string; meshes: ModelMesh[] }> = [];
     const isFlexBody = (meshes: ModelMesh[]): boolean =>

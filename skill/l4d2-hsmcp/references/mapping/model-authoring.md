@@ -123,7 +123,9 @@ LODs use a `$shadowlod` block. Attachments and custom hitbox sets are written as
 compile can rebuild it from the mesh. Models with more than one skin family get a
 `$texturegroup "skinfamilies"` block built from the MDL's skin table. External `.ani` clips
 are decoded, including the frame-by-bone layout; multi-blend sequences become `$sequence`
-blocks with one SMD per animation, `blendwidth` and `blend` pose ranges. Flex deltas are
+blocks with one SMD per animation, `blendwidth` and `blend` pose ranges. Eyes and mouths are readable (`read_model_eyes`) but not writable: L4D2's studiomdl has no
+`$eyeball`/`$eyelid`/`$mouth` command, so a decompile warns that a recompile loses them.
+Flex deltas are
 written as a `.vta` next to the reference SMD, referenced from a `$model { flexfile ... }`
 block: the basis frame lists every fixed LOD-0 vertex, each frame holds the deformed
 position/normal, and the QC carries the original `flexcontroller` lines and the rules

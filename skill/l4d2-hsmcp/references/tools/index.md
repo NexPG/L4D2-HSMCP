@@ -1,6 +1,6 @@
 # Tool catalogue
 
-240 tools. This page groups them by the job you are doing; each tool's own description is the
+241 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -153,6 +153,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_surfaceprops` | the game's `scripts/surfaceproperties_*` table: 91 properties, base chains, physics and sound fields |
 | `check_surfaceprop` | is a name (or a model's `$surfaceprop`) in that table, what does it inherit, which `gamematerial` |
 | `read_model_flexes` | flex descriptors, controllers, rules and sampled per-vertex deltas of one `.mdl` |
+| `read_model_eyes` | eyeballs and mouths: bone, bone-local origin, radius, lid flexes/targets, material guess; says why L4D2 cannot write them in a QC |
 
 ## Build and edit
 
