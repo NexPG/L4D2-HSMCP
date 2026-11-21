@@ -28,7 +28,8 @@ files in this repository; the upstream file is named so a port can be re-checked
 ### Code that was rewritten, not vendored
 
 The upstream source trees are no longer in the repository. Every capability the toolkit exposes
-is implemented in TypeScript, Python or PowerShell.
+is implemented in this repository's own source, in whatever language fits the job; most of it
+is currently TypeScript, Python and PowerShell.
 
 That does not erase the notices above. A translation is a derivative work: the three
 sourcepp-derived files named in the table, and the shell-channel port from EpicMorg, still

@@ -5,10 +5,15 @@ A directory here is a **piece of the toolkit**, not a language and not an upstre
 map; `models/` is everything about a model. Finding the code for a job means asking what the
 job is, not what it was written in.
 
-## The language rule
+## Languages by fit
 
-The project is **TypeScript, Python and PowerShell**, and nothing else. A module that needs
-more than one language splits by language underneath:
+There is **no fixed language list**. TypeScript, Python and PowerShell carry most of the
+toolkit because they fit the MCP server, the sidecar and Windows automation, but a job that
+is better served by another language may use it: C++ for a Source/Hammer++ ABI, Rust for a
+parser, C# for a Windows-only library, and so on. Convenience and a smaller, clearer
+implementation decide; a language is not a rule.
+
+A module that needs more than one language splits by language underneath:
 
 ```
 src/hammer/
@@ -19,8 +24,8 @@ src/hammer/
 
 Those directories hold **source files only**. No assets, no licence texts, no build output,
 no module of their own inside them. TypeScript is compiled to `dist/` by the repository's
-own toolchain; Python is interpreted by the sidecar interpreter. There is no build manifest
-inside a language directory because there is no native build to describe.
+own toolchain; Python is interpreted by the sidecar interpreter; PowerShell is run directly.
+Any other language follows its own build, and its build output lives outside `src/`.
 
 Everything that is not source has a home of its own:
 
