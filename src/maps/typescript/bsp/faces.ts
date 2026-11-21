@@ -45,6 +45,8 @@ export interface FaceSurface {
   area: number;
   /** `-1` before vrad has written lightmap samples. */
   lightofs: number;
+  /** `m_LightmapTextureMinsInLuxels`: the s/t origin of this face's lightmap grid. */
+  lightmapMins: [number, number];
   /** `m_LightmapTextureSizeInLuxels`, which is the texture size minus one on each axis. */
   sizeLuxels: [number, number];
   /** `(sizeX + 1) * (sizeY + 1)`, the conventional luxel count. */
@@ -163,6 +165,10 @@ export function readBspFaces(path: string, filter: FaceFilter = {}): FacesReport
       facesView.getInt32(at + 36, true),
       facesView.getInt32(at + 40, true),
     ];
+    const lightmapMins: [number, number] = [
+      facesView.getInt32(at + 28, true),
+      facesView.getInt32(at + 32, true),
+    ];
     const face: FaceSurface = {
       index: i,
       material,
@@ -172,6 +178,7 @@ export function readBspFaces(path: string, filter: FaceFilter = {}): FacesReport
       smoothingGroups: facesView.getUint32(at + 52, true),
       area: facesView.getFloat32(at + 24, true),
       lightofs: facesView.getInt32(at + 20, true),
+      lightmapMins,
       sizeLuxels,
       luxels:
         sizeLuxels[0] >= 0 && sizeLuxels[1] >= 0

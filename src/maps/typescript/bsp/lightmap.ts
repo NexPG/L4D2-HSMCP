@@ -25,6 +25,8 @@ export interface FaceLightmap {
   lightofs: number;
   /** vrad actually wrote lightmap data for this face (`lightofs >= 0`). */
   hasLightmap: boolean;
+  /** `m_LightmapTextureMinsInLuxels`: the s/t origin of the grid. */
+  lightmapMins: [number, number];
   /** (sizeInLuxels + 1) in each axis, multiplied -- Source's own off-by-one convention. */
   luxels: number;
   sizeLuxels: [number, number];
@@ -108,6 +110,10 @@ export function readLightmapBudget(
       facesView.getInt32(at + 36, true),
       facesView.getInt32(at + 40, true),
     ];
+    const lightmapMins: [number, number] = [
+      facesView.getInt32(at + 28, true),
+      facesView.getInt32(at + 32, true),
+    ];
 
     const flags = texinfo >= 0 && texinfo < texinfoCount ? texinfoFlags[texinfo]! : 0;
     const surfaceExcludesLightmap = (flags & NO_LIGHTMAP_FLAGS) !== 0;
@@ -121,7 +127,16 @@ export function readLightmapBudget(
       if (area > 0) litAreaUnits += area;
     }
 
-    faces.push({ index: i, texinfo, lightofs, hasLightmap, luxels, sizeLuxels, area });
+    faces.push({
+      index: i,
+      texinfo,
+      lightofs,
+      hasLightmap,
+      lightmapMins,
+      luxels,
+      sizeLuxels,
+      area,
+    });
   }
 
   return { header, faceCount, facesWithLightmap, totalLuxels, litAreaUnits, faces };

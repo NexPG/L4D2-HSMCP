@@ -148,6 +148,8 @@ export interface SceneFace {
   colour?: [number, number, number];
   /** A baked shade, or 1 for a face whose colour already contains its lighting. */
   shade?: number;
+  /** Per-corner baked colours, parallel to `loop`; used instead of `colour` when present. */
+  colours?: Array<[number, number, number]>;
 }
 
 export interface SceneBrush {

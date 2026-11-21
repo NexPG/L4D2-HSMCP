@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.148-alpha - 2026-11-21
+
+- **`render_bsp_view` interpolates the lightmap, not just its average.** Each face corner
+  samples the baked grid at its texture-space position; `SceneFace`/`DisplayFace` carry
+  per-corner colours and the scanline filler interpolates them. Faces without a readable
+  grid still use the average/material fallback. Verified on `c1m1_hotel`: 8,829 faces with
+  HDR averages, 8,828 with per-corner gradients; a vrad-lit test room renders a smooth
+  wall/floor/ceiling gradient.
+- **Tool count: 228.** Tests: 182 files, 1636 passed, 33 skipped.
+
 ## 0.0.147-alpha - 2026-11-21
 
 - **`render_bsp_view` renders the compiled map.** It reconstructs face loops from

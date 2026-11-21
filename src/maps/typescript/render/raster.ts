@@ -63,6 +63,8 @@ export interface DisplayFace {
   /** 0..1, the Lambert term. */
   shade: number;
   colour: [number, number, number];
+  /** Per-corner colours, parallel to `points`; takes precedence over `colour`. */
+  colours?: Array<[number, number, number]>;
   /** Whether this face is a piece of sky rather than a piece of the world. */
   sky: boolean;
 }
@@ -209,6 +211,7 @@ export function displayList(scene: Scene, camera: Camera): {
         points: clipped,
         shade,
         colour: face.colour ?? colourFor(face.material),
+        ...(face.colours ? { colours: face.colours } : {}),
         sky: isSkyMaterial(face.material),
       });
     }
@@ -265,9 +268,11 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
   const y1 = Math.min(fb.height - 1, Math.floor(maxY - 0.5));
   if (y1 < y0) return false;
 
-  const r = Math.round(face.colour[0] * face.shade);
-  const g = Math.round(face.colour[1] * face.shade);
-  const b = Math.round(face.colour[2] * face.shade);
+  const perVertex =
+    face.colours && face.colours.length === n ? face.colours : null;
+  const baseR = Math.round(face.colour[0] * face.shade);
+  const baseG = Math.round(face.colour[1] * face.shade);
+  const baseB = Math.round(face.colour[2] * face.shade);
   let drew = false;
 
   for (let y = y0; y <= y1; y++) {
@@ -278,6 +283,12 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
     let xHi = -Infinity;
     let izLo = 0;
     let izHi = 0;
+    let rLo = baseR;
+    let gLo = baseG;
+    let bLo = baseB;
+    let rHi = baseR;
+    let gHi = baseG;
+    let bHi = baseB;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const ya = py[i]!;
@@ -287,13 +298,29 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       const t = (scanY - ya) / (yb - ya);
       const x = px[i]! + (px[j]! - px[i]!) * t;
       const z = iz[i]! + (iz[j]! - iz[i]!) * t;
+      let cr = baseR;
+      let cg = baseG;
+      let cb = baseB;
+      if (perVertex) {
+        const a = perVertex[i]!;
+        const b = perVertex[j]!;
+        cr = Math.max(0, Math.min(255, Math.round((a[0] + (b[0] - a[0]) * t) * face.shade)));
+        cg = Math.max(0, Math.min(255, Math.round((a[1] + (b[1] - a[1]) * t) * face.shade)));
+        cb = Math.max(0, Math.min(255, Math.round((a[2] + (b[2] - a[2]) * t) * face.shade)));
+      }
       if (x < xLo) {
         xLo = x;
         izLo = z;
+        rLo = cr;
+        gLo = cg;
+        bLo = cb;
       }
       if (x > xHi) {
         xHi = x;
         izHi = z;
+        rHi = cr;
+        gHi = cg;
+        bHi = cb;
       }
     }
     if (xLo > xHi) continue;
@@ -309,9 +336,15 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
       fb.invDepth[at] = invZ;
       fb.ids[at] = face.brushId;
       fb.sky[at] = face.sky ? 1 : 0;
-      fb.rgb[at * 3] = r;
-      fb.rgb[at * 3 + 1] = g;
-      fb.rgb[at * 3 + 2] = b;
+      fb.rgb[at * 3] = perVertex
+        ? Math.max(0, Math.min(255, Math.round(rLo + (rHi - rLo) * t)))
+        : baseR;
+      fb.rgb[at * 3 + 1] = perVertex
+        ? Math.max(0, Math.min(255, Math.round(gLo + (gHi - gLo) * t)))
+        : baseG;
+      fb.rgb[at * 3 + 2] = perVertex
+        ? Math.max(0, Math.min(255, Math.round(bLo + (bHi - bLo) * t)))
+        : baseB;
       drew = true;
     }
   }
