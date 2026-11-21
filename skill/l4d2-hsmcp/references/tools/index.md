@@ -1,6 +1,6 @@
 # Tool catalogue
 
-220 tools. This page groups them by the job you are doing; each tool's own description is the
+223 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -83,6 +83,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_saferoom_stock` | a row of medkit/pills/ammo/pistol stock |
 | `write_intro_camera` | `point_viewcontrol` + `logic_auto`, optional disable timer |
 | `write_rescue_closet` | `info_survivor_rescue` and ordered survivor positions |
+| `write_nav_attribute_region` | `func_nav_attribute_region` with CHECKPOINT/FINALE/RESCUE_CLOSET bits; the nav half of a closet |
 | `write_zombie_border` | the infected spawn border marker |
 | `check_campaign_wiring` | follow transitions across chapters: map, landmark pair, doors, finale |
 ## Compiled map
@@ -207,6 +208,16 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 
 `render_vmf_view` (one camera), `render_vmf_tour` (contact sheet per room), `render_vmf_plan`
 (dimensioned floor plan).
+
+## Runtime probes
+
+These answer "what exists in the running map", which a BSP or screenshot cannot.
+
+| Tool | Use |
+|---|---|
+| `write_entity_probe` | make a targetname echo on `OnMapSpawn` or a natural output; returns `run_map_test` markers |
+| `write_class_probe` | VScript counts of live entities by classname at chosen seconds, optional origins |
+| `write_nav_probe` | VScript samples the live nav mesh and tests `HasSpawnAttributes` |
 
 ## Source text and models
 

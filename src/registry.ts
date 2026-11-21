@@ -43,6 +43,9 @@ import { particleCheckTools } from "./assets/typescript/tools/particlecheck.js";
 import { dressingTools } from "./maps/typescript/tools/dressing.js";
 import { entityFamilyTools } from "./maps/typescript/tools/entityfamilies.js";
 import { entityProbeTools } from "./maps/typescript/tools/entityprobe.js";
+import { navAttributeTools } from "./maps/typescript/tools/navattrs.js";
+import { classProbeTools } from "./scripts/typescript/tools/classprobe.js";
+import { navProbeTools } from "./scripts/typescript/tools/navprobe.js";
 import { entityExtraTools } from "./maps/typescript/tools/entityextras.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
 import { exportMapTools } from "./maps/typescript/tools/exportmap.js";
@@ -176,6 +179,9 @@ export const allTools: AnyToolDef[] = [
   ...dressingTools,
   ...entityFamilyTools,
   ...entityProbeTools,
+  ...navAttributeTools,
+  ...classProbeTools,
+  ...navProbeTools,
   ...entityExtraTools,
   ...reviewTools,
   ...exportMapTools,

@@ -114,6 +114,26 @@ describe("write_entity_probe", () => {
     ).rejects.toThrow(/missing_name/);
   });
 
+  it("attaches a natural output and skips the OnMapSpawn logic", async () => {
+    const path = map();
+    await point(path, "point_viewcontrol", "camera");
+    const result = (await writeEntityProbeTool.handler(
+      { path, targets: ["camera"], event: "OnEndFollow", confirm: true } as never,
+      ctx,
+    )) as {
+      autoEntityId: number | null;
+      schedule: unknown[];
+      probes: Array<{ fire: string }>;
+    };
+    expect(result.autoEntityId).toBeNull();
+    expect(result.schedule).toEqual([]);
+    expect(result.probes[0]!.fire).toBe("OnEndFollow");
+    const text = readFileSync(path, "utf8");
+    expect(text).toContain("OnEndFollow");
+    expect(text).toContain("echo HSMCP_FOUND_camera");
+    expect(text).not.toContain("OnMapSpawn");
+  });
+
   it("sanitizes a targetname into an echo the console can carry", async () => {
     const path = map();
     await point(path, "info_player_start", "Intro Camera/01");

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **220 tools**.
+Last checked against the tool list on 21/11/2026: **223 tools**.
 
 ## The file itself
 
@@ -270,6 +270,9 @@ map and looking, or by not happening at all.
 | `write_brush_entity` | any brush entity by class, volume and outputs; no editor enum limits it |
 | `write_point_entity` | any point entity by class, origin and outputs |
 | `write_entity_probe` | no editor checks that a written entity exists in the running map |
+| `write_nav_attribute_region` | no editor writes nav attribute bits; Hammer's nav editing is a runtime mode |
+| `write_class_probe` | no editor counts Director-spawned entities after the map runs |
+| `write_nav_probe` | no editor reads attributes a region applied to the live nav mesh |
 | `check_model` | nothing: no editor validates a QC/MDL before or after the compiler |
 | `write_prop` | the prop tool with model/skin/solid checks |
 | `write_physics_constraint` | a constraint between two names, with the class keys passed through |

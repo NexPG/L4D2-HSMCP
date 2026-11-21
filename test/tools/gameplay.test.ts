@@ -56,6 +56,7 @@ describe("gameplay entities", () => {
         origin: [0, 0, 16],
         items: ["medkit", "pills", "ammo", "pistol"],
         targetname: "stock",
+        keyvalues: { spawnflags: "2" },
         confirm: true,
       } as never,
       ctx,
@@ -68,6 +69,9 @@ describe("gameplay entities", () => {
     ]);
     expect(r.targetnames).toEqual(["stock_medkit", "stock_pills", "stock_ammo", "stock_pistol"]);
     expect(entities(path).filter((entity) => r.ids.includes(entity.id!))).toHaveLength(4);
+    for (const entity of entities(path).filter((entry) => r.ids.includes(entry.id!))) {
+      expect(entity.keyvalues["spawnflags"]).toBe("2");
+    }
   });
 
   it("writes an intro camera, a logic_auto enable and a disable timer", async () => {

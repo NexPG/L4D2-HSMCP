@@ -5,6 +5,28 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.144-alpha - 2026-11-21
+
+- **Behaviour, not just presence.** `write_entity_probe` can attach its echo to a natural
+  output (`event: "OnEndFollow"`), so the intro camera is proven to take the view and release
+  it. On the test map the event fired at 21.0 s after `holdSeconds: 8`.
+- **Item spawners produce items.** `write_class_probe` writes a VScript think that counts live
+  entities by classname and optionally prints their origins. A `weapon_rifle_spawn` with
+  `Must Exist` (spawnflags 2) produced `weapon_rifle 1`. `write_saferoom_stock` now accepts
+  `keyvalues`, including that flag. Saferoom medkit/pills/ammo still counted 0 in the
+  flow-less test map: the team starts stocked and density is a probability, not a count.
+- **Rescue closet nav, proven at runtime.** `write_nav_attribute_region` writes
+  `func_nav_attribute_region` with the L4D2 bits (RESCUE_CLOSET 65536, CHECKPOINT 2048, ...);
+  `write_nav_probe` samples the live mesh with `TerrorNavArea.HasSpawnAttributes`. The rescue
+  area reported `HAS` at 23.5 s. The nav text dump written during generation still said 0,
+  because the region applies when the entity spawns.
+- **Borders: presence verified, Director side not isolated.** `write_zombie_border` is present
+  at runtime, but `director_force_panic_event` produced no infected in the flow-less two-room
+  test map, so the spawn-side effect is still unproven. `info_map_parameters` keys
+  (AmmoDensity 100, PainPillDensity 100, PistolDensity 0, MolotovDensity 50) reached the
+  entity lump; their population effect needs a flow and a round.
+- **Tool count: 223.** Tests: 176 files, 1630 passed, 33 skipped.
+
 ## 0.0.143-alpha - 2026-11-21
 
 - **A runtime oracle for entity wiring.** `write_entity_probe` adds an `OnUser1` echo to every

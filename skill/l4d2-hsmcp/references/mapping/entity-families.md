@@ -109,6 +109,30 @@ run_map_test(map, bsp, nav, markers, markerOrder: "any")
   saferoom medkit/pills/ammo, an intro camera with its `logic_auto` and timer, a rescue point
   and an infected border; all nine probes matched at 11.2 s.
 
+### Behaviour, not just presence
+
+| Question | Tool | Verified result |
+|---|---|---|
+| Did the intro camera actually take the view and release it? | `write_entity_probe(..., event: "OnEndFollow")` | `HSMCP_EVENT_probe_camera` fired at 21.0 s, after `holdSeconds: 8` |
+| Did a spawner create an item? | `write_class_probe(classes: ["weapon_rifle"])` | `HSMCP_CLASS 2 weapon_rifle 1` with `spawnflags 2` (Must Exist) |
+| Is the rescue closet nav marked? | `write_nav_attribute_region` + `write_nav_probe` | `HSMCP_NAV rescue HAS` at 23.5 s; the region applies on spawn, after the nav file was written |
+| Does a border exist and does the Director run? | presence probe + class probe | border present; `director_force_panic_event` produced no infected in a flow-less test room |
+
+Limits found in the same runs:
+
+- The saferoom medkit/pills/ammo spawners were present, but their classes counted 0. The test
+  map has no flow and survivors start with a medkit and pills, so the Director did not
+  populate them. Density is a probability, not a count.
+- `info_map_parameters` was written with `AmmoDensity 100`, `PainPillDensity 100`, `PistolDensity
+  0` and `MolotovDensity 50`; the keys reached the entity lump. Isolating their effect needs a
+  map with a flow and a round where the team is not already stocked.
+- `director_force_panic_event` at 5 s and 15 s produced no infected in the two-room test map.
+  The border's spawn-side effect is not proven; the entity and its runtime presence are.
+
+`write_class_probe` and `write_nav_probe` write VScript; install the `.nut` with
+`run_map_test(scriptsDir: ...)`. Their markers assert a nonzero final count or an attribute
+bit, while the raw `HSMCP_CLASS_POS` lines are in `console.log` for a position check.
+
 ## Verification
 
 `test/tools/entityfamilies.test.ts` writes each family and reads it back: the brush volume and

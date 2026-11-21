@@ -152,6 +152,13 @@ export const writeSaferoomStockTool = defineTool({
         "Prefix for each item's targetname, with the item kind appended (`<prefix>_medkit`). " +
           "A targetname is what makes the entity probeable at runtime.",
       ),
+    keyvalues: z
+      .record(z.string())
+      .default({})
+      .describe(
+        "Extra keys for every item spawner. `{ \"spawnflags\": \"2\" }` is `Must Exist`, " +
+          "which forces the Director to place the item instead of treating it as a candidate.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -175,6 +182,7 @@ export const writeSaferoomStockTool = defineTool({
       ...(args.targetname !== undefined
         ? { targetname: `${args.targetname}_${item}` }
         : {}),
+      ...(args.keyvalues ?? {}),
     }));
     const warnings: string[] = [];
     for (const kv of keyvalues) warnings.push(...(await fgdWarnings(kv.classname, kv, ctx)));

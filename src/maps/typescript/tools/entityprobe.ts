@@ -59,6 +59,14 @@ export const writeEntityProbeTool = defineTool({
       .min(1)
       .default("OnUser1")
       .describe("Entity output to attach; pair it with the matching FireUser input."),
+    event: z
+      .string()
+      .optional()
+      .describe(
+        "Attach the echo directly to this natural entity output instead of OnUser1. For " +
+          "example `OnEndFollow` proves a point_viewcontrol was enabled and then released; " +
+          "no logic_auto or schedule is needed.",
+      ),
     fireInput: z
       .string()
       .min(1)
@@ -106,6 +114,7 @@ export const writeEntityProbeTool = defineTool({
     const output = args.output ?? "OnUser1";
     const fireInput = args.fireInput ?? "FireUser1";
     const firstSecond = args.atSeconds ?? 2;
+    const naturalEvent = args.event ?? null;
     const path = resolveVmfInput(args.path, ctx.config);
     const entities = readEntities(readFileSync(path, "utf8")).entities;
     const byName = new Map<string, VmfEntity>();
@@ -171,7 +180,7 @@ export const writeEntityProbeTool = defineTool({
         entity.id!,
         [
           {
-            output: output,
+            output: naturalEvent ?? output,
             target: commandTarget,
             input: "Command",
             parameter: `echo ${echo}`,
@@ -186,11 +195,11 @@ export const writeEntityProbeTool = defineTool({
         entityId: entity.id,
         classname: entity.classname,
         echo,
-        fire: fireInput,
+        fire: naturalEvent ?? fireInput,
       });
     }
 
-    const fireOnSpawn = args.onMapSpawn ?? true;
+    const fireOnSpawn = naturalEvent === null && (args.onMapSpawn ?? true);
     let autoEntityId: number | null = null;
     if (fireOnSpawn) {
       const first = byName.get(args.targets[0]!.toLowerCase())!;
@@ -239,10 +248,12 @@ export const writeEntityProbeTool = defineTool({
       autoEntityId,
       commandTarget: commandTarget,
       probes,
-      schedule: probes.map((probe, index) => ({
-        atSeconds: firstSecond + index,
-        command: `ent_fire ${probe.target} ${probe.fire}`,
-      })),
+      schedule: naturalEvent
+        ? []
+        : probes.map((probe, index) => ({
+            atSeconds: firstSecond + index,
+            command: `ent_fire ${probe.target} ${probe.fire}`,
+          })),
       markers: probes.map((probe) => ({
         name: `probe_${probe.echo.toLowerCase()}`,
         // A lookahead, not a bare substring: `..._camera` must not be satisfied by
@@ -250,11 +261,15 @@ export const writeEntityProbeTool = defineTool({
         pattern: `${probe.echo}(?![A-Za-z0-9_])`,
         withinSeconds: 60,
       })),
-      nextStep: fireOnSpawn
-        ? "Compile the VMF, then call run_map_test with only these markers. The logic_auto " +
-          "fires each probe on OnMapSpawn; a missing marker is a real absence in the running map."
-        : "Compile the VMF, then call run_map_test with these schedule and markers arrays. " +
-          "A missing marker is a real absence in the running map, not a write failure.",
+      nextStep:
+        naturalEvent !== null
+          ? `Compile the VMF, then call run_map_test with these markers. The marker appears ` +
+            `when ${naturalEvent} fires on the entity; no schedule is needed.`
+          : fireOnSpawn
+            ? "Compile the VMF, then call run_map_test with only these markers. The logic_auto " +
+              "fires each probe on OnMapSpawn; a missing marker is a real absence in the running map."
+            : "Compile the VMF, then call run_map_test with these schedule and markers arrays. " +
+              "A missing marker is a real absence in the running map, not a write failure.",
     };
   },
 });
