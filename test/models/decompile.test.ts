@@ -14,6 +14,7 @@ import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { decompileModelTool } from "../../src/models/typescript/tools/decompile.js";
 import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";
 import { readAttachments, readHitboxSets } from "../../src/models/typescript/formats/mdlmeta.js";
+import { readAnimations, readSequences } from "../../src/models/typescript/formats/mdlanim.js";
 import { parseModelGeometry } from "../../src/models/typescript/formats/mdlmesh.js";
 import { loadGameModel, modelSiblings } from "../../src/assets/typescript/game/models.js";
 import { openGameVpk } from "../../src/assets/typescript/game/vpkcontent.js";
@@ -407,6 +408,50 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       source.lods.map((lod) => lod.switchDistance),
     );
     expect(rebuilt.lods.some((lod) => lod.switchDistance < 0)).toBe(true);
+  });
+
+  it("decodes sectioned sequences into animation SMDs", async () => {
+    const outDir = join(scratch, "camjoint");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "c1_chargerexit/car_camjoint.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/camjoint.mdl",
+      } as never,
+      ctx,
+    )) as { sequences: number; animationFiles: string[]; skippedSequences: unknown[] };
+    expect(r.sequences).toBe(7);
+    expect(r.animationFiles).toHaveLength(7);
+    expect(r.skippedSequences).toHaveLength(0);
+    const escape = readFileSync(join(outDir, "car_camjoint_escape_a.smd"), "latin1");
+    expect(escape.match(/^time /gm)).toHaveLength(180);
+  });
+
+  it.skipIf(!has.toolchain)("recompiles car_camjoint's sectioned clips", async () => {
+    const outDir = join(scratch, "camjoint-roundtrip");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "c1_chargerexit/car_camjoint.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/camjoint.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const rebuilt = readFileSync(join(outputModelDir(), "camjoint.mdl"));
+    const sequences = readSequences(rebuilt, readAnimations(rebuilt));
+    expect(sequences.find((sequence) => sequence.name === "escape_a")?.frameCount).toBe(180);
+    expect(sequences.find((sequence) => sequence.name === "escape_b")?.frameCount).toBe(195);
   });
 
   it("writes skin families as a texturegroup and keeps the family mapping", async () => {

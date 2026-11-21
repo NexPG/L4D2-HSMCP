@@ -8,8 +8,8 @@
  * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
  * alternative is written as its own SMD and `$bodygroup` block, and every VTX LOD becomes a
  * `$lod`/`replacemodel` line, and flex deltas become VTA files plus a `flexfile` block and
- * controller/rule lines. It does not yet write external or sectioned animations or
- * multi-blend sequences; the result says so instead of producing a quiet, incomplete model.
+ * controller/rule lines. It does not yet write external `.ani` animations or multi-blend
+ * sequences; the result says so instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -295,7 +295,7 @@ function qcText(
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
     `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
-    `// are written. Flexes, multi-blend sequences, external/sectioned animations and bodygroup`,
+    `// are written. Flexes, multi-blend sequences, external animations and bodygroup`,
     `// presets are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
@@ -442,7 +442,7 @@ export const decompileModelTool = defineTool({
     "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
     "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
     "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
-    "inside the `.mdl` are decoded into animation SMDs; external `.ani`, sectioned and " +
+    "inside the `.mdl` are decoded into animation SMDs; external `.ani` and " +
     "multi-blend clips and flexes are not extracted yet, and the result lists those gaps. " +
     "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
     "model path or a local `.mdl`.",

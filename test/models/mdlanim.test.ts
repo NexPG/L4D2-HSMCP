@@ -114,15 +114,18 @@ describe.skipIf(!has.gameContent)("mdlanim", () => {
     const animations = readAnimations(bytes);
     const bones = readMdlBones(bytes);
     const external = { ...animations[0]!, animBlock: 1 };
-    const sectioned = { ...animations[0]!, sectionFrameCount: 30, sectionOffset: 100 };
     expect(decodeAnimation(bytes, external, bones)).toBeNull();
-    expect(decodeAnimation(bytes, sectioned, bones)).toBeNull();
 
-    // car_camjoint's escape clips are sectioned but their data is otherwise in the MDL.
+    // car_camjoint's escape clips use the sectioned layout; they are assembled, not refused.
     const cam = mdl("models/c1_chargerexit/car_camjoint.mdl");
     const camAnimations = readAnimations(cam);
     const escape = camAnimations.find((animation) => animation.name === "@escape_a");
     expect(escape?.sectionFrameCount).toBeGreaterThan(0);
-    expect(decodeAnimation(cam, escape!, readMdlBones(cam))).toBeNull();
+    const frames = decodeAnimation(cam, escape!, readMdlBones(cam));
+    expect(frames).toHaveLength(180);
+    const first = frames![0]!.bones[0]!;
+    const last = frames![179]!.bones[0]!;
+    expect(first.rotation.every(Number.isFinite)).toBe(true);
+    expect(Math.abs(last.rotation[2] - first.rotation[2])).toBeGreaterThan(0.2);
   });
 });

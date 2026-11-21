@@ -7,9 +7,10 @@
  * frames. This reader implements the same extraction the engine does, and writes the result
  * as SMD skeleton frames a person can inspect.
  *
- * External `.ani` blocks, the `sectionFrameCount` fast-lookup layout and multi-blend
- * sequences are not decoded yet. Those clips are reported as skipped rather than emitted with
- * the bind pose pretending to be an animation.
+ * External `.ani` blocks and multi-blend sequences are not decoded yet. Sectioned
+ * ("fast lookup") clips are assembled from their contiguous section track lists. Unsupported
+ * clips are reported as skipped rather than emitted with the bind pose pretending to be an
+ * animation.
  */
 import type { ModelBone } from "./mdlbones.js";
 import { quaternionToEuler } from "./mdlbones.js";
@@ -275,33 +276,92 @@ function readBoneTracks(mdl: Buffer, dataOffset: number, boneCount: number): Bon
   return tracks;
 }
 
-/**
- * Decodes one animation whose data is inside the `.mdl`.
- *
- * Returns null for an external `.ani` block, a sectioned animation or a missing data offset.
- * A clip whose track list starts with the 255 terminator is the bind pose, which is what the
- * engine plays; only unreadable data is a refusal, because the caller reports it as skipped.
- */
-export function decodeAnimation(
-  mdl: Buffer,
-  animation: MdlAnimationDesc,
-  bones: ModelBone[],
-): AnimationFrame[] | null {
-  if (animation.animBlock !== 0) return null;
-  if (animation.animOffset <= 0) return null;
-  if (animation.sectionOffset > 0 || animation.sectionFrameCount > 0) return null;
-  if (animation.frameCount <= 0 || animation.frameCount > 100_000) return null;
+/** End of one RLE channel, including its terminating `total = 0` pair. */
+function rleStreamEnd(mdl: Buffer, at: number): number {
+  let position = at;
+  for (let guard = 0; guard < 100_000; guard += 1) {
+    if (position + 2 > mdl.length) return position;
+    const valid = mdl[position]!;
+    const total = mdl[position + 1]!;
+    if (total === 0) return position + 2;
+    position += 2 + valid * 2;
+  }
+  return position;
+}
 
-  const dataOffset = animation.baseOffset + animation.animOffset;
-  if (dataOffset < 0 || dataOffset + 2 > mdl.length) return null;
+/** End offset of a whole bone-track list, including every RLE stream it points at. */
+function trackListEnd(mdl: Buffer, dataOffset: number, boneCount: number): number {
+  let end = dataOffset;
+  let at = dataOffset;
+  for (let guard = 0; guard < boneCount + 1; guard += 1) {
+    if (at + 4 > mdl.length) return end;
+    const bone = mdl[at]!;
+    if (bone === 255) return Math.max(end, at + 4);
+    if (bone >= boneCount) return end;
+    const flags = mdl[at + 1]!;
+    const next = mdl.readInt16LE(at + 2);
+    let pointer = at + 4;
+    if (flags & ANIM_RAWROT2) pointer += 8;
+    else if (flags & ANIM_RAWROT) pointer += 6;
+    if (flags & ANIM_RAWPOS) pointer += 6;
+    const rotationBase = pointer;
+    if (flags & ANIM_ANIMROT) pointer += 6;
+    const positionBase = pointer;
+    if (flags & ANIM_ANIMPOS) pointer += 6;
+    if (flags & ANIM_ANIMROT) {
+      for (let axis = 0; axis < 3; axis += 1) {
+        const offset = mdl.readInt16LE(rotationBase + axis * 2);
+        if (offset > 0) end = Math.max(end, rleStreamEnd(mdl, rotationBase + offset));
+      }
+    }
+    if (flags & ANIM_ANIMPOS) {
+      for (let axis = 0; axis < 3; axis += 1) {
+        const offset = mdl.readInt16LE(positionBase + axis * 2);
+        if (offset > 0) end = Math.max(end, rleStreamEnd(mdl, positionBase + offset));
+      }
+    }
+    if (next === 0) return end;
+    at += next;
+  }
+  return end;
+}
+
+/** Finds the next section's track list after the current one, skipping alignment padding. */
+function nextSectionStart(mdl: Buffer, from: number, boneCount: number): number {
+  const limit = Math.min(mdl.length - 4, from + 32);
+  for (let at = from; at <= limit; at += 1) {
+    const bone = mdl[at]!;
+    const flags = mdl[at + 1]!;
+    if (bone >= boneCount) continue;
+    if ((flags & (ANIM_RAWPOS | ANIM_RAWROT | ANIM_ANIMPOS | ANIM_ANIMROT | ANIM_RAWROT2)) === 0) {
+      continue;
+    }
+    const next = mdl.readInt16LE(at + 2);
+    if (next >= 0 && next < 512) return at;
+  }
+  return -1;
+}
+
+/**
+ * Decodes one bone-track list for `frameCount` frames.
+ *
+ * The same code serves a whole non-sectioned clip and one section of a fast-lookup clip.
+ * `startFrame` keeps the SMD times continuous when sections are concatenated.
+ */
+function decodeTrackList(
+  mdl: Buffer,
+  dataOffset: number,
+  frameCount: number,
+  fps: number,
+  bones: ModelBone[],
+  startFrame: number,
+): AnimationFrame[] | null {
+  if (dataOffset < 0 || dataOffset + 2 > mdl.length || frameCount <= 0) return null;
   const tracks = readBoneTracks(mdl, dataOffset, Math.max(1, bones.length));
-  // A track list that starts with the 255 terminator means the clip is identical to the bind
-  // pose, which is a real answer; only unreadable data is a refusal.
   const byBone = new Map(tracks.map((track) => [track.bone, track]));
-  const fps = animation.fps > 0 ? animation.fps : 30;
   const frames: AnimationFrame[] = [];
 
-  for (let frame = 0; frame < animation.frameCount; frame += 1) {
+  for (let frame = 0; frame < frameCount; frame += 1) {
     const frameBones: AnimationFrame["bones"] = [];
     for (let index = 0; index < Math.max(1, bones.length); index += 1) {
       const bone = bones[index];
@@ -346,17 +406,80 @@ export function decodeAnimation(
       }
       frameBones.push({ position, rotation });
     }
-    frames.push({ time: frame / fps, bones: frameBones });
+    frames.push({ time: (startFrame + frame) / fps, bones: frameBones });
   }
   return frames;
+}
+
+/**
+ * Decodes a sectioned ("fast lookup") clip by walking the contiguous section track lists.
+ *
+ * `sectionFrameCount` frames are stored per section; the array at `sectionOffset` does not
+ * contain useful starts for the early sections, so the reader advances to the next plausible
+ * bone/flags pair after each track list. The bogus trailing sections are ignored: only
+ * `ceil(frameCount / sectionFrameCount)` sections are read.
+ */
+function decodeSections(
+  mdl: Buffer,
+  animation: MdlAnimationDesc,
+  bones: ModelBone[],
+): AnimationFrame[] | null {
+  const sectionFrames = animation.sectionFrameCount;
+  if (sectionFrames <= 0) return null;
+  const sectionCount = Math.ceil(animation.frameCount / sectionFrames);
+  const fps = animation.fps > 0 ? animation.fps : 30;
+  let cursor = animation.baseOffset + animation.animOffset;
+  const frames: AnimationFrame[] = [];
+  const boneCount = Math.max(1, bones.length);
+
+  for (let section = 0; section < sectionCount; section += 1) {
+    const count = Math.min(sectionFrames, animation.frameCount - frames.length);
+    if (count <= 0) break;
+    const decoded = decodeTrackList(mdl, cursor, count, fps, bones, frames.length);
+    if (!decoded) return null;
+    frames.push(...decoded);
+    if (section === sectionCount - 1) break;
+    const end = trackListEnd(mdl, cursor, boneCount);
+    const next = nextSectionStart(mdl, end, boneCount);
+    if (next < 0) break;
+    cursor = next;
+  }
+
+  return frames.length > 0 ? frames : null;
+}
+
+/**
+ * Decodes one animation whose data is inside the `.mdl`.
+ *
+ * Returns null for an external `.ani` block or a missing data offset. A clip whose track list
+ * starts with the 255 terminator is the bind pose, which is what the engine plays; only
+ * unreadable data is a refusal, because the caller reports it as skipped.
+ */
+export function decodeAnimation(
+  mdl: Buffer,
+  animation: MdlAnimationDesc,
+  bones: ModelBone[],
+): AnimationFrame[] | null {
+  if (animation.animBlock !== 0) return null;
+  if (animation.frameCount <= 0 || animation.frameCount > 100_000) return null;
+  const fps = animation.fps > 0 ? animation.fps : 30;
+  if (animation.sectionOffset > 0 && animation.sectionFrameCount > 0) {
+    return decodeSections(mdl, animation, bones);
+  }
+  if (animation.animOffset <= 0) return null;
+  return decodeTrackList(
+    mdl,
+    animation.baseOffset + animation.animOffset,
+    animation.frameCount,
+    fps,
+    bones,
+    0,
+  );
 }
 
 /** Whether a sequence's animation can be decoded from the MDL, and why not when it cannot. */
 export function animationSkippedReason(animation: MdlAnimationDesc): string | null {
   if (animation.animBlock !== 0) return "animation data is in an external .ani file";
   if (animation.animOffset <= 0) return "animation has no data offset";
-  if (animation.sectionOffset > 0 || animation.sectionFrameCount > 0) {
-    return "animation uses the sectioned fast-lookup layout";
-  }
   return null;
 }

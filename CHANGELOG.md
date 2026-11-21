@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.165-alpha - 2026-11-21
+
+- **Sectioned ("fast lookup") animations are decoded.** The decompiler now assembles a clip
+  from its contiguous section track lists: `ceil(frameCount / sectionFrameCount)` sections,
+  each with its own RLE streams, concatenated into one SMD with continuous times. The
+  section-offset array does not carry useful starts for the early sections, so the reader
+  advances to the next plausible bone/flags pair after each track list; the bogus trailing
+  sections are ignored.
+- **Verified by round-trip:** `car_camjoint` has 7 sequences; `escape_a` (180 frames) and
+  `escape_b` (195 frames) decode, decompile to animation SMDs, and recompile with the same
+  frame counts. `escape_a2` and `escape_b2` (51/45 frames) also survive.
+- **External `.ani`, multi-blend sequences and flex writing remain gaps.** The result still
+  lists them.
+- **Skill docs updated:** sectioned clips are no longer in the decompiler's gap list.
+- **Tool count: 231.** Tests: 194 files, 1694 passed, 33 skipped.
+
 ## 0.0.164-alpha - 2026-11-21
 
 - **`decompile_model` writes shadow LODs.** A VTX LOD with a negative switch distance now
