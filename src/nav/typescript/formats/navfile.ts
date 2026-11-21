@@ -115,12 +115,33 @@ export interface NavArea {
   neZ: number;
   swZ: number;
   connections: { north: number[]; east: number[]; south: number[]; west: number[] };
+  /**
+   * Ladder ids this area connects to, in the file's four ladder directions. Each entry is
+   * a ladder id, not an area id; use `NavFile.ladders` to resolve it.
+   */
+  ladderConnections: number[][];
   hidingSpots: number;
   placeId: number;
   /** L4D2 `spawnAttributeFlags`; 0 for a sub-version that has none. */
   spawnAttributes: number;
   spawnAttributesOffset: number;
   visibleAreas: number;
+}
+
+/** One `CNavLadder` record from the end of the file. */
+export interface NavLadder {
+  id: number;
+  width: number;
+  top: { x: number; y: number; z: number };
+  bottom: { x: number; y: number; z: number };
+  length: number;
+  direction: number;
+  /** Area ids at the top; 0 means none. */
+  topForwardAreaId: number;
+  topLeftAreaId: number;
+  topRightAreaId: number;
+  topBehindAreaId: number;
+  bottomAreaId: number;
 }
 
 export interface NavFile {
@@ -136,6 +157,10 @@ export interface NavFile {
   fogPlaces: string[];
   areaCount: number;
   areas: NavArea[];
+  /** Ladder records stored after the areas; empty when the file has none. */
+  ladders: NavLadder[];
+  /** Offset just past the last area record, where the ladder table starts. */
+  ladderTableOffset: number;
   bytes: Buffer;
 }
 
@@ -251,10 +276,12 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     if (version > 11) hasUnnamedAreas = cursor.u8() !== 0;
   }
 
-  // L4D2 stores its population type and fog place list before the areas.
+  // L4D2 stores its population type and fog place list before the areas. The fields depend
+  // on the sub-version, not on the major version: the tutorial maps are version 15,
+  // sub-version 13, and still carry the population string.
   let zombiePopulation: string | null = null;
   const fogPlaces: string[] = [];
-  if (version >= 16 && subVersion > 7) {
+  if (subVersion > 7) {
     if (subVersion >= 12) zombiePopulation = cursor.cstring();
     const fogCount = cursor.u16();
     plausibleCount(fogCount, bytes, cursor.at, 2);
@@ -320,10 +347,15 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     const placeIdOffset = cursor.at;
     const placeId = cursor.u16();
 
-    for (let i = 0; i < 2; i += 1) {
+    // Two ladder-connection lists: `NAV_LADDER_DIR_UP` and `DOWN` (Source has two ladder
+    // directions, not four; the four directional lists above are north/east/south/west).
+    const ladderConnections: number[][] = [];
+    for (let direction = 0; direction < 2; direction += 1) {
       const count = cursor.u32();
       plausibleCount(count, bytes, cursor.at, 4);
-      cursor.skip(count * 4);
+      const ids: number[] = [];
+      for (let i = 0; i < count; i += 1) ids.push(cursor.u32());
+      ladderConnections.push(ids);
     }
 
     cursor.skip(8); // earliest occupy time, two floats
@@ -386,12 +418,36 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       neZ,
       swZ,
       connections,
+      ladderConnections,
       hidingSpots,
       placeId,
       spawnAttributes,
       spawnAttributesOffset,
       visibleAreas,
     });
+  }
+
+  const ladderTableOffset = cursor.at;
+  const ladders: NavLadder[] = [];
+  if (cursor.at + 4 <= bytes.length) {
+    const ladderCount = cursor.u32();
+    if (ladderCount > 0 && ladderCount <= 4096 && cursor.at + ladderCount * 60 <= bytes.length) {
+      for (let index = 0; index < ladderCount; index += 1) {
+        ladders.push({
+          id: cursor.u32(),
+          width: cursor.f32(),
+          top: { x: cursor.f32(), y: cursor.f32(), z: cursor.f32() },
+          bottom: { x: cursor.f32(), y: cursor.f32(), z: cursor.f32() },
+          length: cursor.f32(),
+          direction: cursor.u32(),
+          topForwardAreaId: cursor.u32(),
+          topLeftAreaId: cursor.u32(),
+          topRightAreaId: cursor.u32(),
+          topBehindAreaId: cursor.u32(),
+          bottomAreaId: cursor.u32(),
+        });
+      }
+    }
   }
 
   return {
@@ -406,6 +462,8 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     fogPlaces,
     areaCount,
     areas,
+    ladders,
+    ladderTableOffset,
     bytes,
   };
 }
