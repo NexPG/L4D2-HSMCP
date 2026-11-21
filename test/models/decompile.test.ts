@@ -305,6 +305,10 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(smokerQc).toContain('$attachment "smoker_mouth" "ValveBiped.Bip01_Head1"');
     expect(smokerQc).toContain('$hboxset "cstrike"');
     expect(smokerQc.match(/^\$hbox /gm)).toHaveLength(17);
+    // LOD options derived from the bone flags and VTX strip groups.
+    expect(smokerQc).toContain('$lod 30');
+    expect(smokerQc).toContain('replacebone "ValveBiped.Bip01_L_Hand" "ValveBiped.Bip01_L_Forearm"');
+    expect(smokerQc).toContain("\tnofacial");
 
     const gift = (await decompileModelTool.handler(
       {

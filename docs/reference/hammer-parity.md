@@ -255,7 +255,7 @@ map and looking, or by not happening at all.
 | `read_model_jiggle` | nothing: the editor cannot show a jigglebone's stiffness, constraints or boing parameters |
 | `read_model_ani` | nothing: an external `.ani` block table is not exposed by the editor |
 | `read_model_procedural` | nothing: Hammer cannot show quat-interp helpers or aim rules, and has no `.vrd` view |
-| `read_model_lods` | nothing: a model's LOD switch distances and per-LOD materials are not in the editor |
+| `read_model_lods` | nothing: switch distances, `facial`, material/bone replacements and removed bodygroup models are not in the editor |
 | `read_vta` | nothing: a VTA is a compiler input the editor never shows |
 | `write_vta` | nothing: flex targets are authored in a 3D package, not in Hammer |
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |

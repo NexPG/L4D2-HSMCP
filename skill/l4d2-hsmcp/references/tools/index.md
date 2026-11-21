@@ -160,7 +160,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_model_eyes` | eyeballs and mouths: bone, bone-local origin, radius, lid flexes/targets, material guess; says why L4D2 cannot write them in a QC |
 | `read_model_jiggle` | jigglebones: flags, length, stiffness, constraints, base spring and boing, plus the exact `$jigglebone` block |
 | `read_model_procedural` | quat-interp helpers and aim rules, plus the `.vrd` text `$proceduralbones` needs |
-| `read_model_lods` | every LOD with switch distance, shadow flag, mesh/vertex/triangle counts and per-LOD materials |
+| `read_model_lods` | every LOD with switch distance, shadow flag, counts, materials, `facial`, material/bone replacements and removed bodygroup models |
 
 ## Build and edit
 
@@ -251,7 +251,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `read_model_skeleton` | bind pose as ready-to-paste `$definebone` lines, with the verified `(y, z, x)` degree order |
 | `read_model_animation` | sequences, events, pose parameters, IK chains, `$includemodel` entries and whether an animation lives in an `.ani` |
 | `read_model_ani` | external `.ani`: `IDAG` header, block byte ranges, clips and sequences per block, gap/overlap/orphan checks |
-| `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks with fade times and events, `$includemodel` entries, `$contents`/`$bbox`/`$cbox`, `$keyvalues`, `$ikchain`/`$ikautoplaylock`, optional `$definebone` lines, flex VTA frames with their controllers and rules, and `$collisionjoints` ragdolls with their constraints |
+| `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks with fade times and events, `$includemodel` entries, `$contents`/`$bbox`/`$cbox`, `$keyvalues`, `$ikchain`/`$ikautoplaylock`, optional `$definebone` lines, flex VTA frames with their controllers and rules, `$lod` options (`replacebone`, `replacematerial`, `facial`/`nofacial`, `removemodel`, `use_shadowlod_materials`), and `$collisionjoints` ragdolls with their constraints |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `read_vta` | VTA nodes, basis vertex count, one entry per flex frame (and the deformed vertices on request) |
 | `write_vta` | write a VTA from a basis and flex frames, with a read-back verification |

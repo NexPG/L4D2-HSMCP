@@ -10,7 +10,8 @@ import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { gameBlock, gameFor } from "../../../core/typescript/games/resolve.js";
 import { GAME, GAME_BLOCK, resolveInput } from "../../../core/typescript/tools/paths.js";
-import { loadModelGeometry, normalizeModelPath } from "./source.js";
+import { loadModelBones, loadModelGeometry, normalizeModelPath } from "./source.js";
+import { boneReplacementsForLod } from "../formats/mdlbones.js";
 
 export const readModelLodsTool = defineTool({
   name: "read_model_lods",
@@ -42,6 +43,14 @@ export const readModelLodsTool = defineTool({
         vertices: z.number(),
         triangles: z.number(),
         materials: z.array(z.string()),
+        /** A strip group has FLEXED or DELTAFIXED; the QC option is `facial`. */
+        facial: z.boolean(),
+        materialReplacements: z.array(
+          z.object({ materialIndex: z.number(), from: z.string(), to: z.string() }),
+        ),
+        boneReplacements: z.array(z.object({ from: z.string(), to: z.string() })),
+        /** Bodygroup models present at LOD 0 but absent at this LOD. */
+        removedModels: z.array(z.string()),
       }),
     ),
     note: z.string().optional(),
@@ -63,6 +72,7 @@ export const readModelLodsTool = defineTool({
     if (args.path && !existsSync(path)) throw new Error(`${path} was not found`);
     const geometry = loadModelGeometry(game.gameDir, model);
     if (!geometry) throw new Error(`${model} has no readable .mdl/.vvd/.vtx trio`);
+    const bones = loadModelBones(game.gameDir, model) ?? [];
 
     return {
       game: gameBlock(game, from),
@@ -78,6 +88,18 @@ export const readModelLodsTool = defineTool({
         triangles: lod.triangleCount,
         materials: lod.meshes.map(
           (mesh) => mesh.materialOverride ?? geometry.materials[mesh.materialIndex] ?? "material",
+        ),
+        facial: lod.usesFacial,
+        materialReplacements: lod.materialReplacements.map((replacement) => ({
+          materialIndex: replacement.materialIndex,
+          from: geometry.materials[replacement.materialIndex] ?? "material",
+          to: replacement.replacement,
+        })),
+        boneReplacements: boneReplacementsForLod(bones, level),
+        removedModels: geometry.bodyParts.flatMap((part) =>
+          part.models
+            .filter((alternative) => alternative.lods[level] === null && alternative.lods[0])
+            .map((alternative) => alternative.name),
         ),
       })),
       ...(geometry.lods.length <= 1

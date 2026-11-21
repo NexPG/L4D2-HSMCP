@@ -123,7 +123,10 @@ LODs use a `$shadowlod` block. Attachments and custom hitbox sets are written as
 compile can rebuild it from the mesh. Models with more than one skin family get a
 `$texturegroup "skinfamilies"` block built from the MDL's skin table. External `.ani` clips
 are decoded, including the frame-by-bone layout; multi-blend sequences become `$sequence`
-blocks with one SMD per animation, `blendwidth` and `blend` pose ranges. External clips live in a sibling `.ani`; `read_model_ani` shows its `IDAG` header, block ranges, the clips and sequences each block holds, and range/gap/orphan checks, while `decompile_model` decodes the frames. Procedural bones (quat-interp helpers and aim rules) are written to a `_procedural.vrd`
+blocks with one SMD per animation, `blendwidth` and `blend` pose ranges. External clips live in a sibling `.ani`; `read_model_ani` shows its `IDAG` header, block ranges, the clips and sequences each block holds, and range/gap/orphan checks, while `decompile_model` decodes the frames. LOD options are reconstructed from the compiled data: `replacebone` from the per-LOD bone
+flags, `replacematerial` from the VTX replacement lists, `facial`/`nofacial` from the strip
+group flags, and `removemodel` when a bodygroup model has no geometry at that distance.
+`read_model_lods` shows the same options before a decompile. Procedural bones (quat-interp helpers and aim rules) are written to a `_procedural.vrd`
 next to the QC and referenced with `$proceduralbones`; `read_model_procedural` shows them.
 Jigglebones survive as `$jigglebone` blocks, including the flexible/boing variants and
 all constraints (`read_model_jiggle` inspects them). Eyes and mouths are readable (`read_model_eyes`) but not writable: L4D2's studiomdl has no

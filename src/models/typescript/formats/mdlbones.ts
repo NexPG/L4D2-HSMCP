@@ -10,6 +10,29 @@
  */
 import type { Vec3 } from "./mdlmesh.js";
 
+/** `BONE_USED_BY_VERTEX_LOD0`; each LOD shifts the bit one place. */
+export const BONE_USED_BY_VERTEX_LOD0 = 0x400;
+
+export interface BoneReplacement {
+  from: string;
+  to: string;
+}
+
+/**
+ * The `$lod`-level `replacebone` list: every non-root bone whose vertex-LOD flag is clear
+ * collapses into its parent. This is what Crowbar derives from the compiled bone flags.
+ */
+export function boneReplacementsForLod(
+  bones: readonly ModelBone[],
+  lodIndex: number,
+): BoneReplacement[] {
+  if (lodIndex <= 0) return [];
+  const flag = BONE_USED_BY_VERTEX_LOD0 << lodIndex;
+  return bones
+    .filter((bone) => bone.parent >= 0 && (bone.flags & flag) === 0)
+    .map((bone) => ({ from: bone.name, to: bones[bone.parent]!.name }));
+}
+
 export interface ModelBone {
   index: number;
   name: string;

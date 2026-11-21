@@ -119,6 +119,9 @@ describe.skipIf(!has.gameContent)("decompile_model eyes", () => {
     expect(qc).toContain("localvar biter");
     expect(qc).toContain("%upper_right_lowerer =");
     expect(qc).toContain("localvar upper_right_lowerer");
+    // The survivor's LOD 1/2 strip groups carry flexes, LOD 3 does not.
+    expect(qc).toContain("\tfacial");
+    expect(qc).toContain("\tnofacial");
   });
 
   it.skipIf(!has.toolchain)("compiles the survivor and reports that its eyes were lost", { timeout: 60_000 }, async () => {

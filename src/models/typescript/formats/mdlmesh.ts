@@ -56,11 +56,23 @@ export interface ModelMesh {
   flexes?: MdlFlex[];
 }
 
+/** One VTX material replacement for a LOD, by base material index. */
+export interface ModelMaterialReplacement {
+  /** Index into `ModelGeometry.materials`. */
+  materialIndex: number;
+  /** Replacement material path stored in the VTX. */
+  replacement: string;
+}
+
 export interface ModelLod {
   /** VTX switch distance; 0 for LOD 0. Negative is a shadow LOD. */
   switchDistance: number;
   meshes: ModelMesh[];
   triangleCount: number;
+  /** Any strip group has `FLEXED` or `DELTAFIXED`; the QC option is `facial`. */
+  usesFacial: boolean;
+  /** VTX material replacements at this LOD. */
+  materialReplacements: ModelMaterialReplacement[];
 }
 
 /** One alternative of a body part, i.e. one value of its bodygroup. */
@@ -363,6 +375,8 @@ interface VtxLod {
   meshes: VtxMesh[];
   /** Material replacements for this LOD, by material id. */
   replacements: Map<number, string>;
+  /** A strip group's `FLEXED` (0x1) or `DELTAFIXED` (0x4) flag is set. */
+  usesFacial: boolean;
 }
 
 interface VtxModel {
@@ -385,14 +399,16 @@ function readMaterialReplacements(
   if (listBase + 8 > vtx.length) return replacements;
   const count = vtx.readInt32LE(listBase);
   const offset = vtx.readInt32LE(listBase + 4);
-  if (count <= 0 || offset <= 0) return replacements;
+  if (count <= 0) return replacements;
+  // `replacementindex` is relative to the list record and is often negative: the records are
+  // written before the list, so `listBase + offset` is the first one. The name offset is
+  // relative to its own record and is negative for the same reason.
+  const recordBase = listBase + offset;
   for (let i = 0; i < count; i += 1) {
-    const at = offset + i * 6;
-    if (at + 6 > vtx.length) break;
+    const at = recordBase + i * 6;
+    if (at < 0 || at + 6 > vtx.length) break;
     const materialId = vtx.readInt16LE(at);
     const nameOffset = vtx.readInt32LE(at + 2);
-    // The replacement name is an offset relative to the replacement record; the stock L4D2
-    // models in the tests have no replacements, so this path is deliberately conservative.
     const name = readName(vtx, at + nameOffset);
     if (name) replacements.set(materialId, name);
   }
@@ -438,6 +454,7 @@ function readVtxModelLods(
     const switchDistance = vtx.readFloatLE(lodAt + 8);
     const replacements = readMaterialReplacements(vtx, header, lodIndex);
     const meshes: VtxMesh[] = [];
+    let usesFacial = false;
     for (let meshIndex = 0; meshIndex < meshCount; meshIndex += 1) {
       const meshBase = lodAt + meshOffset + meshIndex * 9;
       if (meshBase + 9 > vtx.length) {
@@ -459,6 +476,9 @@ function readVtxModelLods(
         const indexOffset = vtx.readInt32LE(groupBase + 12);
         const stripCount = vtx.readInt32LE(groupBase + 16);
         const stripOffset = vtx.readInt32LE(groupBase + 20);
+        // `vtxStripGroup_t.flags`: FLEXED 0x01, DELTAFIXED 0x04. Either means `facial`.
+        const groupFlags = vtx[groupBase + 24] ?? 0;
+        if ((groupFlags & 0x05) !== 0) usesFacial = true;
         if (
           vertexCount < 0 ||
           indexCount < 0 ||
@@ -532,7 +552,7 @@ function readVtxModelLods(
       meshes.push({ triangles });
     }
     if (!valid) break;
-    lods.push({ switchDistance, meshes, replacements });
+    lods.push({ switchDistance, meshes, replacements, usesFacial });
   }
   return { lods, valid, triangles: triangleTotal };
 }
@@ -739,6 +759,10 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
           switchDistance: vtxLod.switchDistance,
           meshes: built.meshes,
           triangleCount,
+          usesFacial: vtxLod.usesFacial,
+          materialReplacements: [...vtxLod.replacements.entries()].map(
+            ([materialIndex, replacement]) => ({ materialIndex, replacement }),
+          ),
         });
       }
     }
@@ -750,17 +774,30 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
   for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
     const meshes: ModelMesh[] = [];
     let switchDistance = 0;
+    const lodModels: ModelLod[] = [];
     for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
       const lod = modelLods[partIndex]?.[0]?.[lodIndex];
       if (!lod) continue;
       switchDistance = lod.switchDistance;
       meshes.push(...lod.meshes);
+      lodModels.push(lod);
     }
     if (lodIndex > 0 && meshes.length === 0) continue;
+    const replacementByKey = new Map<string, ModelMaterialReplacement>();
+    for (const model of lodModels) {
+      for (const replacement of model.materialReplacements) {
+        replacementByKey.set(
+          `${replacement.materialIndex}:${replacement.replacement}`,
+          replacement,
+        );
+      }
+    }
     lods.push({
       switchDistance,
       meshes,
       triangleCount: meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
+      usesFacial: lodModels.some((model) => model.usesFacial),
+      materialReplacements: [...replacementByKey.values()],
     });
   }
 

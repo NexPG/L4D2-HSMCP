@@ -31,6 +31,7 @@ import type { ModelGeometry, ModelMesh, ModelVertex, Vec3 } from "../formats/mdl
 import { modelSiblings } from "../../../assets/typescript/game/models.js";
 import {
   absoluteBoneTransforms,
+  boneReplacementsForLod,
   quaternionToEuler,
   readMdlBones,
   readModelHeaderInfo,
@@ -421,9 +422,35 @@ interface LodReplacement {
   to: string;
 }
 
-interface LodBlockDef {
-  distance: number;
+interface LodMaterialReplacement {
+  from: string;
+  to: string;
+}
+
+interface LodBoneReplacement {
+  from: string;
+  to: string;
+}
+
+interface LodOptions {
   replacements: LodReplacement[];
+  /** Bodygroup models present at LOD 0 but absent at this LOD. */
+  removals: string[];
+  materials: LodMaterialReplacement[];
+  bones: LodBoneReplacement[];
+  /** Write `facial` instead of `nofacial`. */
+  facial: boolean;
+}
+
+interface LodBlockDef extends LodOptions {
+  distance: number;
+  /** Zero-based VTX LOD index, used for the bone flags. */
+  lodIndex: number;
+}
+
+interface ShadowLodDef extends LodOptions {
+  /** Zero-based VTX LOD index of the shadow LOD. */
+  lodIndex: number;
 }
 
 interface BodyGroupDef {
@@ -473,6 +500,25 @@ function flexQcLines(
   return lines;
 }
 
+/** The options inside one `$lod` or `$shadowlod` block, in the compiler's order. */
+function lodOptionLines(options: LodOptions): string[] {
+  const lines: string[] = [];
+  for (const replacement of options.replacements) {
+    lines.push(`\treplacemodel "${replacement.from}" "${replacement.to}"`);
+  }
+  for (const removal of options.removals) {
+    lines.push(`\tremovemodel "${removal}"`);
+  }
+  for (const material of options.materials) {
+    lines.push(`\treplacematerial "${material.from}" "${material.to}"`);
+  }
+  for (const bone of options.bones) {
+    lines.push(`\treplacebone "${bone.from}" "${bone.to}"`);
+  }
+  lines.push(`\t${options.facial ? "facial" : "nofacial"}`);
+  return lines;
+}
+
 function qcText(
   geometry: ModelGeometry,
   header: ReturnType<typeof readModelHeaderInfo>,
@@ -499,7 +545,7 @@ function qcText(
   bodyGroups: BodyGroupDef[],
   flexBodies: Map<string, FlexBodyDef>,
   lodBlocks: LodBlockDef[],
-  shadowReplacements: LodReplacement[],
+  shadowLod: ShadowLodDef | null,
   ikChains: MdlIkChain[],
   ikLocks: MdlIkLock[],
   jiggles: MdlJiggleBone[],
@@ -633,18 +679,13 @@ function qcText(
     const distance = Number.isInteger(block.distance)
       ? String(block.distance)
       : fmt(block.distance);
-    lines.push("", `$lod ${distance}`, "{");
-    for (const replacement of block.replacements) {
-      lines.push(`\treplacemodel "${replacement.from}" "${replacement.to}"`);
-    }
-    lines.push("}");
+    lines.push("", `$lod ${distance}`, "{", ...lodOptionLines(block), "}");
   }
-  if (shadowReplacements.length > 0) {
-    lines.push("", "$shadowlod", "{");
-    for (const replacement of shadowReplacements) {
-      lines.push(`\treplacemodel "${replacement.from}" "${replacement.to}"`);
+  if (shadowLod) {
+    lines.push("", "$shadowlod", "{", ...lodOptionLines(shadowLod), "}");
+    if (header && (header.flags & 0x100) !== 0) {
+      lines.push("", "use_shadowlod_materials");
     }
-    lines.push("}");
   }
 
   // studiomdl refuses a model with no sequences. A decoded clip is written as a real
@@ -1223,43 +1264,108 @@ export const decompileModelTool = defineTool({
 
     // LOD replacements are grouped by the VTX switch distance. Each bodygroup model's LOD 0
     // file maps to its own higher-LOD file, so a bodygroup and its LODs stay in sync.
+    const lodLevels = Math.max(
+      1,
+      ...geometry.bodyParts.flatMap((part) => part.models.map((model) => model.lods.length)),
+    );
+    const distanceByLodIndex = new Map<number, number>();
+    for (const part of geometry.bodyParts) {
+      for (const model of part.models) {
+        for (const [lodIndex, lod] of model.lods.entries()) {
+          if (lod && lod.switchDistance >= 0 && !distanceByLodIndex.has(lodIndex)) {
+            distanceByLodIndex.set(lodIndex, lod.switchDistance);
+          }
+        }
+      }
+    }
     const lodSources: Array<{ smd: string; meshes: ModelMesh[] }> = [];
-    const lodBlocksByDistance = new Map<number, LodReplacement[]>();
-    const shadowReplacements: LodReplacement[] = [];
+    const lodBlocksByDistance = new Map<number, LodBlockDef>();
+    let shadowLod: ShadowLodDef | null = null;
     let shadowLods = 0;
+    const ensureBlock = (distance: number, lodIndex: number): LodBlockDef => {
+      let block = lodBlocksByDistance.get(distance);
+      if (!block) {
+        block = {
+          distance,
+          lodIndex,
+          replacements: [],
+          removals: [],
+          materials: [],
+          bones: [],
+          facial: false,
+        };
+        lodBlocksByDistance.set(distance, block);
+      }
+      return block;
+    };
+    const ensureShadow = (lodIndex: number): ShadowLodDef => {
+      if (!shadowLod) {
+        shadowLod = {
+          lodIndex,
+          replacements: [],
+          removals: [],
+          materials: [],
+          bones: [],
+          facial: false,
+        };
+      }
+      return shadowLod;
+    };
+
     for (const [partIndex, part] of geometry.bodyParts.entries()) {
       for (const [modelIndex, model] of part.models.entries()) {
         const from = lod0Files[partIndex]?.[modelIndex];
         if (!from) continue;
-        for (let lodIndex = 1; lodIndex < model.lods.length; lodIndex += 1) {
-          const lod = model.lods[lodIndex];
-          if (!lod || lod.meshes.length === 0) continue;
-          if (lod.switchDistance < 0) {
+        for (let lodIndex = 1; lodIndex < lodLevels; lodIndex += 1) {
+          const lod = model.lods[lodIndex] ?? null;
+          const distance = lod?.switchDistance ?? distanceByLodIndex.get(lodIndex);
+          if (distance === undefined) continue;
+          const isShadow = distance < 0;
+          const target = isShadow ? ensureShadow(lodIndex) : ensureBlock(distance, lodIndex);
+          if (!lod || lod.meshes.length === 0) {
+            // The bodygroup model exists at LOD 0 but not at this distance.
+            target.removals.push(from);
+            continue;
+          }
+          if (isShadow) {
             // Source allows one shadow LOD per model; keep the first and still write its
             // source so the file exists if the list is corrected later.
             shadowLods += 1;
             const smd = `${from.replace(/\.(smd|dmx)$/i, "")}_shadow.smd`;
             lodSources.push({ smd, meshes: lod.meshes });
-            if (!shadowReplacements.some((replacement) => replacement.from === from)) {
-              shadowReplacements.push({ from, to: smd });
+            if (!target.replacements.some((replacement) => replacement.from === from)) {
+              target.replacements.push({ from, to: smd });
             }
-            continue;
+          } else {
+            const smd = `${from.replace(/\.(smd|dmx)$/i, "")}_lod${lodIndex}.smd`;
+            lodSources.push({ smd, meshes: lod.meshes });
+            if (!target.replacements.some((replacement) => replacement.from === from)) {
+              target.replacements.push({ from, to: smd });
+            }
           }
-          const smd = `${from.replace(/\.(smd|dmx)$/i, "")}_lod${lodIndex}.smd`;
-          lodSources.push({ smd, meshes: lod.meshes });
-          const replacements = lodBlocksByDistance.get(lod.switchDistance) ?? [];
-          replacements.push({ from, to: smd });
-          lodBlocksByDistance.set(lod.switchDistance, replacements);
+          for (const replacement of lod.materialReplacements) {
+            const source = geometry.materials[replacement.materialIndex];
+            if (!source) continue;
+            if (
+              !target.materials.some(
+                (material) =>
+                  material.from === source && material.to === replacement.replacement,
+              )
+            ) {
+              target.materials.push({ from: source, to: replacement.replacement });
+            }
+          }
+          if (!isShadow && lod.usesFacial) target.facial = true;
         }
       }
     }
-    const lodBlocks: LodBlockDef[] = [...lodBlocksByDistance.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([distance, replacements]) => ({ distance, replacements }));
-    const lodLevels = Math.max(
-      1,
-      ...geometry.bodyParts.flatMap((part) => part.models.map((model) => model.lods.length)),
-    );
+    const lodBlocks: LodBlockDef[] = [...lodBlocksByDistance.values()]
+      .sort((a, b) => a.distance - b.distance)
+      .map((block) => ({ ...block, bones: boneReplacementsForLod(bones, block.lodIndex) }));
+    const shadow = shadowLod as ShadowLodDef | null;
+    if (shadow) {
+      shadow.bones = boneReplacementsForLod(bones, shadow.lodIndex);
+    }
 
     const targets = [
       qcPath,
@@ -1362,7 +1468,7 @@ export const decompileModelTool = defineTool({
       bodyGroups,
       flexByFile,
       lodBlocks,
-      shadowReplacements,
+      shadow,
       readIkChains(mdlBytes),
       readIkLocks(mdlBytes),
       readJiggleBones(mdlBytes, bones),
@@ -1484,7 +1590,9 @@ export const decompileModelTool = defineTool({
       lodLevels,
       lodFiles,
       shadowLods,
-      shadowFiles: shadowReplacements.map((replacement) => join(outDir, replacement.to)),
+      shadowFiles: (shadow?.replacements ?? []).map((replacement) =>
+        join(outDir, replacement.to),
+      ),
       flexDescriptors: geometry.flex.descriptors.length,
       flexFiles,
       flexes: flexSummary,
