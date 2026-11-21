@@ -51,6 +51,96 @@ export class PhyFormatError extends Error {
   }
 }
 
+export interface PhySolidGeometry {
+  vertices: Vec3[];
+  triangles: Array<[number, number, number]>;
+}
+
+export interface PhyGeometry {
+  solids: PhySolidGeometry[];
+}
+
+type Vec3 = [number, number, number];
+
+/**
+ * The same solids, with positions and triangles, for a decompiler.
+ *
+ * The shared vertex block is stored in the order the vertex ids were first seen, not in id
+ * order, so a triangle's id is mapped through that encounter order before it is written.
+ * A solid whose vertex block does not fit is returned with the pieces read so far; the
+ * report counts are still usable.
+ */
+export function readPhyGeometry(bytes: Buffer): PhyGeometry {
+  const solids: PhySolidGeometry[] = [];
+  if (bytes.length < 16) return { solids };
+  const headerSize = bytes.readInt32LE(0);
+  const solidCount = bytes.readInt32LE(8);
+  if (solidCount < 0 || solidCount > 100_000) return { solids };
+  let position = Math.max(16, Math.min(headerSize, bytes.length));
+
+  for (let index = 0; index < solidCount; index += 1) {
+    if (position + 4 > bytes.length) break;
+    const size = bytes.readInt32LE(position);
+    const dataStart = position + 4;
+    const dataEnd = Math.min(bytes.length, dataStart + Math.max(0, size));
+    const ivps = bytes.indexOf("IVPS", dataStart, "latin1");
+    if (ivps < 0 || ivps + 4 > dataEnd) {
+      solids.push({ vertices: [], triangles: [] });
+      position = dataEnd;
+      continue;
+    }
+
+    let at = ivps + 4;
+    let verticesStart = -1;
+    const order = new Map<number, number>();
+    const vertexIds: number[] = [];
+    const triangles: Array<[number, number, number]> = [];
+
+    while (at + 16 <= dataEnd) {
+      const vertexDataOffset = bytes.readInt32LE(at);
+      const candidate = at + vertexDataOffset;
+      if (vertexDataOffset <= 0 || candidate <= at || candidate > dataEnd) break;
+      if (verticesStart < 0) verticesStart = candidate;
+      if (at >= verticesStart) break;
+      const triangleCount = bytes.readInt32LE(at + 12) >>> 0;
+      const triangleStart = at + 16;
+      if (triangleCount > 1_000_000 || triangleStart + triangleCount * 16 > verticesStart) {
+        break;
+      }
+      for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+        const record = triangleStart + triangle * 16;
+        const ids: number[] = [];
+        for (let corner = 0; corner < 3; corner += 1) {
+          const id = bytes.readUInt16LE(record + 4 + corner * 4);
+          ids.push(id);
+          if (!order.has(id)) {
+            order.set(id, vertexIds.length);
+            vertexIds.push(id);
+          }
+        }
+        triangles.push([order.get(ids[0]!)!, order.get(ids[1]!)!, order.get(ids[2]!)!]);
+      }
+      at = triangleStart + triangleCount * 16;
+    }
+
+    const vertices: Vec3[] = [];
+    const vertexBytes = vertexIds.length * 16;
+    if (verticesStart >= 0 && verticesStart + vertexBytes <= bytes.length) {
+      for (let i = 0; i < vertexIds.length; i += 1) {
+        const atVertex = verticesStart + i * 16;
+        vertices.push([
+          bytes.readFloatLE(atVertex),
+          bytes.readFloatLE(atVertex + 4),
+          bytes.readFloatLE(atVertex + 8),
+        ]);
+      }
+    }
+    solids.push({ vertices, triangles });
+    position = dataEnd;
+  }
+  return { solids };
+}
+
 function readCollisionText(bytes: Buffer, offset: number): string | null {
   if (offset < 0 || offset >= bytes.length) return null;
   const tail = bytes.subarray(offset).toString("latin1");

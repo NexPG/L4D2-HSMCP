@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.156-alpha - 2026-11-21
+
+- **New tool `decompile_model`.** It turns a compiled `.mdl` back into a QC, a reference SMD
+  and a collision SMD. The reference mesh uses the model's real triangles, materials, UVs and
+  VVD bone weights; the skeleton is the bind pose; the static-prop axis swap is applied so a
+  recompile keeps the source orientation. The QC carries `$modelname`, a safe
+  `<name>_decompiled.mdl` target by default, `$body`, `$cdmaterials`, `$surfaceprop`,
+  `$staticprop`, eye/illumination points, `$collisionmodel` with `$concave` when needed, and a
+  one-frame `$sequence "idle"` so studiomdl accepts the reference mesh.
+- **Verified by round-trip:** `cara_84sedan` decompiled to 5,515 reference triangles and 634
+  collision triangles, recompiled with the game's studiomdl; the recompiled hull is within 8
+  units of the source on every axis.
+- **Known scope:** LOD 0 and model 0 of each body part only. Animations, flexes, hitboxes,
+  attachments, bodygroup alternatives and skin families are not extracted; the tool returns
+  those gaps in `warnings` instead of an unmarked, incomplete QC.
+- **Skill and parity docs updated** for `decompile_model`, the 230-tool catalogue, the model
+  authoring workflow and the Hammer comparison.
+- **Tool count: 230.** Tests: 189 files, 1657 passed, 33 skipped.
+
 ## 0.0.155-alpha - 2026-11-21
 
 - **New tool `read_model_collision`.** It reads a model's `.phy` and reports its solids,

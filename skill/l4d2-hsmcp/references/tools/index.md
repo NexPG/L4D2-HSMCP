@@ -1,6 +1,6 @@
 # Tool catalogue
 
-229 tools. This page groups them by the job you are doing; each tool's own description is the
+230 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -233,6 +233,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
 | `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials, structural faults and a command catalogue that checks argument shapes |
 | `check_model` | QC or MDL: geometry, bodygroups, LODs, hitboxes, sequences, materials |
+| `decompile_model` | compiled `.mdl` -> QC + reference SMD + collision SMD, with the original bone weights and a one-frame idle so it recompiles |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
 | `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |

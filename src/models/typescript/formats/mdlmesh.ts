@@ -31,6 +31,12 @@ export interface ModelVertex {
   position: Vec3;
   normal: Vec3;
   uv: [number, number];
+  /** Up to three bone indices from the VVD, in weight order. */
+  bones?: [number, number, number];
+  /** Matching weights, normalised by the compiler. */
+  weights?: [number, number, number];
+  /** How many of `bones`/`weights` are valid. */
+  boneCount?: number;
 }
 
 export interface ModelMesh {
@@ -258,7 +264,18 @@ function readVvdVertices(vvd: Buffer, header: VvdHeader): ModelVertex[] {
     const normal: Vec3 = [vvd.readFloatLE(at + 28), vvd.readFloatLE(at + 32), vvd.readFloatLE(at + 36)];
     const uv: [number, number] = [vvd.readFloatLE(at + 40), vvd.readFloatLE(at + 44)];
     if (!isFiniteVec([...position, ...normal, ...uv])) continue;
-    vertices.push({ position, normal, uv });
+    const weights: [number, number, number] = [
+      vvd.readFloatLE(at),
+      vvd.readFloatLE(at + 4),
+      vvd.readFloatLE(at + 8),
+    ];
+    const bones: [number, number, number] = [
+      vvd.readInt8(at + 12),
+      vvd.readInt8(at + 13),
+      vvd.readInt8(at + 14),
+    ];
+    const boneCount = Math.min(3, Math.max(0, vvd.readInt8(at + 15)));
+    vertices.push({ position, normal, uv, bones, weights, boneCount });
   }
   return vertices;
 }
@@ -571,7 +588,16 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
         }
         const vertices = fixed.slice(vertexCursor, vertexCursor + count);
         vertexCursor += count;
-        const triangles = vtxMesh.triangles.filter((index) => index < vertices.length);
+        // Drop whole triangles, never individual corners: filtering one index out of three
+        // shifts every later triangle and produces a file the SMD parser rejects at `end`.
+        const triangles: number[] = [];
+        for (let t = 0; t + 2 < vtxMesh.triangles.length; t += 3) {
+          const a = vtxMesh.triangles[t]!;
+          const b = vtxMesh.triangles[t + 1]!;
+          const c = vtxMesh.triangles[t + 2]!;
+          if (a >= vertices.length || b >= vertices.length || c >= vertices.length) continue;
+          triangles.push(a, b, c);
+        }
         if (triangles.length < 3 || vertices.length === 0) continue;
         const replacement = vtxLod?.replacements.get(mesh.materialIndex);
         meshes.push({

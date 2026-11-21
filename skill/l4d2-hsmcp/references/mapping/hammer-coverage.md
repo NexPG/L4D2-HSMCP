@@ -116,6 +116,7 @@ covered: this table is the summary.
 | Model browser + sizes | `read_game_content(kind: "model", details: true)` | verified |
 | Model details (skins, sequences, materials) | `read_model_info` | verified |
 | Model collision shape | `read_model_collision` | verified: `cara_84sedan` 16 convex pieces / 634 triangles, `hospital_bed` 5 / 200, `shelves_metal1` 1 / 12; checksums match; `$concave` required when a solid has more than one piece |
+| Decompile a compiled model | `decompile_model` | verified on `cara_84sedan`: QC + reference SMD + collision SMD, recompiled by the game's studiomdl with the hull within 8 units; LOD 0/model 0 only, gaps reported in `warnings` |
 | Particle browser | `read_game_content(kind: "particle")` + `read_particle` for system contents | verified |
 | Particle validation | `check_particle` | checks systems, child references and renderer materials; a PCF is read through the same reader |
 | Detail sprites | `write_detail_sprites` + `detailmaterial` on worldspawn | verified by unit: a named type with a sprite rect and groups parses back; only displacement faces scatter them |
