@@ -25,7 +25,7 @@ const scratch = mkdtempSync(join(tmpdir(), "hammer-lodopts-"));
 const outDir = (): string => join(ctx.config.gameDir!, "models", "hsmcp_lodopts_test");
 afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
-  rmSync(outDir(), { recursive: true, force: true });
+  if (ctx.config.gameDir) rmSync(outDir(), { recursive: true, force: true });
 });
 
 function smd(material: string, child: boolean): string {

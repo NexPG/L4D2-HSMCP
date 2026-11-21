@@ -524,11 +524,16 @@ describe("read_nav_encounters", () => {
 });
 
 describe.skipIf(!has.gameContent)("nav version 15", () => {
-  const tutorial = join(ctx.config.gameDir!, "maps", "tutorial01.nav");
-  const campaign = join(ctx.config.gameDir!, "maps", "c1m1_hotel.nav");
+  // Build these lazily: the `describe` callback still runs when the suite is skipped, and
+  // a bare CI runner has no game directory at all.
+  const tutorialPath = (): string | null =>
+    ctx.config.gameDir ? join(ctx.config.gameDir, "maps", "tutorial01.nav") : null;
+  const campaignPath = (): string | null =>
+    ctx.config.gameDir ? join(ctx.config.gameDir, "maps", "c1m1_hotel.nav") : null;
 
   it("reads the tutorial custom block and stores visibility as area ids", async () => {
-    if (!existsSync(tutorial)) return;
+    const tutorial = tutorialPath();
+    if (!tutorial || !existsSync(tutorial)) return;
     const nav = readNavFile(readFileSync(tutorial), tutorial);
     expect(nav.version).toBe(15);
     expect(nav.subVersion).toBe(13);
@@ -555,7 +560,8 @@ describe.skipIf(!has.gameContent)("nav version 15", () => {
   });
 
   it("keeps the version 16 index storage distinct", async () => {
-    if (!existsSync(campaign)) return;
+    const campaign = campaignPath();
+    if (!campaign || !existsSync(campaign)) return;
     const nav = readNavFile(readFileSync(campaign), campaign);
     expect(nav.version).toBe(16);
     const visible = nav.areas.flatMap((area) => area.visibleAreaList);
