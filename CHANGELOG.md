@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.162-alpha - 2026-11-21
+
+- **Flex data can be read from the `.mdl`.** The new `mdlflex` reader returns flex
+  descriptors, controllers, rules and every mesh's per-vertex position/normal deltas (16-bit
+  fixed point, 1/4096). `ModelGeometry` exposes `flex`, the LOD-0 fixed vertex list and each
+  mesh's `vertexStart` so the data can be inspected without a DCC.
+- **Writing flexes is still open.** A VTA/`flexfile` path was tried end to end: `$model`
+  blocks, `flexfile`, controllers and rules compile, but the compiler's rebuilt vertex order
+  does not match the VTA indices reliably (`common_morph_test` produced deltas on the wrong
+  vertices), so `decompile_model` keeps flexes in `warnings` rather than shipping a model
+  whose face is subtly wrong. DMX shape keys are the next route.
+- **Tests:** `boomette`'s `presser` (1,068 normal-only deltas) and `common_morph_test`'s
+  `fatness` (593 position deltas) are read and checked; the rule `%presser = presser` is
+  reconstructed by the postfix-to-infix helper.
+- **Documentation** now separates "flexes can be read" from "flexes are written".
+- **Tool count: 230.** Tests: 193 files, 1687 passed, 33 skipped.
+
 ## 0.0.161-alpha - 2026-11-21
 
 - **`decompile_model` writes every VTX LOD.** Each bodygroup model now carries its whole LOD

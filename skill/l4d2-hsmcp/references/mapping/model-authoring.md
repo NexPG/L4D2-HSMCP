@@ -113,7 +113,9 @@ LODs are not written. Attachments and custom hitbox sets are written as `$attach
 compile can rebuild it from the mesh. Models with more than one skin family get a
 `$texturegroup "skinfamilies"` block built from the MDL's skin table. Sequences whose data is
 in an external `.ani`, use the sectioned fast-lookup layout, or blend several animations are
-skipped and listed with the reason; flexes are **not** extracted. A one-frame
+skipped and listed with the reason; flexes are **not** written. The reader does expose flex
+descriptors, controllers, rules and per-vertex deltas in `ModelGeometry.flex`, but a reliable
+VTA/DMX round-trip is still open, so `decompile_model` reports flexes as a gap. A one-frame
 `$sequence "idle"` is written only when no real sequence can be decoded. The tool lists those
 gaps in `warnings` rather than pretending the QC is complete. The default target is
 `<name>_decompiled.mdl`, so a direct recompile cannot overwrite the source.

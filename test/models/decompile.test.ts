@@ -80,7 +80,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain("$collisionmodel \"cara_84sedan_phys.smd\"");
     expect(qc).toContain("$concave");
     expect(qc).toContain('$sequence "idle" "cara_84sedan_idle.smd" fps 30.000000');
-    expect(r.warnings.join(" ")).toMatch(/flexes are not extracted/);
+    expect(r.warnings.join(" ")).toMatch(/shadow LODs are not written/);
 
     const smd = readFileSync(r.smd, "latin1");
     expect(smd.startsWith("version 1\nnodes\n")).toBe(true);

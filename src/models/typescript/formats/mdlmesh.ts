@@ -25,6 +25,9 @@
  * layouts and keeps the one whose offsets, counts and triangle indices are internally
  * consistent. That is the same test a person makes when a model's geometry looks scrambled.
  */
+import type { MdlFlex, MdlFlexData } from "./mdlflex.js";
+import { readFlexHeader, readMeshFlexes } from "./mdlflex.js";
+
 export type Vec3 = [number, number, number];
 
 export interface ModelVertex {
@@ -47,6 +50,10 @@ export interface ModelMesh {
   vertices: ModelVertex[];
   /** Three indices per triangle, into `vertices`. */
   triangles: number[];
+  /** Index of `vertices[0]` in the LOD's fixed VVD vertex list. */
+  vertexStart: number;
+  /** Flex deltas for this mesh at LOD 0, with absolute vertex indices. */
+  flexes?: MdlFlex[];
 }
 
 export interface ModelLod {
@@ -90,6 +97,10 @@ export interface ModelGeometry {
   meshes: ModelMesh[];
   /** Every body part and every bodygroup alternative, at LOD 0. */
   bodyParts: ModelBodyPart[];
+  /** The LOD-0 fixed vertex list the VTA basis frame and flex indices refer to. */
+  lod0Vertices: ModelVertex[];
+  /** Flex descriptors, controllers and rules from the header. */
+  flex: MdlFlexData;
   vertexCount: number;
   triangleCount: number;
   /** VVD fixups present; nonzero means the LOD vertex order is a fixed list. */
@@ -228,6 +239,7 @@ interface MdMesh {
   materialIndex: number;
   /** Vertex count per LOD. Index 0 is LOD 0. */
   lodVertexCounts: number[];
+  flexes: MdlFlex[];
 }
 
 interface MdModel {
@@ -272,6 +284,7 @@ function readBodyParts(mdl: Buffer, header: MdlHeader): MdBodyPart[] {
         meshes.push({
           materialIndex: mdl.readInt32LE(mesh),
           lodVertexCounts,
+          flexes: readMeshFlexes(mdl, mesh),
         });
       }
       models.push({
@@ -636,7 +649,8 @@ function buildModelMeshes(
       cursor += Math.max(0, count);
       continue;
     }
-    const vertices = fixed.slice(cursor, cursor + count);
+    const start = cursor;
+    const vertices = fixed.slice(start, start + count);
     cursor += count;
     // Drop whole triangles, never individual corners: filtering one index out of three
     // shifts every later triangle and produces a file the SMD parser rejects at `end`.
@@ -650,11 +664,23 @@ function buildModelMeshes(
     }
     if (triangles.length < 3 || vertices.length === 0) continue;
     const replacement = vtxLod?.replacements.get(mesh.materialIndex);
+    const flexes =
+      lodIndex === 0 && mesh.flexes.length > 0
+        ? mesh.flexes.map((flex) => ({
+            ...flex,
+            vertices: flex.vertices.map((vertex) => ({
+              ...vertex,
+              index: vertex.index + start,
+            })),
+          }))
+        : undefined;
     meshes.push({
       materialIndex: mesh.materialIndex,
       ...(replacement ? { materialOverride: replacement } : {}),
       vertices,
       triangles,
+      vertexStart: start,
+      ...(flexes ? { flexes } : {}),
     });
   }
   return { meshes, cursor };
@@ -689,8 +715,10 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
   const modelLods: Array<Array<Array<ModelLod | null>>> = bodyParts.map((part) =>
     part.models.map(() => []),
   );
+  let lod0Vertices: ModelVertex[] = [];
   for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
     const fixed = fixedVerticesForLod(vvd, vvdHeader, rawVertices, lodIndex);
+    if (lodIndex === 0) lod0Vertices = fixed;
     let vertexCursor = 0;
     for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
       const part = bodyParts[partIndex]!;
@@ -781,6 +809,8 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
     lods,
     meshes: lods[0]!.meshes,
     bodyParts: modelBodyParts,
+    lod0Vertices,
+    flex: readFlexHeader(mdl),
     vertexCount: rawVertices.length,
     triangleCount: lods[0]!.triangleCount,
     fixupCount: vvdHeader.fixupCount,

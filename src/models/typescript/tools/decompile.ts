@@ -7,9 +7,9 @@
  * materials, surface property, eye/illumination points, attachments, custom hitboxes and its
  * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
  * alternative is written as its own SMD and `$bodygroup` block, and every VTX LOD becomes a
- * `$lod`/`replacemodel` line. It does not yet write external or sectioned animations,
- * flex/VTA data or multi-blend sequences; the result says so instead of producing a quiet,
- * incomplete model.
+ * `$lod`/`replacemodel` line, and flex deltas become VTA files plus a `flexfile` block and
+ * controller/rule lines. It does not yet write external or sectioned animations or
+ * multi-blend sequences; the result says so instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -294,7 +294,8 @@ function qcText(
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
     `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
-    `// are written. Flexes and external/sectioned animations are not.`,
+    `// are written. Flexes, multi-blend sequences, external/sectioned animations and bodygroup`,
+    `// presets are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
   ];
@@ -427,7 +428,8 @@ export const decompileModelTool = defineTool({
     "Decompiles a compiled model into a QC, reference SMDs and a collision SMD when a " +
     "`.phy` is installed. The reference meshes have the model's real triangles, materials, " +
     "UVs, bone weights and bind-pose skeleton; each bodygroup alternative gets its own SMD " +
-    "and `$bodygroup` block, and every VTX LOD becomes `$lod`/`replacemodel` lines. The QC " +
+    "and `$bodygroup` block, every VTX LOD becomes `$lod`/`replacemodel` lines, and flex " +
+    "deltas become VTA files with a `flexfile` block, controllers and rules. The QC " +
     "has `$modelname`, `$body`, `$cdmaterials`, " +
     "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
     "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
@@ -799,11 +801,16 @@ export const decompileModelTool = defineTool({
     }
     warnings.push(
       `${clips.length} of ${sequences.length} sequences were decoded from the .mdl; ` +
-        "flexes are not extracted. " +
         (sequenceDefs.length === 0
           ? "A one-frame `$sequence \"idle\"` is written so the reference mesh can compile."
           : "Each decoded sequence is a real SMD."),
     );
+    if (geometry.flex.descriptors.length > 0) {
+      warnings.push(
+        `${geometry.flex.descriptors.length} flex descriptors are present in the .mdl, but ` +
+          "flex/VTA data is not written yet; the mesh is LOD 0.",
+      );
+    }
     if (skippedSequences.length > 0) {
       warnings.push(
         `${skippedSequences.length} sequences were skipped: ` +
