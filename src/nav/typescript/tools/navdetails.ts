@@ -328,8 +328,229 @@ export const readNavHidingSpotsTool = defineTool({
   },
 });
 
+const DIRECTION_NAMES = ["north", "east", "south", "west"] as const;
+
+function directionName(value: number): string {
+  return DIRECTION_NAMES[value] ?? `dir_${value}`;
+}
+
+const ENCOUNTER_SPOT = z.object({
+  /** Hiding-spot id stored in the path. */
+  order: z.number(),
+  /** Raw byte from the file. */
+  distance: z.number(),
+  /** `distance / 255`, the parametric position along the path. */
+  t: z.number(),
+  resolved: z.boolean(),
+  areaId: z.number().nullable(),
+  areaIndex: z.number().nullable(),
+  place: z.string().nullable(),
+  position: POINT.nullable(),
+  flags: z.number(),
+  attributes: z.array(z.string()),
+});
+
+const ENCOUNTER_PATH = z.object({
+  ownerAreaId: z.number(),
+  ownerAreaIndex: z.number(),
+  fromAreaId: z.number(),
+  fromAreaIndex: z.number().nullable(),
+  fromPlace: z.string().nullable(),
+  fromDirection: z.string(),
+  toAreaId: z.number(),
+  toAreaIndex: z.number().nullable(),
+  toPlace: z.string().nullable(),
+  toDirection: z.string(),
+  spots: z.array(ENCOUNTER_SPOT),
+});
+
+export const readNavEncountersTool = defineTool({
+  name: "read_nav_encounters",
+  description:
+    "Reads a .nav's spot encounters: paths from one area to another, each with the hiding " +
+    "spots a bot should look at along the way and the parametric distance (`t = byte / 255`). " +
+    "Resolves the path's from/to areas and each spot to its position, flags and area. Stock " +
+    "L4D2 maps usually store none; the tool says so rather than returning an empty list. " +
+    "Filters by owner area, from area, to area and minimum spot count.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .nav, absolute or relative to the repo root."),
+    area: z
+      .number()
+      .int()
+      .optional()
+      .describe("Only paths stored on this area (the area that owns the record)."),
+    from: z.number().int().optional().describe("Only paths whose from-area is this id."),
+    to: z.number().int().optional().describe("Only paths whose to-area is this id."),
+    minSpots: z.number().int().min(0).default(0),
+    sortBy: z.enum(["from", "to", "spots"]).default("from"),
+    limit: z.number().int().min(1).max(20_000).default(200),
+  },
+  outputSchema: {
+    path: z.string(),
+    version: z.number(),
+    subVersion: z.number(),
+    areaCount: z.number(),
+    pathCount: z.number(),
+    spotCount: z.number(),
+    areasWithPaths: z.number(),
+    byFromDirection: z.array(z.object({ direction: z.string(), count: z.number() })),
+    byToDirection: z.array(z.object({ direction: z.string(), count: z.number() })),
+    tMin: z.number().nullable(),
+    tMax: z.number().nullable(),
+    returned: z.number(),
+    paths: z.array(ENCOUNTER_PATH),
+    warnings: z.array(z.string()),
+    note: z.string().optional(),
+  },
+  handler: (args, ctx) => {
+    const { path, nav } = load(args.path, ctx.config);
+    const limit = args.limit ?? 200;
+    const sortBy = args.sortBy ?? "from";
+    const minSpots = args.minSpots ?? 0;
+    const indexById = new Map(nav.areas.map((area) => [area.id, area.index]));
+    const byId = new Map(nav.areas.map((area) => [area.id, area]));
+    const spotById = new Map<number, { area: NavArea; spot: NavArea["hidingSpotList"][number] }>();
+    for (const area of nav.areas) {
+      for (const spot of area.hidingSpotList) {
+        if (!spotById.has(spot.id)) spotById.set(spot.id, { area, spot });
+      }
+    }
+
+    const all = nav.areas.flatMap((area) =>
+      area.encounterPaths.map((encounter) => ({ owner: area, encounter })),
+    );
+    let selected = all;
+    if (args.area !== undefined) {
+      const owner = byId.get(args.area);
+      if (!owner) throw new Error(`area ${args.area} is not in ${path}; read_nav_areas lists the ids`);
+      selected = selected.filter((entry) => entry.owner.id === args.area);
+    }
+    if (args.from !== undefined) {
+      selected = selected.filter((entry) => entry.encounter.fromAreaId === args.from);
+    }
+    if (args.to !== undefined) {
+      selected = selected.filter((entry) => entry.encounter.toAreaId === args.to);
+    }
+    if (minSpots > 0) {
+      selected = selected.filter((entry) => entry.encounter.spots.length >= minSpots);
+    }
+
+    selected.sort((a, b) => {
+      if (sortBy === "to") {
+        return a.encounter.toAreaId - b.encounter.toAreaId || a.owner.id - b.owner.id;
+      }
+      if (sortBy === "spots") {
+        return b.encounter.spots.length - a.encounter.spots.length || a.owner.id - b.owner.id;
+      }
+      return (
+        a.owner.id - b.owner.id ||
+        a.encounter.fromAreaId - b.encounter.fromAreaId ||
+        a.encounter.toAreaId - b.encounter.toAreaId
+      );
+    });
+
+    const warnings: string[] = [];
+    const unresolvedAreas = new Set<number>();
+    let unresolvedSpotCount = 0;
+    const unresolvedSpotIds = new Set<number>();
+    let invalidDirections = 0;
+    let tMin: number | null = null;
+    let tMax: number | null = null;
+    for (const { encounter } of all) {
+      if (!byId.has(encounter.fromAreaId)) unresolvedAreas.add(encounter.fromAreaId);
+      if (!byId.has(encounter.toAreaId)) unresolvedAreas.add(encounter.toAreaId);
+      if (encounter.fromDirection > 3 || encounter.toDirection > 3) invalidDirections += 1;
+      for (const spot of encounter.spots) {
+        const t = spot.distance / 255;
+        tMin = tMin === null ? t : Math.min(tMin, t);
+        tMax = tMax === null ? t : Math.max(tMax, t);
+        if (!spotById.has(spot.order)) {
+          unresolvedSpotCount += 1;
+          unresolvedSpotIds.add(spot.order);
+        }
+      }
+    }
+    if (unresolvedAreas.size > 0) {
+      warnings.push(
+        `${unresolvedAreas.size} encounter area id(s) are not in the file ` +
+          `(${[...unresolvedAreas].slice(0, 10).join(", ")}).`,
+      );
+    }
+    if (unresolvedSpotCount > 0) {
+      warnings.push(
+        `${unresolvedSpotCount} encounter spot(s) reference an unknown hiding-spot id ` +
+          `(${[...unresolvedSpotIds].slice(0, 10).join(", ")}).`,
+      );
+    }
+    if (invalidDirections > 0) {
+      warnings.push(`${invalidDirections} encounter path(s) carry a direction other than 0..3.`);
+    }
+
+    const countDirection = (from: boolean): Array<{ direction: string; count: number }> =>
+      DIRECTION_NAMES.map((name, value) => ({
+        direction: name,
+        count: all.filter(({ encounter }) =>
+          (from ? encounter.fromDirection : encounter.toDirection) === value,
+        ).length,
+      }));
+
+    return {
+      path,
+      version: nav.version,
+      subVersion: nav.subVersion,
+      areaCount: nav.areaCount,
+      pathCount: all.length,
+      spotCount: all.reduce((sum, entry) => sum + entry.encounter.spots.length, 0),
+      areasWithPaths: nav.areas.filter((area) => area.encounterPaths.length > 0).length,
+      byFromDirection: countDirection(true),
+      byToDirection: countDirection(false),
+      tMin,
+      tMax,
+      returned: Math.min(selected.length, limit),
+      paths: selected.slice(0, limit).map(({ owner, encounter }) => {
+        const from = byId.get(encounter.fromAreaId);
+        const to = byId.get(encounter.toAreaId);
+        return {
+          ownerAreaId: owner.id,
+          ownerAreaIndex: owner.index,
+          fromAreaId: encounter.fromAreaId,
+          fromAreaIndex: from?.index ?? null,
+          fromPlace: from ? navPlaceName(nav, from.placeId) : null,
+          fromDirection: directionName(encounter.fromDirection),
+          toAreaId: encounter.toAreaId,
+          toAreaIndex: to?.index ?? null,
+          toPlace: to ? navPlaceName(nav, to.placeId) : null,
+          toDirection: directionName(encounter.toDirection),
+          spots: encounter.spots.map((spot) => {
+            const resolved = spotById.get(spot.order);
+            return {
+              order: spot.order,
+              distance: spot.distance,
+              t: Number((spot.distance / 255).toFixed(4)),
+              resolved: resolved !== undefined,
+              areaId: resolved?.area.id ?? null,
+              areaIndex: resolved?.area.index ?? null,
+              place: resolved ? navPlaceName(nav, resolved.area.placeId) : null,
+              position: resolved
+                ? ([resolved.spot.x, resolved.spot.y, resolved.spot.z] as [number, number, number])
+                : null,
+              flags: resolved?.spot.flags ?? 0,
+              attributes: resolved ? decodeFlags(resolved.spot.flags, HIDING_SPOT_FLAGS) : [],
+            };
+          }),
+        };
+      }),
+      warnings,
+      ...(all.length === 0
+        ? { note: "No area stores an encounter path; most analyzed L4D2 maps have none." }
+        : {}),
+    };
+  },
+});
+
 const VISIBLE = z.object({
-  areaIndex: z.number(),
+  areaIndex: z.number().nullable(),
   areaId: z.number().nullable(),
   attributes: z.number(),
   flags: z.array(z.string()),
@@ -390,6 +611,8 @@ export const readNavVisibilityTool = defineTool({
     subVersion: z.number(),
     areaCount: z.number(),
     summary: z.object({
+      /** v16 stores area indexes; v10..15 store area ids. */
+      visibilityStorage: z.enum(["id", "index"]),
       areasWithVisibility: z.number(),
       areasInheriting: z.number(),
       edges: z.number(),
@@ -397,7 +620,8 @@ export const readNavVisibilityTool = defineTool({
       potentiallyVisible: z.number(),
       notVisible: z.number(),
       maxVisible: z.number(),
-      invalidIndexes: z.number(),
+      /** Entries whose raw value did not resolve to an area in the file. */
+      unresolvedEntries: z.number(),
       brokenInheritance: z.number(),
       selfEdges: z.number(),
     }),
@@ -418,7 +642,7 @@ export const readNavVisibilityTool = defineTool({
     let completelyVisible = 0;
     let potentiallyVisible = 0;
     let notVisible = 0;
-    let invalidIndexes = 0;
+    let unresolvedEntries = 0;
     let brokenInheritance = 0;
     let selfEdges = 0;
     let maxVisible = 0;
@@ -429,7 +653,7 @@ export const readNavVisibilityTool = defineTool({
         brokenInheritance += 1;
       }
       for (const entry of area.visibleAreaList) {
-        if (entry.areaId === null) invalidIndexes += 1;
+        if (entry.areaId === null || entry.areaIndex === null) unresolvedEntries += 1;
         if (entry.areaId === area.id) selfEdges += 1;
         if (entry.attributes === 0) notVisible += 1;
         if ((entry.attributes & 0x01) !== 0) potentiallyVisible += 1;
@@ -437,6 +661,7 @@ export const readNavVisibilityTool = defineTool({
       }
     }
     const summary = {
+      visibilityStorage: nav.version >= 16 ? ("index" as const) : ("id" as const),
       areasWithVisibility: nav.areas.filter((area) => area.visibleAreas > 0).length,
       areasInheriting: nav.areas.filter((area) => area.inheritVisibilityFrom !== 0).length,
       edges,
@@ -444,15 +669,16 @@ export const readNavVisibilityTool = defineTool({
       potentiallyVisible,
       notVisible,
       maxVisible,
-      invalidIndexes,
+      unresolvedEntries,
       brokenInheritance,
       selfEdges,
     };
 
     const warnings: string[] = [];
-    if (invalidIndexes > 0) {
+    if (unresolvedEntries > 0) {
       warnings.push(
-        `${invalidIndexes} visibility entry/entries point outside the ${nav.areaCount}-area table.`,
+        `${unresolvedEntries} visibility entry/entries did not resolve to an area in the ` +
+          `${nav.areaCount}-area table.`,
       );
     }
     if (brokenInheritance > 0) {
@@ -486,7 +712,7 @@ export const readNavVisibilityTool = defineTool({
     }
 
     const effectiveFor = (area: NavArea): Array<{
-      areaIndex: number;
+      areaIndex: number | null;
       areaId: number | null;
       attributes: number;
       flags: string[];
@@ -515,7 +741,7 @@ export const readNavVisibilityTool = defineTool({
         .map(([areaId, attributes]) => {
           const target = byId.get(areaId);
           return {
-            areaIndex: target?.index ?? -1,
+            areaIndex: target?.index ?? null,
             areaId,
             attributes,
             flags: decodeFlags(attributes, VISIBILITY_FLAGS),
@@ -523,7 +749,11 @@ export const readNavVisibilityTool = defineTool({
             source: own.has(areaId) ? ("own" as const) : ("inherited" as const),
           };
         })
-        .sort((a, b) => a.areaIndex - b.areaIndex || a.areaId - b.areaId);
+        .sort(
+          (a, b) =>
+            (a.areaIndex ?? Number.MAX_SAFE_INTEGER) -
+              (b.areaIndex ?? Number.MAX_SAFE_INTEGER) || a.areaId - b.areaId,
+        );
     };
 
     const selected = owners.slice(0, args.area !== undefined ? 1 : areaLimit);
@@ -589,5 +819,6 @@ export const readNavVisibilityTool = defineTool({
 export const navDetailsTools = [
   readNavPlacesTool,
   readNavHidingSpotsTool,
+  readNavEncountersTool,
   readNavVisibilityTool,
 ];

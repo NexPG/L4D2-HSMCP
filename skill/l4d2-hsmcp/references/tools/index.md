@@ -1,6 +1,6 @@
 # Tool catalogue
 
-248 tools. This page groups them by the job you are doing; each tool's own description is the
+249 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -105,7 +105,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_nav_areas` | every `.nav` area: attributes, L4D2 spawn attributes, place, connections |
 | `read_nav_places` | place table as data: 1-based place ids, area count, bounds, spawn attributes |
 | `read_nav_hiding_spots` | hiding spots with position and IN_COVER/SNIPER/EXPOSED flags, by area and place |
-| `read_nav_visibility` | visibility lists stored as area indexes, attributes, inheritance and effective merge |
+| `read_nav_visibility` | visibility lists (area ids in v15, indexes in v16), attributes, inheritance and effective merge |
+| `read_nav_encounters` | spot encounters: from/to areas and directions, hiding spots along the path with `t`, filters and checks |
 | `write_nav_areas` | set/clear area and spawn attributes in place, with a `.bak` and a read-back |
 | `edit_nav_connections` | add/remove/replace directional links, mirrored by default |
 | `nav_path` | A* between two points: areas in order, length, ladders, blocked-area handling |

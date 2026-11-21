@@ -6,17 +6,19 @@
  * starting at 1, hiding-spot flag bits, visibility entries stored as area *indexes* (not hash
  * ids), NOT_VISIBLE entries and an inherited visibility list.
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { readNavFile } from "../../src/nav/typescript/formats/navfile.js";
 import {
+  readNavEncountersTool,
   readNavHidingSpotsTool,
   readNavPlacesTool,
   readNavVisibilityTool,
 } from "../../src/nav/typescript/tools/navdetails.js";
-import { ctx as sharedCtx } from "../support/env.js";
+import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-navdetails-"));
@@ -28,6 +30,14 @@ interface FixtureSpot {
   flags: number;
 }
 
+interface FixtureEncounter {
+  from: number;
+  fromDir: number;
+  to: number;
+  toDir: number;
+  spots: Array<{ order: number; distance: number }>;
+}
+
 interface FixtureArea {
   id: number;
   place: number;
@@ -35,6 +45,7 @@ interface FixtureArea {
   min: [number, number, number];
   max: [number, number, number];
   hidingSpots?: FixtureSpot[];
+  encounters?: FixtureEncounter[];
   /** Visibility entries as `[areaIndex, attributes]`. */
   visible?: Array<[number, number]>;
   inheritFrom?: number;
@@ -94,7 +105,19 @@ function buildNav(areas: FixtureArea[], places: string[]): Buffer {
       for (const value of spot.position) f32(value);
       u8(spot.flags);
     }
-    u32(0); // encounter paths
+    const encounters = area.encounters ?? [];
+    u32(encounters.length);
+    for (const encounter of encounters) {
+      u32(encounter.from);
+      u8(encounter.fromDir);
+      u32(encounter.to);
+      u8(encounter.toDir);
+      u8(encounter.spots.length);
+      for (const spot of encounter.spots) {
+        u32(spot.order);
+        u8(spot.distance);
+      }
+    }
     u16(area.place);
     u32(0); // ladder up
     u32(0); // ladder down
@@ -130,6 +153,18 @@ const FIXTURE = buildNav(
         { id: 0, position: [8, 8, 0], flags: 0x01 }, // IN_COVER
         { id: 1, position: [24, 24, 0], flags: 0x08 }, // EXPOSED
       ],
+      encounters: [
+        {
+          from: 100,
+          fromDir: 1, // east
+          to: 101,
+          toDir: 3, // west
+          spots: [
+            { order: 2, distance: 0 },
+            { order: 1, distance: 200 },
+          ],
+        },
+      ],
       visible: [
         [1, 0x01], // POTENTIALLY_VISIBLE
         [2, 0x02], // COMPLETELY_VISIBLE
@@ -142,6 +177,15 @@ const FIXTURE = buildNav(
       min: [32, 0, 0],
       max: [64, 32, 0],
       hidingSpots: [{ id: 2, position: [48, 16, 4], flags: 0x05 }], // IN_COVER | IDEAL
+      encounters: [
+        {
+          from: 101,
+          fromDir: 3, // west
+          to: 100,
+          toDir: 1, // east
+          spots: [{ order: 0, distance: 128 }],
+        },
+      ],
       visible: [
         [0, 0x00], // NOT_VISIBLE, an explicit deletion for the inherited list
         [2, 0x02],
@@ -350,5 +394,178 @@ describe("read_nav_visibility", () => {
     expect(r.returned).toBe(2);
     expect(r.areas.map((area) => area.id).sort()).toEqual([100, 101]);
     expect(r.areas.every((area) => area.visible.every((entry) => entry.areaId === 102))).toBe(true);
+  });
+});
+
+describe("read_nav_encounters", () => {
+  it("resolves paths, directions and spots", async () => {
+    const r = (await readNavEncountersTool.handler({ path, limit: 10 } as never, ctx)) as {
+      pathCount: number;
+      spotCount: number;
+      areasWithPaths: number;
+      byFromDirection: Array<{ direction: string; count: number }>;
+      byToDirection: Array<{ direction: string; count: number }>;
+      tMin: number | null;
+      tMax: number | null;
+      paths: Array<{
+        ownerAreaId: number;
+        ownerAreaIndex: number;
+        fromAreaId: number;
+        fromDirection: string;
+        fromPlace: string | null;
+        toAreaId: number;
+        toDirection: string;
+        toPlace: string | null;
+        spots: Array<{
+          order: number;
+          distance: number;
+          t: number;
+          resolved: boolean;
+          areaId: number | null;
+          areaIndex: number | null;
+          position: [number, number, number] | null;
+          attributes: string[];
+        }>;
+      }>;
+      warnings: string[];
+    };
+
+    expect(r.pathCount).toBe(2);
+    expect(r.spotCount).toBe(3);
+    expect(r.areasWithPaths).toBe(2);
+    expect(r.byFromDirection).toEqual([
+      { direction: "north", count: 0 },
+      { direction: "east", count: 1 },
+      { direction: "south", count: 0 },
+      { direction: "west", count: 1 },
+    ]);
+    expect(r.byToDirection).toEqual([
+      { direction: "north", count: 0 },
+      { direction: "east", count: 1 },
+      { direction: "south", count: 0 },
+      { direction: "west", count: 1 },
+    ]);
+    expect(r.tMin).toBe(0);
+    expect(r.tMax).toBeCloseTo(200 / 255, 4);
+    expect(r.warnings).toEqual([]);
+
+    const first = r.paths[0]!;
+    expect(first).toMatchObject({
+      ownerAreaId: 100,
+      ownerAreaIndex: 0,
+      fromAreaId: 100,
+      fromDirection: "east",
+      fromPlace: "spawn",
+      toAreaId: 101,
+      toDirection: "west",
+      toPlace: "safe",
+    });
+    expect(first.spots).toEqual([
+      {
+        order: 2,
+        distance: 0,
+        t: 0,
+        resolved: true,
+        areaId: 101,
+        areaIndex: 1,
+        place: "safe",
+        position: [48, 16, 4],
+        flags: 0x05,
+        attributes: ["IN_COVER", "IDEAL_SNIPER_SPOT"],
+      },
+      {
+        order: 1,
+        distance: 200,
+        t: 0.7843,
+        resolved: true,
+        areaId: 100,
+        areaIndex: 0,
+        place: "spawn",
+        position: [24, 24, 0],
+        flags: 0x08,
+        attributes: ["EXPOSED"],
+      },
+    ]);
+
+    const second = r.paths[1]!;
+    expect(second.ownerAreaId).toBe(101);
+    expect(second.fromDirection).toBe("west");
+    expect(second.toDirection).toBe("east");
+    expect(second.spots[0]).toMatchObject({
+      order: 0,
+      t: 0.502,
+      areaId: 100,
+      position: [8, 8, 0],
+      attributes: ["IN_COVER"],
+    });
+  });
+
+  it("filters by owner, from, to and minimum spot count", async () => {
+    const byOwner = (await readNavEncountersTool.handler(
+      { path, area: 100, limit: 10 } as never,
+      ctx,
+    )) as { returned: number; paths: Array<{ ownerAreaId: number }> };
+    expect(byOwner.returned).toBe(1);
+    expect(byOwner.paths[0]!.ownerAreaId).toBe(100);
+
+    const byFrom = (await readNavEncountersTool.handler(
+      { path, from: 101, limit: 10 } as never,
+      ctx,
+    )) as { returned: number; paths: Array<{ fromAreaId: number }> };
+    expect(byFrom.returned).toBe(1);
+    expect(byFrom.paths[0]!.fromAreaId).toBe(101);
+
+    const bySpotCount = (await readNavEncountersTool.handler(
+      { path, minSpots: 2, limit: 10 } as never,
+      ctx,
+    )) as { returned: number };
+    expect(bySpotCount.returned).toBe(1);
+  });
+});
+
+describe.skipIf(!has.gameContent)("nav version 15", () => {
+  const tutorial = join(ctx.config.gameDir!, "maps", "tutorial01.nav");
+  const campaign = join(ctx.config.gameDir!, "maps", "c1m1_hotel.nav");
+
+  it("reads the tutorial custom block and stores visibility as area ids", async () => {
+    if (!existsSync(tutorial)) return;
+    const nav = readNavFile(readFileSync(tutorial), tutorial);
+    expect(nav.version).toBe(15);
+    expect(nav.subVersion).toBe(13);
+    expect(nav.areaCount).toBe(9);
+    expect(nav.zombiePopulation).toBe("default");
+    expect(nav.areas.map((area) => area.id)).toEqual([2, 9, 10, 13, 14, 15, 17, 19, 21]);
+
+    const visible = nav.areas.flatMap((area) => area.visibleAreaList);
+    expect(visible.length).toBe(53);
+    expect(visible.every((entry) => entry.areaId !== null && entry.areaIndex !== null)).toBe(true);
+    // Version 15 stores ids; version 16 stores indexes.
+    expect(visible.every((entry) => entry.stored === entry.areaId)).toBe(true);
+
+    const r = (await readNavVisibilityTool.handler(
+      { path: tutorial, area: nav.areas[0]!.id, effective: true, edgeLimit: 10 } as never,
+      ctx,
+    )) as {
+      summary: { visibilityStorage: string; unresolvedEntries: number };
+      areas: Array<{ visible: Array<{ areaIndex: number | null; areaId: number | null }> }>;
+    };
+    expect(r.summary.visibilityStorage).toBe("id");
+    expect(r.summary.unresolvedEntries).toBe(0);
+    expect(r.areas[0]!.visible.every((entry) => entry.areaIndex !== null)).toBe(true);
+  });
+
+  it("keeps the version 16 index storage distinct", async () => {
+    if (!existsSync(campaign)) return;
+    const nav = readNavFile(readFileSync(campaign), campaign);
+    expect(nav.version).toBe(16);
+    const visible = nav.areas.flatMap((area) => area.visibleAreaList);
+    expect(visible.length).toBeGreaterThan(0);
+    expect(visible.every((entry) => entry.stored === entry.areaIndex)).toBe(true);
+    const r = (await readNavVisibilityTool.handler(
+      { path: campaign, areaLimit: 1, edgeLimit: 1 } as never,
+      ctx,
+    )) as { summary: { visibilityStorage: string; unresolvedEntries: number } };
+    expect(r.summary.visibilityStorage).toBe("index");
+    expect(r.summary.unresolvedEntries).toBe(0);
   });
 });

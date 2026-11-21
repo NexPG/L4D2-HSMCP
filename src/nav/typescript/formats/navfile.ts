@@ -101,17 +101,43 @@ export interface NavHidingSpot {
 /**
  * One entry of an area's visibility list.
  *
- * On disk the four-byte value is the target area's *index* in the file's area array, not its
- * hash id: a stock `c1m1_hotel.nav` lists 0..1581 for 1582 areas. `areaId` resolves it after
- * the whole file is parsed. From sub-version 9 each entry carries an attribute byte after the
- * index; older files store the index alone.
+ * The four-byte value changed meaning at major version 16. Version 16 stores the target
+ * area's *index* in the file's area array (a stock `c1m1_hotel.nav` lists 0..1581 for 1582
+ * areas). Versions 10..15 store the target's *hash id*: the version-15 tutorials list
+ * `2, 9, 10, 13, 14, 15, 17, 19, 21`, which are exactly their nine area ids. `areaId` and
+ * `areaIndex` are both resolved after the whole file is parsed. From sub-version 9 each entry
+ * carries an attribute byte after the value; older files store the value alone.
  */
 export interface NavVisibleArea {
-  /** Stored index into `NavFile.areas`. */
-  areaIndex: number;
+  /** The raw four-byte value: an area index (v16) or an area id (v10..15). */
+  stored: number;
+  /** Resolved index, or null when the value is an id that is not in the file. */
+  areaIndex: number | null;
   /** Resolved area id, or null when the index is out of range. */
   areaId: number | null;
   attributes: number;
+}
+
+/**
+ * One spot on an encounter path: a hiding-spot id and the parametric distance along the
+ * path where it first has line of sight, stored as a byte (`distance / 255`).
+ */
+export interface NavEncounterSpot {
+  /** Hiding-spot id, resolved through `NavFile.areas[].hidingSpotList`. */
+  order: number;
+  /** Raw byte; `t = distance / 255`. */
+  distance: number;
+}
+
+/** One `SpotEncounter`: a path between two areas and the spots to look at along it. */
+export interface NavEncounterPath {
+  fromAreaId: number;
+  /** 0 = north, 1 = east, 2 = south, 3 = west. */
+  fromDirection: number;
+  toAreaId: number;
+  /** 0 = north, 1 = east, 2 = south, 3 = west. */
+  toDirection: number;
+  spots: NavEncounterSpot[];
 }
 
 /** `HidingSpot` flags (`nav_area.h`). */
@@ -163,6 +189,12 @@ export interface NavArea {
   hidingSpots: number;
   hidingSpotsOffset: number;
   hidingSpotList: NavHidingSpot[];
+  /** Encounter paths stored with this area; empty on most analyzed maps. */
+  encounterPaths: NavEncounterPath[];
+  /** Two teams' earliest occupy times, in seconds. */
+  earliestOccupyTime: [number, number];
+  /** Four corner light intensities, north-west first; null before version 11. */
+  lightIntensity: [number, number, number, number] | null;
   placeId: number;
   /** L4D2 `spawnAttributeFlags`; 0 for a sub-version that has none. */
   spawnAttributes: number;
@@ -396,10 +428,18 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
 
     const encounterCount = cursor.u32();
     plausibleCount(encounterCount, bytes, cursor.at, 11);
+    const encounterPaths: NavEncounterPath[] = [];
     for (let i = 0; i < encounterCount; i += 1) {
-      cursor.skip(4 + 1 + 4 + 1); // from id/dir, to id/dir
+      const fromAreaId = cursor.u32();
+      const fromDirection = cursor.u8();
+      const toAreaId = cursor.u32();
+      const toDirection = cursor.u8();
       const spotCount = cursor.u8();
-      cursor.skip(spotCount * 5); // order id u32 + t u8
+      const spots: NavEncounterSpot[] = [];
+      for (let spot = 0; spot < spotCount; spot += 1) {
+        spots.push({ order: cursor.u32(), distance: cursor.u8() });
+      }
+      encounterPaths.push({ fromAreaId, fromDirection, toAreaId, toDirection, spots });
     }
 
     const placeIdOffset = cursor.at;
@@ -416,8 +456,16 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       ladderConnections.push(ids);
     }
 
-    cursor.skip(8); // earliest occupy time, two floats
-    if (version >= 11) cursor.skip(16); // four corner light intensities
+    const earliestOccupyTime: [number, number] = [cursor.f32(), cursor.f32()];
+    const lightIntensity =
+      version >= 11
+        ? ([cursor.f32(), cursor.f32(), cursor.f32(), cursor.f32()] as [
+            number,
+            number,
+            number,
+            number,
+          ])
+        : null;
 
     let spawnAttributes = 0;
     let spawnAttributesOffset = cursor.at;
@@ -426,45 +474,47 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     const visibleAreaList: NavVisibleArea[] = [];
     let inheritVisibilityFrom = 0;
 
-    if (version >= 16) {
-      // L4D2's per-area block. The ugly branches below are the format's, not a guess: each
-      // one exists only for a sub-version range that shipped in a public build.
-      if (subVersion > 0) {
-        spawnAttributesOffset = cursor.at;
-        spawnAttributes = cursor.u32();
-        if (subVersion >= 2) {
-          if (subVersion < 10) {
-            cursor.skip(4); // unknown
-            if (subVersion > 3) {
-              cursor.skip(4);
-              if (subVersion - 5 < 8) cursor.skip(4);
-            }
-          } else if (subVersion - 5 < 8) {
+    // L4D2's per-area block. It follows the sub-version, not just the major version: the
+    // tutorial maps are major 15, sub 13, and carry the same block as the major-16, sub-14
+    // campaigns. The `version >= 15` guard keeps pre-L4D2 navs with a stray sub-version from
+    // being misread. The ugly branches below are the format's, not a guess: each one exists
+    // only for a sub-version range that shipped in a public build.
+    if (version >= 15 && subVersion > 0) {
+      spawnAttributesOffset = cursor.at;
+      spawnAttributes = cursor.u32();
+      if (subVersion >= 2) {
+        if (subVersion < 10) {
+          cursor.skip(4); // unknown
+          if (subVersion > 3) {
             cursor.skip(4);
+            if (subVersion - 5 < 8) cursor.skip(4);
           }
-          if (subVersion > 7) cursor.skip(2); // fog place id
+        } else if (subVersion - 5 < 8) {
+          cursor.skip(4);
         }
-        if ((spawnAttributes & 0x8) !== 0 && subVersion < 10) {
-          cursor.skip(4 + 4 + 4 + 4 + 4);
+        if (subVersion > 7) cursor.skip(2); // fog place id
+      }
+      if ((spawnAttributes & 0x8) !== 0 && subVersion < 10) {
+        cursor.skip(4 + 4 + 4 + 4 + 4);
+      }
+      if (subVersion - 3 < 7) {
+        const count = cursor.u8();
+        cursor.skip(count * 4);
+      }
+      if (subVersion >= 5) {
+        visibleAreasOffset = cursor.at;
+        visibleAreas = cursor.u32();
+        const entryBytes = subVersion >= 9 ? 5 : 4;
+        plausibleCount(visibleAreas, bytes, cursor.at, entryBytes);
+        for (let i = 0; i < visibleAreas; i += 1) {
+          visibleAreaList.push({
+            stored: cursor.u32(),
+            areaIndex: null,
+            areaId: null,
+            attributes: subVersion >= 9 ? cursor.u8() : 0,
+          });
         }
-        if (subVersion - 3 < 7) {
-          const count = cursor.u8();
-          cursor.skip(count * 4);
-        }
-        if (subVersion >= 5) {
-          visibleAreasOffset = cursor.at;
-          visibleAreas = cursor.u32();
-          const entryBytes = subVersion >= 9 ? 5 : 4;
-          plausibleCount(visibleAreas, bytes, cursor.at, entryBytes);
-          for (let i = 0; i < visibleAreas; i += 1) {
-            visibleAreaList.push({
-              areaIndex: cursor.u32(),
-              areaId: null,
-              attributes: subVersion >= 9 ? cursor.u8() : 0,
-            });
-          }
-          if (subVersion > 10) inheritVisibilityFrom = cursor.u32();
-        }
+        if (subVersion > 10) inheritVisibilityFrom = cursor.u32();
       }
     }
 
@@ -491,6 +541,9 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       hidingSpots,
       hidingSpotsOffset,
       hidingSpotList,
+      encounterPaths,
+      earliestOccupyTime,
+      lightIntensity,
       placeId,
       spawnAttributes,
       spawnAttributesOffset,
@@ -501,9 +554,17 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     });
   }
 
+  const indexById = new Map(areas.map((area) => [area.id, area.index]));
+  const storesIndexes = version >= 16;
   for (const area of areas) {
     for (const visible of area.visibleAreaList) {
-      visible.areaId = areas[visible.areaIndex]?.id ?? null;
+      if (storesIndexes) {
+        visible.areaIndex = visible.stored;
+        visible.areaId = areas[visible.stored]?.id ?? null;
+      } else {
+        visible.areaId = visible.stored;
+        visible.areaIndex = indexById.get(visible.stored) ?? null;
+      }
     }
   }
 
