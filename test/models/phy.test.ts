@@ -86,6 +86,37 @@ describe.skipIf(!has.gameContent)("read_model_collision", () => {
     expect(r.maxConvexPieces).toBe(16);
   });
 
+  it("reports the ragdoll text section, not just a hull count", async () => {
+    const r = (await readModelCollisionTool.handler(
+      { model: "infected/boomette.mdl" } as never,
+      ctx,
+    )) as {
+      jointed: boolean;
+      mass: number | null;
+      ragdoll: {
+        solids: Array<{ name: string; parent: string | null; massbias: number }>;
+        constraints: unknown[];
+        rootName: string | null;
+        totalMass: number | null;
+        concave: boolean;
+        selfCollisions: boolean;
+        collisionPairs: Array<[number, number]> | null;
+      } | null;
+    };
+    expect(r.jointed).toBe(true);
+    expect(r.mass).toBe(100);
+    expect(r.ragdoll).not.toBeNull();
+    expect(r.ragdoll!.solids).toHaveLength(18);
+    expect(r.ragdoll!.solids[0]!.name).toBe("ValveBiped.Bip01_Pelvis");
+    expect(r.ragdoll!.solids[0]!.parent).toBeNull();
+    expect(r.ragdoll!.solids[1]!.parent).toBe("ValveBiped.Bip01_Pelvis");
+    expect(r.ragdoll!.constraints).toHaveLength(17);
+    expect(r.ragdoll!.rootName).toBe("valvebiped.bip01_pelvis");
+    expect(r.ragdoll!.totalMass).toBe(100);
+    expect(r.ragdoll!.concave).toBe(false);
+    expect(r.ragdoll!.collisionPairs!.length).toBeGreaterThan(0);
+  });
+
   it("reports a model without a .phy as found: false", async () => {
     const r = (await readModelCollisionTool.handler(
       { model: "props_foliage/urban_trees_dryleaves01.mdl" } as never,

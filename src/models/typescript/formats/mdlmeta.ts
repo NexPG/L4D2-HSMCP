@@ -42,6 +42,14 @@ export interface MdlHitboxSet {
   hitboxes: MdlHitbox[];
 }
 
+/** One `mstudiomodelgroup_t`, i.e. one `$includemodel` entry. */
+export interface MdlIncludedModel {
+  index: number;
+  /** Often empty; the QC only needs the model path. */
+  label: string;
+  model: string;
+}
+
 function readName(bytes: Buffer, offset: number): string {
   if (offset <= 0 || offset >= bytes.length) return "";
   const end = bytes.indexOf(0, offset);
@@ -105,6 +113,33 @@ export function readAttachments(mdl: Buffer): MdlAttachment[] {
     });
   }
   return attachments;
+}
+
+/**
+ * Included models (`$includemodel`): the count is at 336 and the list at 340 in v49.
+ *
+ * Each entry is two relative string offsets. This is how a survivor model reuses another
+ * model's 1,000+ sequences; a decompiler that ignores it writes a QC whose sequences point
+ * at animation SMDs it never produced.
+ */
+export function readIncludedModels(mdl: Buffer): MdlIncludedModel[] {
+  if (mdl.length < 344) return [];
+  const count = mdl.readInt32LE(336);
+  const offset = mdl.readInt32LE(340);
+  if (count <= 0 || count > 4096 || offset <= 0 || offset >= mdl.length) return [];
+  const models: MdlIncludedModel[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const base = offset + index * 8;
+    if (base + 8 > mdl.length) break;
+    const labelOffset = mdl.readInt32LE(base);
+    const nameOffset = mdl.readInt32LE(base + 4);
+    models.push({
+      index,
+      label: labelOffset > 0 ? readName(mdl, base + labelOffset) : "",
+      model: nameOffset > 0 ? readName(mdl, base + nameOffset) : "",
+    });
+  }
+  return models;
 }
 
 export function readHitboxSets(mdl: Buffer): MdlHitboxSet[] {

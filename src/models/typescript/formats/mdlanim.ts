@@ -34,6 +34,55 @@ export interface MdlSequence {
   paramIndices: [number, number];
   paramStart: [number, number];
   paramEnd: [number, number];
+  fadeInTime: number;
+  fadeOutTime: number;
+  /** `event` lines stored with the sequence, in file order. */
+  events: MdlEvent[];
+}
+
+/** One `mstudioevent_t`: 80 bytes, with an optional name relative to the record. */
+export interface MdlEvent {
+  /** Normalised cycle in 0..1 as stored; the frame is `round(cycle * (frameCount - 1))`. */
+  cycle: number;
+  /** Numeric event id (`5004`, `AE_MUZZLEFLASH`, ...) when the record has no name. */
+  event: number;
+  /** `NEW_EVENT_STYLE` (1024) marks a named event. */
+  type: number;
+  /** The event name, or the numeric id as a string. */
+  name: string;
+  options: string;
+}
+
+/** One `mstudioposeparamdesc_t`, the controller a `blend` line drives. */
+export interface MdlPoseParam {
+  index: number;
+  name: string;
+  flags: number;
+  /** Range the animation was authored over; a blend line quotes these. */
+  start: number;
+  end: number;
+  /** Looping span, 0 for none, 360 for rotations. */
+  loop: number;
+}
+
+/** One `mstudioikchain_t`: a three-bone chain and the bones it moves. */
+export interface MdlIkChain {
+  index: number;
+  name: string;
+  /** 0 = the old "foot" solver, 1 = the two-bone solver; the value is copied to the QC. */
+  linkType: number;
+  /** Bone indices from the end effector up the chain. */
+  bones: number[];
+  /** `$ikchain`'s `knee` hint, the first link's ideal bending direction. */
+  knee: Vec3;
+}
+
+/** One `mstudioiklock_t`: a chain the sequence (or autoplay) may pin. */
+export interface MdlIkLock {
+  chain: number;
+  positionWeight: number;
+  localQWeight: number;
+  flags: number;
 }
 
 export interface MdlAnimationDesc {
@@ -165,9 +214,162 @@ export function readSequences(mdl: Buffer, animations: MdlAnimationDesc[]): MdlS
       paramIndices: [mdl.readInt32LE(base + 76), mdl.readInt32LE(base + 80)],
       paramStart: [mdl.readFloatLE(base + 84), mdl.readFloatLE(base + 88)],
       paramEnd: [mdl.readFloatLE(base + 92), mdl.readFloatLE(base + 96)],
+      fadeInTime: mdl.readFloatLE(base + 104),
+      fadeOutTime: mdl.readFloatLE(base + 108),
+      events: readSequenceEvents(mdl, base),
     });
   }
   return sequences;
+}
+
+/**
+ * Reads a sequence's `mstudioevent_t` list.
+ *
+ * The descriptor stores `numevents` (24) and `eventindex` (28), where the index is relative
+ * to the sequence descriptor. Each record is 80 bytes; its name offset is relative to the
+ * record. A zero name offset means the numeric id is the name, which is how `event 5004`
+ * survives a decompile.
+ */
+function readSequenceEvents(mdl: Buffer, base: number): MdlEvent[] {
+  const count = mdl.readInt32LE(base + 24);
+  const offset = mdl.readInt32LE(base + 28);
+  if (count <= 0 || count > 1000 || offset <= 0) return [];
+  const events: MdlEvent[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const at = base + offset + index * 80;
+    if (at + 80 > mdl.length) break;
+    const nameOffset = mdl.readInt32LE(at + 76);
+    const number = mdl.readInt32LE(at + 4);
+    const options = mdl
+      .subarray(at + 12, at + 76)
+      .toString("latin1")
+      .replace(/\0.*$/s, "");
+    events.push({
+      cycle: mdl.readFloatLE(at),
+      event: number,
+      type: mdl.readInt32LE(at + 8),
+      name:
+        nameOffset !== 0 && at + nameOffset > at && at + nameOffset < mdl.length
+          ? readName(mdl, at + nameOffset)
+          : String(number),
+      options,
+    });
+  }
+  return events;
+}
+
+/**
+ * The animation indices a sequence blends, in `groupSizes[0] * groupSizes[1]` order.
+ *
+ * A three-way aim blend names three SMDs; the descriptor stores only the first index and the
+ * list offset, so a reader that stops at `firstAnimation` cannot recreate the other two.
+ */
+export function sequenceAnimationIndices(mdl: Buffer, sequence: MdlSequence): number[] {
+  const total = sequence.groupSizes[0] * sequence.groupSizes[1];
+  if (total <= 0 || sequence.animIndexOffset <= 0) return [];
+  const at = sequence.baseOffset + sequence.animIndexOffset;
+  if (at + total * 2 > mdl.length) return [];
+  const indices: number[] = [];
+  for (let index = 0; index < total; index += 1) {
+    const value = mdl.readInt16LE(at + index * 2);
+    if (value >= 0) indices.push(value);
+  }
+  return indices;
+}
+
+/**
+ * Pose parameters (`mstudioposeparamdesc_t`), which a multi-blend `$sequence` names.
+ *
+ * The header keeps the count at 300 and the list offset at 304; each record is 20 bytes and
+ * its name is relative to the record. These are the controllers a decompiled `blend` line
+ * must quote, so a blend that references one is not invisible.
+ */
+export function readPoseParams(mdl: Buffer): MdlPoseParam[] {
+  if (mdl.length < 308) return [];
+  const count = mdl.readInt32LE(300);
+  const offset = mdl.readInt32LE(304);
+  if (count <= 0 || count > 4096 || offset <= 0 || offset >= mdl.length) return [];
+  const params: MdlPoseParam[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const base = offset + index * 20;
+    if (base + 20 > mdl.length) break;
+    params.push({
+      index,
+      name: readName(mdl, base + mdl.readInt32LE(base)) || `pose_${index}`,
+      flags: mdl.readInt32LE(base + 4),
+      start: mdl.readFloatLE(base + 8),
+      end: mdl.readFloatLE(base + 12),
+      loop: mdl.readFloatLE(base + 16),
+    });
+  }
+  return params;
+}
+
+/**
+ * IK chains (`mstudioikchain_t`): the count is at 284 and the list at 288.
+ *
+ * A chain record is 16 bytes and its links are 28 bytes each (`bone`, knee direction,
+ * unused vector), addressed relative to the chain. The bone ids are what `$ikchain` needs;
+ * the vectors are the pose-space hint and are not written by this reader.
+ */
+export function readIkChains(mdl: Buffer): MdlIkChain[] {
+  if (mdl.length < 292) return [];
+  const count = mdl.readInt32LE(284);
+  const offset = mdl.readInt32LE(288);
+  if (count <= 0 || count > 4096 || offset <= 0 || offset >= mdl.length) return [];
+  const chains: MdlIkChain[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const base = offset + index * 16;
+    if (base + 16 > mdl.length) break;
+    const nameOffset = mdl.readInt32LE(base);
+    const linkType = mdl.readInt32LE(base + 4);
+    const linkCount = mdl.readInt32LE(base + 8);
+    const linkOffset = mdl.readInt32LE(base + 12);
+    if (linkCount < 0 || linkCount > 64 || linkOffset <= 0) continue;
+    const linkBase = base + linkOffset;
+    if (linkBase + linkCount * 28 > mdl.length) continue;
+    const bones: number[] = [];
+    for (let link = 0; link < linkCount; link += 1) {
+      bones.push(mdl.readInt32LE(linkBase + link * 28));
+    }
+    const firstLink = linkBase;
+    chains.push({
+      index,
+      name: readName(mdl, base + nameOffset) || `ikchain_${index}`,
+      linkType,
+      bones,
+      knee: [
+        mdl.readFloatLE(firstLink + 4),
+        mdl.readFloatLE(firstLink + 8),
+        mdl.readFloatLE(firstLink + 12),
+      ],
+    });
+  }
+  return chains;
+}
+
+/**
+ * Model-level IK locks (`mstudioiklock_t`, count at 320, list at 324), which the QC writes
+ * as `$ikautoplaylock`. Each record is 16 bytes. A sequence can carry its own `iklock`
+ * list; this reads the model-level autoplay set only, which is what a decompile needs.
+ */
+export function readIkLocks(mdl: Buffer): MdlIkLock[] {
+  if (mdl.length < 328) return [];
+  const count = mdl.readInt32LE(320);
+  const offset = mdl.readInt32LE(324);
+  if (count <= 0 || count > 4096 || offset <= 0 || offset >= mdl.length) return [];
+  const locks: MdlIkLock[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const base = offset + index * 16;
+    if (base + 16 > mdl.length) break;
+    locks.push({
+      chain: mdl.readInt32LE(base),
+      positionWeight: mdl.readFloatLE(base + 4),
+      localQWeight: mdl.readFloatLE(base + 8),
+      flags: mdl.readInt32LE(base + 12),
+    });
+  }
+  return locks;
 }
 
 export function readAnimations(mdl: Buffer): MdlAnimationDesc[] {

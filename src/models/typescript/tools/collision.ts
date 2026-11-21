@@ -8,27 +8,14 @@
  * `prop_data` block, and whether the file's checksum still matches the `.mdl`.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { extname, join } from "node:path";
+import { extname } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { gameBlock, gameFor } from "../../../core/typescript/games/resolve.js";
 import { GAME, GAME_BLOCK, resolveInput } from "../../../core/typescript/tools/paths.js";
-import { openGameVpk } from "../../../assets/typescript/game/vpkcontent.js";
 import { readPhy } from "../formats/phy.js";
 import type { PhyReport } from "../formats/phy.js";
-
-function normalizeModelPath(model: string): string {
-  let path = model.replace(/\\/g, "/").replace(/^\/+/, "");
-  if (!path.toLowerCase().endsWith(".mdl")) path += ".mdl";
-  if (!path.toLowerCase().startsWith("models/")) path = `models/${path}`;
-  return path;
-}
-
-function looseOrVpk(gameDir: string, path: string): Buffer | null {
-  const loose = join(gameDir, path);
-  if (existsSync(loose)) return readFileSync(loose);
-  return openGameVpk(gameDir)?.read(path) ?? null;
-}
+import { looseOrVpk, normalizeModelPath } from "./source.js";
 
 function keyValue(text: string | null, key: string): string | null {
   if (!text) return null;
@@ -46,6 +33,7 @@ function reportOf(report: PhyReport, mdlChecksum: number | null): Record<string,
   const totalConvexPieces = report.solids.reduce((sum, solid) => sum + solid.convexPieces, 0);
   const totalTriangles = report.solids.reduce((sum, solid) => sum + solid.triangles, 0);
   const totalVertices = report.solids.reduce((sum, solid) => sum + solid.vertices, 0);
+  const ragdoll = report.ragdoll;
   return {
     found: true,
     checksum: report.checksum,
@@ -59,8 +47,24 @@ function reportOf(report: PhyReport, mdlChecksum: number | null): Record<string,
     concaveRequired: report.maxConvexPieces > 1,
     solids: report.solids,
     collisionName: keyValue(report.collisionText, "name"),
-    mass: numberOrNull(keyValue(report.collisionText, "mass")),
+    mass: ragdoll?.totalMass ?? numberOrNull(keyValue(report.collisionText, "mass")),
     surfaceProp: keyValue(report.collisionText, "surfaceprop"),
+    /** The `.phy` text section: the ragdoll, not just a hull count. */
+    ragdoll: ragdoll
+      ? {
+          solids: ragdoll.solids,
+          constraints: ragdoll.constraints,
+          rootName: ragdoll.rootName,
+          totalMass: ragdoll.totalMass,
+          concave: ragdoll.concave,
+          selfCollisions: ragdoll.selfCollisions,
+          collisionPairs: ragdoll.collisionPairs,
+        }
+      : null,
+    /** True when the file carries more than one solid or any parent link. */
+    jointed: ragdoll
+      ? ragdoll.solids.length > 1 || ragdoll.solids.some((solid) => solid.parent !== null)
+      : false,
     collisionText: report.collisionText ? report.collisionText.slice(0, 4000) : null,
   };
 }
@@ -69,7 +73,9 @@ export const readModelCollisionTool = defineTool({
   name: "read_model_collision",
   description:
     "Reads a model's `.phy` collision and reports its solids, convex pieces, triangles, " +
-    "vertices, `prop_data` block and whether the file still matches the model's checksum. " +
+    "vertices, `prop_data` block, the ragdoll text section (per-solid name/parent/mass/" +
+    "massbias, joint constraints, editparams and collision rules) and whether the file still " +
+    "matches the model's checksum. " +
     "This is the difference between `read_static_props` saying a .phy exists and knowing " +
     "whether it is one hull or several: more than one convex piece per solid requires " +
     "`$concave` in the QC, or studiomdl keeps the first piece and the rest is walk-through. " +
@@ -114,6 +120,44 @@ export const readModelCollisionTool = defineTool({
     collisionName: z.string().nullable(),
     mass: z.number().nullable(),
     surfaceProp: z.string().nullable(),
+    /** The `.phy` text section; null for a file that carries none. */
+    ragdoll: z
+      .object({
+        solids: z.array(
+          z.object({
+            index: z.number(),
+            name: z.string(),
+            parent: z.string().nullable(),
+            mass: z.number(),
+            surfaceprop: z.string().nullable(),
+            damping: z.number(),
+            rotdamping: z.number(),
+            inertia: z.number(),
+            volume: z.number(),
+            massbias: z.number(),
+          }),
+        ),
+        constraints: z.array(
+          z.object({
+            parent: z.number(),
+            child: z.number(),
+            limits: z.object({
+              x: z.tuple([z.number(), z.number()]),
+              y: z.tuple([z.number(), z.number()]),
+              z: z.tuple([z.number(), z.number()]),
+            }),
+            friction: z.object({ x: z.number(), y: z.number(), z: z.number() }),
+          }),
+        ),
+        rootName: z.string().nullable(),
+        totalMass: z.number().nullable(),
+        concave: z.boolean(),
+        selfCollisions: z.boolean(),
+        collisionPairs: z.array(z.tuple([z.number(), z.number()])).nullable(),
+      })
+      .nullable(),
+    /** True when the file has more than one solid or any parent link. */
+    jointed: z.boolean(),
     /** The trailing KeyValues block, capped at 4,000 characters. */
     collisionText: z.string().nullable(),
     note: z.string().optional(),
@@ -173,6 +217,8 @@ export const readModelCollisionTool = defineTool({
       collisionName: null,
       mass: null,
       surfaceProp: null,
+      ragdoll: null,
+      jointed: false,
       collisionText: null,
     };
 

@@ -15,7 +15,7 @@ import { decompileModelTool } from "../../src/models/typescript/tools/decompile.
 import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";
 import { readAttachments, readHitboxSets } from "../../src/models/typescript/formats/mdlmeta.js";
 import { readAnimations, readSequences, decodeAnimation } from "../../src/models/typescript/formats/mdlanim.js";
-import { readMdlBones } from "../../src/models/typescript/formats/mdlbones.js";
+import { readMdlBones, readModelHeaderInfo } from "../../src/models/typescript/formats/mdlbones.js";
 import { readPhy, readPhyGeometry } from "../../src/models/typescript/formats/phy.js";
 import { parseModelGeometry } from "../../src/models/typescript/formats/mdlmesh.js";
 import type { Vec3 } from "../../src/models/typescript/formats/mdlmesh.js";
@@ -214,6 +214,9 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain('"v_bat_aims.smd" "v_bat_aims_2.smd" "v_bat_aims_3.smd"');
     expect(qc).toContain("blendwidth 3");
     expect(qc).toContain('blend "ver_aims" -1.000000 1.000000');
+    // The melee particle event is a block member, so this sequence must not use the
+    // one-line form even though it has one SMD.
+    expect(qc).toContain('{ event AE_CL_CREATE_PARTICLE_EFFECT 8 "weapon_melee_blur_baseball_bat');
   });
 
   it.skipIf(!has.toolchain)("recompiles v_bat's three-way blend", async () => {
@@ -244,6 +247,13 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(aims.paramIndices).toEqual([0, -1]);
     expect(aims.paramStart[0]).toBeCloseTo(-1, 5);
     expect(aims.paramEnd[0]).toBeCloseTo(1, 5);
+
+    const rebuiltSequences = readSequences(rebuilt, readAnimations(rebuilt));
+    const swing = rebuiltSequences.find((sequence) => sequence.name === "swing_e_w_03")!;
+    expect(swing.events).toHaveLength(1);
+    expect(swing.events[0]!.name).toBe("AE_CL_CREATE_PARTICLE_EFFECT");
+    expect(Math.round(swing.events[0]!.cycle * (swing.frameCount - 1))).toBe(8);
+    expect(swing.events[0]!.options).toContain("weapon_melee_blur_baseball_bat");
   });
 
   it.skipIf(!has.toolchain)("recompiles the gift's 31-frame spin", { timeout: 30_000 }, async () => {
@@ -754,9 +764,11 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
         overwrite: true,
         confirm: true,
         modelname: "hsmcp_decompile_test/v_bat.mdl",
+        defineBones: true,
       } as never,
       ctx,
     )) as { qc: string };
+    expect(readFileSync(decompiled.qc, "utf8").match(/^\$definebone /gm)).toHaveLength(63);
     const compiled = (await runStudiomdlTool.handler(
       { qc: decompiled.qc, timeoutMinutes: 10 } as never,
       ctx,
@@ -809,6 +821,12 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     const qc = readFileSync(decompiled.qc, "utf8");
     expect(qc).toContain('$collisionmodel "gascan001a_phys.smd"');
     expect(qc).toContain("$concave");
+    // Header data the QC is the only carrier for.
+    expect(qc).toContain('$contents "solid"');
+    expect(qc).toContain("$bbox ");
+    expect(qc).toContain("$keyvalues");
+    expect(qc).toContain('"base" "Metal.GasCan"');
+    expect(qc).toContain('"flammable" "yes"');
 
     const compiled = (await runStudiomdlTool.handler(
       { qc: decompiled.qc, timeoutMinutes: 5 } as never,
@@ -847,6 +865,12 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     box(sourcePhy).forEach((value, axis) => {
       expect(Math.abs(value - box(rebuiltPhy)[axis]!)).toBeLessThan(0.01);
     });
+
+    const rebuiltHeader = readModelHeaderInfo(rebuilt)!;
+    expect(rebuiltHeader.contents).toBe(1);
+    expect(rebuiltHeader.keyvalues).toContain('"base" "Metal.GasCan"');
+    expect(rebuiltHeader.keyvalues).toContain('"flammable" "yes"');
+    expect(rebuiltHeader.hull.min[2]).toBeCloseTo(-10.72, 1);
   });
 
   it("writes flex deltas as a VTA and references it from a $model block", async () => {
@@ -876,6 +900,10 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain('flex "presser" frame 1');
     expect(qc).toContain('flexcontroller presser range 0.000000 1.000000 "presser"');
     expect(qc).toContain("%presser = presser");
+    expect(qc).toContain('$includemodel "models/infected/anim_boomer.mdl"');
+    // The four chains and their knee hints are the canonical values from the survivor QCs.
+    expect(qc).toContain('$ikchain "rhand" "ValveBiped.Bip01_R_Hand" knee 0.707000 0.707000 0.000000');
+    expect(qc).toContain('$ikchain "lfoot" "ValveBiped.Bip01_L_Foot" knee 0.707000 -0.707000 0.000000');
     expect(qc).not.toContain('$body "Body"');
 
     const source = loadGameModel(archive(), "models/infected/boomette.mdl")!;

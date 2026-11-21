@@ -34,6 +34,19 @@ export interface ModelHeaderInfo {
   eyePosition: Vec3;
   illuminationPosition: Vec3;
   surfaceProp: string | null;
+  /** Bounding box stored in the header (`hull_min`/`hull_max`), the `$bbox` values. */
+  hull: { min: Vec3; max: Vec3 };
+  /** Clipping box (`view_bbmin`/`view_bbmax`), the `$cbox` values. */
+  viewBox: { min: Vec3; max: Vec3 };
+  /** `CONTENTS_*` bits; 1 is `$contents "solid"`. */
+  contents: number;
+  /** Physics mass stored in the header, shared with the PHY editparams. */
+  mass: number;
+  /**
+   * The inner text of the header's `mdlkeyvalue { ... }` block, already stripped of that
+   * wrapper so it can go straight into `$keyvalues { ... }`. Null when the model has none.
+   */
+  keyvalues: string | null;
 }
 
 const IDST = 0x54534449;
@@ -45,14 +58,43 @@ function readName(bytes: Buffer, offset: number): string {
   return bytes.subarray(offset, end < 0 ? bytes.length : end).toString("latin1");
 }
 
+function readHeaderKeyValues(mdl: Buffer): string | null {
+  if (mdl.length < 320) return null;
+  const index = mdl.readInt32LE(312);
+  const count = mdl.readInt32LE(316);
+  if (index <= 0 || count <= 0 || index + count > mdl.length) return null;
+  let text = mdl
+    .subarray(index, index + count)
+    .toString("latin1")
+    .replace(/\0[\s\S]*$/, "")
+    .trim();
+  if (/^mdlkeyvalue\b/i.test(text)) {
+    const open = text.indexOf("{");
+    const close = text.lastIndexOf("}");
+    if (open >= 0 && close > open) text = text.slice(open + 1, close).trim();
+  }
+  return text.length > 0 ? text : null;
+}
+
 export function readModelHeaderInfo(mdl: Buffer): ModelHeaderInfo | null {
-  if (mdl.length < 316 || mdl.readInt32LE(0) !== IDST) return null;
+  if (mdl.length < 156 || mdl.readInt32LE(0) !== IDST) return null;
   const surfacePropOffset = mdl.readInt32LE(308);
   return {
     name: readName(mdl, 12),
     flags: mdl.readInt32LE(152),
     eyePosition: [mdl.readFloatLE(80), mdl.readFloatLE(84), mdl.readFloatLE(88)],
     illuminationPosition: [mdl.readFloatLE(92), mdl.readFloatLE(96), mdl.readFloatLE(100)],
+    hull: {
+      min: [mdl.readFloatLE(104), mdl.readFloatLE(108), mdl.readFloatLE(112)],
+      max: [mdl.readFloatLE(116), mdl.readFloatLE(120), mdl.readFloatLE(124)],
+    },
+    viewBox: {
+      min: [mdl.readFloatLE(128), mdl.readFloatLE(132), mdl.readFloatLE(136)],
+      max: [mdl.readFloatLE(140), mdl.readFloatLE(144), mdl.readFloatLE(148)],
+    },
+    contents: mdl.length >= 336 ? mdl.readInt32LE(332) : 0,
+    mass: mdl.length >= 332 ? mdl.readFloatLE(328) : 0,
+    keyvalues: readHeaderKeyValues(mdl),
     surfaceProp:
       surfacePropOffset > 0 && surfacePropOffset < mdl.length
         ? readName(mdl, surfacePropOffset) || null

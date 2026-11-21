@@ -105,9 +105,15 @@ becomes `$collisionjoints` with every solid, its parent, mass, massbias, damping
 `$jointconstrain` limits (so a ragdoll stays a ragdoll), and a single hull becomes
 `$collisionmodel`/`$concave`. A single hull's compiler frame follows the first sequence's
 root; the pitched-root case is reproduced exactly, and other root poses are reported instead
-of being written rotated. Sequences whose data lives in the `.mdl` are decoded frame by frame
-(raw vectors and quaternions, or the RLE streams) and written as SMD `time <frame>` blocks
-with a `$sequence` line at the source fps; the SMD `time` is a frame number, not seconds.
+of being written rotated. The QC also carries what only the compiled model knows:
+`$includemodel` entries, `$contents`, `$bbox`/`$cbox`, `$keyvalues` (so `prop_data` and fire
+interactions survive), `$ikchain`/`$ikautoplaylock` for the limb chains, and, on request, a
+`$definebone` line per bone in the verified `(y, z, x)` order. Sequences whose data lives in
+the `.mdl` are decoded frame by frame (raw vectors and quaternions, or the RLE streams) and
+written as SMD `time <frame>` blocks with a `$sequence` line at the source fps; the SMD
+`time` is a frame number, not seconds. Fade times and `event` lines are written with the
+sequence, and a one-SMD clip with an event becomes a `$sequence` block because the one-line
+form cannot carry one.
 
 Every body part's alternatives are written as separate SMDs and a `$bodygroup` block, with
 `blank` for an empty value, so a model with several bodygroup values keeps them. Every VTX LOD
