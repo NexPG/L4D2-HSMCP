@@ -54,6 +54,12 @@ path does not build one. A `prop_static` without a `.phy` is non-solid: either a
 `$collisionmodel` SMD in a DCC, or place a clip brush under the prop. The toolkit reports
 the absence instead of hiding it.
 
+A `.phy` can also exist and still be the wrong shape. `read_model_collision` reads its solids,
+convex pieces, triangles and `prop_data` block, and checks the `.phy` checksum against the
+`.mdl`. If any solid has more than one convex piece, the QC needs `$concave`; without it
+studiomdl keeps one piece and the rest is walk-through. A shelf is one piece; a car or a bed
+is many, and their `editparams` block says `"concave" "1"`.
+
 ## Reading what a DCC exported
 
 - `read_smd` — bones, frame times, materials, triangle count, bounds, per-vertex weights;
@@ -117,6 +123,7 @@ the absence instead of hiding it.
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
 | Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
+| Read `.phy` solids, convex pieces, `$concave` need and `prop_data` | `read_model_collision` |
 | Open in HLMV | `run_hlmv`; prefers HLMV++, probes it, falls back to stock HLMV on a crash, creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
@@ -143,7 +150,9 @@ files and prove the compiled result.
    flat rectangle, compiles a sealed dev room and captures the engine's own view. HLMV's 3D
    canvas is not reliable on every desktop; `run_hlmv` and `close_windows` make sure no GUI
    is left behind.
-7. `read_static_props` after the compile - a model without `.phy` is non-solid unless a clip
+7. `read_model_collision` after the compile - solids, convex pieces, `$concave` and the
+   `.phy`/`.mdl` checksum; `read_static_props` then checks which baked props actually got it.
+8. `read_static_props` after the compile - a model without `.phy` is non-solid unless a clip
    brush replaces it.
 
 ## Licensing

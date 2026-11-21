@@ -38,12 +38,12 @@ invisible in a screenshot.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.154-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.155-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.154-alpha`.
+the last entry. The current skill version is `0.0.155-alpha`.
 
 ## Route the task first
 
@@ -200,6 +200,10 @@ the last entry. The current skill version is `0.0.154-alpha`.
   as one SMD per stack with `$sequence` lines, and `collision: "box"`/`"hull"` writes the
   `_phys.smd`; shape keys go through `fbx_to_dmx` as DMX flexes, while `fbx_to_smd` counts
   them because SMD has no morph target.
+- **Model collision shape.** `read_model_collision` reads a `.phy`'s solids, convex pieces,
+  triangles and `prop_data`, and checks its checksum against the `.mdl`. More than one piece
+  per solid means the QC needs `$concave`; `read_static_props` only reports whether a `.phy`
+  exists.
 - **3D-skybox composition.** `build_skybox` copies a selection, seals the room and places
   `sky_camera` in one call; choosing what is worth copying is design work. `write_sky_camera`
   and `write_skybox_copy` remain as the halves.

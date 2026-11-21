@@ -1,6 +1,6 @@
 # Tool catalogue
 
-228 tools. This page groups them by the job you are doing; each tool's own description is the
+229 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -110,6 +110,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_prop_survey` | props by model and class, including unnamed `prop_dynamic` |
 | `edit_static_props` | change or remove a baked prop's skin, solidity, tint, fade, flags |
 | `read_static_props` | static-prop collision audit: missing `.phy`, models the player walks through |
+| `read_model_collision` | what a `.phy` contains: solids, convex pieces, triangles, `$concave` requirement and `prop_data` |
 | `read_pakfile` | files embedded in the map (lump 40 is a ZIP) |
 | `read_materials` | material table and reuse |
 | `read_lightmap_budget` | where lightmap resolution went |

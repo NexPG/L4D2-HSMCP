@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.155-alpha - 2026-11-21
+
+- **New tool `read_model_collision`.** It reads a model's `.phy` and reports its solids,
+  convex pieces, triangles, vertices, `prop_data` block (name, mass, surfaceprop), and whether
+  the `.phy` checksum still matches the `.mdl`. This is the shape audit `read_static_props`
+  cannot do: more than one convex piece per solid requires `$concave`, or studiomdl keeps the
+  first piece and the rest is walk-through. Takes an engine model path (`props_vehicles/
+  cara_84sedan.mdl`) or a local `.mdl`/`.phy`. Verified: car 16 pieces / 634 triangles,
+  hospital bed 5 / 200, shelf 1 / 12; all checksums match.
+- **Skill documentation updated** for `read_model_collision`, the LOD/compiled-view
+  capabilities, and model-authoring physics. The tool catalogue now states 229 tools.
+- **Tool count: 229.** Tests: 188 files, 1655 passed, 33 skipped.
+
 ## 0.0.154-alpha - 2026-11-21
 
 - **`render_bsp_view` selects model LODs by distance.** The VTX reader now parses every LOD

@@ -18,7 +18,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 21/11/2026: **228 tools**.
+Last checked against the tool list on 21/11/2026: **229 tools**.
 
 ## The file itself
 
@@ -238,6 +238,7 @@ map and looking, or by not happening at all.
 | `read_map_geometry` | nothing — how full each lump is against vbsp's ceiling |
 | `read_prop_survey` | nothing |
 | `read_static_props` | nothing: Hammer shows a static prop as solid even when its model has no `.phy` |
+| `read_model_collision` | nothing: Hammer shows a static prop as solid without saying whether its `.phy` is one hull or several, or whether it needs `$concave` |
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |
 | `read_particle` | Hammer lists `.pcf` files, not the systems inside them, their materials or a map's `effect_name` resolution |
 | `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
