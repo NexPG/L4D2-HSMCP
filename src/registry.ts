@@ -59,6 +59,7 @@ import { windowTools } from "./hammer/typescript/tools/windows.js";
 import { hammerPlusPlusTools } from "./hammer/typescript/tools/hammerpp.js";
 import { healthTools } from "./core/typescript/tools/health.js";
 import { hlmvTools } from "./hammer/typescript/tools/hlmv.js";
+import { inputTools } from "./hammer/typescript/tools/input.js";
 import { hollowTools } from "./maps/typescript/tools/hollow.js";
 import { instanceTools } from "./maps/typescript/tools/instance.js";
 import { instanceCreateTools } from "./maps/typescript/tools/instancecreate.js";
@@ -123,6 +124,7 @@ export const allTools: AnyToolDef[] = [
   ...windowTools,
   ...hammerPlusPlusTools,
   ...hlmvTools,
+  ...inputTools,
   ...gameTools,
   ...campaignTools,
   ...campaignBuildTools,

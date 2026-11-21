@@ -1,6 +1,6 @@
 # Tool catalogue
 
-223 tools. This page groups them by the job you are doing; each tool's own description is the
+224 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -218,6 +218,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_entity_probe` | make a targetname echo on `OnMapSpawn` or a natural output; returns `run_map_test` markers |
 | `write_class_probe` | VScript counts of live entities by classname at chosen seconds, optional origins |
 | `write_nav_probe` | VScript samples the live nav mesh and tests `HasSpawnAttributes` |
+| `run_input` | focus a window and send a short key sequence (`E` pickup, a menu key); reports `focused`/`foreground` |
 
 ## Source text and models
 

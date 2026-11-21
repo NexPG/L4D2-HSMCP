@@ -18,6 +18,7 @@ of that path, but deleting it must not remove the capability.
 | Prove an entity exists in the running map | `write_entity_probe` | adds an `OnUser1` or natural-output echo; pair its `schedule`/`markers` with `run_map_test` |
 | Mark nav areas | `write_nav_attribute_region` | `func_nav_attribute_region` bits; regenerate nav and test with `write_nav_probe` |
 | Count live entities / read nav attributes | `write_class_probe`, `write_nav_probe` | VScript, installed through `run_map_test`'s `scriptsDir` |
+| Send a real key to a window | `run_input` | focus + `keybd_event`; reports `focused` and the foreground handle |
 | Any compiled-map entity | `edit_bsp_entities` | add/update/remove in lump 0; append-only, no other lump moves |
 | Any worldspawn key | `set_worldspawn` | `worldspawn` is not an `entity` block, so `edit_vmf` cannot reach it |
 | Any VScript | `write_vscript` | The Squirrel source is yours; `logic_script` wiring is a convenience |
