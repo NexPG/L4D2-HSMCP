@@ -73,6 +73,7 @@ import { mergeTools } from "./maps/typescript/tools/merge.js";
 import { modifyTools } from "./maps/typescript/tools/modify.js";
 import { navAreasTools } from "./nav/typescript/tools/navareas.js";
 import { navPathTools } from "./nav/typescript/tools/navpath.js";
+import { navDetailsTools } from "./nav/typescript/tools/navdetails.js";
 import { navConnectionTools } from "./nav/typescript/tools/navconnections.js";
 import { navTroubleTools } from "./nav/typescript/tools/navtrouble.js";
 import { optimiseTools } from "./maps/typescript/tools/optimise.js";
@@ -94,6 +95,7 @@ import { modelEyesTools } from "./models/typescript/tools/eyes.js";
 import { modelJiggleTools } from "./models/typescript/tools/jiggle.js";
 import { modelProceduralTools } from "./models/typescript/tools/procedural.js";
 import { modelLodTools } from "./models/typescript/tools/lods.js";
+import { modelAniTools } from "./models/typescript/tools/ani.js";
 import { modelFlexTools } from "./models/typescript/tools/flexes.js";
 import { previewModelTools } from "./models/typescript/tools/preview.js";
 import { fbxTools } from "./models/typescript/tools/fbx.js";
@@ -192,6 +194,7 @@ export const allTools: AnyToolDef[] = [
   ...modelJiggleTools,
   ...modelProceduralTools,
   ...modelLodTools,
+  ...modelAniTools,
   ...decompileModelTools,
   ...modelFlexTools,
   ...previewModelTools,
@@ -221,6 +224,7 @@ export const allTools: AnyToolDef[] = [
   ...navTroubleTools,
   ...navAreasTools,
   ...navPathTools,
+  ...navDetailsTools,
   ...navConnectionTools,
   ...buildTools,
   ...modifyTools,

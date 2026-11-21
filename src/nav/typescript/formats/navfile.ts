@@ -89,6 +89,45 @@ export const SPAWN_FLAGS: Record<number, string> = {
   0x80000000: "COMPASS_WESTNORTH",
 };
 
+/** One `CNavHidingSpot`: id, world position and the raw flag byte. */
+export interface NavHidingSpot {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  flags: number;
+}
+
+/**
+ * One entry of an area's visibility list.
+ *
+ * On disk the four-byte value is the target area's *index* in the file's area array, not its
+ * hash id: a stock `c1m1_hotel.nav` lists 0..1581 for 1582 areas. `areaId` resolves it after
+ * the whole file is parsed. From sub-version 9 each entry carries an attribute byte after the
+ * index; older files store the index alone.
+ */
+export interface NavVisibleArea {
+  /** Stored index into `NavFile.areas`. */
+  areaIndex: number;
+  /** Resolved area id, or null when the index is out of range. */
+  areaId: number | null;
+  attributes: number;
+}
+
+/** `HidingSpot` flags (`nav_area.h`). */
+export const HIDING_SPOT_FLAGS: Record<number, string> = {
+  0x01: "IN_COVER",
+  0x02: "GOOD_SNIPER_SPOT",
+  0x04: "IDEAL_SNIPER_SPOT",
+  0x08: "EXPOSED",
+};
+
+/** `CNavArea::VisibilityType`; 0 is an explicit NOT_VISIBLE delta entry. */
+export const VISIBILITY_FLAGS: Record<number, string> = {
+  0x01: "POTENTIALLY_VISIBLE",
+  0x02: "COMPLETELY_VISIBLE",
+};
+
 export interface NavArea {
   index: number;
   id: number;
@@ -120,12 +159,20 @@ export interface NavArea {
    * a ladder id, not an area id; use `NavFile.ladders` to resolve it.
    */
   ladderConnections: number[][];
+  /** Hiding-spot count; `hidingSpotList` holds the records themselves. */
   hidingSpots: number;
+  hidingSpotsOffset: number;
+  hidingSpotList: NavHidingSpot[];
   placeId: number;
   /** L4D2 `spawnAttributeFlags`; 0 for a sub-version that has none. */
   spawnAttributes: number;
   spawnAttributesOffset: number;
+  /** Visibility count; `visibleAreaList` holds the entries themselves. */
   visibleAreas: number;
+  visibleAreasOffset: number;
+  visibleAreaList: NavVisibleArea[];
+  /** Area whose visibility this one inherits, or 0; sub-versions 11 and later only. */
+  inheritVisibilityFrom: number;
 }
 
 /** One `CNavLadder` record from the end of the file. */
@@ -271,7 +318,8 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     plausibleCount(placeCount, bytes, cursor.at, 2);
     for (let i = 0; i < placeCount; i += 1) {
       const length = cursor.u16();
-      places.push(cursor.string(length));
+      // The place table writes `strlen(name) + 1`, NUL included; `PlaceToName` is a C string.
+      places.push(cursor.string(length).replace(/\0.*$/s, ""));
     }
     if (version > 11) hasUnnamedAreas = cursor.u8() !== 0;
   }
@@ -287,7 +335,7 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     plausibleCount(fogCount, bytes, cursor.at, 2);
     for (let i = 0; i < fogCount; i += 1) {
       const length = cursor.u16();
-      fogPlaces.push(cursor.string(length));
+      fogPlaces.push(cursor.string(length).replace(/\0.*$/s, ""));
     }
   }
 
@@ -328,8 +376,18 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     }
     const connectionsEnd = cursor.at;
 
+    const hidingSpotsOffset = cursor.at;
     const hidingSpots = cursor.u8();
-    cursor.skip(hidingSpots * 17); // id u32 + x,y,z f32 + flags u8
+    const hidingSpotList: NavHidingSpot[] = [];
+    for (let i = 0; i < hidingSpots; i += 1) {
+      hidingSpotList.push({
+        id: cursor.u32(),
+        x: cursor.f32(),
+        y: cursor.f32(),
+        z: cursor.f32(),
+        flags: cursor.u8(),
+      });
+    }
 
     if (version < 15) {
       const approachCount = cursor.u8();
@@ -364,6 +422,9 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     let spawnAttributes = 0;
     let spawnAttributesOffset = cursor.at;
     let visibleAreas = 0;
+    let visibleAreasOffset = cursor.at;
+    const visibleAreaList: NavVisibleArea[] = [];
+    let inheritVisibilityFrom = 0;
 
     if (version >= 16) {
       // L4D2's per-area block. The ugly branches below are the format's, not a guess: each
@@ -391,10 +452,18 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
           cursor.skip(count * 4);
         }
         if (subVersion >= 5) {
+          visibleAreasOffset = cursor.at;
           visibleAreas = cursor.u32();
-          plausibleCount(visibleAreas, bytes, cursor.at, subVersion >= 9 ? 5 : 4);
-          cursor.skip(visibleAreas * (subVersion >= 9 ? 5 : 4));
-          if (subVersion > 10) cursor.skip(4); // inherit visibility from
+          const entryBytes = subVersion >= 9 ? 5 : 4;
+          plausibleCount(visibleAreas, bytes, cursor.at, entryBytes);
+          for (let i = 0; i < visibleAreas; i += 1) {
+            visibleAreaList.push({
+              areaIndex: cursor.u32(),
+              areaId: null,
+              attributes: subVersion >= 9 ? cursor.u8() : 0,
+            });
+          }
+          if (subVersion > 10) inheritVisibilityFrom = cursor.u32();
         }
       }
     }
@@ -420,11 +489,22 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       connections,
       ladderConnections,
       hidingSpots,
+      hidingSpotsOffset,
+      hidingSpotList,
       placeId,
       spawnAttributes,
       spawnAttributesOffset,
       visibleAreas,
+      visibleAreasOffset,
+      visibleAreaList,
+      inheritVisibilityFrom,
     });
+  }
+
+  for (const area of areas) {
+    for (const visible of area.visibleAreaList) {
+      visible.areaId = areas[visible.areaIndex]?.id ?? null;
+    }
   }
 
   const ladderTableOffset = cursor.at;
@@ -666,6 +746,11 @@ export function patchNavConnections(
     ...blocks,
     nav.bytes.subarray(nav.areas[nav.areas.length - 1]!.recordEnd),
   ]);
+}
+
+/** Place ids are 1-based (`PlaceToName` in `nav_mesh.cpp`); 0 is `UNDEFINED_PLACE`. */
+export function navPlaceName(nav: NavFile, placeId: number): string | null {
+  return placeId >= 1 ? (nav.places[placeId - 1] ?? null) : null;
 }
 
 /** Centre of an area, in world units. */

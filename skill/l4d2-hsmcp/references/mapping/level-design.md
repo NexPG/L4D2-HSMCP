@@ -45,6 +45,12 @@ Per room, decide before drawing:
 Check with `read_vmf_rooms` (rooms connect, no orphan), `read_vmf_sightlines` (what sees
 what), `render_vmf_tour` (one look at the whole place), and finally the game.
 
+Nav is the map's second geometry: the Director spawns and hides only where the mesh allows.
+`read_nav_places` groups areas the way the Director does, `read_nav_hiding_spots` lists the
+generated cover positions with their flags, and `read_nav_visibility` shows which areas see
+which (including inherited deltas). Hiding spots are created by `nav_analyze`; do not treat
+them as hand-placed entities.
+
 ## Verticality
 
 - Stairs or a ramp must be covered by nav; a drop taller than the hull's step height needs a

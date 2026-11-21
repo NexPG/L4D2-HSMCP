@@ -21,6 +21,7 @@ import {
   decodeFlags,
   encodeFlags,
   navAreaCenter,
+  navPlaceName,
   patchNavAreas,
   readNavFile,
 } from "../formats/navfile.js";
@@ -75,7 +76,7 @@ function view(nav: NavFile, area: NavFile["areas"][number]): AreaView {
     spawnAttributes: decodeFlags(area.spawnAttributes, SPAWN_FLAGS),
     unknownSpawnBits: unknownSpawn === 0 ? null : `0x${unknownSpawn.toString(16)}`,
     placeId: area.placeId,
-    place: nav.places[area.placeId] ?? null,
+    place: navPlaceName(nav, area.placeId),
     center,
     size: [area.maxX - area.minX, area.maxY - area.minY, area.maxZ - area.minZ],
     connections,
@@ -154,7 +155,11 @@ export const readNavAreasTool = defineTool({
     }
     if (args.place !== undefined) {
       const wanted = args.place.toLowerCase();
-      areas = areas.filter((area) => (area.place ?? "").toLowerCase() === wanted);
+      areas = areas.filter((area) =>
+        wanted === "no place"
+          ? area.placeId === 0
+          : (area.place ?? "").toLowerCase() === wanted,
+      );
     }
 
     areas.sort((a, b) => {
@@ -253,15 +258,18 @@ export const writeNavAreasTool = defineTool({
         entry.clearSpawn = encodeFlags(update.removeSpawnFlags, SPAWN_FLAGS);
       }
       if (update.place !== undefined) {
-        const placeId = nav.places.findIndex((name) => name.toLowerCase() === update.place!.toLowerCase());
-        if (placeId === -1) {
+        const index = nav.places.findIndex(
+          (name) => name.toLowerCase() === update.place!.toLowerCase(),
+        );
+        if (index === -1) {
           throw new Error(
             `"${update.place}" is not in ${path}'s place table ` +
               `(${nav.places.length === 0 ? "the table is empty" : nav.places.join(", ")}). ` +
               `Adding a place means rewriting the table, which this tool does not do.`,
           );
         }
-        entry.placeId = placeId;
+        // Place ids are 1-based; 0 means no place.
+        entry.placeId = index + 1;
       }
       patch.push(entry);
     }
@@ -274,7 +282,7 @@ export const writeNavAreasTool = defineTool({
           {
             flagsHex: `0x${area.flags.toString(16).padStart(8, "0")}`,
             spawnHex: `0x${area.spawnAttributes.toString(16).padStart(8, "0")}`,
-            place: nav.places[area.placeId] ?? null,
+            place: navPlaceName(nav, area.placeId),
           },
         ];
       }),
@@ -300,7 +308,7 @@ export const writeNavAreasTool = defineTool({
       const now = {
         flagsHex: `0x${area.flags.toString(16).padStart(8, "0")}`,
         spawnHex: `0x${area.spawnAttributes.toString(16).padStart(8, "0")}`,
-        place: after.places[area.placeId] ?? null,
+        place: navPlaceName(after, area.placeId),
       };
       return { id: update.id, before: was, after: now };
     });

@@ -129,7 +129,7 @@ const FIXTURE = buildNav([
     id: 100,
     flags: 0x20000000, // MOSTLY_FLAT, an L4D2 bit
     spawn: 0x2, // EMPTY
-    place: 0,
+    place: 1,
     min: [0, 0, 0],
     max: [32, 32, 0],
     connections: { north: [101], east: [], south: [], west: [] },
@@ -138,7 +138,7 @@ const FIXTURE = buildNav([
     id: 101,
     flags: 0x4, // PRECISE
     spawn: 0x2000, // NO_MOBS
-    place: 1,
+    place: 2,
     min: [32, 0, 0],
     max: [64, 32, 0],
   },
@@ -156,8 +156,9 @@ describe("nav file", () => {
     expect(decodeFlags(nav.areas[0]!.flags, NAV_FLAGS)).toEqual(["MOSTLY_FLAT"]);
     expect(decodeFlags(nav.areas[1]!.spawnAttributes, SPAWN_FLAGS)).toEqual(["NO_MOBS"]);
     expect(nav.areas[0]!.connections.north).toEqual([101]);
-    expect(nav.areas[0]!.placeId).toBe(0);
-    expect(nav.areas[1]!.placeId).toBe(1);
+    // Place ids are 1-based; 0 is "no place".
+    expect(nav.areas[0]!.placeId).toBe(1);
+    expect(nav.areas[1]!.placeId).toBe(2);
   });
 
   it("patches bits in place and keeps every bit it does not name", () => {
@@ -250,7 +251,7 @@ describe("nav area tools", () => {
     expect(area.flags & 0x20000).toBe(0x20000);
     expect(area.flags & 0x20000000, "the unnamed bit survived the edit").toBe(0x20000000);
     expect(area.spawnAttributes & 0x01000000).toBe(0x01000000);
-    expect(area.placeId).toBe(1);
+    expect(area.placeId).toBe(2);
   });
 
   it("refuses a place the file does not have, and an area it does not have", async () => {

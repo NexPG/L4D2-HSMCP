@@ -104,6 +104,17 @@ export interface MdlAnimBlock {
   dataEnd: number;
 }
 
+/** The first bytes of an external `.ani`: `IDAG` and a version word (49 in L4D2). */
+export interface MdlAniHeader {
+  magic: string;
+  version: number;
+}
+
+export function readAniHeader(ani: Buffer): MdlAniHeader | null {
+  if (ani.length < 8) return null;
+  return { magic: ani.subarray(0, 4).toString("latin1"), version: ani.readInt32LE(4) };
+}
+
 export interface AnimationFrame {
   time: number;
   bones: Array<{ position: Vec3; rotation: Vec3 }>;
