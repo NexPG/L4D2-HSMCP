@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.166-alpha - 2026-11-21
+
+- **External `.ani` animations are decoded.** The model's anim-block table is read from the
+  v49 header (352/356), the sibling `.ani` is loaded beside the `.mdl`, and a clip is decoded
+  from `block.dataStart + animOffset`. Both layouts are covered:
+  - classic RLE track lists;
+  - frame-by-bone clips (`STUDIO_FRAMEANIM`, 0x40), with per-bone flags, constants, Vector48
+    positions, Quaternion48 rotations and Quaternion48S (`0x80`/`0x40`) rotations.
+- **Verified on a real external model:** `anim_biker` has 325 anim blocks and 2,239 external
+  animations. `a_RunSE` decodes to 39 frames; frame 20 differs from frame 0, and frame 38
+  returns to the first pose, as a run cycle should. With the `.ani` missing, the clip is
+  reported as skipped instead of emitted as the bind pose.
+- **Remaining gaps:** multi-blend sequences and flex writing; the result still lists them.
+- **Skill docs updated:** external `.ani` is no longer in the decompiler's gap list.
+- **Tool count: 231.** Tests: 194 files, 1695 passed, 33 skipped.
+
 ## 0.0.165-alpha - 2026-11-21
 
 - **Sectioned ("fast lookup") animations are decoded.** The decompiler now assembles a clip

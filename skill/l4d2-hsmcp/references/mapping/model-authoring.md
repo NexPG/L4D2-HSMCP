@@ -111,10 +111,9 @@ becomes its own SMD and a `$lod`/`replacemodel` line at the source switch distan
 LODs use a `$shadowlod` block. Attachments and custom hitbox sets are written as `$attachment` and
 `$hboxset`/`$hbox` lines; a hitbox set that studiomdl auto-generated is left out so the next
 compile can rebuild it from the mesh. Models with more than one skin family get a
-`$texturegroup "skinfamilies"` block built from the MDL's skin table. Sequences whose data is
-in an external `.ani` or that blend several animations are skipped and listed with the reason;
-sectioned fast-lookup clips are assembled from their contiguous section track lists. Flexes
-are **not** written. The reader does expose flex
+`$texturegroup "skinfamilies"` block built from the MDL's skin table. External `.ani` clips
+are decoded, including the frame-by-bone layout; sequences that blend several animations are
+skipped and listed with the reason. Flexes are **not** written. The reader does expose flex
 descriptors, controllers, rules and per-vertex deltas in `ModelGeometry.flex`, and
 `read_model_flexes` reports them with sampled deltas; a reliable VTA/DMX round-trip is still
 open, so `decompile_model` reports flexes as a gap. A one-frame

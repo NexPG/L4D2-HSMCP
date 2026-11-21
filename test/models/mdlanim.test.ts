@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   decodeAnimation,
   readAnimations,
+  readAnimBlocks,
   readAnimValue,
   readSequences,
 } from "../../src/models/typescript/formats/mdlanim.js";
@@ -109,7 +110,31 @@ describe.skipIf(!has.gameContent)("mdlanim", () => {
     expect(sequences.find((sequence) => sequence.name === "deploy")?.groupSizes).toEqual([1, 1]);
   });
 
-  it("refuses external and sectioned clips", () => {
+  it("decodes an external .ani frame-by-bone clip", () => {
+    const biker = mdl("models/survivors/anim_biker.mdl");
+    const ani = openGameVpk(ctx.config.gameDir!)!.read("models/survivors/anim_biker.ani")!;
+    expect(ani).not.toBeNull();
+    expect(readAnimBlocks(biker).length).toBeGreaterThan(0);
+    const animations = readAnimations(biker);
+    const run = animations.find((animation) => animation.name === "a_RunSE")!;
+    expect(run.animBlock).not.toBe(0);
+    expect(run.flags & 0x40).not.toBe(0);
+    const frames = decodeAnimation(biker, run, readMdlBones(biker), ani);
+    expect(frames).toHaveLength(39);
+    expect(frames![0]!.bones[0]!.rotation.every(Number.isFinite)).toBe(true);
+    // A run cycle returns to its first pose at the last frame; the middle is what moves.
+    expect(
+      Math.abs(frames![20]!.bones[0]!.rotation[2] - frames![0]!.bones[0]!.rotation[2]),
+    ).toBeGreaterThan(0.1);
+    expect(frames![38]!.bones[0]!.rotation[2]).toBeCloseTo(
+      frames![0]!.bones[0]!.rotation[2],
+      3,
+    );
+    // Without the ANI file the clip is a stated refusal, not the bind pose.
+    expect(decodeAnimation(biker, run, readMdlBones(biker))).toBeNull();
+  });
+
+  it("assembles sectioned clips and refuses missing external data", () => {
     const bytes = gift();
     const animations = readAnimations(bytes);
     const bones = readMdlBones(bytes);

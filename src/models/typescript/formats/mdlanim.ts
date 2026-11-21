@@ -7,10 +7,9 @@
  * frames. This reader implements the same extraction the engine does, and writes the result
  * as SMD skeleton frames a person can inspect.
  *
- * External `.ani` blocks and multi-blend sequences are not decoded yet. Sectioned
- * ("fast lookup") clips are assembled from their contiguous section track lists. Unsupported
- * clips are reported as skipped rather than emitted with the bind pose pretending to be an
- * animation.
+ * External `.ani` blocks (whole clips and frame-by-bone clips) are read through the model's
+ * anim-block table. Multi-blend sequences are not decoded yet. Unsupported clips are reported
+ * as skipped rather than emitted with the bind pose pretending to be an animation.
  */
 import type { ModelBone } from "./mdlbones.js";
 import { quaternionToEuler } from "./mdlbones.js";
@@ -44,6 +43,11 @@ export interface MdlAnimationDesc {
   baseOffset: number;
 }
 
+export interface MdlAnimBlock {
+  dataStart: number;
+  dataEnd: number;
+}
+
 export interface AnimationFrame {
   time: number;
   bones: Array<{ position: Vec3; rotation: Vec3 }>;
@@ -53,6 +57,21 @@ export interface AnimationClip {
   sequence: MdlSequence;
   animation: MdlAnimationDesc;
   frames: AnimationFrame[];
+}
+
+/** External `.ani` block table: `numanimblocks` at 352 and `animblockindex` at 356. */
+export function readAnimBlocks(mdl: Buffer): MdlAnimBlock[] {
+  if (mdl.length < 360) return [];
+  const count = mdl.readInt32LE(352);
+  const offset = mdl.readInt32LE(356);
+  if (count <= 0 || count > 100_000 || offset <= 0 || offset >= mdl.length) return [];
+  const blocks: MdlAnimBlock[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const at = offset + i * 8;
+    if (at + 8 > mdl.length) break;
+    blocks.push({ dataStart: mdl.readInt32LE(at), dataEnd: mdl.readInt32LE(at + 4) });
+  }
+  return blocks;
 }
 
 const ANIM_RAWPOS = 0x01;
@@ -423,15 +442,54 @@ function decodeSections(
   mdl: Buffer,
   animation: MdlAnimationDesc,
   bones: ModelBone[],
+  ani?: Buffer,
 ): AnimationFrame[] | null {
   const sectionFrames = animation.sectionFrameCount;
   if (sectionFrames <= 0) return null;
   const sectionCount = Math.ceil(animation.frameCount / sectionFrames);
   const fps = animation.fps > 0 ? animation.fps : 30;
-  let cursor = animation.baseOffset + animation.animOffset;
   const frames: AnimationFrame[] = [];
   const boneCount = Math.max(1, bones.length);
+  const sections: Array<{ animBlock: number; animOffset: number }> = [];
+  for (let i = 0; i < sectionCount; i += 1) {
+    const at = animation.baseOffset + animation.sectionOffset + i * 8;
+    if (at + 8 > mdl.length) break;
+    sections.push({
+      animBlock: mdl.readInt32LE(at),
+      animOffset: mdl.readInt32LE(at + 4),
+    });
+  }
+  const blocks = ani ? readAnimBlocks(mdl) : [];
+  const externalSections = sections.some((section) => section.animBlock > 0);
 
+  if (externalSections) {
+    for (let section = 0; section < sectionCount; section += 1) {
+      const count = Math.min(sectionFrames, animation.frameCount - frames.length);
+      if (count <= 0) break;
+      const entry = sections[section];
+      if (!entry) return null;
+      let buffer: Buffer = mdl;
+      let dataOffset = 0;
+      if (entry.animBlock > 0) {
+        if (!ani) return null;
+        const block = blocks[entry.animBlock];
+        if (!block) return null;
+        buffer = ani;
+        dataOffset = block.dataStart + entry.animOffset;
+      } else {
+        dataOffset =
+          animation.baseOffset +
+          entry.animOffset +
+          (animation.animOffset - (sections[0]?.animOffset ?? 0));
+      }
+      const decoded = decodeTrackList(buffer, dataOffset, count, fps, bones, frames.length);
+      if (!decoded) return null;
+      frames.push(...decoded);
+    }
+    return frames.length > 0 ? frames : null;
+  }
+
+  let cursor = animation.baseOffset + animation.animOffset;
   for (let section = 0; section < sectionCount; section += 1) {
     const count = Math.min(sectionFrames, animation.frameCount - frames.length);
     if (count <= 0) break;
@@ -448,23 +506,185 @@ function decodeSections(
   return frames.length > 0 ? frames : null;
 }
 
+/** 48-bit sorted quaternion (`Quaternion48S`), used by the frame-by-bone layout. */
+function quaternion48s(bytes: Buffer, at: number): [number, number, number, number] {
+  const first = bytes.readUInt16LE(at);
+  const second = bytes.readUInt16LE(at + 2);
+  const third = bytes.readUInt16LE(at + 4);
+  const a = first & 0x7fff;
+  const b = second & 0x7fff;
+  const c = third & 0x7fff;
+  const offset = ((second >> 15) & 1) + ((first >> 15) & 1) * 2;
+  const indices = [offset, (offset + 1) % 4, (offset + 2) % 4, (offset + 3) % 4];
+  const values = [0, 0, 0, 0];
+  values[indices[0]!] = (a - 16384) / 23168;
+  values[indices[1]!] = (b - 16384) / 23168;
+  values[indices[2]!] = (c - 16384) / 23168;
+  const square = 1 - values[0]! ** 2 - values[1]! ** 2 - values[2]! ** 2;
+  values[indices[3]!] = Math.sqrt(Math.max(0, square)) * (third & 0x8000 ? -1 : 1);
+  return [values[0]!, values[1]!, values[2]!, values[3]!];
+}
+
 /**
- * Decodes one animation whose data is inside the `.mdl`.
+ * Decodes the frame-by-bone layout (`STUDIO_FRAMEANIM`, 0x40).
  *
- * Returns null for an external `.ani` block or a missing data offset. A clip whose track list
- * starts with the 255 terminator is the bind pose, which is what the engine plays; only
+ * The block starts with constants/frame offsets and a per-bone flag byte, then one fixed-size
+ * record per frame. Positions are compressed Vector48 or full floats; rotations are
+ * Quaternion48 or Quaternion48S. The values are already absolute local transforms, so the
+ * bind pose is only used for a bone with no position/rotation channel.
+ */
+function decodeFrameAnim(
+  bytes: Buffer,
+  dataOffset: number,
+  frameCount: number,
+  fps: number,
+  bones: ModelBone[],
+  startFrame: number,
+): AnimationFrame[] | null {
+  if (dataOffset < 0 || dataOffset + 24 > bytes.length) return null;
+  const constantsOffset = bytes.readInt32LE(dataOffset);
+  const frameOffset = bytes.readInt32LE(dataOffset + 4);
+  const frameLength = bytes.readInt32LE(dataOffset + 8);
+  if (frameOffset <= 0 || frameLength <= 0) return null;
+  const boneCount = Math.max(1, bones.length);
+  const flagsAt = dataOffset + 24;
+  if (flagsAt + boneCount > bytes.length) return null;
+  const flags = Array.from({ length: boneCount }, (_, index) => bytes[flagsAt + index]!);
+
+  const constants = new Map<
+    number,
+    { position?: Vec3; rotation?: [number, number, number, number] }
+  >();
+  if (constantsOffset > 0) {
+    let at = dataOffset + constantsOffset;
+    for (let index = 0; index < boneCount; index += 1) {
+      const flag = flags[index]!;
+      const entry: { position?: Vec3; rotation?: [number, number, number, number] } = {};
+      if (flag & 0x40) {
+        if (at + 6 > bytes.length) break;
+        entry.rotation = quaternion48s(bytes, at);
+        at += 6;
+      }
+      if (flag & 0x20) {
+        if (at + 12 > bytes.length) break;
+        entry.position = [bytes.readFloatLE(at), bytes.readFloatLE(at + 4), bytes.readFloatLE(at + 8)];
+        at += 12;
+      }
+      if (flag & 0x02) {
+        if (at + 6 > bytes.length) break;
+        entry.rotation = quaternion48(bytes, at);
+        at += 6;
+      }
+      if (flag & 0x01) {
+        if (at + 6 > bytes.length) break;
+        entry.position = vector48(bytes, at);
+        at += 6;
+      }
+      constants.set(index, entry);
+    }
+  }
+
+  const frames: AnimationFrame[] = [];
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const frameAt = dataOffset + frameOffset + frame * frameLength;
+    let cursor = frameAt;
+    const frameBones: AnimationFrame["bones"] = [];
+    for (let index = 0; index < boneCount; index += 1) {
+      const bone = bones[index];
+      const flag = flags[index]!;
+      const constant = constants.get(index);
+      let position: Vec3 = bone ? [...bone.position] : [0, 0, 0];
+      let rotation: Vec3 = bone ? [...bone.rotationEuler] : [0, 0, 0];
+      let rawRotation: [number, number, number, number] | undefined;
+      if (flag & 0x80) {
+        if (cursor + 6 > bytes.length) return null;
+        rawRotation = quaternion48s(bytes, cursor);
+        cursor += 6;
+      }
+      if (flag & 0x08) {
+        if (cursor + 6 > bytes.length) return null;
+        rawRotation = quaternion48(bytes, cursor);
+        cursor += 6;
+      }
+      if (flag & 0x04) {
+        if (cursor + 6 > bytes.length) return null;
+        position = vector48(bytes, cursor);
+        cursor += 6;
+      }
+      if (flag & 0x10) {
+        if (cursor + 12 > bytes.length) return null;
+        position = [
+          bytes.readFloatLE(cursor),
+          bytes.readFloatLE(cursor + 4),
+          bytes.readFloatLE(cursor + 8),
+        ];
+        cursor += 12;
+      }
+      if (!(flag & (0x80 | 0x08)) && constant?.rotation) rawRotation = constant.rotation;
+      if (!(flag & (0x04 | 0x10)) && constant?.position) position = constant.position;
+      if (rawRotation) rotation = quaternionToEuler(rawRotation);
+      frameBones.push({ position, rotation });
+    }
+    frames.push({ time: (startFrame + frame) / fps, bones: frameBones });
+  }
+  return frames;
+}
+
+/**
+ * Decodes one animation whose data is inside the `.mdl` or an external `.ani`.
+ *
+ * Returns null for a missing external `.ani` or a missing data offset. A clip whose track
+ * list starts with the 255 terminator is the bind pose, which is what the engine plays; only
  * unreadable data is a refusal, because the caller reports it as skipped.
  */
 export function decodeAnimation(
   mdl: Buffer,
   animation: MdlAnimationDesc,
   bones: ModelBone[],
+  ani?: Buffer,
 ): AnimationFrame[] | null {
-  if (animation.animBlock !== 0) return null;
   if (animation.frameCount <= 0 || animation.frameCount > 100_000) return null;
   const fps = animation.fps > 0 ? animation.fps : 30;
+  if (animation.flags & 0x40) {
+    // Frame-by-bone (`STUDIO_FRAMEANIM`); external survivors keep almost every clip here.
+    if (animation.animBlock !== 0) {
+      if (!ani) return null;
+      const block = readAnimBlocks(mdl)[animation.animBlock];
+      if (!block) return null;
+      return decodeFrameAnim(
+        ani,
+        block.dataStart + animation.animOffset,
+        animation.frameCount,
+        fps,
+        bones,
+        0,
+      );
+    }
+    if (animation.animOffset <= 0) return null;
+    return decodeFrameAnim(
+      mdl,
+      animation.baseOffset + animation.animOffset,
+      animation.frameCount,
+      fps,
+      bones,
+      0,
+    );
+  }
   if (animation.sectionOffset > 0 && animation.sectionFrameCount > 0) {
-    return decodeSections(mdl, animation, bones);
+    return decodeSections(mdl, animation, bones, ani);
+  }
+  if (animation.animBlock !== 0) {
+    if (!ani) return null;
+    const block = readAnimBlocks(mdl)[animation.animBlock];
+    if (!block) return null;
+    return decodeTrackList(
+      ani,
+      block.dataStart + animation.animOffset,
+      animation.frameCount,
+      fps,
+      bones,
+      0,
+    );
   }
   if (animation.animOffset <= 0) return null;
   return decodeTrackList(
@@ -478,8 +698,15 @@ export function decodeAnimation(
 }
 
 /** Whether a sequence's animation can be decoded from the MDL, and why not when it cannot. */
-export function animationSkippedReason(animation: MdlAnimationDesc): string | null {
-  if (animation.animBlock !== 0) return "animation data is in an external .ani file";
-  if (animation.animOffset <= 0) return "animation has no data offset";
+export function animationSkippedReason(
+  animation: MdlAnimationDesc,
+  hasAni = false,
+): string | null {
+  if (animation.animBlock !== 0 && !hasAni) {
+    return "animation data is in an external .ani file that is not installed";
+  }
+  if (animation.animOffset <= 0 && animation.sectionFrameCount <= 0) {
+    return "animation has no data offset";
+  }
   return null;
 }

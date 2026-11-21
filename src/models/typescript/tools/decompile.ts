@@ -8,8 +8,8 @@
  * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
  * alternative is written as its own SMD and `$bodygroup` block, and every VTX LOD becomes a
  * `$lod`/`replacemodel` line, and flex deltas become VTA files plus a `flexfile` block and
- * controller/rule lines. It does not yet write external `.ani` animations or multi-blend
- * sequences; the result says so instead of producing a quiet, incomplete model.
+ * controller/rule lines. It does not yet write multi-blend sequences; the result says so
+ * instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -295,7 +295,7 @@ function qcText(
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
     `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
-    `// are written. Flexes, multi-blend sequences, external animations and bodygroup`,
+    `// are written. Flexes, multi-blend sequences and bodygroup presets are not.`,
     `// presets are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
@@ -442,8 +442,8 @@ export const decompileModelTool = defineTool({
     "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
     "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
     "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
-    "inside the `.mdl` are decoded into animation SMDs; external `.ani` and " +
-    "multi-blend clips and flexes are not extracted yet, and the result lists those gaps. " +
+    "inside the `.mdl` or an external `.ani` are decoded into animation SMDs; multi-blend " +
+    "clips and flexes are not extracted yet, and the result lists those gaps. " +
     "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
     "model path or a local `.mdl`.",
   realm: "map",
@@ -478,6 +478,7 @@ export const decompileModelTool = defineTool({
     game: GAME_BLOCK,
     model: z.string(),
     modelname: z.string(),
+    aniFile: z.string().nullable(),
     outDir: z.string(),
     qc: z.string(),
     smd: z.string(),
@@ -508,6 +509,7 @@ export const decompileModelTool = defineTool({
     let vvdBytes: Buffer | null = null;
     let vtxBytes: Buffer | null = null;
     let phyBytes: Buffer | null = null;
+    let aniBytes: Buffer | null = null;
     let modelPath: string;
 
     if (args.path) {
@@ -525,6 +527,8 @@ export const decompileModelTool = defineTool({
       }
       const phy = input.replace(/\.mdl$/i, ".phy");
       if (existsSync(phy)) phyBytes = readFileSync(phy);
+      const ani = input.replace(/\.mdl$/i, ".ani");
+      if (existsSync(ani)) aniBytes = readFileSync(ani);
     } else if (args.model) {
       if (!game.gameDir) throw new Error("the game directory is not resolved; run health first");
       modelPath = normalizeModelPath(args.model);
@@ -541,6 +545,9 @@ export const decompileModelTool = defineTool({
         }
       }
       phyBytes = vpk?.read(modelPath.replace(/\.mdl$/i, ".phy")) ?? null;
+      const aniPath = modelPath.replace(/\.mdl$/i, ".ani");
+      const looseAni = join(game.gameDir, aniPath);
+      aniBytes = existsSync(looseAni) ? readFileSync(looseAni) : vpk?.read(aniPath) ?? null;
     } else {
       throw new Error("give `model` (engine path) or `path` (local .mdl)");
     }
@@ -591,11 +598,13 @@ export const decompileModelTool = defineTool({
         skippedSequences.push({ name: sequence.name, reason: "sequence has no animation index" });
         continue;
       }
-      const frames = decodeAnimation(mdlBytes, animation, bones);
+      const frames = decodeAnimation(mdlBytes, animation, bones, aniBytes ?? undefined);
       if (!frames) {
         skippedSequences.push({
           name: sequence.name,
-          reason: animationSkippedReason(animation) ?? "animation data could not be decoded",
+          reason:
+            animationSkippedReason(animation, aniBytes !== null) ??
+            "animation data could not be decoded",
         });
         continue;
       }
@@ -849,6 +858,7 @@ export const decompileModelTool = defineTool({
       game: gameBlock(game, from),
       model: modelPath,
       modelname: targetModelName,
+      aniFile: aniBytes ? modelPath.replace(/\.mdl$/i, ".ani") : null,
       outDir,
       qc: qcPath,
       smd: smdPath,
