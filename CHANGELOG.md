@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.150-alpha - 2026-11-21
+
+- **`render_bsp_view` textures the compiled faces.** It opens the game's `pak01_dir.vpk`
+  directly, resolves each BSP material's VMT `$basetexture`, decodes the VTF's first mip
+  (DXT1/DXT5/BGRA8888/BGR888 and the RGB layouts) and samples it per pixel. Texture UVs come
+  from the BSP texture vectors and are clipped with the lightmap UVs; the result is
+  `texture × lightmap`, with the material/lightmap average as fallback. Verified on
+  `c1m1_hotel`: 9,116 textured faces, 8,828 per-pixel lightmapped faces.
+- The native VTF decoder lives in `src/textures/typescript/formats/vtfdecode.ts`; no VTFCmd.
+- **Tool count: 228.** Tests: 182 files, 1636 passed, 33 skipped.
+
 ## 0.0.149-alpha - 2026-11-21
 
 - **Per-pixel lightmap sampling in `render_bsp_view`.** The rasteriser interpolates

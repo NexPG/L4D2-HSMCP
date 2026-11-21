@@ -15,6 +15,7 @@ import { readHeader, readAt } from "../bsp/header.js";
 import { readBspPolygons } from "../bsp/polygons.js";
 import { readBspFaces } from "../bsp/faces.js";
 import { readFaceLightmapAverages, readLightmapBudget } from "../bsp/lightmap.js";
+import { materialTexture, openGameVpk } from "../../../assets/typescript/game/vpkcontent.js";
 import type { Bvh } from "../space/bvh.js";
 import { MASK_SIGHT } from "../space/scene.js";
 import type { Scene, SceneBrush, SceneFace } from "../space/scene.js";
@@ -27,12 +28,12 @@ export const renderBspViewTool = defineTool({
   name: "render_bsp_view",
   description:
     "Renders a COMPILED .bsp from a camera and returns the picture. Face loops come from the " +
-    "BSP (FACES/HDR, SURFEDGES, EDGES, VERTEXES), and each face's colour is sampled per pixel " +
-    "from its baked lightmap grid with a perspective-correct UV; the face average and the " +
-    "material colour are fallbacks. Faces without a lightmap use the stable material colour " +
-    "as render_vmf_view does. No textures, props, fog or particles: this shows form, occlusion " +
-    "and baked light. Camera convention is Source's (angles pitch/yaw/roll, fov horizontal). " +
-    "Omit origin/angles to frame the whole map.",
+    "BSP (FACES/HDR, SURFEDGES, EDGES, VERTEXES), and each face is textured with its base VMT " +
+    "and lit per pixel by its baked lightmap grid, sampled with a perspective-correct UV; the " +
+    "face average and material colour are fallbacks. Faces without a texture or lightmap use " +
+    "the stable material colour as render_vmf_view does. No props, fog or particles: this " +
+    "shows compiled form, occlusion, texture and light. Camera convention is Source's (angles " +
+    "pitch/yaw/roll, fov horizontal). Omit origin/angles to frame the whole map.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
@@ -62,6 +63,7 @@ export const renderBspViewTool = defineTool({
     faceCount: z.number(),
     lightmapFaces: z.number(),
     gradientFaces: z.number(),
+    textureFaces: z.number(),
     facesDrawn: z.number(),
     facesCulled: z.number(),
     facesBehind: z.number(),
@@ -134,12 +136,37 @@ export const renderBspViewTool = defineTool({
       return { width, height, data, uvs };
     };
     let gradientFaces = 0;
+    let textureFaces = 0;
+    const vpk = ctx.config.gameDir ? openGameVpk(ctx.config.gameDir) : null;
+    const textureCache = new Map<string, ReturnType<typeof materialTexture>>();
+    const textureFor = (
+      polygon: (typeof polygons.faces)[number],
+    ): NonNullable<SceneFace["texture"]> | null => {
+      if (!vpk || !polygon.material || isSkyMaterial(polygon.material)) return null;
+      let texture = textureCache.get(polygon.material);
+      if (texture === undefined) {
+        texture = materialTexture(vpk, polygon.material);
+        textureCache.set(polygon.material, texture);
+      }
+      if (!texture) return null;
+      const surface = surfaceByIndex.get(polygon.index);
+      if (!surface) return null;
+      const [uVec, vVec] = surface.textureVecs;
+      const uvs = polygon.points.map((point) => {
+        const s = point[0] * uVec[0] + point[1] * uVec[1] + point[2] * uVec[2] + uVec[3];
+        const t = point[0] * vVec[0] + point[1] * vVec[1] + point[2] * vVec[2] + vVec[3];
+        return [s / texture!.width, t / texture!.height] as [number, number];
+      });
+      return { width: texture.width, height: texture.height, data: texture.rgb, uvs };
+    };
 
     const faces: SceneFace[] = polygons.faces.map((polygon) => {
       const sky = (polygon.flags & 0x4) !== 0 || isSkyMaterial(polygon.material);
       const average = averages.averages.get(polygon.index);
       const lightmap = sky ? null : lightmapFor(polygon);
+      const texture = sky ? null : textureFor(polygon);
       if (lightmap) gradientFaces += 1;
+      if (texture) textureFaces += 1;
       return {
         sideId: null,
         material: polygon.material,
@@ -152,6 +179,7 @@ export const renderBspViewTool = defineTool({
             ? { colour: average, shade: 1 }
             : {}),
         ...(lightmap ? { lightmap } : {}),
+        ...(texture ? { texture } : {}),
       };
     });
     const brush: SceneBrush = {
@@ -207,9 +235,9 @@ export const renderBspViewTool = defineTool({
     const fb = render(scene, camera);
     const png = encodePng(fb.rgb, fb.width, fb.height);
     notes.push(
-      "Face colour is the baked lightmap, sampled per pixel from the face's grid with a " +
-        "perspective-correct UV. No textures, props, fog or particles: this shows compiled " +
-        "form, occlusion and light, not what the place looks like.",
+      "Faces are textured from the game's VMT/VTF and multiplied by the baked lightmap, " +
+        "sampled per pixel with perspective-correct UVs. No props, fog or particles: this " +
+        "shows compiled form, occlusion, texture and light, not what the place looks like.",
     );
     if (lighting === "none") {
       notes.push("Lighting was disabled, so faces use the stable material colour and one light.");
@@ -231,6 +259,7 @@ export const renderBspViewTool = defineTool({
       faceCount: polygons.faceCount,
       lightmapFaces: averages.averages.size,
       gradientFaces,
+      textureFaces,
       facesDrawn: fb.facesDrawn,
       facesCulled: fb.facesCulled,
       facesBehind: fb.facesBehind,

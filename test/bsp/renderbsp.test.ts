@@ -26,6 +26,7 @@ describe.skipIf(!has.gameContent)("render_bsp_view", () => {
       faceCount: number;
       lightmapFaces: number;
       gradientFaces: number;
+      textureFaces: number;
       facesDrawn: number;
       pngBytes: number;
       _image: { data: string; mimeType: string };
@@ -34,6 +35,7 @@ describe.skipIf(!has.gameContent)("render_bsp_view", () => {
     expect(r.faceCount).toBeGreaterThan(1000);
     expect(r.lightmapFaces).toBeGreaterThan(1000);
     expect(r.gradientFaces).toBeGreaterThan(1000);
+    expect(r.textureFaces).toBeGreaterThan(1000);
     expect(r.facesDrawn).toBeGreaterThan(0);
     expect(r.pngBytes).toBeGreaterThan(100);
     const png = Buffer.from(r._image.data, "base64");

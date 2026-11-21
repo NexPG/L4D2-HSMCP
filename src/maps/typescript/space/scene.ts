@@ -161,6 +161,14 @@ export interface SceneFace {
     data: Uint8Array;
     uvs: Array<[number, number]>;
   };
+  /** A base texture, sampled by the same per-pixel rasteriser and multiplied by the lightmap. */
+  texture?: {
+    width: number;
+    height: number;
+    /** Packed RGB, row-major, three bytes per pixel. */
+    data: Uint8Array;
+    uvs: Array<[number, number]>;
+  };
 }
 
 export interface SceneBrush {
