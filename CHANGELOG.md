@@ -5,6 +5,30 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.157-alpha - 2026-11-21
+
+- **`decompile_model` decodes animations stored in the `.mdl`.** Each decodable sequence now
+  becomes its own SMD (`time <frame>` blocks) and a `$sequence ... fps <fps> [activity]
+  [loop]` line, so a decompiled prop keeps its spin or door swing. Raw 48/64-bit quaternions,
+  raw 48-bit positions and the RLE position/rotation streams are handled, including the
+  engine's rule that a frame past a block's stored values reuses its last one. The position
+  value pointer follows the rotation one, so its offsets are based six bytes later when both
+  channels are animated; stream-coverage checks on `v_bat` confirmed that base.
+- **Skipped clips are named, not faked.** External `.ani` blocks, the sectioned fast-lookup
+  layout, and multi-blend sequences are reported in `skippedSequences` with a reason. A
+  sequence whose track list starts with the 255 terminator is decoded as the bind pose, which
+  is what the engine plays. The one-frame `$sequence "idle"` fallback is written only when no
+  real sequence can be decoded.
+- **Verified by round-trip:** `l4d_gift`'s 31-frame `spin` recompiles with all 31 frames and
+  the looping flag; `small_cabinet`'s 18-frame `open` moves its two doors to opposite sides of
+  the cabinet; `cara_84sedan`'s one-frame idle and `v_bat`'s 3-wide `aims` blend behave as
+  described (the blend is skipped with its reason).
+- **Known scope:** LOD 0 and model 0 of each body part only. Flexes, hitboxes, attachments,
+  bodygroup alternatives and skin families are not extracted; the tool returns those gaps in
+  `warnings` instead of an unmarked, incomplete QC.
+- **Skill docs updated** for animation decoding in `decompile_model`.
+- **Tool count: 230.** Tests: 190 files, 1668 passed, 33 skipped.
+
 ## 0.0.156-alpha - 2026-11-21
 
 - **New tool `decompile_model`.** It turns a compiled `.mdl` back into a QC, a reference SMD

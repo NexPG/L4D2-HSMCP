@@ -19,6 +19,12 @@ export interface ModelBone {
   position: Vec3;
   /** Local bind rotation as a quaternion, `x y z w`. */
   rotation: [number, number, number, number];
+  /** The same bind rotation as Euler radians, which is what an SMD skeleton writes. */
+  rotationEuler: Vec3;
+  /** Scale applied to animation position values. */
+  positionScale: Vec3;
+  /** Scale applied to animation rotation values. */
+  rotationScale: Vec3;
   flags: number;
 }
 
@@ -69,6 +75,21 @@ export function readMdlBones(mdl: Buffer): ModelBone[] {
       mdl.readFloatLE(base + 36),
       mdl.readFloatLE(base + 40),
     ];
+    const rotationEuler: Vec3 = [
+      mdl.readFloatLE(base + 60),
+      mdl.readFloatLE(base + 64),
+      mdl.readFloatLE(base + 68),
+    ];
+    const positionScale: Vec3 = [
+      mdl.readFloatLE(base + 72),
+      mdl.readFloatLE(base + 76),
+      mdl.readFloatLE(base + 80),
+    ];
+    const rotationScale: Vec3 = [
+      mdl.readFloatLE(base + 84),
+      mdl.readFloatLE(base + 88),
+      mdl.readFloatLE(base + 92),
+    ];
     let rotation: [number, number, number, number] = [
       mdl.readFloatLE(base + 44),
       mdl.readFloatLE(base + 48),
@@ -78,12 +99,7 @@ export function readMdlBones(mdl: Buffer): ModelBone[] {
     const length = Math.hypot(...rotation);
     if (!Number.isFinite(length) || length < 1e-6) {
       // Fall back to the Euler angles studiomdl stores beside the quaternion.
-      const [rx, ry, rz] = [
-        mdl.readFloatLE(base + 60),
-        mdl.readFloatLE(base + 64),
-        mdl.readFloatLE(base + 68),
-      ];
-      rotation = eulerToQuaternion(rx, ry, rz);
+      rotation = eulerToQuaternion(rotationEuler[0], rotationEuler[1], rotationEuler[2]);
     }
     bones.push({
       index: i,
@@ -91,6 +107,9 @@ export function readMdlBones(mdl: Buffer): ModelBone[] {
       parent,
       position,
       rotation,
+      rotationEuler,
+      positionScale,
+      rotationScale,
       flags: mdl.readInt32LE(base + 160),
     });
   }

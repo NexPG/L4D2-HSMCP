@@ -60,13 +60,116 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain("$cdmaterials \"models/props_vehicles/\"");
     expect(qc).toContain("$collisionmodel \"cara_84sedan_phys.smd\"");
     expect(qc).toContain("$concave");
-    expect(qc).toContain('$sequence "idle" "cara_84sedan_ref.smd" fps 1');
-    expect(r.warnings.join(" ")).toMatch(/Animations, flexes/);
+    expect(qc).toContain('$sequence "idle" "cara_84sedan_idle.smd" fps 30.000000');
+    expect(r.warnings.join(" ")).toMatch(/flexes, hitboxes/);
 
     const smd = readFileSync(r.smd, "latin1");
     expect(smd.startsWith("version 1\nnodes\n")).toBe(true);
     expect(smd).toContain("triangles");
     expect(smd).toContain("4carz1024");
+  });
+
+  it("writes decoded animation SMDs and sequence lines", async () => {
+    const outDir = join(scratch, "gift");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "items/l4d_gift.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/gift.mdl",
+      } as never,
+      ctx,
+    )) as {
+      qc: string;
+      animationFiles: string[];
+      sequences: number;
+      skippedSequences: unknown[];
+    };
+    expect(r.sequences).toBe(1);
+    expect(r.animationFiles).toHaveLength(1);
+    expect(r.skippedSequences).toHaveLength(0);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain('$sequence "spin" "l4d_gift_spin.smd" fps 10.000000 loop');
+    const smd = readFileSync(r.animationFiles[0]!, "latin1");
+    expect(smd.match(/^time /gm)).toHaveLength(31);
+  });
+
+  it("decodes a position-animated prop and a one-frame raw-rotation idle", async () => {
+    const outDir = join(scratch, "cabinet");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "props_buildables/small_cabinet.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/cabinet.mdl",
+      } as never,
+      ctx,
+    )) as {
+      qc: string;
+      animationFiles: string[];
+      sequences: number;
+      skippedSequences: unknown[];
+    };
+    expect(r.sequences).toBe(2);
+    expect(r.animationFiles).toHaveLength(2);
+    expect(r.skippedSequences).toHaveLength(0);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain('$sequence "idle" "small_cabinet_idle.smd" fps 30.000000');
+    expect(qc).toContain('$sequence "open" "small_cabinet_open.smd" fps 30.000000');
+    const open = readFileSync(join(outDir, "small_cabinet_open.smd"), "latin1");
+    expect(open.match(/^time /gm)).toHaveLength(18);
+    // The doors swing around their hinges, so the two door bones end up translated to
+    // opposite sides of the cabinet; that only happens if the position channels decode.
+    const lastFrame = open.split("time 17\n")[1]!.split("\n");
+    const doorRight = lastFrame[0]!.split(" ").map(Number);
+    const doorLeft = lastFrame[2]!.split(" ").map(Number);
+    expect(Math.sign(doorRight[2]!)).not.toBe(Math.sign(doorLeft[2]!));
+  });
+
+  it("skips multi-blend sequences instead of writing one blend as the whole clip", async () => {
+    const outDir = join(scratch, "v_bat");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "weapons/melee/v_bat.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/v_bat.mdl",
+      } as never,
+      ctx,
+    )) as {
+      skippedSequences: Array<{ name: string; reason: string }>;
+      animationFiles: string[];
+    };
+    const aims = r.skippedSequences.find((sequence) => sequence.name === "aims");
+    expect(aims?.reason).toMatch(/blends 3 animations/);
+    expect(r.animationFiles.length).toBeGreaterThan(0);
+  });
+
+  it.skipIf(!has.toolchain)("recompiles the gift's 31-frame spin", async () => {
+    const outDir = join(scratch, "gift-roundtrip");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "items/l4d_gift.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/gift.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+    const mdl = readFileSync(join(outputModelDir(), "gift.mdl"));
+    const animationsOffset = mdl.readInt32LE(184);
+    expect(mdl.readInt32LE(animationsOffset + 16)).toBe(31);
+    expect(mdl.readInt32LE(animationsOffset + 12) & 1).toBe(1);
   });
 
   it.skipIf(!has.toolchain)("recompiles to the same hull as the source", async () => {

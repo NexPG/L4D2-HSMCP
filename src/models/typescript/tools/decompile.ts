@@ -27,6 +27,13 @@ import { modelSiblings } from "../../../assets/typescript/game/models.js";
 import { quaternionToEuler, readMdlBones, readModelHeaderInfo } from "../formats/mdlbones.js";
 import type { ModelBone } from "../formats/mdlbones.js";
 import { readPhy, readPhyGeometry } from "../formats/phy.js";
+import {
+  animationSkippedReason,
+  decodeAnimation,
+  readAnimations,
+  readSequences,
+} from "../formats/mdlanim.js";
+import type { AnimationFrame } from "../formats/mdlanim.js";
 
 const STATIC_PROP = 1 << 4;
 const FORCE_OPAQUE = 1 << 2;
@@ -156,6 +163,33 @@ function referenceSmd(geometry: ModelGeometry, bones: ModelBone[], staticProp: b
   return `${lines.join("\n")}\n`;
 }
 
+function animationSmd(bones: ModelBone[], frames: AnimationFrame[]): string {
+  const lines: string[] = ["version 1", "nodes"];
+  if (bones.length === 0) {
+    lines.push('0 "static_prop" -1');
+  } else {
+    for (const bone of bones) {
+      lines.push(`${bone.index} "${bone.name.replace(/"/g, "")}" ${bone.parent}`);
+    }
+  }
+  lines.push("end", "skeleton");
+  const boneCount = Math.max(1, bones.length);
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex += 1) {
+    const frame = frames[frameIndex]!;
+    // SMD `time` is a frame number, not seconds; the QC's `fps` converts it.
+    lines.push(`time ${frameIndex}`);
+    for (let index = 0; index < boneCount; index += 1) {
+      const bone = frame.bones[index] ?? { position: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
+      lines.push(
+        `${index} ${fmt(bone.position[0])} ${fmt(bone.position[1])} ${fmt(bone.position[2])} ` +
+          `${fmt(bone.rotation[0])} ${fmt(bone.rotation[1])} ${fmt(bone.rotation[2])}`,
+      );
+    }
+  }
+  lines.push("end");
+  return `${lines.join("\n")}\n`;
+}
+
 function collisionSmd(phyBytes: Buffer, staticProp: boolean): { text: string; triangles: number } | null {
   const geometry = readPhyGeometry(phyBytes);
   if (geometry.solids.length === 0) return null;
@@ -205,6 +239,7 @@ function qcText(
   base: string,
   targetModelName: string,
   collision: { smdName: string; mass: number; concave: boolean } | null,
+  sequences: Array<{ name: string; smd: string; fps: number; activityName: string; loop: boolean }>,
 ): string {
   const modelname = targetModelName
     .replace(/\\/g, "/")
@@ -212,7 +247,7 @@ function qcText(
     .replace(/\.mdl$/i, "");
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: LOD 0 reference mesh, model 0 of each body part.`,
-    `// Animations, flexes, hitboxes, attachments and skin families are not extracted yet.`,
+    `// Sequences stored in the .mdl are decoded; flexes, hitboxes, attachments and skin families are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
     `$body "Body" "${base}_ref.smd"`,
@@ -223,10 +258,20 @@ function qcText(
   if ((header?.flags ?? 0) & TRANSLUCENT_TWOPASS) lines.push("$mostlyopaque");
   else if ((header?.flags ?? 0) & FORCE_OPAQUE) lines.push("$opaque");
 
-  // studiomdl refuses a model with no sequences. The reference SMD is a single-frame bind
-  // pose, so a one-frame idle is honest: it compiles, and it is not pretending to be the
-  // original animation set, which this first decompiler does not extract.
-  lines.push(`$sequence "idle" "${base}_ref.smd" fps 1`);
+  // studiomdl refuses a model with no sequences. A decoded clip is written as a real
+  // sequence; otherwise the reference SMD is a single-frame bind pose, so a one-frame idle is
+  // honest: it compiles, and it is not pretending to be the original animation set.
+  if (sequences.length === 0) {
+    lines.push(`$sequence "idle" "${base}_ref.smd" fps 1`);
+  } else {
+    for (const sequence of sequences) {
+      const name = sequence.name.replace(/"/g, "");
+      const args = [`"${name}"`, `"${sequence.smd}"`, `fps ${fmt(sequence.fps)}`];
+      if (sequence.activityName) args.push(`activity ${sequence.activityName}`);
+      if (sequence.loop) args.push("loop");
+      lines.push(`$sequence ${args.join(" ")}`);
+    }
+  }
 
   const illum = header?.illuminationPosition;
   if (illum && illum.some((value) => Math.abs(value) > 1e-6)) {
@@ -260,9 +305,11 @@ export const decompileModelTool = defineTool({
     "`.phy` is installed. The reference mesh has the model's real triangles, materials, UVs, " +
     "bone weights and bind-pose skeleton; the QC has `$modelname`, `$body`, `$cdmaterials`, " +
     "`$surfaceprop`, `$staticprop`, eye/illumination points and `$collisionmodel` (with " +
-    "`$concave` when the collision has more than one convex piece). Animations, flexes, " +
-    "hitboxes, attachments, bodygroup alternatives and skin families are not extracted yet, " +
-    "and the result lists those gaps. Writes into `outDir`; refuses existing files unless " +
+    "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
+    "inside the `.mdl` are decoded into animation SMDs; external `.ani`, sectioned and " +
+    "multi-blend clips, flexes, hitboxes, attachments, bodygroup alternatives and skin " +
+    "families are not extracted " +
+    "yet, and the result lists those gaps. Writes into `outDir`; refuses existing files unless " +
     "`overwrite` is set. Takes an engine model path or a local `.mdl`.",
   realm: "map",
   guarded: true,
@@ -301,6 +348,9 @@ export const decompileModelTool = defineTool({
     smd: z.string(),
     collisionSmd: z.string().nullable(),
     files: z.array(z.object({ path: z.string(), bytes: z.number() })),
+    sequences: z.number(),
+    animationFiles: z.array(z.string()),
+    skippedSequences: z.array(z.object({ name: z.string(), reason: z.string() })),
     triangleCount: z.number(),
     collisionTriangles: z.number(),
     boneCount: z.number(),
@@ -369,7 +419,70 @@ export const decompileModelTool = defineTool({
     const qcPath = join(outDir, `${base}.qc`);
     const smdPath = join(outDir, `${base}_ref.smd`);
     const collisionPath = join(outDir, `${base}_phys.smd`);
-    const targets = [qcPath, smdPath, ...(writeCollision && phyBytes ? [collisionPath] : [])];
+
+    const animations = readAnimations(mdlBytes);
+    const sequences = readSequences(mdlBytes, animations);
+    const clips: Array<{
+      sequence: (typeof sequences)[number];
+      animation: (typeof animations)[number];
+      frames: AnimationFrame[];
+    }> = [];
+    const skippedSequences: Array<{ name: string; reason: string }> = [];
+    for (const sequence of sequences) {
+      const blendTotal = sequence.groupSizes[0] * sequence.groupSizes[1];
+      if (blendTotal > 1) {
+        skippedSequences.push({
+          name: sequence.name,
+          reason: `sequence blends ${blendTotal} animations and multi-blend sequences are not written yet`,
+        });
+        continue;
+      }
+      const animation = animations[sequence.firstAnimation];
+      if (!animation) {
+        skippedSequences.push({ name: sequence.name, reason: "sequence has no animation index" });
+        continue;
+      }
+      const frames = decodeAnimation(mdlBytes, animation, bones);
+      if (!frames) {
+        skippedSequences.push({
+          name: sequence.name,
+          reason: animationSkippedReason(animation) ?? "animation data could not be decoded",
+        });
+        continue;
+      }
+      clips.push({ sequence, animation, frames });
+    }
+
+    const usedNames = new Set<string>();
+    const sequenceDefs = clips.map((clip, index) => {
+      let name = clip.sequence.name || `sequence_${index}`;
+      let suffix = 1;
+      while (usedNames.has(name)) {
+        suffix += 1;
+        name = `${clip.sequence.name || `sequence_${index}`}_${suffix}`;
+      }
+      usedNames.add(name);
+      const filePart =
+        name
+          .replace(/[^A-Za-z0-9_]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 48) || `seq_${index}`;
+      return {
+        name,
+        smd: `${base}_${filePart}.smd`,
+        fps: clip.animation.fps > 0 ? clip.animation.fps : 30,
+        activityName: clip.sequence.activityName,
+        loop: (clip.sequence.flags & 1) !== 0,
+        frames: clip.frames,
+      };
+    });
+
+    const targets = [
+      qcPath,
+      smdPath,
+      ...(writeCollision && phyBytes ? [collisionPath] : []),
+      ...sequenceDefs.map((sequence) => join(outDir, sequence.smd)),
+    ];
     for (const target of targets) {
       assertWritable(target, ctx.config);
       if (existsSync(target) && !args.overwrite) {
@@ -381,6 +494,13 @@ export const decompileModelTool = defineTool({
     const staticProp = ((header?.flags ?? 0) & STATIC_PROP) !== 0;
     const smd = referenceSmd(geometry, bones, staticProp);
     writeFileSync(smdPath, smd, "latin1");
+
+    const animationFiles: string[] = [];
+    for (const sequence of sequenceDefs) {
+      const path = join(outDir, sequence.smd);
+      writeFileSync(path, animationSmd(bones, sequence.frames), "latin1");
+      animationFiles.push(path);
+    }
 
     let collision: { smdName: string; mass: number; concave: boolean } | null = null;
     let collisionTriangles = 0;
@@ -402,14 +522,35 @@ export const decompileModelTool = defineTool({
       warnings.push("No .phy is installed; no $collisionmodel was written. The prop is non-solid unless its solid key is 2.");
     }
 
-    const qc = qcText(geometry, header, base, targetModelName, collision);
+    const qc = qcText(
+      geometry,
+      header,
+      base,
+      targetModelName,
+      collision,
+      sequenceDefs.map(({ frames: _frames, ...sequence }) => sequence),
+    );
     writeFileSync(qcPath, qc, "latin1");
     warnings.push(
       "Reference mesh is LOD 0 and model 0 of each body part; LOD replacements and bodygroup alternatives are not extracted.",
     );
     warnings.push(
-      "Animations, flexes, hitboxes, attachments and skin families are not extracted; the QC omits them rather than inventing them. A one-frame `$sequence \"idle\"` is written so the reference mesh can compile.",
+      `${clips.length} of ${sequences.length} sequences were decoded from the .mdl; ` +
+        "flexes, hitboxes, attachments and skin families are not extracted. " +
+        (sequenceDefs.length === 0
+          ? "A one-frame `$sequence \"idle\"` is written so the reference mesh can compile."
+          : "Each decoded sequence is a real SMD."),
     );
+    if (skippedSequences.length > 0) {
+      warnings.push(
+        `${skippedSequences.length} sequences were skipped: ` +
+          skippedSequences
+            .slice(0, 8)
+            .map((sequence) => `${sequence.name} (${sequence.reason})`)
+            .join("; ") +
+          (skippedSequences.length > 8 ? "; ..." : ""),
+      );
+    }
     if (geometry.materials.length === 0) warnings.push("The model header names no materials.");
 
     return {
@@ -423,10 +564,17 @@ export const decompileModelTool = defineTool({
       files: [
         { path: qcPath, bytes: Buffer.byteLength(qc) },
         { path: smdPath, bytes: Buffer.byteLength(smd) },
+        ...animationFiles.map((path) => ({
+          path,
+          bytes: existsSync(path) ? readFileSync(path).length : 0,
+        })),
         ...(collision
           ? [{ path: collisionPath, bytes: existsSync(collisionPath) ? readFileSync(collisionPath).length : 0 }]
           : []),
       ],
+      sequences: sequences.length,
+      animationFiles,
+      skippedSequences,
       triangleCount: geometry.meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
       collisionTriangles,
       boneCount: bones.length,

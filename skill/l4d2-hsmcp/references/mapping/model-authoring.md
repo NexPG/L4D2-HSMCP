@@ -97,16 +97,21 @@ is many, and their `editparams` block says `"concave" "1"`.
 
 ## Decompiling a compiled model
 
-`decompile_model` is the reverse direction: a compiled `.mdl` becomes a QC, a reference SMD
-and, when a `.phy` is installed, a collision SMD. It applies the VVD fixup order and the
-static-prop axis swap, writes the bind-pose skeleton and each vertex's bone weights, and
-derives `$collisionmodel`/`$concave` from the collision file. A one-frame `$sequence "idle"`
-is written so studiomdl accepts the reference mesh.
+`decompile_model` is the reverse direction: a compiled `.mdl` becomes a QC, a reference SMD,
+one animation SMD per decodable sequence, and, when a `.phy` is installed, a collision SMD.
+It applies the VVD fixup order and the static-prop axis swap, writes the bind-pose skeleton
+and each vertex's bone weights, and derives `$collisionmodel`/`$concave` from the collision
+file. Sequences whose data lives in the `.mdl` are decoded frame by frame (raw vectors and
+quaternions, or the RLE streams) and written as SMD `time <frame>` blocks with a `$sequence`
+line at the source fps; the SMD `time` is a frame number, not seconds.
 
-This first version extracts LOD 0 and model 0 of each body part only. Animations, flexes,
-hitboxes, attachments, bodygroup alternatives and skin families are **not** extracted; the
-tool lists those gaps in `warnings` rather than pretending the QC is complete. The default
-target is `<name>_decompiled.mdl`, so a direct recompile cannot overwrite the source.
+This version extracts LOD 0 and model 0 of each body part only. Sequences whose data is in an
+external `.ani`, use the sectioned fast-lookup layout, or blend several animations are
+skipped and listed with the reason; flexes, hitboxes, attachments, bodygroup alternatives and
+skin families are **not** extracted. A one-frame `$sequence "idle"` is written only when no
+real sequence can be decoded. The tool lists those gaps in `warnings` rather than pretending
+the QC is complete. The default target is `<name>_decompiled.mdl`, so a direct recompile
+cannot overwrite the source.
 
 ## L4D2 specifics
 
@@ -137,7 +142,7 @@ target is `<name>_decompiled.mdl`, so a direct recompile cannot overwrite the so
 | Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
 | Read `.phy` solids, convex pieces, `$concave` need and `prop_data` | `read_model_collision` |
-| Decompile a compiled model | `decompile_model` - QC + reference SMD + collision SMD; LOD 0/model 0 only, with the gaps in `warnings` |
+| Decompile a compiled model | `decompile_model` - QC + reference SMD + animation SMDs + collision SMD; LOD 0/model 0 only, with the gaps in `warnings` |
 | Open in HLMV | `run_hlmv`; prefers HLMV++, probes it, falls back to stock HLMV on a crash, creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
@@ -168,8 +173,8 @@ files and prove the compiled result.
    `.phy`/`.mdl` checksum; `read_static_props` then checks which baked props actually got it.
 8. `read_static_props` after the compile - a model without `.phy` is non-solid unless a clip
    brush replaces it.
-9. `decompile_model` when the source is lost - rebuild a QC and reference SMD, then recompile;
-   the result is a starting point, not a full recovery (see the warnings).
+9. `decompile_model` when the source is lost - rebuild a QC, reference SMD and animation SMDs,
+   then recompile; the result is a starting point, not a full recovery (see the warnings).
 
 ## Licensing
 
