@@ -343,36 +343,49 @@ function collisionSmd(
   } else {
     lines.push('0 "phys" -1', "end", "skeleton", "time 0",
       "0 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000", "end", "triangles");
-    // studiomdl builds a single `$collisionmodel` in the frame of the root bone's pose, and
-    // the frame it picks is the first sequence's root. For the common pitched root the
-    // conversion below is exact (verified on `gascan001a` at every quarter turn of the
-    // written root: the PHY comes back byte-identical). Other root poses use a different
-    // frame that has not been reproduced, and a rotated hull is worse than none, so those
-    // are skipped with a warning instead of guessed.
-    const pitch = rootRotation?.[0] ?? 0;
-    const frameKnown = rootRotation !== null && Math.abs(Math.abs(pitch) - Math.PI / 2) < 0.05;
-    if (!frameKnown) {
+    // studiomdl builds a single `$collisionmodel` in the frame of the root bone's pose. The
+    // compiler's transform (verified against the real compiler on gascan at arbitrary pitch,
+    // yaw and roll) is
+    //
+    //   Havok = A * Rz(writtenZ) * Ry(writtenY) * Rx(writtenX) * Source
+    //   A     = (x, y, z) -> (-y, -z, x)
+    //
+    // where `written*` is the root rotation in the SMD. The decompiler stores the root with
+    // its Z reduced by 90 degrees (see `animationSmd`), so the written root is the decoded
+    // root with that offset put back. The inverse below maps a Havok metre back into the
+    // SMD's Source-unit frame.
+    if (!rootRotation) {
       usable = false;
       warnings.push(
-        "The .phy has one hull, but its root pose is not a pitched ±90° pose, so the " +
-          "compiler's collision frame could not be reproduced; no collision model was written. " +
-          "Rebuilding this hull by hand and checking it in HLMV is safer than a rotated hull.",
+        "The .phy has one hull and no sequence root pose, so the compiler's collision frame " +
+          "could not be reconstructed; no collision model was written.",
       );
     }
-    const theta = (rootRotation?.[2] ?? 0) - Math.PI / 2;
-    const sin = Math.sin(theta);
-    const cos = Math.cos(theta);
+    const rx = rootRotation?.[0] ?? 0;
+    const ry = rootRotation?.[1] ?? 0;
+    const rz = (rootRotation?.[2] ?? 0) - Math.PI / 2;
+    const cx = Math.cos(rx);
+    const sx = Math.sin(rx);
+    const cy = Math.cos(ry);
+    const sy = Math.sin(ry);
+    const cz = Math.cos(rz);
+    const sz = Math.sin(rz);
     for (const solid of geometry.solids) {
       for (const [a, b, c] of solid.triangles) {
         lines.push("phys");
         for (const index of [a, b, c]) {
           const vertex = solid.vertices[index];
           if (!vertex) continue;
-          const position: Vec3 = [
-            (-sin * vertex[0] + cos * vertex[2]) / 0.0254,
-            -vertex[1] / 0.0254,
-            (cos * vertex[0] + sin * vertex[2]) / 0.0254,
-          ];
+          // Inverse of A: (Hx, Hy, Hz) -> (Hz, -Hx, -Hy), in Source units.
+          const vx = vertex[2] / 0.0254;
+          const vy = -vertex[0] / 0.0254;
+          const vz = -vertex[1] / 0.0254;
+          // Rz(-rz), then Ry(-ry), then Rx(-rx).
+          const x1 = cz * vx + sz * vy;
+          const y1 = -sz * vx + cz * vy;
+          const x2 = cy * x1 - sy * vz;
+          const z2 = sy * x1 + cy * vz;
+          const position: Vec3 = [x2, cx * y1 + sx * z2, -sx * y1 + cx * z2];
           lines.push(
             `  0 ${fmt(position[0])} ${fmt(position[1])} ${fmt(position[2])} ` +
               `0.000000 0.000000 1.000000 0.000000 0.000000 1 0 1.000000`,
@@ -903,8 +916,8 @@ export const decompileModelTool = defineTool({
     "the `.phy` collision. A jointed `.phy` becomes `$collisionjoints` with every solid, its " +
     "parent, mass, massbias, damping and `$jointconstrain` limits, so a ragdoll stays a " +
     "ragdoll; a single hull becomes `$collisionmodel` (with `$concave` when the collision has " +
-    "more than one convex piece) for the pitched roots whose frame is reproduced exactly. " +
-    "Other single-hull root poses are reported instead of being written rotated. " +
+    "more than one convex piece) for any root pose stored in a sequence. The compiler's frame " +
+    "is reconstructed from the root's full Euler rotation, not just a pitched root. " +
     "Sequences whose data is inside the `.mdl` or an external `.ani` are decoded into " +
     "animation SMDs; multi-blend clips become `$sequence` blocks with all their animations " +
     "and pose ranges. Bodygroup presets are the remaining gap and are reported. " +

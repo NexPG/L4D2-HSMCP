@@ -6,7 +6,7 @@
  * the only proof that the vertex order, the static-prop axis swap and the one-frame sequence
  * are right, rather than merely plausible.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -109,21 +109,22 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       warnings: string[];
     };
     expect(r.triangleCount).toBe(5515);
-    // One solid with 16 convex pieces: the compiler's frame for a single hull depends on the
-    // root pose, and this model's pose is one the reader cannot reproduce yet. It says so
-    // rather than writing a rotated hull.
-    expect(r.collisionTriangles).toBe(0);
-    expect(r.collisionSmd).toBeNull();
+    // One solid with 16 convex pieces: the frame now comes from the root's full Euler
+    // rotation, so even this car's non-pitched pose produces a collision SMD.
+    expect(r.collisionTriangles).toBeGreaterThan(0);
+    expect(r.collisionSmd).not.toBeNull();
     expect(existsSync(r.qc)).toBe(true);
     expect(existsSync(r.smd)).toBe(true);
-    expect(r.warnings.join(" ")).toMatch(/collision frame could not be reproduced/);
+    expect(existsSync(r.collisionSmd!)).toBe(true);
+    expect(r.warnings.join(" ")).not.toMatch(/collision frame could not be reproduced/);
 
     const qc = readFileSync(r.qc, "utf8");
     expect(qc).toContain('$modelname "hsmcp_decompile_test/car.mdl"');
     expect(qc).toContain('$body "Body" "cara_84sedan_ref.smd"');
     expect(qc).toContain("$staticprop");
     expect(qc).toContain("$cdmaterials \"models/props_vehicles/\"");
-    expect(qc).not.toContain("$collisionmodel");
+    expect(qc).toContain("$collisionmodel");
+    expect(qc).toContain("$concave");
     expect(qc).toContain('$sequence "idle" "cara_84sedan_idle.smd" fps 30.000000');
     expect(r.warnings.join(" ")).toMatch(/shadow LODs use a/);
 
@@ -877,6 +878,74 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(rebuiltHeader.keyvalues).toContain('"flammable" "yes"');
     expect(rebuiltHeader.hull.min[2]).toBeCloseTo(-10.72, 1);
   });
+
+  it.skipIf(!has.toolchain)(
+    "recompiles a single-hull collision whose root is not pitched",
+    { timeout: 60_000 },
+    async () => {
+      const baseDir = join(scratch, "gascan-mixed-root");
+      const first = (await decompileModelTool.handler(
+        {
+          model: "props_junk/gascan001a.mdl",
+          outDir: baseDir,
+          overwrite: true,
+          confirm: true,
+          modelname: "hsmcp_decompile_test/gascan_mixed.mdl",
+        } as never,
+        ctx,
+      )) as { qc: string };
+
+      // The written root is intentionally not a pitched ±90° pose. The compiler accepts it,
+      // and the decompiler has to reproduce the resulting collision frame from the full
+      // Euler rotation rather than the old pitched-only shortcut.
+      const root = [0.3, 0.2, 0.1];
+      const setRoot = (path: string): void => {
+        const text = readFileSync(path, "latin1");
+        const next = text.replace(
+          /^(0\s+[-\d.]+\s+[-\d.]+\s+[-\d.]+\s+)[-\d.]+(\s+)[-\d.]+(\s+)[-\d.]+/m,
+          `$1${root[0]!.toFixed(6)}$2${root[1]!.toFixed(6)}$3${root[2]!.toFixed(6)}`,
+        );
+        writeFileSync(path, next, "latin1");
+      };
+      setRoot(join(baseDir, "gascan001a_idle.smd"));
+      setRoot(join(baseDir, "gascan001a_ref.smd"));
+
+      const built = (await runStudiomdlTool.handler(
+        { qc: first.qc, timeoutMinutes: 5 } as never,
+        ctx,
+      )) as { ok: boolean };
+      expect(built.ok).toBe(true);
+
+      const mixedDir = join(scratch, "gascan-mixed-root-roundtrip");
+      const decompiled = (await decompileModelTool.handler(
+        {
+          model: "hsmcp_decompile_test/gascan_mixed.mdl",
+          outDir: mixedDir,
+          overwrite: true,
+          confirm: true,
+          modelname: "hsmcp_decompile_test/gascan_mixed_rt.mdl",
+        } as never,
+        ctx,
+      )) as { qc: string; collisionSmd: string | null; warnings: string[] };
+      expect(decompiled.collisionSmd).not.toBeNull();
+      expect(decompiled.warnings.join(" ")).not.toMatch(/not a pitched|collision frame could not/i);
+
+      const rebuilt = (await runStudiomdlTool.handler(
+        { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+        ctx,
+      )) as { ok: boolean };
+      expect(rebuilt.ok).toBe(true);
+
+      const points = (path: string): string[] =>
+        readPhyGeometry(readFileSync(path))
+          .solids.flatMap((solid) => solid.vertices)
+          .map((vertex) => vertex.map((value) => value.toFixed(3)).join(","))
+          .sort();
+      const sourcePhy = join(ctx.config.gameDir!, "models", "hsmcp_decompile_test", "gascan_mixed.phy");
+      const rebuiltPhy = join(ctx.config.gameDir!, "models", "hsmcp_decompile_test", "gascan_mixed_rt.phy");
+      expect(points(rebuiltPhy)).toEqual(points(sourcePhy));
+    },
+  );
 
   it("writes flex deltas as a VTA and references it from a $model block", async () => {
     const outDir = join(scratch, "boomette-flex");
