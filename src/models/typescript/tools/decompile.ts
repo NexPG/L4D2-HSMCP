@@ -6,9 +6,8 @@
  * model's real triangles, materials, UVs and bone weights, a QC that names the model, its
  * materials, surface property, eye/illumination points, attachments, custom hitboxes and its
  * collision, and one animation SMD per sequence stored in the `.mdl`. It does not yet write
- * external or sectioned animations, flex/VTA data, multi-blend sequences, skin families or
- * every bodygroup alternative; the result says so instead of producing a quiet, incomplete
- * model.
+ * external or sectioned animations, flex/VTA data, multi-blend sequences or every bodygroup
+ * alternative; the result says so instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -259,8 +258,9 @@ function qcText(
     .replace(/\.mdl$/i, "");
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: LOD 0 reference mesh, model 0 of each body part.`,
-    `// Sequences stored in the .mdl are decoded; attachments and custom hitboxes are written.`,
-    `// Flexes, skin families, external/sectioned animations and bodygroup alternatives are not.`,
+    `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin`,
+    `// families are written. Flexes, external/sectioned animations and bodygroup alternatives`,
+    `// are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
     `$body "Body" "${base}_ref.smd"`,
@@ -270,6 +270,21 @@ function qcText(
   if ((header?.flags ?? 0) & STATIC_PROP) lines.push("$staticprop");
   if ((header?.flags ?? 0) & TRANSLUCENT_TWOPASS) lines.push("$mostlyopaque");
   else if ((header?.flags ?? 0) & FORCE_OPAQUE) lines.push("$opaque");
+
+  // Skin families are `$texturegroup` rows of material names. The SMD names each material by
+  // its path; the compiler matches these rows by bare file name under `$cdmaterials`.
+  if (geometry.skins.length > 1 && geometry.skins[0]!.length > 0) {
+    const lastName = (index: number): string => {
+      const material = (geometry.materials[index] ?? "").replace(/\\/g, "/");
+      const leaf = material.slice(material.lastIndexOf("/") + 1);
+      return leaf.replace(/\.vmt$/i, "").replace(/"/g, "");
+    };
+    lines.push("", `$texturegroup "skinfamilies"`, "{");
+    for (const family of geometry.skins) {
+      lines.push(`\t{ ${family.map((index) => `"${lastName(index)}"`).join(" ")} }`);
+    }
+    lines.push("}");
+  }
 
   // studiomdl refuses a model with no sequences. A decoded clip is written as a real
   // sequence; otherwise the reference SMD is a single-frame bind pose, so a one-frame idle is
@@ -358,12 +373,12 @@ export const decompileModelTool = defineTool({
     "`.phy` is installed. The reference mesh has the model's real triangles, materials, UVs, " +
     "bone weights and bind-pose skeleton; the QC has `$modelname`, `$body`, `$cdmaterials`, " +
     "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
-    "`$hboxset`/`$hbox` lines and `$collisionmodel` (with `$concave` when the collision has " +
-    "more than one convex piece). Sequences whose data is inside the `.mdl` are decoded into " +
-    "animation SMDs; external `.ani`, sectioned and multi-blend clips, flexes, skin families " +
-    "and bodygroup alternatives are not extracted yet, and the result lists those gaps. " +
-    "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
-    "model path or a local `.mdl`.",
+    "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
+    "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
+    "inside the `.mdl` are decoded into animation SMDs; external `.ani`, sectioned and " +
+    "multi-blend clips, flexes and bodygroup alternatives are not extracted yet, and the " +
+    "result lists those gaps. Writes into `outDir`; refuses existing files unless `overwrite` " +
+    "is set. Takes an engine model path or a local `.mdl`.",
   realm: "map",
   guarded: true,
   inputSchema: {
@@ -407,6 +422,7 @@ export const decompileModelTool = defineTool({
     attachments: z.number(),
     hitboxSets: z.number(),
     hitboxes: z.number(),
+    skinFamilies: z.number(),
     triangleCount: z.number(),
     collisionTriangles: z.number(),
     boneCount: z.number(),
@@ -616,7 +632,7 @@ export const decompileModelTool = defineTool({
     }
     warnings.push(
       `${clips.length} of ${sequences.length} sequences were decoded from the .mdl; ` +
-        "flexes and skin families are not extracted. " +
+        "flexes are not extracted. " +
         (sequenceDefs.length === 0
           ? "A one-frame `$sequence \"idle\"` is written so the reference mesh can compile."
           : "Each decoded sequence is a real SMD."),
@@ -658,6 +674,7 @@ export const decompileModelTool = defineTool({
       attachments: attachments.length,
       hitboxSets: hitboxSets.length,
       hitboxes: hitboxCount,
+      skinFamilies: geometry.skins.length,
       triangleCount: geometry.meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
       collisionTriangles,
       boneCount: bones.length,

@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.159-alpha - 2026-11-21
+
+- **`decompile_model` writes skin families.** A model with more than one skin gets a
+  `$texturegroup "skinfamilies"` block built from the MDL's skin table, with each material
+  reduced to the bare name the compiler matches under `$cdmaterials`.
+- **Verified by recompile:** `arcade_button` (3 families, 3 references) decompiles and
+  recompiles to the same skin table. `small_cabinet_firstaid` also writes its four source
+  columns; the compiler keeps the rows and remaps any name it cannot place, which is the
+  compiler's decision rather than something the decompiler guesses around.
+- **Skin families and bodygroups are no longer lumped together in `warnings`:** the remaining
+  gap is flexes and bodygroup alternatives, and the QC comment says so.
+- **Skill docs updated** for `$texturegroup` and the recompile evidence.
+- **Tool count: 230.** Tests: 192 files, 1678 passed, 33 skipped.
+
 ## 0.0.158-alpha - 2026-11-21
 
 - **`decompile_model` writes attachments and custom hitboxes.** Attachment records become
