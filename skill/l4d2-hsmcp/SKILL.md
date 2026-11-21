@@ -38,12 +38,12 @@ invisible in a screenshot.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.162-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.163-alpha"
 ```
 
 The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
 write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.162-alpha`.
+the last entry. The current skill version is `0.0.163-alpha`.
 
 ## Route the task first
 
@@ -214,6 +214,10 @@ the last entry. The current skill version is `0.0.162-alpha`.
   checkpoint_door's blank+studio part survive, and hospital_bed's 900/618/409 LODs come
   back). Remaining gaps: external `.ani` and sectioned clips, multi-blend sequences, flexes
   and shadow LODs; its `warnings` say so.
+- **Model flex inspection.** `read_model_flexes` reports a compiled model's flex
+  descriptors, controllers and rules, plus sampled position/normal deltas with the vertex
+  position. Use it to compare a source and a recompiled model; flex writing is still a
+  decompiler gap.
 - **3D-skybox composition.** `build_skybox` copies a selection, seals the room and places
   `sky_camera` in one call; choosing what is worth copying is design work. `write_sky_camera`
   and `write_skybox_copy` remain as the halves.

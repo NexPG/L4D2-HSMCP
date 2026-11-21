@@ -114,8 +114,9 @@ compile can rebuild it from the mesh. Models with more than one skin family get 
 `$texturegroup "skinfamilies"` block built from the MDL's skin table. Sequences whose data is
 in an external `.ani`, use the sectioned fast-lookup layout, or blend several animations are
 skipped and listed with the reason; flexes are **not** written. The reader does expose flex
-descriptors, controllers, rules and per-vertex deltas in `ModelGeometry.flex`, but a reliable
-VTA/DMX round-trip is still open, so `decompile_model` reports flexes as a gap. A one-frame
+descriptors, controllers, rules and per-vertex deltas in `ModelGeometry.flex`, and
+`read_model_flexes` reports them with sampled deltas; a reliable VTA/DMX round-trip is still
+open, so `decompile_model` reports flexes as a gap. A one-frame
 `$sequence "idle"` is written only when no real sequence can be decoded. The tool lists those
 gaps in `warnings` rather than pretending the QC is complete. The default target is
 `<name>_decompiled.mdl`, so a direct recompile cannot overwrite the source.
@@ -149,6 +150,7 @@ gaps in `warnings` rather than pretending the QC is complete. The default target
 | Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
 | Read `.phy` solids, convex pieces, `$concave` need and `prop_data` | `read_model_collision` |
+| Read a model's flex descriptors, rules and vertex deltas | `read_model_flexes` |
 | Decompile a compiled model | `decompile_model` - QC + reference SMDs + animation SMDs + collision SMD; attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, with the gaps in `warnings` |
 | Open in HLMV | `run_hlmv`; prefers HLMV++, probes it, falls back to stock HLMV on a crash, creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |

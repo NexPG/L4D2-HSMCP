@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.163-alpha - 2026-11-21
+
+- **New tool `read_model_flexes` (#231).** It reports a compiled model's flex descriptor
+  names, controllers with their ranges, rules as QC-style expressions when the postfix ops
+  are understood, and every body-part model's per-vertex position and normal deltas. Each
+  flex returns a `sample` of its first `maxVertices` deltas with the vertex position, so a
+  source and a recompiled model can be compared by position rather than by trust.
+- **Verified on real flex models:** `boomette` reports `presser` with 1,068 normal-only
+  deltas and `%presser = presser`; `common_morph_test` reports `fatness` with 593 position
+  deltas. A missing model returns `found: false` instead of throwing.
+- **Flex writing remains out of `decompile_model`.** A VTA and a DMX path were both taken
+  through the compiler; the DMX respects the mesh size but the compiler's flex-delta mapping
+  did not preserve the source values, so shipping it would silently move the wrong vertices.
+  The tool and the decompiler's `warnings` state the gap.
+- **Tool count: 231.** Tests: 194 files, 1690 passed, 33 skipped.
+
 ## 0.0.162-alpha - 2026-11-21
 
 - **Flex data can be read from the `.mdl`.** The new `mdlflex` reader returns flex
