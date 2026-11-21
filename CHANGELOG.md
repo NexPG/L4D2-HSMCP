@@ -20,11 +20,12 @@ with a line here.
   `write_nav_probe` samples the live mesh with `TerrorNavArea.HasSpawnAttributes`. The rescue
   area reported `HAS` at 23.5 s. The nav text dump written during generation still said 0,
   because the region applies when the entity spawns.
-- **Borders: presence verified, Director side not isolated.** `write_zombie_border` is present
-  at runtime, but `director_force_panic_event` produced no infected in the flow-less two-room
-  test map, so the spawn-side effect is still unproven. `info_map_parameters` keys
-  (AmmoDensity 100, PainPillDensity 100, PistolDensity 0, MolotovDensity 50) reached the
-  entity lump; their population effect needs a flow and a round.
+- **Borders: the Director obeys them.** In a two-room map the no-border control spawned 30
+  infected, all at x<-96. A border at x=-100 spawned 1 at x=-39 (the allowed side), and a
+  border at x=120 spawned 0 because the entire nav area was behind the plane. The count drop is
+  the smaller allowed area, not a failure. `info_map_parameters` keys (AmmoDensity 100,
+  PainPillDensity 100, PistolDensity 0, MolotovDensity 50) reached the entity lump; their
+  population effect still needs a flow and a round.
 - **Tool count: 223.** Tests: 176 files, 1630 passed, 33 skipped.
 
 ## 0.0.143-alpha - 2026-11-21

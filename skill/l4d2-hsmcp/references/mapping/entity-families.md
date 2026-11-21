@@ -116,7 +116,7 @@ run_map_test(map, bsp, nav, markers, markerOrder: "any")
 | Did the intro camera actually take the view and release it? | `write_entity_probe(..., event: "OnEndFollow")` | `HSMCP_EVENT_probe_camera` fired at 21.0 s, after `holdSeconds: 8` |
 | Did a spawner create an item? | `write_class_probe(classes: ["weapon_rifle"])` | `HSMCP_CLASS 2 weapon_rifle 1` with `spawnflags 2` (Must Exist) |
 | Is the rescue closet nav marked? | `write_nav_attribute_region` + `write_nav_probe` | `HSMCP_NAV rescue HAS` at 23.5 s; the region applies on spawn, after the nav file was written |
-| Does a border exist and does the Director run? | presence probe + class probe | border present; `director_force_panic_event` produced no infected in a flow-less test room |
+| Does a border exist and does the Director run? | presence probe + class probe | no border: 30 infected at x<-96; border at x=-100: 1 at x=-39; border at x=120: 0, because the whole nav area was behind it |
 
 Limits found in the same runs:
 
@@ -126,8 +126,10 @@ Limits found in the same runs:
 - `info_map_parameters` was written with `AmmoDensity 100`, `PainPillDensity 100`, `PistolDensity
   0` and `MolotovDensity 50`; the keys reached the entity lump. Isolating their effect needs a
   map with a flow and a round where the team is not already stocked.
-- `director_force_panic_event` at 5 s and 15 s produced no infected in the two-room test map.
-  The border's spawn-side effect is not proven; the entity and its runtime presence are.
+- `director_force_panic_event` needs the Director running; `director_start` first. In the
+  two-room map the no-border control spawned 30 infected (all x<-96); a border at x=-100
+  spawned 1 at x=-39; a border at x=120 spawned 0. The count drop is the smaller allowed area,
+  not a failure, and the plane's orientation decides which side is "behind".
 
 `write_class_probe` and `write_nav_probe` write VScript; install the `.nut` with
 `run_map_test(scriptsDir: ...)`. Their markers assert a nonzero final count or an attribute
