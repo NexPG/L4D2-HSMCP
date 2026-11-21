@@ -16,7 +16,7 @@ const hasVpk = has.gameContent;
 describe.skipIf(!hasVpk)("model geometry", () => {
   const vpk = (): ReturnType<typeof openGameVpk> => openGameVpk(ctx.config.gameDir!);
 
-  it("parses a version-49 model into LOD-0 triangles", () => {
+  it("parses a version-49 model into LODs", () => {
     const archive = vpk()!;
     const geometry = loadGameModel(archive, "models/props_unique/hospital/hospital_bed.mdl");
     expect(geometry).not.toBeNull();
@@ -25,6 +25,9 @@ describe.skipIf(!hasVpk)("model geometry", () => {
     expect(geometry!.triangleCount).toBe(900);
     expect(geometry!.materials).toEqual(["models/props_unique/hospital/hospital_bed"]);
     expect(geometry!.meshes[0]!.triangles.length).toBe(900 * 3);
+    expect(geometry!.vtxTopology).toBe(true);
+    expect(geometry!.lods.map((lod) => lod.switchDistance)).toEqual([0, 25, 50]);
+    expect(geometry!.lods.map((lod) => lod.triangleCount)).toEqual([900, 618, 409]);
     const vertex = geometry!.meshes[0]!.vertices[0]!;
     expect(vertex.position.every(Number.isFinite)).toBe(true);
     expect(vertex.normal.every(Number.isFinite)).toBe(true);
@@ -58,6 +61,8 @@ describe.skipIf(!hasVpk)("model geometry", () => {
     const geometry = loadGameModel(archive, path);
     expect(geometry).not.toBeNull();
     expect(geometry!.fixupCount).toBeGreaterThan(0);
+    expect(geometry!.lods.map((lod) => lod.switchDistance)).toEqual([0, 30, 70]);
+    expect(geometry!.lods.map((lod) => lod.triangleCount)).toEqual([1194, 811, 325]);
     // The first fixup covers raw 0..344; the second starts at raw 569, so fixed index 345
     // must be raw 569 — not raw 345, which has a different position.
     const vvd = archive.read(path.replace(/\.mdl$/i, ".vvd"))!;

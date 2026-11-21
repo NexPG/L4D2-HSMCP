@@ -32,6 +32,7 @@ describe.skipIf(!has.gameContent)("render_bsp_view", () => {
       propsTotal: number;
       propsDrawn: number;
       propTriangles: number;
+      propLodCounts: number[];
       ambientSamples: number;
       facesDrawn: number;
       pngBytes: number;
@@ -46,6 +47,9 @@ describe.skipIf(!has.gameContent)("render_bsp_view", () => {
     expect(r.propsTotal).toBeGreaterThan(1000);
     expect(r.propsDrawn).toBeGreaterThan(0);
     expect(r.propTriangles).toBeGreaterThan(1000);
+    // At `propDistance: 1200` the lobby contains props at several switch distances.
+    expect(r.propLodCounts.reduce((sum, count) => sum + count, 0)).toBe(r.propsDrawn);
+    expect(r.propLodCounts.some((count, index) => index > 0 && count > 0)).toBe(true);
     expect(r.ambientSamples).toBeGreaterThan(1000);
     expect(r.facesDrawn).toBeGreaterThan(0);
     expect(r.pngBytes).toBeGreaterThan(100);

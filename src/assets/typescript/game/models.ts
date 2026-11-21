@@ -1,10 +1,10 @@
 ﻿/**
  * `.mdl` + `.vvd` + `.vtx` out of the game's VPKs, and the material each mesh draws with.
  *
- * `read_game_content` names a model; this opens the three binary siblings and returns the
- * LOD-0 triangles. The header's material list is a path (`models/props_junk/wood_crate001a`),
- * not a VMT, so the renderer prefixes `materials/` and resolves `$basetexture` exactly as it
- * does for a brush.
+ * `read_game_content` names a model; this opens the three binary siblings and returns their
+ * LODs. The header's material list is a path (`models/props_junk/wood_crate001a`), not a
+ * VMT, so the renderer prefixes `materials/` and resolves `$basetexture` exactly as it does
+ * for a brush.
  */
 import type { GameVpk } from "./vpkcontent.js";
 import { materialTexture } from "./vpkcontent.js";
@@ -56,11 +56,20 @@ export function modelMaterialPath(material: string): string {
   return clean;
 }
 
+export interface ModelTextureLod {
+  switchDistance: number;
+  /** Material path per mesh after the skin remap, for reporting. */
+  meshMaterials: string[];
+  /** Decoded base textures parallel to `meshMaterials`; null when the VMT/VTF is missing. */
+  textures: Array<MaterialTexture | null>;
+}
+
 export interface ModelTextureSet {
   geometry: ModelGeometry;
-  /** Decoded base textures by material index; null when the VMT/VTF is missing. */
+  /** One entry per geometry LOD, LOD 0 first. */
+  lods: ModelTextureLod[];
+  /** LOD 0 aliases, for callers that do not choose a LOD. */
   textures: Array<MaterialTexture | null>;
-  /** Material path per mesh after the skin remap, for reporting. */
   meshMaterials: string[];
 }
 
@@ -73,17 +82,31 @@ export interface ModelTextureSet {
 export function loadModelTextures(vpk: GameVpk, mdlPath: string, skin: number): ModelTextureSet | null {
   const geometry = loadGameModel(vpk, mdlPath);
   if (!geometry) return null;
-  const cache = new Map<number, MaterialTexture | null>();
-  const textures: Array<MaterialTexture | null> = [];
-  const meshMaterials: string[] = [];
-  for (const mesh of geometry.meshes) {
-    const index = materialIndexForSkin(geometry, mesh.materialIndex, skin);
-    const material = geometry.materials[index] ?? geometry.materials[mesh.materialIndex] ?? "";
-    meshMaterials.push(material);
-    if (!cache.has(index)) {
-      cache.set(index, material ? materialTexture(vpk, modelMaterialPath(material)) : null);
+  const cache = new Map<string, MaterialTexture | null>();
+  const lodSets: ModelTextureLod[] = [];
+  for (const lod of geometry.lods) {
+    const textures: Array<MaterialTexture | null> = [];
+    const meshMaterials: string[] = [];
+    for (const mesh of lod.meshes) {
+      const index = materialIndexForSkin(geometry, mesh.materialIndex, skin);
+      const material =
+        mesh.materialOverride ??
+        geometry.materials[index] ??
+        geometry.materials[mesh.materialIndex] ??
+        "";
+      meshMaterials.push(material);
+      if (!cache.has(material)) {
+        cache.set(material, material ? materialTexture(vpk, modelMaterialPath(material)) : null);
+      }
+      textures.push(cache.get(material) ?? null);
     }
-    textures.push(cache.get(index) ?? null);
+    lodSets.push({ switchDistance: lod.switchDistance, meshMaterials, textures });
   }
-  return { geometry, textures, meshMaterials };
+  const first = lodSets[0];
+  return {
+    geometry,
+    lods: lodSets,
+    textures: first?.textures ?? [],
+    meshMaterials: first?.meshMaterials ?? [],
+  };
 }

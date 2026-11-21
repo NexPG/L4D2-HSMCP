@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.154-alpha - 2026-11-21
+
+- **`render_bsp_view` selects model LODs by distance.** The VTX reader now parses every LOD
+  and its switch distance; a prop picks the LOD the engine would for its distance to the
+  camera. `c1m1_hotel` has 25 multi-LOD prop models. Examples: `hospital_bed` 900/618/409
+  triangles at switch points 0/25/50, `shelves_metal1` 1194/811/325 at 0/30/70. The lobby
+  render dropped from 57,626 to 55,622 triangles; the output reports `propLodCounts`.
+- **VTX topology fields are auto-detected.** Both the L4D2 layout (with topology) and the
+  older layout are parsed and the internally consistent one wins, rather than trusting the
+  MDL version. Two real bugs were fixed on the way: strip flags are at `+18`, not `+26` (the
+  old offset read zero and every tristrip was drawn as a triangle list), and a LOD's
+  `meshOffset` is relative to the LOD entry, not the LOD array start.
+- **There is no fixed three-language rule.** `src/README.md` now says languages are chosen
+  by fit; the existing TypeScript/Python/PowerShell split is current practice, not a limit.
+- **Tool count: 228.** Tests: 187 files, 1650 passed, 33 skipped.
+
 ## 0.0.153-alpha - 2026-11-21
 
 - **VVD LOD-0 fixups are applied when reading model geometry.** The VTX's `meshVertexID`

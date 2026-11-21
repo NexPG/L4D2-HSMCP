@@ -104,6 +104,15 @@ function unit(v: Vec3): Vec3 {
  * quadratic. The report says how many were skipped, so a picture missing scenery is not
  * mistaken for a map without it.
  */
+function chooseLod(lods: ModelGeometry["lods"], distance: number): number {
+  let index = 0;
+  for (let i = 1; i < lods.length; i += 1) {
+    const switchDistance = lods[i]?.switchDistance ?? 0;
+    if (switchDistance > 0 && distance >= switchDistance) index = i;
+  }
+  return index;
+}
+
 function addProps(
   faces: SceneFace[],
   path: string,
@@ -119,6 +128,7 @@ function addProps(
   missingModels: number;
   triangles: number;
   truncated: boolean;
+  lodCounts: number[];
 } {
   const propList = readStaticProps(path);
   const basis = basisOf(camera.angles);
@@ -129,6 +139,7 @@ function addProps(
   let missingModels = 0;
   let triangles = 0;
   let truncated = false;
+  const lodCounts: number[] = [];
 
   for (const prop of propList.props) {
     if (triangles >= triangleBudget) {
@@ -139,7 +150,8 @@ function addProps(
     const dx = prop.origin[0] - camera.origin[0];
     const dy = prop.origin[1] - camera.origin[1];
     const dz = prop.origin[2] - camera.origin[2];
-    if (Math.hypot(dx, dy, dz) > distance) {
+    const propDistance = Math.hypot(dx, dy, dz);
+    if (propDistance > distance) {
       culled += 1;
       continue;
     }
@@ -181,7 +193,7 @@ function addProps(
       continue;
     }
 
-    const propTriangles = geometry.triangleCount;
+    const propTriangles = geometry.lods[chooseLod(geometry.lods, propDistance)]?.triangleCount ?? geometry.triangleCount;
     if (triangles + propTriangles > triangleBudget) {
       truncated = true;
       culled += 1;
@@ -197,11 +209,14 @@ function addProps(
         ? prop.lightingOrigin
         : prop.origin;
     const leaf = ambient?.leafAt(lightingPoint) ?? -1;
+    const lodIndex = chooseLod(geometry.lods, propDistance);
+    const lod = geometry.lods[lodIndex] ?? geometry.lods[0]!;
+    const lodTextures = model.lods[lodIndex] ?? model.lods[0]!;
     let added = 0;
-    for (let meshIndex = 0; meshIndex < geometry.meshes.length; meshIndex += 1) {
-      const mesh = geometry.meshes[meshIndex]!;
-      const material = model.meshMaterials[meshIndex] ?? "";
-      const decoded = model.textures[meshIndex] ?? null;
+    for (let meshIndex = 0; meshIndex < lod.meshes.length; meshIndex += 1) {
+      const mesh = lod.meshes[meshIndex]!;
+      const material = lodTextures?.meshMaterials[meshIndex] ?? "";
+      const decoded = lodTextures?.textures[meshIndex] ?? null;
       for (let t = 0; t + 2 < mesh.triangles.length; t += 3) {
         const va = mesh.vertices[mesh.triangles[t]!]!;
         const vb = mesh.vertices[mesh.triangles[t + 1]!]!;
@@ -277,6 +292,7 @@ function addProps(
     if (added > 0) {
       drawn += 1;
       triangles += added;
+      lodCounts[lodIndex] = (lodCounts[lodIndex] ?? 0) + 1;
     } else {
       missingModels += 1;
     }
@@ -288,6 +304,7 @@ function addProps(
     missingModels,
     triangles,
     truncated,
+    lodCounts,
   };
 }
 
@@ -368,6 +385,7 @@ export const renderBspViewTool = defineTool({
     propsCulled: z.number(),
     propsMissingModels: z.number(),
     propTriangles: z.number(),
+    propLodCounts: z.array(z.number()),
     ambientSamples: z.number(),
     facesDrawn: z.number(),
     facesCulled: z.number(),
@@ -554,6 +572,7 @@ export const renderBspViewTool = defineTool({
     let propsCulled = 0;
     let propsMissingModels = 0;
     let propTriangleCount = 0;
+    let propLodCounts: number[] = [];
     let ambientSamples = 0;
     if (args.props !== false && vpk) {
       const ambient = readAmbientLighting(path);
@@ -572,6 +591,7 @@ export const renderBspViewTool = defineTool({
       propsCulled = props.culled;
       propsMissingModels = props.missingModels;
       propTriangleCount = props.triangles;
+      propLodCounts = props.lodCounts.slice();
       if (props.total === 0) {
         notes.push("The map's `sprp` lump has no static props.");
       } else if (props.truncated) {
@@ -664,6 +684,7 @@ export const renderBspViewTool = defineTool({
       propsCulled,
       propsMissingModels,
       propTriangles: propTriangleCount,
+      propLodCounts,
       ambientSamples,
       facesDrawn: fb.facesDrawn,
       facesCulled: fb.facesCulled,
