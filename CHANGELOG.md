@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.160-alpha - 2026-11-21
+
+- **`decompile_model` writes every bodygroup alternative.** `parseModelGeometry` now exposes
+  `bodyParts`, with each body part's models and their LOD 0 meshes, while `meshes` and `lods`
+  keep their previous meaning (model 0). The decompiler writes one SMD per alternative and a
+  `$bodygroup` block per body part; an empty alternative becomes `blank`, so later value
+  indices stay aligned. A single part with a single model still uses `$body "Body"`.
+- **Verified by recompile:** `brokenglass_piece` has 3 alternatives of 12 triangles and 24
+  vertices each and comes back as 3 models with the same counts. `checkpoint_door_01` has two
+  parts; its second part's empty first value and crossbar second value survive as
+  `blank` + `studio`, and the recompiled model has 2 parts and 3 models.
+- **The VTX reader now walks every `vtxModel_t`,** not just model 0. A per-model helper keeps
+  the strip parsing shared, and the MDL `vertexindex` byte offsets confirm that one cursor can
+  walk all alternatives in body-part order.
+- **Known scope:** LOD 0 only. LOD replacements, external `.ani` and sectioned clips,
+  multi-blend sequences and flexes are still listed as gaps in `warnings`.
+- **Skill docs updated** for `$bodygroup`, `blank` values and the recompile evidence.
+- **Tool count: 230.** Tests: 192 files, 1681 passed, 33 skipped.
+
 ## 0.0.159-alpha - 2026-11-21
 
 - **`decompile_model` writes skin families.** A model with more than one skin gets a

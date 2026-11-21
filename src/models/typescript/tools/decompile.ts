@@ -5,9 +5,10 @@
  * It writes the thing a person needs to start editing again: a reference mesh with the
  * model's real triangles, materials, UVs and bone weights, a QC that names the model, its
  * materials, surface property, eye/illumination points, attachments, custom hitboxes and its
- * collision, and one animation SMD per sequence stored in the `.mdl`. It does not yet write
- * external or sectioned animations, flex/VTA data, multi-blend sequences or every bodygroup
- * alternative; the result says so instead of producing a quiet, incomplete model.
+ * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
+ * alternative is written as its own SMD and `$bodygroup` block. It does not yet write
+ * external or sectioned animations, flex/VTA data or multi-blend sequences; the result says
+ * so instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -23,7 +24,7 @@ import { gameBlock, gameFor } from "../../../core/typescript/games/resolve.js";
 import { GAME, GAME_BLOCK, CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 import { openGameVpk } from "../../../assets/typescript/game/vpkcontent.js";
 import { parseModelGeometry } from "../formats/mdlmesh.js";
-import type { ModelGeometry, ModelVertex, Vec3 } from "../formats/mdlmesh.js";
+import type { ModelGeometry, ModelMesh, ModelVertex, Vec3 } from "../formats/mdlmesh.js";
 import { modelSiblings } from "../../../assets/typescript/game/models.js";
 import { quaternionToEuler, readMdlBones, readModelHeaderInfo } from "../formats/mdlbones.js";
 import type { ModelBone } from "../formats/mdlbones.js";
@@ -128,7 +129,12 @@ function writeVertexLine(vertex: ModelVertex, boneCount: number, staticProp: boo
   ].join("");
 }
 
-function referenceSmd(geometry: ModelGeometry, bones: ModelBone[], staticProp: boolean): string {
+function referenceSmd(
+  meshes: ModelMesh[],
+  materials: string[],
+  bones: ModelBone[],
+  staticProp: boolean,
+): string {
   const boneCount = Math.max(1, bones.length);
   const lines: string[] = ["version 1", "nodes"];
   if (bones.length === 0) {
@@ -152,8 +158,8 @@ function referenceSmd(geometry: ModelGeometry, bones: ModelBone[], staticProp: b
   }
   lines.push("end", "triangles");
 
-  for (const mesh of geometry.meshes) {
-    const material = geometry.materials[mesh.materialIndex] ?? "material";
+  for (const mesh of meshes) {
+    const material = materials[mesh.materialIndex] ?? "material";
     const smdMaterial = material.split("/").pop() ?? material;
     for (let t = 0; t + 2 < mesh.triangles.length; t += 3) {
       // A material line before each triangle is what the stock SMD reader accepts; a single
@@ -240,6 +246,22 @@ function materialDirs(geometry: ModelGeometry): string[] {
   return [...dirs].sort();
 }
 
+function safeToken(value: string, fallback: string): string {
+  const leaf = value.replace(/\\/g, "/").split("/").pop() ?? "";
+  return (
+    leaf
+      .replace(/\.(smd|dmx)$/i, "")
+      .replace(/[^A-Za-z0-9_]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 40) || fallback
+  );
+}
+
+interface BodyGroupDef {
+  name: string;
+  models: Array<{ smd: string | null }>;
+}
+
 function qcText(
   geometry: ModelGeometry,
   header: ReturnType<typeof readModelHeaderInfo>,
@@ -251,20 +273,30 @@ function qcText(
   attachments: MdlAttachment[],
   hitboxSets: MdlHitboxSet[],
   autoHitboxes: boolean,
+  bodyGroups: BodyGroupDef[],
 ): string {
   const modelname = targetModelName
     .replace(/\\/g, "/")
     .replace(/^models\//i, "")
     .replace(/\.mdl$/i, "");
   const lines: string[] = [
-    `// Decompiled by L4D2-HSMCP: LOD 0 reference mesh, model 0 of each body part.`,
-    `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin`,
-    `// families are written. Flexes, external/sectioned animations and bodygroup alternatives`,
-    `// are not.`,
+    `// Decompiled by L4D2-HSMCP: LOD 0 reference meshes.`,
+    `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes, skin families`,
+    `// and bodygroup alternatives are written. Flexes and external/sectioned animations are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
-    `$body "Body" "${base}_ref.smd"`,
   ];
+  if (bodyGroups.length === 0) {
+    lines.push(`$body "Body" "${base}_ref.smd"`);
+  } else {
+    for (const group of bodyGroups) {
+      lines.push(`$bodygroup "${group.name.replace(/"/g, "")}"`, "{");
+      for (const model of group.models) {
+        lines.push(model.smd ? `\tstudio "${model.smd}"` : "\tblank");
+      }
+      lines.push("}");
+    }
+  }
   for (const dir of materialDirs(geometry)) lines.push(`$cdmaterials "${dir}"`);
   if (header?.surfaceProp) lines.push(`$surfaceprop "${header.surfaceProp}"`);
   if ((header?.flags ?? 0) & STATIC_PROP) lines.push("$staticprop");
@@ -369,16 +401,17 @@ function keyValueNumber(text: string | null, key: string, fallback: number): num
 export const decompileModelTool = defineTool({
   name: "decompile_model",
   description:
-    "Decompiles a compiled model into a QC and a reference SMD, plus a collision SMD when a " +
-    "`.phy` is installed. The reference mesh has the model's real triangles, materials, UVs, " +
-    "bone weights and bind-pose skeleton; the QC has `$modelname`, `$body`, `$cdmaterials`, " +
+    "Decompiles a compiled model into a QC, reference SMDs and a collision SMD when a " +
+    "`.phy` is installed. The reference meshes have the model's real triangles, materials, " +
+    "UVs, bone weights and bind-pose skeleton; each bodygroup alternative gets its own SMD " +
+    "and `$bodygroup` block. The QC has `$modelname`, `$body`, `$cdmaterials`, " +
     "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
     "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
     "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
     "inside the `.mdl` are decoded into animation SMDs; external `.ani`, sectioned and " +
-    "multi-blend clips, flexes and bodygroup alternatives are not extracted yet, and the " +
-    "result lists those gaps. Writes into `outDir`; refuses existing files unless `overwrite` " +
-    "is set. Takes an engine model path or a local `.mdl`.",
+    "multi-blend clips and flexes are not extracted yet, and the result lists those gaps. " +
+    "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
+    "model path or a local `.mdl`.",
   realm: "map",
   guarded: true,
   inputSchema: {
@@ -423,6 +456,9 @@ export const decompileModelTool = defineTool({
     hitboxSets: z.number(),
     hitboxes: z.number(),
     skinFamilies: z.number(),
+    bodygroups: z.number(),
+    bodygroupModels: z.number(),
+    bodygroupFiles: z.array(z.string()),
     triangleCount: z.number(),
     collisionTriangles: z.number(),
     boneCount: z.number(),
@@ -552,11 +588,50 @@ export const decompileModelTool = defineTool({
       };
     });
 
+    const bodyFiles = new Set<string>();
+    const bodyGroups: BodyGroupDef[] = [];
+    const bodySources: Array<{ smd: string; meshes: ModelMesh[] }> = [];
+    for (const [partIndex, part] of geometry.bodyParts.entries()) {
+      if (part.models.length === 0) continue;
+      const partToken = safeToken(part.name, `bodypart_${partIndex}`);
+      const group: BodyGroupDef = {
+        name: part.name || `bodypart_${partIndex}`,
+        models: [],
+      };
+      for (const [modelIndex, model] of part.models.entries()) {
+        if (model.triangleCount <= 0 || model.meshes.length === 0) {
+          group.models.push({ smd: null });
+          continue;
+        }
+        const modelToken = safeToken(model.name, `model_${modelIndex}`);
+        let fileBase = `${base}_${partToken}_${modelToken}`;
+        let suffix = 1;
+        while (bodyFiles.has(fileBase.toLowerCase())) {
+          suffix += 1;
+          fileBase = `${base}_${partToken}_${modelToken}_${suffix}`;
+        }
+        bodyFiles.add(fileBase.toLowerCase());
+        const smd = `${fileBase}.smd`;
+        group.models.push({ smd });
+        bodySources.push({ smd, meshes: model.meshes });
+      }
+      bodyGroups.push(group);
+    }
+    // A single body part with a single model is the `$body` shorthand; anything else needs a
+    // `$bodygroup` block per part so the alternatives survive the recompile.
+    const useBodyGroups =
+      bodyGroups.length > 1 || (bodyGroups[0]?.models.length ?? 0) > 1;
+    if (!useBodyGroups) {
+      bodyGroups.length = 0;
+      bodySources.length = 0;
+    }
+
     const targets = [
       qcPath,
       smdPath,
       ...(writeCollision && phyBytes ? [collisionPath] : []),
       ...sequenceDefs.map((sequence) => join(outDir, sequence.smd)),
+      ...bodySources.map((source) => join(outDir, source.smd)),
     ];
     for (const target of targets) {
       assertWritable(target, ctx.config);
@@ -567,8 +642,19 @@ export const decompileModelTool = defineTool({
 
     const warnings: string[] = [];
     const staticProp = ((header?.flags ?? 0) & STATIC_PROP) !== 0;
-    const smd = referenceSmd(geometry, bones, staticProp);
+    const smd = referenceSmd(geometry.meshes, geometry.materials, bones, staticProp);
     writeFileSync(smdPath, smd, "latin1");
+
+    const bodygroupFiles: string[] = [];
+    for (const source of bodySources) {
+      const path = join(outDir, source.smd);
+      writeFileSync(
+        path,
+        referenceSmd(source.meshes, geometry.materials, bones, staticProp),
+        "latin1",
+      );
+      bodygroupFiles.push(path);
+    }
 
     const animationFiles: string[] = [];
     for (const sequence of sequenceDefs) {
@@ -608,10 +694,12 @@ export const decompileModelTool = defineTool({
       attachments,
       hitboxSets,
       autoHitboxes,
+      bodyGroups,
     );
     writeFileSync(qcPath, qc, "latin1");
     warnings.push(
-      "Reference mesh is LOD 0 and model 0 of each body part; LOD replacements and bodygroup alternatives are not extracted.",
+      "Reference meshes are LOD 0 only (every bodygroup alternative is written at LOD 0); " +
+        "LOD replacements beyond LOD 0 are not extracted.",
     );
     const skippedAttachments = attachments.filter(
       (attachment) =>
@@ -664,6 +752,10 @@ export const decompileModelTool = defineTool({
           path,
           bytes: existsSync(path) ? readFileSync(path).length : 0,
         })),
+        ...bodygroupFiles.map((path) => ({
+          path,
+          bytes: existsSync(path) ? readFileSync(path).length : 0,
+        })),
         ...(collision
           ? [{ path: collisionPath, bytes: existsSync(collisionPath) ? readFileSync(collisionPath).length : 0 }]
           : []),
@@ -675,6 +767,9 @@ export const decompileModelTool = defineTool({
       hitboxSets: hitboxSets.length,
       hitboxes: hitboxCount,
       skinFamilies: geometry.skins.length,
+      bodygroups: bodyGroups.length,
+      bodygroupModels: bodyGroups.reduce((sum, group) => sum + group.models.length, 0),
+      bodygroupFiles,
       triangleCount: geometry.meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
       collisionTriangles,
       boneCount: bones.length,

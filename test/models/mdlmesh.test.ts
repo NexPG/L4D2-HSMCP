@@ -33,6 +33,38 @@ describe.skipIf(!hasVpk)("model geometry", () => {
     expect(vertex.normal.every(Number.isFinite)).toBe(true);
   });
 
+  it("reads every bodygroup alternative at LOD 0", () => {
+    const archive = vpk()!;
+    const glass = loadGameModel(archive, "models/brokenglass_piece.mdl")!;
+    expect(glass.bodyParts).toHaveLength(1);
+    expect(glass.bodyParts[0]!.models).toHaveLength(3);
+    expect(glass.bodyParts[0]!.models.map((model) => model.triangleCount)).toEqual([12, 12, 12]);
+    expect(
+      glass.bodyParts[0]!.models.map((model) =>
+        model.meshes.reduce((sum, mesh) => sum + mesh.vertices.length, 0),
+      ),
+    ).toEqual([24, 24, 24]);
+
+    const door = loadGameModel(archive, "models/props_doors/doordm_rural01_01.mdl")!;
+    expect(door.bodyParts).toHaveLength(2);
+    expect(door.bodyParts[1]!.models).toHaveLength(3);
+    expect(door.bodyParts[1]!.models.map((model) => model.triangleCount)).toEqual([
+      460, 558, 558,
+    ]);
+    // `meshes` still means model 0 of each part, which is what the preview and the
+    // non-bodygroup QC path draw.
+    expect(door.meshes.length).toBe(2);
+    expect(door.triangleCount).toBe(1916);
+
+    // A bodygroup value can be empty: the model record exists with no vertices.
+    const checkpoint = loadGameModel(archive, "models/props_doors/checkpoint_door_01.mdl")!;
+    expect(checkpoint.bodyParts).toHaveLength(2);
+    expect(checkpoint.bodyParts[1]!.models).toHaveLength(2);
+    expect(checkpoint.bodyParts[1]!.models[0]!.triangleCount).toBe(0);
+    expect(checkpoint.bodyParts[1]!.models[0]!.meshes).toHaveLength(0);
+    expect(checkpoint.bodyParts[1]!.models[1]!.triangleCount).toBeGreaterThan(0);
+  });
+
   it("resolves the model material through its directory", () => {
     const archive = vpk()!;
     const set = loadModelTextures(archive, "models/props_vehicles/cara_84sedan.mdl", 0);

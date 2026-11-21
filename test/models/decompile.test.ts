@@ -214,6 +214,83 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(readFileSync(gift.qc, "utf8")).not.toContain("$hbox");
   });
 
+  it("writes each bodygroup alternative as its own SMD", async () => {
+    const outDir = join(scratch, "brokenglass");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "brokenglass_piece.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/brokenglass.mdl",
+      } as never,
+      ctx,
+    )) as {
+      qc: string;
+      bodygroups: number;
+      bodygroupModels: number;
+      bodygroupFiles: string[];
+    };
+    expect(r.bodygroups).toBe(1);
+    expect(r.bodygroupModels).toBe(3);
+    expect(r.bodygroupFiles).toHaveLength(3);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain('$bodygroup "bodypart_0"');
+    expect(qc.match(/^\tstudio /gm)).toHaveLength(3);
+    expect(qc).not.toContain('$body "Body"');
+
+    const checkpoint = (await decompileModelTool.handler(
+      {
+        model: "props_doors/checkpoint_door_01.mdl",
+        outDir: join(scratch, "checkpoint"),
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/checkpoint_door.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string; bodygroups: number; bodygroupModels: number };
+    expect(checkpoint.bodygroups).toBe(2);
+    expect(checkpoint.bodygroupModels).toBe(3);
+    const checkpointQc = readFileSync(checkpoint.qc, "utf8");
+    // The door's second body part has an empty first value; `blank` must keep the value
+    // indices aligned so the crossbar stays alternative 1.
+    expect(checkpointQc).toMatch(/^\tblank$/m);
+    expect(checkpointQc.match(/^\tstudio /gm)).toHaveLength(2);
+  });
+
+  it.skipIf(!has.toolchain)("recompiles brokenglass with all three alternatives", async () => {
+    const outDir = join(scratch, "brokenglass-roundtrip");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "brokenglass_piece.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/brokenglass.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const rebuilt = readFileSync(join(outputModelDir(), "brokenglass.mdl"));
+    const partCount = rebuilt.readInt32LE(232);
+    const partOffset = rebuilt.readInt32LE(236);
+    expect(partCount).toBe(1);
+    const modelCount = rebuilt.readInt32LE(partOffset + 4);
+    const modelsOffset = rebuilt.readInt32LE(partOffset + 12);
+    expect(modelCount).toBe(3);
+    for (let model = 0; model < modelCount; model += 1) {
+      const base = partOffset + modelsOffset + model * 148;
+      expect(rebuilt.readInt32LE(base + 80)).toBe(24);
+      expect(rebuilt.readInt32LE(base + 72)).toBe(1);
+    }
+  });
+
   it("writes skin families as a texturegroup and keeps the family mapping", async () => {
     const outDir = join(scratch, "arcade");
     const r = (await decompileModelTool.handler(

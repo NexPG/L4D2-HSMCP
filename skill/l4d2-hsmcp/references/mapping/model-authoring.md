@@ -105,16 +105,18 @@ file. Sequences whose data lives in the `.mdl` are decoded frame by frame (raw v
 quaternions, or the RLE streams) and written as SMD `time <frame>` blocks with a `$sequence`
 line at the source fps; the SMD `time` is a frame number, not seconds.
 
-This version extracts LOD 0 and model 0 of each body part only. Attachments and custom
-hitbox sets are written as `$attachment` and `$hboxset`/`$hbox` lines; a hitbox set that
-studiomdl auto-generated is left out so the next compile can rebuild it from the mesh. Models
-with more than one skin family get a `$texturegroup "skinfamilies"` block built from the
-MDL's skin table. Sequences whose data is in an external `.ani`, use the sectioned
-fast-lookup layout, or blend several animations are skipped and listed with the reason;
-flexes and bodygroup alternatives are **not** extracted. A one-frame `$sequence "idle"` is
-written only when no real sequence can be decoded. The tool lists those gaps in `warnings`
-rather than pretending the QC is complete. The default target is `<name>_decompiled.mdl`, so
-a direct recompile cannot overwrite the source.
+This version extracts LOD 0 only. Every body part's alternatives are written as separate SMDs
+and a `$bodygroup` block, with `blank` for an empty value, so a model with several bodygroup
+values keeps them; LODs above 0 are not extracted. Attachments and custom hitbox sets are
+written as `$attachment` and `$hboxset`/`$hbox` lines; a hitbox set that studiomdl
+auto-generated is left out so the next compile can rebuild it from the mesh. Models with more
+than one skin family get a `$texturegroup "skinfamilies"` block built from the MDL's skin
+table. Sequences whose data is in an external `.ani`, use the sectioned fast-lookup layout,
+or blend several animations are skipped and listed with the reason; flexes are **not**
+extracted. A one-frame `$sequence "idle"` is written only when no real sequence can be
+decoded. The tool lists those gaps in `warnings` rather than pretending the QC is complete.
+The default target is `<name>_decompiled.mdl`, so a direct recompile cannot overwrite the
+source.
 
 ## L4D2 specifics
 
@@ -145,7 +147,7 @@ a direct recompile cannot overwrite the source.
 | Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
 | Read `.phy` solids, convex pieces, `$concave` need and `prop_data` | `read_model_collision` |
-| Decompile a compiled model | `decompile_model` - QC + reference SMD + animation SMDs + collision SMD; attachments, custom hitboxes, skin families, LOD 0/model 0 only, with the gaps in `warnings` |
+| Decompile a compiled model | `decompile_model` - QC + reference SMDs + animation SMDs + collision SMD; attachments, custom hitboxes, skin families, bodygroup alternatives, LOD 0 only, with the gaps in `warnings` |
 | Open in HLMV | `run_hlmv`; prefers HLMV++, probes it, falls back to stock HLMV on a crash, creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
 | Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |

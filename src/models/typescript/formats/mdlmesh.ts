@@ -56,6 +56,21 @@ export interface ModelLod {
   triangleCount: number;
 }
 
+/** One alternative of a body part, i.e. one value of its bodygroup. */
+export interface ModelBodyPartModel {
+  /** Name from the MDL model record, often a `.smd` path. */
+  name: string;
+  /** LOD 0 meshes of this alternative. */
+  meshes: ModelMesh[];
+  triangleCount: number;
+}
+
+export interface ModelBodyPart {
+  name: string;
+  /** Alternatives in bodygroup-value order; index 0 is the default. */
+  models: ModelBodyPartModel[];
+}
+
 export interface ModelGeometry {
   name: string;
   hullMin: Vec3;
@@ -68,8 +83,10 @@ export interface ModelGeometry {
   skins: number[][];
   /** Every LOD, LOD 0 first. */
   lods: ModelLod[];
-  /** LOD 0 meshes, for callers that do not choose a LOD. */
+  /** LOD 0 meshes, for callers that do not choose a LOD (model 0 of each body part). */
   meshes: ModelMesh[];
+  /** Every body part and every bodygroup alternative, at LOD 0. */
+  bodyParts: ModelBodyPart[];
   vertexCount: number;
   triangleCount: number;
   /** VVD fixups present; nonzero means the LOD vertex order is a fixed list. */
@@ -210,10 +227,15 @@ interface MdMesh {
   lodVertexCounts: number[];
 }
 
-interface MdBodyPart {
-  modelCount: number;
-  /** Meshes of model 0, the model a static prop uses. */
+interface MdModel {
+  name: string;
   meshes: MdMesh[];
+}
+
+interface MdBodyPart {
+  name: string;
+  modelCount: number;
+  models: MdModel[];
 }
 
 function readBodyParts(mdl: Buffer, header: MdlHeader): MdBodyPart[] {
@@ -221,35 +243,40 @@ function readBodyParts(mdl: Buffer, header: MdlHeader): MdBodyPart[] {
   for (let i = 0; i < header.bodyPartCount; i += 1) {
     const base = header.bodyPartOffset + i * 16;
     if (base + 16 > mdl.length) break;
+    const name = readName(mdl, base + mdl.readInt32LE(base), base + 16);
     const modelCount = mdl.readInt32LE(base + 4);
     const modelsOffset = mdl.readInt32LE(base + 12);
-    if (modelCount <= 0) {
-      parts.push({ modelCount, meshes: [] });
+    if (modelCount <= 0 || modelCount > 256) {
+      parts.push({ name, modelCount, models: [] });
       continue;
     }
-    const model = base + modelsOffset;
-    if (model + 148 > mdl.length) {
-      parts.push({ modelCount, meshes: [] });
-      continue;
-    }
-    const meshCount = mdl.readInt32LE(model + 72);
-    const meshesOffset = mdl.readInt32LE(model + 76);
-    const meshes: MdMesh[] = [];
-    for (let j = 0; j < meshCount; j += 1) {
-      const mesh = model + meshesOffset + j * 116;
-      if (mesh + 116 > mdl.length) break;
-      const lodVertexCounts: number[] = [];
-      for (let lod = 0; lod < 8; lod += 1) {
-        const at = mesh + 52 + lod * 4;
-        if (at + 4 > mdl.length) break;
-        lodVertexCounts.push(mdl.readInt32LE(at));
+    const models: MdModel[] = [];
+    for (let j = 0; j < modelCount; j += 1) {
+      const model = base + modelsOffset + j * 148;
+      if (model + 148 > mdl.length) break;
+      const meshCount = mdl.readInt32LE(model + 72);
+      const meshesOffset = mdl.readInt32LE(model + 76);
+      const meshes: MdMesh[] = [];
+      for (let k = 0; k < meshCount; k += 1) {
+        const mesh = model + meshesOffset + k * 116;
+        if (mesh + 116 > mdl.length) break;
+        const lodVertexCounts: number[] = [];
+        for (let lod = 0; lod < 8; lod += 1) {
+          const at = mesh + 52 + lod * 4;
+          if (at + 4 > mdl.length) break;
+          lodVertexCounts.push(mdl.readInt32LE(at));
+        }
+        meshes.push({
+          materialIndex: mdl.readInt32LE(mesh),
+          lodVertexCounts,
+        });
       }
-      meshes.push({
-        materialIndex: mdl.readInt32LE(mesh),
-        lodVertexCounts,
+      models.push({
+        name: readName(mdl, model, model + 64).replace(/\\/g, "/"),
+        meshes,
       });
     }
-    parts.push({ modelCount, meshes });
+    parts.push({ name, modelCount, models });
   }
   return parts;
 }
@@ -326,6 +353,11 @@ interface VtxModel {
   lods: VtxLod[];
 }
 
+/** One VTX body part: its alternatives in bodygroup-value order. */
+interface VtxPart {
+  models: VtxModel[];
+}
+
 function readMaterialReplacements(
   vtx: Buffer,
   header: VtxHeader,
@@ -357,14 +389,146 @@ function readMaterialReplacements(
  * `hasTopology` selects the L4D2 strip group/strip layout with the two topology fields. The
  * caller tries the layout the file most likely uses and validates the result.
  */
+interface VtxModelLods {
+  lods: VtxLod[];
+  valid: boolean;
+  triangles: number;
+}
+
+/** Reads one `vtxModel_t` and every LOD it names. */
+function readVtxModelLods(
+  vtx: Buffer,
+  header: VtxHeader,
+  modelBase: number,
+  groupHeaderSize: number,
+  stripHeaderSize: number,
+): VtxModelLods {
+  const lodCount = Math.min(8, vtx.readInt32LE(modelBase));
+  const lodOffset = vtx.readInt32LE(modelBase + 4);
+  if (lodCount <= 0) return { lods: [], valid: true, triangles: 0 };
+  const lodBase = modelBase + lodOffset;
+  const lods: VtxLod[] = [];
+  let triangleTotal = 0;
+  let valid = true;
+
+  for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
+    const lodAt = lodBase + lodIndex * 12;
+    if (lodAt + 12 > vtx.length) {
+      valid = false;
+      break;
+    }
+    const meshCount = vtx.readInt32LE(lodAt);
+    const meshOffset = vtx.readInt32LE(lodAt + 4);
+    const switchDistance = vtx.readFloatLE(lodAt + 8);
+    const replacements = readMaterialReplacements(vtx, header, lodIndex);
+    const meshes: VtxMesh[] = [];
+    for (let meshIndex = 0; meshIndex < meshCount; meshIndex += 1) {
+      const meshBase = lodAt + meshOffset + meshIndex * 9;
+      if (meshBase + 9 > vtx.length) {
+        valid = false;
+        break;
+      }
+      const groupCount = vtx.readInt32LE(meshBase);
+      const groupOffset = vtx.readInt32LE(meshBase + 4);
+      const triangles: number[] = [];
+      for (let group = 0; group < groupCount; group += 1) {
+        const groupBase = meshBase + groupOffset + group * groupHeaderSize;
+        if (groupBase + groupHeaderSize > vtx.length) {
+          valid = false;
+          break;
+        }
+        const vertexCount = vtx.readInt32LE(groupBase);
+        const vertexOffset = vtx.readInt32LE(groupBase + 4);
+        const indexCount = vtx.readInt32LE(groupBase + 8);
+        const indexOffset = vtx.readInt32LE(groupBase + 12);
+        const stripCount = vtx.readInt32LE(groupBase + 16);
+        const stripOffset = vtx.readInt32LE(groupBase + 20);
+        if (
+          vertexCount < 0 ||
+          indexCount < 0 ||
+          stripCount < 0 ||
+          vertexOffset < 0 ||
+          indexOffset < 0 ||
+          stripOffset < 0 ||
+          (vertexCount > 0 && groupBase + vertexOffset + vertexCount * 9 > vtx.length) ||
+          (indexCount > 0 && groupBase + indexOffset + indexCount * 2 > vtx.length)
+        ) {
+          valid = false;
+          break;
+        }
+        if (vertexCount === 0 || indexCount === 0 || stripCount === 0) continue;
+
+        // The strip group's own vertex array maps an index to a mesh vertex.
+        const meshVertexIds: number[] = [];
+        for (let v = 0; v < vertexCount; v += 1) {
+          meshVertexIds.push(vtx.readUInt16LE(groupBase + vertexOffset + v * 9 + 4));
+        }
+        const indices: number[] = [];
+        for (let n = 0; n < indexCount; n += 1) {
+          indices.push(vtx.readUInt16LE(groupBase + indexOffset + n * 2));
+        }
+
+        for (let strip = 0; strip < stripCount; strip += 1) {
+          const stripBase = groupBase + stripOffset + strip * stripHeaderSize;
+          if (stripBase + stripHeaderSize > vtx.length) {
+            valid = false;
+            break;
+          }
+          const stripIndexCount = vtx.readInt32LE(stripBase);
+          const stripIndexOffset = vtx.readInt32LE(stripBase + 4);
+          const flags = vtx[stripBase + 18]!;
+          if ((flags & 3) === 0 || stripIndexCount < 3) {
+            valid = false;
+            break;
+          }
+          const isTriStrip = (flags & 2) !== 0;
+          const from = stripIndexOffset;
+          const end = Math.min(indices.length, from + stripIndexCount);
+          if (from < 0 || from + stripIndexCount > indices.length) {
+            valid = false;
+            break;
+          }
+          if (!isTriStrip) {
+            for (let n = from; n + 2 < end; n += 3) {
+              const a = meshVertexIds[indices[n]!];
+              const b = meshVertexIds[indices[n + 1]!];
+              const c = meshVertexIds[indices[n + 2]!];
+              if (a === undefined || b === undefined || c === undefined) continue;
+              triangles.push(a, b, c);
+              triangleTotal += 1;
+            }
+          } else {
+            for (let n = from; n + 2 < end; n += 1) {
+              const a = meshVertexIds[indices[n]!];
+              const b = meshVertexIds[indices[n + 1]!];
+              const c = meshVertexIds[indices[n + 2]!];
+              if (a === undefined || b === undefined || c === undefined) continue;
+              // Alternating winding: odd triangles are the previous pair reversed.
+              if ((n - from) % 2 === 1) triangles.push(b, a, c);
+              else triangles.push(a, b, c);
+              triangleTotal += 1;
+            }
+          }
+        }
+        if (!valid) break;
+      }
+      if (!valid) break;
+      meshes.push({ triangles });
+    }
+    if (!valid) break;
+    lods.push({ switchDistance, meshes, replacements });
+  }
+  return { lods, valid, triangles: triangleTotal };
+}
+
 function readVtxModel(
   vtx: Buffer,
   header: VtxHeader,
   hasTopology: boolean,
-): { models: VtxModel[]; valid: boolean; triangles: number } {
+): { parts: VtxPart[]; valid: boolean; triangles: number } {
   const groupHeaderSize = hasTopology ? 33 : 25;
   const stripHeaderSize = hasTopology ? 35 : 27;
-  const models: VtxModel[] = [];
+  const parts: VtxPart[] = [];
   let triangleTotal = 0;
   let valid = true;
 
@@ -376,136 +540,37 @@ function readVtxModel(
     }
     const modelCount = vtx.readInt32LE(partBase);
     const modelOffset = vtx.readInt32LE(partBase + 4);
+    const partModels: VtxModel[] = [];
     if (modelCount <= 0) {
-      models.push({ lods: [] });
+      parts.push({ models: [] });
       continue;
     }
-    const modelBase = partBase + modelOffset;
-    if (modelBase + 8 > vtx.length) {
-      valid = false;
-      break;
-    }
-    const lodCount = Math.min(8, vtx.readInt32LE(modelBase));
-    const lodOffset = vtx.readInt32LE(modelBase + 4);
-    if (lodCount <= 0) {
-      models.push({ lods: [] });
-      continue;
-    }
-    const lodBase = modelBase + lodOffset;
-    const lods: VtxLod[] = [];
-    for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
-      const lodAt = lodBase + lodIndex * 12;
-      if (lodAt + 12 > vtx.length) {
+    for (let modelIndex = 0; modelIndex < modelCount; modelIndex += 1) {
+      const modelBase = partBase + modelOffset + modelIndex * 8;
+      if (modelBase + 8 > vtx.length) {
         valid = false;
         break;
       }
-      const meshCount = vtx.readInt32LE(lodAt);
-      const meshOffset = vtx.readInt32LE(lodAt + 4);
-      const switchDistance = vtx.readFloatLE(lodAt + 8);
-      const replacements = readMaterialReplacements(vtx, header, lodIndex);
-      const meshes: VtxMesh[] = [];
-      for (let meshIndex = 0; meshIndex < meshCount; meshIndex += 1) {
-        const meshBase = lodAt + meshOffset + meshIndex * 9;
-        if (meshBase + 9 > vtx.length) {
-          valid = false;
-          break;
-        }
-        const groupCount = vtx.readInt32LE(meshBase);
-        const groupOffset = vtx.readInt32LE(meshBase + 4);
-        const triangles: number[] = [];
-        for (let group = 0; group < groupCount; group += 1) {
-          const groupBase = meshBase + groupOffset + group * groupHeaderSize;
-          if (groupBase + groupHeaderSize > vtx.length) {
-            valid = false;
-            break;
-          }
-          const vertexCount = vtx.readInt32LE(groupBase);
-          const vertexOffset = vtx.readInt32LE(groupBase + 4);
-          const indexCount = vtx.readInt32LE(groupBase + 8);
-          const indexOffset = vtx.readInt32LE(groupBase + 12);
-          const stripCount = vtx.readInt32LE(groupBase + 16);
-          const stripOffset = vtx.readInt32LE(groupBase + 20);
-          if (
-            vertexCount < 0 ||
-            indexCount < 0 ||
-            stripCount < 0 ||
-            vertexOffset < 0 ||
-            indexOffset < 0 ||
-            stripOffset < 0 ||
-            (vertexCount > 0 && groupBase + vertexOffset + vertexCount * 9 > vtx.length) ||
-            (indexCount > 0 && groupBase + indexOffset + indexCount * 2 > vtx.length)
-          ) {
-            valid = false;
-            break;
-          }
-          if (vertexCount === 0 || indexCount === 0 || stripCount === 0) continue;
-
-          // The strip group's own vertex array maps an index to a mesh vertex.
-          const meshVertexIds: number[] = [];
-          for (let v = 0; v < vertexCount; v += 1) {
-            meshVertexIds.push(vtx.readUInt16LE(groupBase + vertexOffset + v * 9 + 4));
-          }
-          const indices: number[] = [];
-          for (let n = 0; n < indexCount; n += 1) {
-            indices.push(vtx.readUInt16LE(groupBase + indexOffset + n * 2));
-          }
-
-          for (let strip = 0; strip < stripCount; strip += 1) {
-            const stripBase = groupBase + stripOffset + strip * stripHeaderSize;
-            if (stripBase + stripHeaderSize > vtx.length) {
-              valid = false;
-              break;
-            }
-            const stripIndexCount = vtx.readInt32LE(stripBase);
-            const stripIndexOffset = vtx.readInt32LE(stripBase + 4);
-            const flags = vtx[stripBase + 18]!;
-            if ((flags & 3) === 0 || stripIndexCount < 3) {
-              valid = false;
-              break;
-            }
-            const isTriStrip = (flags & 2) !== 0;
-            const from = stripIndexOffset;
-            const end = Math.min(indices.length, from + stripIndexCount);
-            if (from < 0 || from + stripIndexCount > indices.length) {
-              valid = false;
-              break;
-            }
-            if (!isTriStrip) {
-              for (let n = from; n + 2 < end; n += 3) {
-                const a = meshVertexIds[indices[n]!];
-                const b = meshVertexIds[indices[n + 1]!];
-                const c = meshVertexIds[indices[n + 2]!];
-                if (a === undefined || b === undefined || c === undefined) continue;
-                triangles.push(a, b, c);
-                triangleTotal += 1;
-              }
-            } else {
-              for (let n = from; n + 2 < end; n += 1) {
-                const a = meshVertexIds[indices[n]!];
-                const b = meshVertexIds[indices[n + 1]!];
-                const c = meshVertexIds[indices[n + 2]!];
-                if (a === undefined || b === undefined || c === undefined) continue;
-                // Alternating winding: odd triangles are the previous pair reversed.
-                if ((n - from) % 2 === 1) triangles.push(b, a, c);
-                else triangles.push(a, b, c);
-                triangleTotal += 1;
-              }
-            }
-          }
-          if (!valid) break;
-        }
-        if (!valid) break;
-        meshes.push({ triangles });
+      const read = readVtxModelLods(
+        vtx,
+        header,
+        modelBase,
+        groupHeaderSize,
+        stripHeaderSize,
+      );
+      triangleTotal += read.triangles;
+      if (!read.valid) {
+        valid = false;
+        break;
       }
-      if (!valid) break;
-      lods.push({ switchDistance, meshes, replacements });
+      partModels.push({ lods: read.lods });
     }
     if (!valid) break;
-    models.push({ lods });
+    parts.push({ models: partModels });
   }
 
   if (triangleTotal === 0) valid = false;
-  return { models, valid, triangles: triangleTotal };
+  return { parts, valid, triangles: triangleTotal };
 }
 
 /**
@@ -516,18 +581,18 @@ function readVtxModel(
  * so the validation is about offsets and index ranges, not about a version number.
  */
 function readVtx(vtx: Buffer, header: VtxHeader): {
-  models: VtxModel[];
+  parts: VtxPart[];
   topology: boolean;
   triangles: number;
 } {
   const withTopology = readVtxModel(vtx, header, true);
   if (withTopology.valid) {
-    return { models: withTopology.models, topology: true, triangles: withTopology.triangles };
+    return { parts: withTopology.parts, topology: true, triangles: withTopology.triangles };
   }
   const withoutTopology = readVtxModel(vtx, header, false);
   if (withoutTopology.valid) {
     return {
-      models: withoutTopology.models,
+      parts: withoutTopology.parts,
       topology: false,
       triangles: withoutTopology.triangles,
     };
@@ -537,10 +602,59 @@ function readVtx(vtx: Buffer, header: VtxHeader): {
   // the triangle count.
   const chosen = withTopology.triangles >= withoutTopology.triangles ? withTopology : withoutTopology;
   return {
-    models: chosen.models,
+    parts: chosen.parts,
     topology: chosen === withTopology,
     triangles: chosen.triangles,
   };
+}
+
+/**
+ * Turns one body-part model's MDL mesh records and VTX LOD meshes into renderable meshes.
+ *
+ * `startCursor` is the position in the fixed VVD vertex list where this model's vertices
+ * begin; the returned cursor is where the next model starts. The VTX lists one mesh per MDL
+ * mesh in order, and a mesh whose LOD has no vertices still advances the cursor.
+ */
+function buildModelMeshes(
+  fixed: ModelVertex[],
+  mdlMeshes: MdMesh[],
+  vtxLod: VtxLod | undefined,
+  lodIndex: number,
+  startCursor: number,
+): { meshes: ModelMesh[]; cursor: number } {
+  const meshes: ModelMesh[] = [];
+  let cursor = startCursor;
+  let meshCursor = 0;
+  for (const mesh of mdlMeshes) {
+    const vtxMesh = vtxLod?.meshes[meshCursor];
+    meshCursor += 1;
+    const count = mesh.lodVertexCounts[lodIndex] ?? 0;
+    if (count <= 0 || !vtxMesh) {
+      cursor += Math.max(0, count);
+      continue;
+    }
+    const vertices = fixed.slice(cursor, cursor + count);
+    cursor += count;
+    // Drop whole triangles, never individual corners: filtering one index out of three
+    // shifts every later triangle and produces a file the SMD parser rejects at `end`.
+    const triangles: number[] = [];
+    for (let t = 0; t + 2 < vtxMesh.triangles.length; t += 3) {
+      const a = vtxMesh.triangles[t]!;
+      const b = vtxMesh.triangles[t + 1]!;
+      const c = vtxMesh.triangles[t + 2]!;
+      if (a >= vertices.length || b >= vertices.length || c >= vertices.length) continue;
+      triangles.push(a, b, c);
+    }
+    if (triangles.length < 3 || vertices.length === 0) continue;
+    const replacement = vtxLod?.replacements.get(mesh.materialIndex);
+    meshes.push({
+      materialIndex: mesh.materialIndex,
+      ...(replacement ? { materialOverride: replacement } : {}),
+      vertices,
+      triangles,
+    });
+  }
+  return { meshes, cursor };
 }
 
 /**
@@ -558,12 +672,12 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
   const { materials, skins } = readMaterials(mdl, header);
   const bodyParts = readBodyParts(mdl, header);
   const rawVertices = readVvdVertices(vvd, vvdHeader);
-  const { models: vtxModels, topology, triangles: vtxTriangles } = readVtx(vtx, vtxHeader);
+  const { parts: vtxParts, topology, triangles: vtxTriangles } = readVtx(vtx, vtxHeader);
   if (vtxTriangles === 0) return null;
 
   const lodCount = Math.max(
     1,
-    ...vtxModels.map((model) => model.lods.length),
+    ...vtxParts.map((part) => part.models[0]?.lods.length ?? 0),
   );
   const lods: ModelLod[] = [];
   for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
@@ -572,41 +686,19 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
     // The VTX lists one mesh per model mesh in body-part order; align the two by position,
     // not by name, because the header has no mesh names.
     let vertexCursor = 0;
-    const switchDistance = vtxModels[0]?.lods[lodIndex]?.switchDistance ?? 0;
+    const switchDistance = vtxParts[0]?.models[0]?.lods[lodIndex]?.switchDistance ?? 0;
     for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
       const part = bodyParts[partIndex]!;
-      const vtxModel = vtxModels[partIndex];
-      const vtxLod = vtxModel?.lods[lodIndex];
-      let meshCursor = 0;
-      for (const mesh of part.meshes) {
-        const vtxMesh = vtxLod?.meshes[meshCursor];
-        meshCursor += 1;
-        const count = mesh.lodVertexCounts[lodIndex] ?? 0;
-        if (count <= 0 || !vtxMesh) {
-          vertexCursor += Math.max(0, count);
-          continue;
-        }
-        const vertices = fixed.slice(vertexCursor, vertexCursor + count);
-        vertexCursor += count;
-        // Drop whole triangles, never individual corners: filtering one index out of three
-        // shifts every later triangle and produces a file the SMD parser rejects at `end`.
-        const triangles: number[] = [];
-        for (let t = 0; t + 2 < vtxMesh.triangles.length; t += 3) {
-          const a = vtxMesh.triangles[t]!;
-          const b = vtxMesh.triangles[t + 1]!;
-          const c = vtxMesh.triangles[t + 2]!;
-          if (a >= vertices.length || b >= vertices.length || c >= vertices.length) continue;
-          triangles.push(a, b, c);
-        }
-        if (triangles.length < 3 || vertices.length === 0) continue;
-        const replacement = vtxLod?.replacements.get(mesh.materialIndex);
-        meshes.push({
-          materialIndex: mesh.materialIndex,
-          ...(replacement ? { materialOverride: replacement } : {}),
-          vertices,
-          triangles,
-        });
-      }
+      const vtxLod = vtxParts[partIndex]?.models[0]?.lods[lodIndex];
+      const built = buildModelMeshes(
+        fixed,
+        part.models[0]?.meshes ?? [],
+        vtxLod,
+        lodIndex,
+        vertexCursor,
+      );
+      vertexCursor = built.cursor;
+      meshes.push(...built.meshes);
     }
     const triangleCount = meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0);
     lods.push({
@@ -617,6 +709,34 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
   }
 
   if (lods.length === 0 || lods[0]!.meshes.length === 0) return null;
+
+  // Every bodygroup alternative, at LOD 0. The fixed list is ordered by body part then by
+  // model, which the MDL's `vertexindex` byte offsets confirm, so one cursor walks them all.
+  const fixedLod0 = fixedVerticesForLod(vvd, vvdHeader, rawVertices, 0);
+  const modelBodyParts: ModelBodyPart[] = [];
+  let bodyCursor = 0;
+  for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
+    const part = bodyParts[partIndex]!;
+    const models: ModelBodyPartModel[] = [];
+    for (let modelIndex = 0; modelIndex < part.models.length; modelIndex += 1) {
+      const model = part.models[modelIndex]!;
+      const vtxLod = vtxParts[partIndex]?.models[modelIndex]?.lods[0];
+      const built = buildModelMeshes(fixedLod0, model.meshes, vtxLod, 0, bodyCursor);
+      bodyCursor = built.cursor;
+      const triangleCount = built.meshes.reduce(
+        (sum, mesh) => sum + mesh.triangles.length / 3,
+        0,
+      );
+      models.push({
+        name: model.name || `model_${modelIndex}`,
+        meshes: built.meshes,
+        triangleCount,
+      });
+    }
+    if (models.length > 0) {
+      modelBodyParts.push({ name: part.name || `bodypart_${partIndex}`, models });
+    }
+  }
 
   const centre: Vec3 = [
     (header.hullMin[0] + header.hullMax[0]) / 2,
@@ -640,6 +760,7 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
     skins,
     lods,
     meshes: lods[0]!.meshes,
+    bodyParts: modelBodyParts,
     vertexCount: rawVertices.length,
     triangleCount: lods[0]!.triangleCount,
     fixupCount: vvdHeader.fixupCount,
