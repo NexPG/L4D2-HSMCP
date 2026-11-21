@@ -6,9 +6,10 @@
  * model's real triangles, materials, UVs and bone weights, a QC that names the model, its
  * materials, surface property, eye/illumination points, attachments, custom hitboxes and its
  * collision, and one animation SMD per sequence stored in the `.mdl`. Every bodygroup
- * alternative is written as its own SMD and `$bodygroup` block. It does not yet write
- * external or sectioned animations, flex/VTA data or multi-blend sequences; the result says
- * so instead of producing a quiet, incomplete model.
+ * alternative is written as its own SMD and `$bodygroup` block, and every VTX LOD becomes a
+ * `$lod`/`replacemodel` line. It does not yet write external or sectioned animations,
+ * flex/VTA data or multi-blend sequences; the result says so instead of producing a quiet,
+ * incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -257,6 +258,16 @@ function safeToken(value: string, fallback: string): string {
   );
 }
 
+interface LodReplacement {
+  from: string;
+  to: string;
+}
+
+interface LodBlockDef {
+  distance: number;
+  replacements: LodReplacement[];
+}
+
 interface BodyGroupDef {
   name: string;
   models: Array<{ smd: string | null }>;
@@ -274,15 +285,16 @@ function qcText(
   hitboxSets: MdlHitboxSet[],
   autoHitboxes: boolean,
   bodyGroups: BodyGroupDef[],
+  lodBlocks: LodBlockDef[],
 ): string {
   const modelname = targetModelName
     .replace(/\\/g, "/")
     .replace(/^models\//i, "")
     .replace(/\.mdl$/i, "");
   const lines: string[] = [
-    `// Decompiled by L4D2-HSMCP: LOD 0 reference meshes.`,
-    `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes, skin families`,
-    `// and bodygroup alternatives are written. Flexes and external/sectioned animations are not.`,
+    `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
+    `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
+    `// are written. Flexes and external/sectioned animations are not.`,
     "",
     `$modelname "${modelname}.mdl"`,
   ];
@@ -314,6 +326,17 @@ function qcText(
     lines.push("", `$texturegroup "skinfamilies"`, "{");
     for (const family of geometry.skins) {
       lines.push(`\t{ ${family.map((index) => `"${lastName(index)}"`).join(" ")} }`);
+    }
+    lines.push("}");
+  }
+
+  for (const block of lodBlocks) {
+    const distance = Number.isInteger(block.distance)
+      ? String(block.distance)
+      : fmt(block.distance);
+    lines.push("", `$lod ${distance}`, "{");
+    for (const replacement of block.replacements) {
+      lines.push(`\treplacemodel "${replacement.from}" "${replacement.to}"`);
     }
     lines.push("}");
   }
@@ -404,7 +427,8 @@ export const decompileModelTool = defineTool({
     "Decompiles a compiled model into a QC, reference SMDs and a collision SMD when a " +
     "`.phy` is installed. The reference meshes have the model's real triangles, materials, " +
     "UVs, bone weights and bind-pose skeleton; each bodygroup alternative gets its own SMD " +
-    "and `$bodygroup` block. The QC has `$modelname`, `$body`, `$cdmaterials`, " +
+    "and `$bodygroup` block, and every VTX LOD becomes `$lod`/`replacemodel` lines. The QC " +
+    "has `$modelname`, `$body`, `$cdmaterials`, " +
     "`$surfaceprop`, `$staticprop`, eye/illumination points, `$attachment` lines, custom " +
     "`$hboxset`/`$hbox` lines, `$texturegroup` skin families and `$collisionmodel` (with " +
     "`$concave` when the collision has more than one convex piece). Sequences whose data is " +
@@ -459,6 +483,8 @@ export const decompileModelTool = defineTool({
     bodygroups: z.number(),
     bodygroupModels: z.number(),
     bodygroupFiles: z.array(z.string()),
+    lodLevels: z.number(),
+    lodFiles: z.array(z.string()),
     triangleCount: z.number(),
     collisionTriangles: z.number(),
     boneCount: z.number(),
@@ -591,6 +617,9 @@ export const decompileModelTool = defineTool({
     const bodyFiles = new Set<string>();
     const bodyGroups: BodyGroupDef[] = [];
     const bodySources: Array<{ smd: string; meshes: ModelMesh[] }> = [];
+    const lod0Files: Array<Array<string | null>> = geometry.bodyParts.map((part) =>
+      part.models.map(() => null),
+    );
     for (const [partIndex, part] of geometry.bodyParts.entries()) {
       if (part.models.length === 0) continue;
       const partToken = safeToken(part.name, `bodypart_${partIndex}`);
@@ -613,6 +642,7 @@ export const decompileModelTool = defineTool({
         bodyFiles.add(fileBase.toLowerCase());
         const smd = `${fileBase}.smd`;
         group.models.push({ smd });
+        lod0Files[partIndex]![modelIndex] = smd;
         bodySources.push({ smd, meshes: model.meshes });
       }
       bodyGroups.push(group);
@@ -624,7 +654,40 @@ export const decompileModelTool = defineTool({
     if (!useBodyGroups) {
       bodyGroups.length = 0;
       bodySources.length = 0;
+      lod0Files[0]![0] = `${base}_ref.smd`;
     }
+
+    // LOD replacements are grouped by the VTX switch distance. Each bodygroup model's LOD 0
+    // file maps to its own higher-LOD file, so a bodygroup and its LODs stay in sync.
+    const lodSources: Array<{ smd: string; meshes: ModelMesh[] }> = [];
+    const lodBlocksByDistance = new Map<number, LodReplacement[]>();
+    let shadowLods = 0;
+    for (const [partIndex, part] of geometry.bodyParts.entries()) {
+      for (const [modelIndex, model] of part.models.entries()) {
+        const from = lod0Files[partIndex]?.[modelIndex];
+        if (!from) continue;
+        for (let lodIndex = 1; lodIndex < model.lods.length; lodIndex += 1) {
+          const lod = model.lods[lodIndex];
+          if (!lod || lod.meshes.length === 0) continue;
+          if (lod.switchDistance < 0) {
+            shadowLods += 1;
+            continue;
+          }
+          const smd = `${from.replace(/\.smd$/i, "")}_lod${lodIndex}.smd`;
+          lodSources.push({ smd, meshes: lod.meshes });
+          const replacements = lodBlocksByDistance.get(lod.switchDistance) ?? [];
+          replacements.push({ from, to: smd });
+          lodBlocksByDistance.set(lod.switchDistance, replacements);
+        }
+      }
+    }
+    const lodBlocks: LodBlockDef[] = [...lodBlocksByDistance.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([distance, replacements]) => ({ distance, replacements }));
+    const lodLevels = Math.max(
+      1,
+      ...geometry.bodyParts.flatMap((part) => part.models.map((model) => model.lods.length)),
+    );
 
     const targets = [
       qcPath,
@@ -632,6 +695,7 @@ export const decompileModelTool = defineTool({
       ...(writeCollision && phyBytes ? [collisionPath] : []),
       ...sequenceDefs.map((sequence) => join(outDir, sequence.smd)),
       ...bodySources.map((source) => join(outDir, source.smd)),
+      ...lodSources.map((source) => join(outDir, source.smd)),
     ];
     for (const target of targets) {
       assertWritable(target, ctx.config);
@@ -654,6 +718,17 @@ export const decompileModelTool = defineTool({
         "latin1",
       );
       bodygroupFiles.push(path);
+    }
+
+    const lodFiles: string[] = [];
+    for (const source of lodSources) {
+      const path = join(outDir, source.smd);
+      writeFileSync(
+        path,
+        referenceSmd(source.meshes, geometry.materials, bones, staticProp),
+        "latin1",
+      );
+      lodFiles.push(path);
     }
 
     const animationFiles: string[] = [];
@@ -695,12 +770,16 @@ export const decompileModelTool = defineTool({
       hitboxSets,
       autoHitboxes,
       bodyGroups,
+      lodBlocks,
     );
     writeFileSync(qcPath, qc, "latin1");
     warnings.push(
-      "Reference meshes are LOD 0 only (every bodygroup alternative is written at LOD 0); " +
-        "LOD replacements beyond LOD 0 are not extracted.",
+      "Reference meshes are written for every VTX LOD and `$lod` replacements map each " +
+        "bodygroup model to its higher LODs; shadow LODs are not written.",
     );
+    if (shadowLods > 0) {
+      warnings.push(`${shadowLods} shadow LODs (negative switch distance) were not written.`);
+    }
     const skippedAttachments = attachments.filter(
       (attachment) =>
         attachment.name.toLowerCase() !== "illumposition" && !bones[attachment.bone],
@@ -756,6 +835,10 @@ export const decompileModelTool = defineTool({
           path,
           bytes: existsSync(path) ? readFileSync(path).length : 0,
         })),
+        ...lodFiles.map((path) => ({
+          path,
+          bytes: existsSync(path) ? readFileSync(path).length : 0,
+        })),
         ...(collision
           ? [{ path: collisionPath, bytes: existsSync(collisionPath) ? readFileSync(collisionPath).length : 0 }]
           : []),
@@ -770,6 +853,8 @@ export const decompileModelTool = defineTool({
       bodygroups: bodyGroups.length,
       bodygroupModels: bodyGroups.reduce((sum, group) => sum + group.models.length, 0),
       bodygroupFiles,
+      lodLevels,
+      lodFiles,
       triangleCount: geometry.meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
       collisionTriangles,
       boneCount: bones.length,

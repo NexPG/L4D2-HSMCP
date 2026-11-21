@@ -65,6 +65,23 @@ describe.skipIf(!hasVpk)("model geometry", () => {
     expect(checkpoint.bodyParts[1]!.models[1]!.triangleCount).toBeGreaterThan(0);
   });
 
+  it("reads every LOD of a bodygroup alternative", () => {
+    const archive = vpk()!;
+    const bed = loadGameModel(archive, "models/props_unique/hospital/hospital_bed.mdl")!;
+    expect(bed.lods.map((lod) => lod.triangleCount)).toEqual([900, 618, 409]);
+    expect(bed.bodyParts[0]!.models[0]!.lods.map((lod) => lod?.triangleCount ?? 0)).toEqual([
+      900, 618, 409,
+    ]);
+
+    const door = loadGameModel(archive, "models/props_doors/checkpoint_door_01.mdl")!;
+    expect(door.bodyParts[0]!.models[0]!.lods.map((lod) => lod?.triangleCount ?? 0)).toEqual([
+      3260, 1506,
+    ]);
+    expect(door.bodyParts[1]!.models[1]!.lods.map((lod) => lod?.triangleCount ?? 0)).toEqual([
+      556, 556,
+    ]);
+  });
+
   it("resolves the model material through its directory", () => {
     const archive = vpk()!;
     const set = loadModelTextures(archive, "models/props_vehicles/cara_84sedan.mdl", 0);

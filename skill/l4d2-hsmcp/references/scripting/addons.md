@@ -24,7 +24,7 @@ Every addon and campaign packed with `run_vpk_pack` gets a provenance entry at t
 `addoninfo.txt`:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.160-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.161-alpha"
 ```
 
 The version comes from `package.json`, not from the caller. `credit: false` is the only way

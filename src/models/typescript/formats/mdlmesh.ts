@@ -60,8 +60,11 @@ export interface ModelLod {
 export interface ModelBodyPartModel {
   /** Name from the MDL model record, often a `.smd` path. */
   name: string;
-  /** LOD 0 meshes of this alternative. */
+  /** Every LOD of this alternative, LOD 0 first; null when the model has no such LOD. */
+  lods: Array<ModelLod | null>;
+  /** LOD 0 meshes, a convenience alias of `lods[0].meshes`. */
   meshes: ModelMesh[];
+  /** LOD 0 triangle count. */
   triangleCount: number;
 }
 
@@ -677,60 +680,77 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
 
   const lodCount = Math.max(
     1,
-    ...vtxParts.map((part) => part.models[0]?.lods.length ?? 0),
+    ...vtxParts.flatMap((part) => part.models.map((model) => model.lods.length)),
   );
-  const lods: ModelLod[] = [];
+
+  // Build every LOD of every bodygroup alternative in one pass. The fixed VVD list is
+  // ordered by body part then by model, which the MDL `vertexindex` byte offsets confirm, so
+  // one cursor per LOD walks all alternatives.
+  const modelLods: Array<Array<Array<ModelLod | null>>> = bodyParts.map((part) =>
+    part.models.map(() => []),
+  );
   for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
     const fixed = fixedVerticesForLod(vvd, vvdHeader, rawVertices, lodIndex);
-    const meshes: ModelMesh[] = [];
-    // The VTX lists one mesh per model mesh in body-part order; align the two by position,
-    // not by name, because the header has no mesh names.
     let vertexCursor = 0;
-    const switchDistance = vtxParts[0]?.models[0]?.lods[lodIndex]?.switchDistance ?? 0;
     for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
       const part = bodyParts[partIndex]!;
-      const vtxLod = vtxParts[partIndex]?.models[0]?.lods[lodIndex];
-      const built = buildModelMeshes(
-        fixed,
-        part.models[0]?.meshes ?? [],
-        vtxLod,
-        lodIndex,
-        vertexCursor,
-      );
-      vertexCursor = built.cursor;
-      meshes.push(...built.meshes);
+      for (let modelIndex = 0; modelIndex < part.models.length; modelIndex += 1) {
+        const model = part.models[modelIndex]!;
+        const vtxLod = vtxParts[partIndex]?.models[modelIndex]?.lods[lodIndex];
+        const built = buildModelMeshes(fixed, model.meshes, vtxLod, lodIndex, vertexCursor);
+        vertexCursor = built.cursor;
+        if (!vtxLod) {
+          modelLods[partIndex]![modelIndex]!.push(null);
+          continue;
+        }
+        const triangleCount = built.meshes.reduce(
+          (sum, mesh) => sum + mesh.triangles.length / 3,
+          0,
+        );
+        modelLods[partIndex]![modelIndex]!.push({
+          switchDistance: vtxLod.switchDistance,
+          meshes: built.meshes,
+          triangleCount,
+        });
+      }
     }
-    const triangleCount = meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0);
+  }
+
+  // Flatten model 0 of each part into `lods`, which is what the preview and the simple QC
+  // path use.
+  const lods: ModelLod[] = [];
+  for (let lodIndex = 0; lodIndex < lodCount; lodIndex += 1) {
+    const meshes: ModelMesh[] = [];
+    let switchDistance = 0;
+    for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
+      const lod = modelLods[partIndex]?.[0]?.[lodIndex];
+      if (!lod) continue;
+      switchDistance = lod.switchDistance;
+      meshes.push(...lod.meshes);
+    }
+    if (lodIndex > 0 && meshes.length === 0) continue;
     lods.push({
       switchDistance,
       meshes,
-      triangleCount,
+      triangleCount: meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
     });
   }
 
   if (lods.length === 0 || lods[0]!.meshes.length === 0) return null;
 
-  // Every bodygroup alternative, at LOD 0. The fixed list is ordered by body part then by
-  // model, which the MDL's `vertexindex` byte offsets confirm, so one cursor walks them all.
-  const fixedLod0 = fixedVerticesForLod(vvd, vvdHeader, rawVertices, 0);
   const modelBodyParts: ModelBodyPart[] = [];
-  let bodyCursor = 0;
   for (let partIndex = 0; partIndex < bodyParts.length; partIndex += 1) {
     const part = bodyParts[partIndex]!;
     const models: ModelBodyPartModel[] = [];
     for (let modelIndex = 0; modelIndex < part.models.length; modelIndex += 1) {
       const model = part.models[modelIndex]!;
-      const vtxLod = vtxParts[partIndex]?.models[modelIndex]?.lods[0];
-      const built = buildModelMeshes(fixedLod0, model.meshes, vtxLod, 0, bodyCursor);
-      bodyCursor = built.cursor;
-      const triangleCount = built.meshes.reduce(
-        (sum, mesh) => sum + mesh.triangles.length / 3,
-        0,
-      );
+      const lodList = modelLods[partIndex]?.[modelIndex] ?? [];
+      const lod0 = lodList[0] ?? null;
       models.push({
         name: model.name || `model_${modelIndex}`,
-        meshes: built.meshes,
-        triangleCount,
+        lods: lodList,
+        meshes: lod0?.meshes ?? [],
+        triangleCount: lod0?.triangleCount ?? 0,
       });
     }
     if (models.length > 0) {

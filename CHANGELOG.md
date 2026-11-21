@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.161-alpha - 2026-11-21
+
+- **`decompile_model` writes every VTX LOD.** Each bodygroup model now carries its whole LOD
+  chain (`ModelBodyPartModel.lods`), and the decompiler writes one SMD per LOD and a
+  `$lod <distance>` block with `replacemodel` lines for each alternative. LODs are grouped by
+  the VTX switch distance, so a bodygroup and its replacements stay in sync.
+- **One pass builds every LOD of every model.** A single cursor per LOD walks the fixed VVD
+  vertex list in body-part/model order; `geometry.lods` is still the flattened model-0 chain
+  the preview and the simple QC path use.
+- **Verified by recompile:** `hospital_bed` comes back with 900/618/409 triangles at
+  distances 0/25/50. `checkpoint_door_01` keeps both parts and their LODs on recompile
+  (3260/1506 for the door, 556/556 for the crossbar, and the empty value stays `blank`).
+- **Shadow LODs** (negative switch distance) are skipped and reported. Remaining gaps are
+  flexes, external `.ani`, sectioned clips and multi-blend sequences.
+- **Skill docs updated** for `$lod`/`replacemodel` and the new round-trip evidence.
+- **Tool count: 230.** Tests: 192 files, 1684 passed, 33 skipped.
+
 ## 0.0.160-alpha - 2026-11-21
 
 - **`decompile_model` writes every bodygroup alternative.** `parseModelGeometry` now exposes

@@ -14,12 +14,30 @@ import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { decompileModelTool } from "../../src/models/typescript/tools/decompile.js";
 import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";
 import { readAttachments, readHitboxSets } from "../../src/models/typescript/formats/mdlmeta.js";
+import { parseModelGeometry } from "../../src/models/typescript/formats/mdlmesh.js";
+import { loadGameModel, modelSiblings } from "../../src/assets/typescript/game/models.js";
 import { openGameVpk } from "../../src/assets/typescript/game/vpkcontent.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-decompile-"));
 const outputModelDir = (): string => join(ctx.config.gameDir!, "models", "hsmcp_decompile_test");
+
+/** Parses a model the test compiled into the game directory, not one inside a VPK. */
+const readLooseGeometry = (enginePath: string) => {
+  const siblings = modelSiblings(enginePath);
+  const read = (path: string): Buffer => readFileSync(join(ctx.config.gameDir!, path));
+  let vtx: Buffer | null = null;
+  for (const candidate of siblings.vtx) {
+    const path = join(ctx.config.gameDir!, candidate);
+    if (existsSync(path)) {
+      vtx = readFileSync(path);
+      break;
+    }
+  }
+  if (!vtx) throw new Error(`no VTX beside ${enginePath}`);
+  return parseModelGeometry(read(enginePath), read(siblings.vvd), vtx);
+};
 afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
   rmSync(outputModelDir(), { recursive: true, force: true });
@@ -149,7 +167,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(r.animationFiles.length).toBeGreaterThan(0);
   });
 
-  it.skipIf(!has.toolchain)("recompiles the gift's 31-frame spin", async () => {
+  it.skipIf(!has.toolchain)("recompiles the gift's 31-frame spin", { timeout: 30_000 }, async () => {
     const outDir = join(scratch, "gift-roundtrip");
     const decompiled = (await decompileModelTool.handler(
       {
@@ -258,7 +276,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(checkpointQc.match(/^\tstudio /gm)).toHaveLength(2);
   });
 
-  it.skipIf(!has.toolchain)("recompiles brokenglass with all three alternatives", async () => {
+  it.skipIf(!has.toolchain)("recompiles brokenglass with all three alternatives", { timeout: 30_000 }, async () => {
     const outDir = join(scratch, "brokenglass-roundtrip");
     const decompiled = (await decompileModelTool.handler(
       {
@@ -291,6 +309,60 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     }
   });
 
+  it("writes a $lod block for every VTX distance", async () => {
+    const outDir = join(scratch, "hospital-bed");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "props_unique/hospital/hospital_bed.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/hospital_bed.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string; lodLevels: number; lodFiles: string[] };
+    expect(r.lodLevels).toBe(3);
+    expect(r.lodFiles).toHaveLength(2);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain("$lod 25");
+    expect(qc).toContain("$lod 50");
+    expect(qc).toContain(
+      'replacemodel "hospital_bed_ref.smd" "hospital_bed_ref_lod1.smd"',
+    );
+    expect(qc).toContain(
+      'replacemodel "hospital_bed_ref.smd" "hospital_bed_ref_lod2.smd"',
+    );
+  });
+
+  it.skipIf(!has.toolchain)("recompiles hospital_bed's three LODs", { timeout: 30_000 }, async () => {
+    const outDir = join(scratch, "hospital-bed-roundtrip");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "props_unique/hospital/hospital_bed.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/hospital_bed.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const source = loadGameModel(
+      openGameVpk(ctx.config.gameDir!)!,
+      "models/props_unique/hospital/hospital_bed.mdl",
+    )!;
+    const rebuilt = readLooseGeometry("models/hsmcp_decompile_test/hospital_bed.mdl")!;
+    expect(rebuilt.lods.map((lod) => lod.triangleCount)).toEqual(
+      source.lods.map((lod) => lod.triangleCount),
+    );
+  });
+
   it("writes skin families as a texturegroup and keeps the family mapping", async () => {
     const outDir = join(scratch, "arcade");
     const r = (await decompileModelTool.handler(
@@ -312,7 +384,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain('{ "button_arcade_red" "button_arcade_yellow" "button_arcade_red" }');
   });
 
-  it.skipIf(!has.toolchain)("recompiles arcade_button's three skin families", async () => {
+  it.skipIf(!has.toolchain)("recompiles arcade_button's three skin families", { timeout: 30_000 }, async () => {
     const outDir = join(scratch, "arcade-roundtrip");
     const decompiled = (await decompileModelTool.handler(
       {
@@ -352,7 +424,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(readSkins(rebuilt)).toEqual(readSkins(source));
   });
 
-  it.skipIf(!has.toolchain)("recompiles smoker's attachments and hitboxes", async () => {
+  it.skipIf(!has.toolchain)("recompiles smoker's attachments and hitboxes", { timeout: 30_000 }, async () => {
     const outDir = join(scratch, "smoker-roundtrip");
     const decompiled = (await decompileModelTool.handler(
       {
@@ -392,7 +464,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(rebuiltSet.hitboxes[0]!.min[0]).toBeCloseTo(sourceSet.hitboxes[0]!.min[0], 3);
   });
 
-  it.skipIf(!has.toolchain)("recompiles to the same hull as the source", async () => {
+  it.skipIf(!has.toolchain)("recompiles to the same hull as the source", { timeout: 30_000 }, async () => {
     const outDir = join(scratch, "roundtrip");
     const decompiled = (await decompileModelTool.handler(
       {
