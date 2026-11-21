@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.153-alpha - 2026-11-21
+
+- **VVD LOD-0 fixups are applied when reading model geometry.** The VTX's `meshVertexID`
+  indexes the fixed vertex list, not raw VVD order; 3 of `c1m1_hotel`'s 188 prop models have
+  fixups and were drawing connected but wrong triangles. Verified: fixed index 345 on
+  `shelves_metal1` is raw vertex 569, as the fixup table says.
+- **VTX fallback order** is now `.dx11/.dx90/.dx80/.sw/.vtx`, retrying the next candidate when
+  the checksum belongs to another build instead of refusing the model.
+- **Static props use `m_LightingOrigin`** when `HAS_LIGHTING_ORIGIN` (0x02) is set, instead of
+  sampling the ambient cube at the prop's own origin (37 of 1,748 in `c1m1_hotel`).
+- **QC command catalogue** gained the commands a decompiled QC carries (`$upaxis`,
+  `$constantdirectionallight`, `$ambientboost`, `$noforcedfade`, `$includemodel`,
+  `$jointsurfaceprop`, `$jointcontents`, `$controller`, `$screenalign`, `$bodygrouppreset`,
+  `$shadowlod`, `$declareanimation`, `$declaresequence`, `$collisionmodel`, and others), so a
+  real decompiled QC no longer warns about them.
+- Study notes in `.develop-diary/04-log/2026-11-21-crowbar-study.md`. Crowbar is CC BY-SA 3.0
+  and was read as a reference only; no Crowbar code was copied.
+- **Tool count: 228.** Tests: 187 files, 1650 passed, 33 skipped.
+
 ## 0.0.152-alpha - 2026-11-21
 
 - **Water is drawn as a blended surface.** `liquids/water*`, `sewer_slime` and toxin

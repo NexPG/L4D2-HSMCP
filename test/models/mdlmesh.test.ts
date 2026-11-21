@@ -7,7 +7,7 @@
  */
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadGameModel, loadModelTextures, modelMaterialPath } from "../../src/assets/typescript/game/models.js";
+import { loadGameModel, loadModelTextures, modelMaterialPath, modelSiblings } from "../../src/assets/typescript/game/models.js";
 import { openGameVpk } from "../../src/assets/typescript/game/vpkcontent.js";
 import { ctx, has } from "../support/env.js";
 
@@ -50,6 +50,40 @@ describe.skipIf(!hasVpk)("model geometry", () => {
     expect(leaves.alpha).toBeDefined();
     expect(leaves.alpha!.length).toBe(leaves.width * leaves.height);
     expect(leaves.alphaTest).toBe(true);
+  });
+
+  it("reorders VVD vertices through the LOD-0 fixup table", () => {
+    const archive = vpk()!;
+    const path = "models/props/cs_office/shelves_metal1.mdl";
+    const geometry = loadGameModel(archive, path);
+    expect(geometry).not.toBeNull();
+    expect(geometry!.fixupCount).toBeGreaterThan(0);
+    // The first fixup covers raw 0..344; the second starts at raw 569, so fixed index 345
+    // must be raw 569 — not raw 345, which has a different position.
+    const vvd = archive.read(path.replace(/\.mdl$/i, ".vvd"))!;
+    const verticesOffset = vvd.readInt32LE(56);
+    const raw = (index: number): number[] => [
+      vvd.readFloatLE(verticesOffset + index * 48 + 16),
+      vvd.readFloatLE(verticesOffset + index * 48 + 20),
+      vvd.readFloatLE(verticesOffset + index * 48 + 24),
+    ];
+    const fixed = geometry!.meshes[0]!.vertices[345]!.position;
+    const raw569 = raw(569);
+    const raw345 = raw(345);
+    expect(fixed[0]).toBeCloseTo(raw569[0]!, 4);
+    expect(fixed[1]).toBeCloseTo(raw569[1]!, 4);
+    expect(fixed[2]).toBeCloseTo(raw569[2]!, 4);
+    expect(fixed[0]).not.toBeCloseTo(raw345[0]!, 4);
+  });
+
+  it("prefers .dx90 and falls back through the other VTX variants", () => {
+    expect(modelSiblings("models/foo/bar.mdl").vtx).toEqual([
+      "models/foo/bar.dx11.vtx",
+      "models/foo/bar.dx90.vtx",
+      "models/foo/bar.dx80.vtx",
+      "models/foo/bar.sw.vtx",
+      "models/foo/bar.vtx",
+    ]);
   });
 
   it("prefixes a bare material with materials/ and keeps a full path as is", () => {

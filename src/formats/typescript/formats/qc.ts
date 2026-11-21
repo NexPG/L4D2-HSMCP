@@ -421,17 +421,29 @@ export function parseQc(
  * occasional unknown-command note.
  */
 const QC_COMMANDS = new Set([
-  "$modelname", "$body", "$bodygroup", "$model", "$cdmaterials", "$cdtexture",
-  "$surfaceprop", "$sequence", "$animation", "$attachment", "$definebone", "$hbox",
-  "$hboxset", "$ikchain", "$jigglebone", "$keyvalues", "$texturegroup", "$poseparameter",
-  "$bbox", "$cbox", "$contents", "$illumposition", "$eyeposition", "$staticprop",
-  "$mostlyopaque", "$bonemerge", "$unlockdefinebones", "$opaque", "$translucent",
-  "$cliptotextures", "$scale", "$include", "$pushd", "$popd", "$cd", "$definevariable",
-  "$definemacro", "$maxeyedeflection", "$forcephonemecrossfade", "$eyeball",
-  "$eyelid", "$mouth", "$flexcontroller", "$flexrule", "$flex", "$flexpair",
-  "$animation", "$animblocksize", "$sectionframes", "$bonesaveframe", "$skyname",
-  "$flags", "$contents", "$mass", "$concave", "$maxconvexpieces", "$rootbone",
-  "$jointmerge", "$jointconstrain", "$jointrules", "$sequence", "$weightlist",
+  "$modelname", "$body", "$bodygroup", "$bodygrouppreset", "$model", "$cdmaterials",
+  "$cdtexture", "$surfaceprop", "$sequence", "$animation", "$attachment", "$definebone",
+  "$hbox", "$hboxset", "$skipboneinbbox", "$ikchain", "$ikautoplaylock", "$jigglebone",
+  "$keyvalues", "$texturegroup", "$poseparameter", "$bbox", "$cbox", "$contents",
+  "$illumposition", "$eyeposition", "$staticprop", "$mostlyopaque", "$bonemerge",
+  "$unlockdefinebones", "$opaque", "$translucent", "$cliptotextures", "$scale", "$include",
+  "$includemodel", "$pushd", "$popd", "$cd", "$definevariable", "$definemacro",
+  "$maxeyedeflection", "$forcephonemecrossfade", "$eyeball", "$eyelid", "$mouth",
+  "$flexcontroller", "$flexrule", "$flex", "$flexpair", "$animation", "$animblocksize",
+  "$sectionframes", "$bonesaveframe", "$skyname", "$flags", "$contents", "$mass",
+  "$concave", "$concaveperjoint", "$maxconvexpieces", "$rootbone", "$jointmerge",
+  "$jointconstrain", "$jointrules", "$sequence", "$weightlist",
+  // Commands that only appear in decompiled QCs, written by the compiler's own feature set.
+  "$ambientboost", "$casttextureshadows", "$collisionjoints", "$collisionmodel",
+  "$collisiontext", "$constantdirectionallight", "$controller", "$damping",
+  "$declareanimation", "$declaresequence", "$donotcastshadows", "$drag",
+  "$externaltextures", "$fadedist", "$gamma", "$hgroup", "$inertia", "$jointcollide",
+  "$jointcontents", "$jointdamping", "$jointinertia", "$jointmassbias",
+  "$jointrotdamping", "$jointsurfaceprop", "$limitrotation", "$mirrorbone",
+  "$noforcedfade", "$noselfcollisions", "$obsolete", "$origin", "$pivot",
+  "$proceduralbones", "$renamebone", "$rollingdrag", "$root", "$rotdamping",
+  "$screenalign", "$sequencegroup", "$sequencegroupsize", "$shadowlod", "$texrendermode",
+  "$upaxis", "$worldalign",
 ]);
 
 /** The command names the structural validator knows; exported for `read_qc` to report. */

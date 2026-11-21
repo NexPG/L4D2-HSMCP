@@ -287,6 +287,37 @@ $Loop
     expect(good.diagnostics.map((d) => d.rule)).not.toContain("qc-unknown-command");
   });
 
+  it("knows the commands a decompiled QC carries", () => {
+    // These are the command names Crowbar emits when it rebuilds a QC from a compiled MDL;
+    // they are format facts, not a code dependency. A real decompiled QC must not be warned
+    // about for using one of them.
+    const decompiled = parseQc(
+      [
+        '$modelname "survivors/a.mdl"',
+        "$upaxis Y",
+        "$staticprop",
+        "$constantdirectionallight",
+        "$ambientboost",
+        "$noforcedfade",
+        "$obsolete",
+        "$casttextureshadows",
+        "$donotcastshadows",
+        "$controller 0 \"root\" X 0 0",
+        "$screenalign \"root\" \"sphere\"",
+        "$bodygrouppreset \"default\" { \"body\" \"0\" }",
+        "$includemodel \"survivors/anim_a.mdl\"",
+        "$jointsurfaceprop \"root\" \"flesh\"",
+        "$jointcontents \"root\" \"solid\"",
+        "$weightlist \"w\" { \"root\" 1 }",
+        "$shadowlod { replacemodel \"a.smd\" \"a_shadow.smd\" }",
+        "$declareanimation \"a\" \"a_anim.smd\"",
+        "$declaresequence \"s\" \"s.smd\"",
+        "$collisionmodel \"a_phys.smd\" { $mass 10 $concave }",
+      ].join("\n"),
+    );
+    expect(decompiled.diagnostics.map((d) => d.rule)).not.toContain("qc-unknown-command");
+  });
+
   it("reports a malformed known command, a bad sequence number and an unknown command", () => {
     const bad = parseQc(
       [

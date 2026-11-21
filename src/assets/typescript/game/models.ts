@@ -13,9 +13,21 @@ import type { ModelGeometry } from "../../../models/typescript/formats/mdlmesh.j
 import type { MaterialTexture } from "./vpkcontent.js";
 
 /** Where the three files of a model are, from its `.mdl` path. */
-export function modelSiblings(mdlPath: string): { vvd: string; vtx: string } {
+export function modelSiblings(mdlPath: string): { vvd: string; vtx: string[] } {
   const base = mdlPath.replace(/\\/g, "/").replace(/\.mdl$/i, "");
-  return { vvd: `${base}.vvd`, vtx: `${base}.dx90.vtx` };
+  // Left 4 Dead 2 ships `.dx90.vtx`; the others exist for older/other branches and for a
+  // `.dx90` whose checksum belongs to a different MDL. The order is the one the engine and
+  // Crowbar use, most capable first.
+  return {
+    vvd: `${base}.vvd`,
+    vtx: [
+      `${base}.dx11.vtx`,
+      `${base}.dx90.vtx`,
+      `${base}.dx80.vtx`,
+      `${base}.sw.vtx`,
+      `${base}.vtx`,
+    ],
+  };
 }
 
 /** Loads and parses a model's geometry, or null when any of the three files is missing. */
@@ -24,11 +36,17 @@ export function loadGameModel(vpk: GameVpk, mdlPath: string): ModelGeometry | nu
   const mdl = vpk.read(normalized);
   if (!mdl) return null;
   const siblings = modelSiblings(normalized);
-  let vtx = vpk.read(siblings.vtx);
-  if (!vtx) vtx = vpk.read(`${normalized.replace(/\.mdl$/i, "")}.vtx`);
   const vvd = vpk.read(siblings.vvd);
-  if (!vvd || !vtx) return null;
-  return parseModelGeometry(mdl, vvd, vtx);
+  if (!vvd) return null;
+  for (const candidate of siblings.vtx) {
+    const vtx = vpk.read(candidate);
+    if (!vtx) continue;
+    // A checksum mismatch means this VTX belongs to another build of the model; try the
+    // next one rather than refusing the model outright.
+    const geometry = parseModelGeometry(mdl, vvd, vtx);
+    if (geometry) return geometry;
+  }
+  return null;
 }
 
 /** A model material's VMT path: `models/x` means `materials/models/x.vmt`. */

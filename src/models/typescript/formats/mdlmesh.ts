@@ -41,6 +41,8 @@ export interface ModelGeometry {
   meshes: ModelMesh[];
   vertexCount: number;
   triangleCount: number;
+  /** VVD fixups present; nonzero means the LOD-0 vertex order is the fixed list. */
+  fixupCount: number;
 }
 
 const IDST = 0x54534449; // "IDST"
@@ -93,6 +95,8 @@ interface VvdHeader {
   vertexCount: number;
   verticesOffset: number;
   tangentsOffset: number;
+  fixupCount: number;
+  fixupsOffset: number;
 }
 
 function readVvdHeader(vvd: Buffer, checksum: number): VvdHeader | null {
@@ -103,6 +107,8 @@ function readVvdHeader(vvd: Buffer, checksum: number): VvdHeader | null {
     vertexCount: vvd.readInt32LE(16),
     verticesOffset: vvd.readInt32LE(56),
     tangentsOffset: vvd.readInt32LE(60),
+    fixupCount: vvd.readInt32LE(48),
+    fixupsOffset: vvd.readInt32LE(52),
   };
 }
 
@@ -225,6 +231,37 @@ function readVvdVertices(vvd: Buffer, header: VvdHeader): ModelVertex[] {
     vertices.push({ position, normal, uv });
   }
   return vertices;
+}
+
+/**
+ * Reorders the VVD vertices into the LOD-0 fixed order when fixups exist.
+ *
+ * The VVD stores vertices grouped by the LOD they were introduced for, and the fixup table
+ * lists those groups in file order. The VTX's `meshVertexID` indexes the *fixed* list, so a
+ * model with fixups whose raw order is used directly draws triangles from the wrong vertices:
+ * the geometry is still connected, which makes the mistake look like a mis-shaped prop rather
+ * than a corrupt file. For LOD 0 every fixup applies (`lodIndex >= 0`), in file order.
+ */
+function applyFixupsForLod0(
+  vvd: Buffer,
+  header: VvdHeader,
+  raw: ModelVertex[],
+): ModelVertex[] {
+  if (header.fixupCount <= 0) return raw;
+  const fixed: ModelVertex[] = [];
+  for (let i = 0; i < header.fixupCount; i += 1) {
+    const at = header.fixupsOffset + i * 12;
+    if (at + 12 > vvd.length) break;
+    const lodIndex = vvd.readInt32LE(at);
+    const sourceVertexId = vvd.readInt32LE(at + 4);
+    const vertexCount = vvd.readInt32LE(at + 8);
+    if (lodIndex < 0 || sourceVertexId < 0 || vertexCount <= 0) continue;
+    for (let j = 0; j < vertexCount; j += 1) {
+      const vertex = raw[sourceVertexId + j];
+      if (vertex) fixed.push(vertex);
+    }
+  }
+  return fixed.length > 0 ? fixed : raw;
 }
 
 interface VtxMesh {
@@ -356,7 +393,8 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
 
   const { materials, skins } = readMaterials(mdl, header);
   const bodyParts = readBodyParts(mdl, header);
-  const vvdVertices = readVvdVertices(vvd, vvdHeader);
+  const rawVertices = readVvdVertices(vvd, vvdHeader);
+  const vvdVertices = applyFixupsForLod0(vvd, vvdHeader, rawVertices);
   const { meshes: vtxMeshes } = readVtx(vtx, vtxHeader);
 
   const meshes: ModelMesh[] = [];
@@ -400,6 +438,7 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
     meshes,
     vertexCount: vvdVertices.length,
     triangleCount,
+    fixupCount: vvdHeader.fixupCount,
   };
 }
 

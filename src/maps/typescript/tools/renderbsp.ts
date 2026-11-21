@@ -189,7 +189,14 @@ function addProps(
     }
 
     const tint = (prop.tint[0] * 0.299 + prop.tint[1] * 0.587 + prop.tint[2] * 0.114) / 255;
-    const leaf = ambient?.leafAt(prop.origin) ?? -1;
+    // `HAS_LIGHTING_ORIGIN` (0x02) means an info_lighting anchor supplied this prop's
+    // lighting, and the ambient cube must be sampled there rather than at the prop itself.
+    // A prop inside a dark alcove lit through a doorway is the case this exists for.
+    const lightingPoint =
+      (prop.flags & 0x02) !== 0 && prop.lightingOrigin.some((value) => value !== 0)
+        ? prop.lightingOrigin
+        : prop.origin;
+    const leaf = ambient?.leafAt(lightingPoint) ?? -1;
     let added = 0;
     for (let meshIndex = 0; meshIndex < geometry.meshes.length; meshIndex += 1) {
       const mesh = geometry.meshes[meshIndex]!;
