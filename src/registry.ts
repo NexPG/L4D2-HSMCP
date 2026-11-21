@@ -64,6 +64,7 @@ import { hollowTools } from "./maps/typescript/tools/hollow.js";
 import { instanceTools } from "./maps/typescript/tools/instance.js";
 import { instanceCreateTools } from "./maps/typescript/tools/instancecreate.js";
 import { lightmapTools } from "./maps/typescript/tools/lightmap.js";
+import { lightmapReadTools } from "./maps/typescript/tools/lightmaps.js";
 import { materialsTools } from "./textures/typescript/tools/materials.js";
 import { measureTools } from "./maps/typescript/tools/measure.js";
 import { measureTools2 } from "./maps/typescript/tools/measurespace.js";
@@ -75,6 +76,7 @@ import { navTroubleTools } from "./nav/typescript/tools/navtrouble.js";
 import { optimiseTools } from "./maps/typescript/tools/optimise.js";
 import { organiseTools } from "./maps/typescript/tools/organise.js";
 import { overlayTools } from "./maps/typescript/tools/overlay.js";
+import { overlayReadTools } from "./maps/typescript/tools/overlays.js";
 import { pakfileAddTools } from "./maps/typescript/tools/pakfileadd.js";
 import { pakfileTools } from "./packages/typescript/tools/pakfile.js";
 import { planTools } from "./maps/typescript/tools/plan.js";
@@ -103,6 +105,7 @@ import { textTools } from "./core/typescript/tools/text.js";
 import { terrainTools } from "./maps/typescript/tools/terrain.js";
 import { vertexTools } from "./maps/typescript/tools/vertex.js";
 import { visleafTools } from "./maps/typescript/tools/visleaf.js";
+import { visTools } from "./maps/typescript/tools/vis.js";
 import { vtfConvertTools } from "./textures/typescript/tools/vtfconvert.js";
 import { vtfGenTools } from "./textures/typescript/tools/vtfgen.js";
 import { vtfTools } from "./textures/typescript/tools/vtf.js";
@@ -144,7 +147,9 @@ export const allTools: AnyToolDef[] = [
   ...measureTools,
   ...materialsTools,
   ...lightmapTools,
+  ...lightmapReadTools,
   ...visleafTools,
+  ...visTools,
   ...reportTools,
   ...vmfTools,
   ...contentTools,
@@ -223,6 +228,7 @@ export const allTools: AnyToolDef[] = [
   ...runtimeTools,
   ...vscriptTools,
   ...overlayTools,
+  ...overlayReadTools,
   ...instanceTools,
   ...skyboxTools,
   ...skyboxCopyTools,

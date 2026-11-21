@@ -75,6 +75,9 @@ covered: this table is the summary.
 | Manual U/V vectors (skew) | `set_face_uv` | verified: skewed axes accepted by vbsp and the map loaded |
 | Smoothing groups | `set_smoothing_groups` | verified: group 13 reached the BSP as the mask 4096 on all six faces |
 | Lightmap scale | `set_lightmap_scale` | verified: scale 32 produced the expected FACES luxel dimensions |
+| Baked lightmap samples | `read_bsp_lightmaps` | **verified on `c1m1_hotel`**: the HDR lump is 8,770,812 bytes; face 0 averages 122/154/175 and its 21x5 lightmap writes as a PNG |
+| PVS | `read_bsp_vis` | **verified on `c1m1_hotel`**: 1,812 clusters, 227-byte vectors, cluster 0's visible set decoded |
+| Compiled overlays | `read_bsp_overlays` | **verified**: `c1m1_hotel` has 156 records; the decoded one is `decals/blood7` over faces 3182/4046. A one-overlay test map decodes as `decals/blood1`, 4 faces, normal +Z |
 | Light entities | `write_light` for point/environment/dynamic/sun/shadow, `edit_vmf` for the rest | verified: the five kinds compile into the entity lump; `_light` is the four-number form and `light_environment` gets angles/ambient (`tools-compile.test.ts`) |
 | Postprocess | `write_postprocess` | verified: a tonemap controller wired to `logic_auto` with three `OnMapSpawn` outputs compiles; `color_correction` is the L4D2 class name, not `colorcorrection` |
 | Decals | `write_decal` for `infodecal`, `write_overlay` for a sized overlay | verified: decals written at surface points reach the entity lump |

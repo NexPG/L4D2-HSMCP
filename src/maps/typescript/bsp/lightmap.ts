@@ -21,6 +21,8 @@ const NO_LIGHTMAP_FLAGS = SURF_SKY2D | SURF_SKY | SURF_NODRAW | SURF_NOLIGHT;
 export interface FaceLightmap {
   index: number;
   texinfo: number;
+  /** Byte offset into the LIGHTING lump; -1 when vrad wrote none. */
+  lightofs: number;
   /** vrad actually wrote lightmap data for this face (`lightofs >= 0`). */
   hasLightmap: boolean;
   /** (sizeInLuxels + 1) in each axis, multiplied -- Source's own off-by-one convention. */
@@ -72,9 +74,12 @@ function guardLump(header: BspHeader, index: number, structBytes: number): BspLu
  * Reads two lump bodies only. On a 1 GB map that is a few megabytes at most, nothing like
  * the file itself.
  */
-export function readLightmapBudget(path: string): LightmapBudgetReport {
+export function readLightmapBudget(
+  path: string,
+  facesLumpIndex = LUMP_FACES,
+): LightmapBudgetReport {
   const header = readHeader(path);
-  const facesLump = guardLump(header, LUMP_FACES, FACE_BYTES);
+  const facesLump = guardLump(header, facesLumpIndex, FACE_BYTES);
   const texinfoLump = guardLump(header, LUMP_TEXINFO, TEXINFO_BYTES);
 
   const texinfoRaw = readAt(path, texinfoLump.offset, texinfoLump.length);
@@ -116,7 +121,7 @@ export function readLightmapBudget(path: string): LightmapBudgetReport {
       if (area > 0) litAreaUnits += area;
     }
 
-    faces.push({ index: i, texinfo, hasLightmap, luxels, sizeLuxels, area });
+    faces.push({ index: i, texinfo, lightofs, hasLightmap, luxels, sizeLuxels, area });
   }
 
   return { header, faceCount, facesWithLightmap, totalLuxels, litAreaUnits, faces };

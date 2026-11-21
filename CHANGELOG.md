@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.146-alpha - 2026-11-21
+
+- **`read_bsp_lightmaps` reads the baked luxels, not just the budget.** LDR is three bytes
+  per luxel; LDR maps are read from FACES, HDR from FACES_HDR and the four-byte HDR records.
+  Verified on `c1m1_hotel`: the HDR lump is 8,770,812 bytes; face 0 averages 122/154/175 and
+  its 21x5 lightmap writes as a PNG.
+- **`read_bsp_vis` decodes the PVS.** Reads the `dvis_t` offset table and the fixed
+  `ceil(clusters/8)`-byte vector per cluster, and lists one cluster's visible set. Verified on
+  `c1m1_hotel`: 1,812 clusters, 227-byte vectors.
+- **`read_bsp_overlays` reads the compiled 352-byte `doverlay_t`.** It lists faces, texinfo,
+  resolved material, U/V ranges, four UV points, origin and basis normal. Verified: a
+  `c1m1_hotel` record resolves to `decals/blood7`; a one-overlay test map resolves to
+  `decals/blood1` with four faces and a +Z normal.
+- **`read_lightmap_budget` accepts the HDR FACES lump**, so the budget and the samples agree
+  on HDR-only maps.
+- **Tool count: 227.** Tests: 180 files, 1634 passed, 33 skipped.
+
 ## 0.0.145-alpha - 2026-11-21
 
 - **`run_input` sends a real key to a window.** Focuses with `SetForegroundWindow` /
