@@ -128,7 +128,8 @@ written as a `.vta` next to the reference SMD, referenced from a `$model { flexf
 block: the basis frame lists every fixed LOD-0 vertex, each frame holds the deformed
 position/normal, and the QC carries the original `flexcontroller` lines and the rules
 rebuilt from the MDL's postfix ops. The delta fields are float16 in the `.mdl`, not
-`short / 4096`. A one-frame `$sequence "idle"` is written only when no real sequence can be
+`short / 4096`. `read_vta`/`write_vta` inspect or hand-author the same file and verify a
+write by reading it back. A one-frame `$sequence "idle"` is written only when no real sequence can be
 decoded. Bodygroup presets are the remaining gap; the tool lists it in `warnings` rather
 than pretending the QC is complete. The default target is `<name>_decompiled.mdl`, so a
 direct recompile cannot overwrite the source.

@@ -17,6 +17,7 @@ import { readAttachments, readHitboxSets } from "../../src/models/typescript/for
 import { readAnimations, readSequences, decodeAnimation } from "../../src/models/typescript/formats/mdlanim.js";
 import { readMdlBones, readModelHeaderInfo } from "../../src/models/typescript/formats/mdlbones.js";
 import { readPhy, readPhyGeometry } from "../../src/models/typescript/formats/phy.js";
+import { buildVtaText, parseVta } from "../../src/models/typescript/formats/vta.js";
 import { parseModelGeometry } from "../../src/models/typescript/formats/mdlmesh.js";
 import type { Vec3 } from "../../src/models/typescript/formats/mdlmesh.js";
 import { loadGameModel, modelSiblings } from "../../src/assets/typescript/game/models.js";
@@ -919,6 +920,25 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
       .filter((line) => /^ {4}\d+ /.test(line));
     expect(basis).toHaveLength(source.lod0Vertices.length);
     expect(r.warnings.join(" ")).toMatch(/flex descriptors were written as VTA frames/);
+
+    // The same VTA through the standalone reader and writer: the decompiler's file is a
+    // reference for both, and the basis index set must survive a round trip unchanged.
+    const parsed = parseVta(vta);
+    expect(parsed.basis.vertices).toHaveLength(source.lod0Vertices.length);
+    expect(parsed.frames).toHaveLength(1);
+    expect(parsed.frames[0]).toMatchObject({ name: "presser" });
+    expect(parsed.frames[0]!.vertices).toHaveLength(1068);
+    const again = parseVta(
+      buildVtaText(
+        parsed.basis.vertices,
+        parsed.frames.map((frame) => ({ name: frame.name, vertices: frame.vertices })),
+        parsed.nodes,
+      ),
+    );
+    expect(again.basis.vertices.map((vertex) => vertex.index)).toEqual(
+      parsed.basis.vertices.map((vertex) => vertex.index),
+    );
+    expect(again.frames[0]!.vertices[0]).toEqual(parsed.frames[0]!.vertices[0]);
   });
 
   it.skipIf(!has.toolchain)(

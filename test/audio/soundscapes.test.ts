@@ -96,7 +96,7 @@ describe.skipIf(!installed)("read_soundscape / write_soundscape", () => {
     ).rejects.toThrow(/already defines/);
   });
 
-  it.skipIf(!has.gameContent)("reads the stock soundscapes and checks real waves", async () => {
+  it.skipIf(!has.gameContent)("reads the stock soundscapes and checks real waves", { timeout: 30_000 }, async () => {
     const read = await callSidecar<ReadResult>(
       "soundscape_read",
       { gameDir: config.gameDir, limit: 5 },

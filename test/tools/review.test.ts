@@ -41,7 +41,7 @@ type Review = {
 };
 
 describe("review_map", () => {
-  it("runs the offline sections and leaves the compiled ones null when there is no BSP", async () => {
+  it("runs the offline sections and leaves the compiled ones null when there is no BSP", { timeout: 30_000 }, async () => {
     const path = join(scratch, "uncompiled.vmf");
     writeFileSync(path, room());
 

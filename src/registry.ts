@@ -88,6 +88,7 @@ import { modelCollisionTools } from "./models/typescript/tools/collision.js";
 import { decompileModelTools } from "./models/typescript/tools/decompile.js";
 import { modelAnimationTools } from "./models/typescript/tools/animation.js";
 import { modelSkeletonTools } from "./models/typescript/tools/skeleton.js";
+import { vtaTools } from "./models/typescript/tools/vta.js";
 import { modelFlexTools } from "./models/typescript/tools/flexes.js";
 import { previewModelTools } from "./models/typescript/tools/preview.js";
 import { fbxTools } from "./models/typescript/tools/fbx.js";
@@ -180,6 +181,7 @@ export const allTools: AnyToolDef[] = [
   ...modelCollisionTools,
   ...modelAnimationTools,
   ...modelSkeletonTools,
+  ...vtaTools,
   ...decompileModelTools,
   ...modelFlexTools,
   ...previewModelTools,

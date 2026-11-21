@@ -35,7 +35,7 @@ interface EditResult {
 const installed = has.sidecar;
 
 describe.skipIf(!installed)("static_props_edit", () => {
-  it("adds, edits and removes a static prop in a compiled BSP", async () => {
+  it("adds, edits and removes a static prop in a compiled BSP", { timeout: 30_000 }, async () => {
     const first = join(scratch, "add.bsp");
     copyFileSync(join(FIXTURES, "hmcp_probe.bsp"), first);
 

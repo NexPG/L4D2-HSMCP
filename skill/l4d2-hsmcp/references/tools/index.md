@@ -1,6 +1,6 @@
 # Tool catalogue
 
-236 tools. This page groups them by the job you are doing; each tool's own description is the
+238 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -242,6 +242,8 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `read_model_animation` | sequences, events, pose parameters, IK chains, `$includemodel` entries and whether an animation lives in an `.ani` |
 | `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks with fade times and events, `$includemodel` entries, `$contents`/`$bbox`/`$cbox`, `$keyvalues`, `$ikchain`/`$ikautoplaylock`, optional `$definebone` lines, flex VTA frames with their controllers and rules, and `$collisionjoints` ragdolls with their constraints |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
+| `read_vta` | VTA nodes, basis vertex count, one entry per flex frame (and the deformed vertices on request) |
+| `write_vta` | write a VTA from a basis and flex frames, with a read-back verification |
 | `read_smd` | skeleton, frames, materials, triangles and structural faults of an SMD model source |
 | `write_smd` | build an SMD from JSON (nodes, frames, triangles) and read it back |
 | `read_dmx` | a DMX datamodel as a JSON element tree, with types and values |
