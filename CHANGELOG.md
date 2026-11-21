@@ -23,9 +23,15 @@ with a line here.
 - **Borders: the Director obeys them.** In a two-room map the no-border control spawned 30
   infected, all at x<-96. A border at x=-100 spawned 1 at x=-39 (the allowed side), and a
   border at x=120 spawned 0 because the entire nav area was behind the plane. The count drop is
-  the smaller allowed area, not a failure. `info_map_parameters` keys (AmmoDensity 100,
-  PainPillDensity 100, PistolDensity 0, MolotovDensity 50) reached the entity lump; their
-  population effect still needs a flow and a round.
+  the smaller allowed area, not a failure. On a stock `c1m1_hotel` copy,
+  `ConfigurableWeaponDensity 0` left 0 `weapon_spawn` at 30 s and `100` left 6; specific
+  `weapon_ammo_spawn` (1) and `weapon_first_aid_kit_spawn` (9) were unchanged, matching the
+  wiki's split between configurable and specific spawners.
+- **Pickup and rescue interaction remain manual.** A `weapon_first_aid_kit` entity, a VScript
+  teleport onto it and an `OnPlayerPickup` echo produced no event; a PowerShell
+  `SendKeys('e')` did not reach the game window. A real rescue needs a dead survivor and a
+  living one opening the closet. The entity and the RESCUE_CLOSET nav bit are verified; the
+  `E` press is not.
 - **Tool count: 223.** Tests: 176 files, 1630 passed, 33 skipped.
 
 ## 0.0.143-alpha - 2026-11-21
