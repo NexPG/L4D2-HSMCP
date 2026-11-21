@@ -9,6 +9,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { openGameVpk } from "../../../assets/typescript/game/vpkcontent.js";
+import { modelSiblings } from "../../../assets/typescript/game/models.js";
+import { parseModelGeometry } from "../formats/mdlmesh.js";
+import type { ModelGeometry } from "../formats/mdlmesh.js";
 
 export function normalizeModelPath(model: string): string {
   let path = model.replace(/\\/g, "/").replace(/^\/+/, "");
@@ -21,4 +24,25 @@ export function looseOrVpk(gameDir: string, path: string): Buffer | null {
   const loose = join(gameDir, path);
   if (existsSync(loose)) return readFileSync(loose);
   return openGameVpk(gameDir)?.read(path) ?? null;
+}
+
+/**
+ * Loads a model's geometry by engine path, resolving every sibling loose-first.
+ *
+ * `loadGameModel` in the assets module reads from a VPK; this one also finds a locally
+ * compiled model, which is what the LOD/procedural inspectors are pointed at in practice.
+ */
+export function loadModelGeometry(gameDir: string, modelPath: string): ModelGeometry | null {
+  const mdl = looseOrVpk(gameDir, modelPath);
+  if (!mdl) return null;
+  const siblings = modelSiblings(modelPath);
+  const vvd = looseOrVpk(gameDir, siblings.vvd);
+  if (!vvd) return null;
+  for (const candidate of siblings.vtx) {
+    const vtx = looseOrVpk(gameDir, candidate);
+    if (!vtx) continue;
+    const geometry = parseModelGeometry(mdl, vvd, vtx);
+    if (geometry) return geometry;
+  }
+  return null;
 }
