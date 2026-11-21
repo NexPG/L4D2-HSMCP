@@ -79,8 +79,12 @@ export interface DisplayFace {
     data: Uint8Array;
     uvs: Array<[number, number]>;
   };
+  /** RGB multiplier 0..1 for a textured face without a lightmap (a model's ambient). */
+  modulate?: [number, number, number];
   /** Whether this face is a piece of sky rather than a piece of the world. */
   sky: boolean;
+  /** Draw both sides; a model card is a surface rather than a solid boundary. */
+  twoSided?: boolean;
 }
 
 /**
@@ -234,7 +238,7 @@ export function displayList(scene: Scene, camera: Camera): {
         n[0] * (camera.origin[0] - face.loop[0]![0]) +
         n[1] * (camera.origin[1] - face.loop[0]![1]) +
         n[2] * (camera.origin[2] - face.loop[0]![2]);
-      if (toEye <= 0) {
+      if (toEye <= 0 && face.twoSided !== true) {
         culled += 1;
         continue;
       }
@@ -299,6 +303,7 @@ export function displayList(scene: Scene, camera: Camera): {
         ...(face.colours ? { colours: face.colours } : {}),
         ...(lightmap ? { lightmap } : {}),
         ...(texture ? { texture } : {}),
+        ...(face.modulate ? { modulate: face.modulate } : {}),
         sky: isSkyMaterial(face.material),
       });
     }
@@ -498,17 +503,20 @@ function fillFace(fb: Framebuffer, camera: Camera, face: DisplayFace): boolean {
         const tu = (tuzLo + (tuzHi - tuzLo) * t) / invZ;
         const tv = (tvzLo + (tvzHi - tvzLo) * t) / invZ;
         const [tr, tg, tb] = sampleRgb(texture, tu, tv, true);
+        const mr = face.modulate?.[0] ?? 1;
+        const mg = face.modulate?.[1] ?? 1;
+        const mb = face.modulate?.[2] ?? 1;
         if (lightmap) {
           const u = (uzLo + (uzHi - uzLo) * t) / invZ;
           const v = (vzLo + (vzHi - vzLo) * t) / invZ;
           const [lr, lg, lb] = sampleRgb(lightmap, u, v);
-          rr = Math.round((tr * lr) / 255);
-          gg = Math.round((tg * lg) / 255);
-          bb = Math.round((tb * lb) / 255);
+          rr = Math.round((tr * lr * mr) / 255);
+          gg = Math.round((tg * lg * mg) / 255);
+          bb = Math.round((tb * lb * mb) / 255);
         } else {
-          rr = Math.max(0, Math.min(255, Math.round(tr * face.shade)));
-          gg = Math.max(0, Math.min(255, Math.round(tg * face.shade)));
-          bb = Math.max(0, Math.min(255, Math.round(tb * face.shade)));
+          rr = Math.max(0, Math.min(255, Math.round(tr * face.shade * mr)));
+          gg = Math.max(0, Math.min(255, Math.round(tg * face.shade * mg)));
+          bb = Math.max(0, Math.min(255, Math.round(tb * face.shade * mb)));
         }
       } else if (lightmap) {
         const u = (uzLo + (uzHi - uzLo) * t) / invZ;

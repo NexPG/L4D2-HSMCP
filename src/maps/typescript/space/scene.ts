@@ -169,6 +169,16 @@ export interface SceneFace {
     data: Uint8Array;
     uvs: Array<[number, number]>;
   };
+  /**
+   * A per-face RGB multiplier, 0..1. A model has no lightmap, so its baked ambient cube is
+   * applied here; a brush face leaves it out because its lightmap already carries the light.
+   */
+  modulate?: [number, number, number];
+  /**
+   * Draw from both sides. A model's card or a displacement is a surface, not the boundary
+   * of a solid, so the outward normal is not enough to cull it.
+   */
+  twoSided?: boolean;
 }
 
 export interface SceneBrush {

@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.151-alpha - 2026-11-21
+
+- **`render_bsp_view` draws static props.** It reads the `sprp` game lump (L4D2 version 9,
+  72-byte records), loads each prop's MDL/VVD/VTX from the game's VPKs, applies origin,
+  QAngle rotation, scale and skin, and draws LOD 0 with the model's own materials. Props are
+  culled by distance and bounding sphere against the camera and by a triangle budget.
+  Verified on `c1m1_hotel`: 1,748 props, all 188 distinct models parsed (32 multi-mesh),
+  54 props and 57,626 triangles from a lobby camera.
+- **Props are lit by the baked ambient cube.** `readAmbientLighting` reads
+  `LEAF_AMBIENT_INDEX` and the HDR `LEAF_AMBIENT_LIGHTING` grid, finds the leaf containing the
+  prop, and blends its six faces toward each triangle's normal. L4D2 stores 28-byte records
+  (six `ColorRGBExp32` faces plus position); the HL2 388-byte 4×4 form is also read. Verified:
+  `c1m1_hotel` has 7,053 leaves and 24,541 HDR samples; its LDR ambient lump is all zero.
+- **Tool count: 228.** Tests: 185 files, 1643 passed, 33 skipped.
+
 ## 0.0.150-alpha - 2026-11-21
 
 - **`render_bsp_view` textures the compiled faces.** It opens the game's `pak01_dir.vpk`
