@@ -108,7 +108,7 @@ line at the source fps; the SMD `time` is a frame number, not seconds.
 Every body part's alternatives are written as separate SMDs and a `$bodygroup` block, with
 `blank` for an empty value, so a model with several bodygroup values keeps them. Every VTX LOD
 becomes its own SMD and a `$lod`/`replacemodel` line at the source switch distance; shadow
-LODs are not written. Attachments and custom hitbox sets are written as `$attachment` and
+LODs use a `$shadowlod` block. Attachments and custom hitbox sets are written as `$attachment` and
 `$hboxset`/`$hbox` lines; a hitbox set that studiomdl auto-generated is left out so the next
 compile can rebuild it from the mesh. Models with more than one skin family get a
 `$texturegroup "skinfamilies"` block built from the MDL's skin table. Sequences whose data is

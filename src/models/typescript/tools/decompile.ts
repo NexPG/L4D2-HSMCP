@@ -286,6 +286,7 @@ function qcText(
   autoHitboxes: boolean,
   bodyGroups: BodyGroupDef[],
   lodBlocks: LodBlockDef[],
+  shadowReplacements: LodReplacement[],
 ): string {
   const modelname = targetModelName
     .replace(/\\/g, "/")
@@ -337,6 +338,13 @@ function qcText(
       : fmt(block.distance);
     lines.push("", `$lod ${distance}`, "{");
     for (const replacement of block.replacements) {
+      lines.push(`\treplacemodel "${replacement.from}" "${replacement.to}"`);
+    }
+    lines.push("}");
+  }
+  if (shadowReplacements.length > 0) {
+    lines.push("", "$shadowlod", "{");
+    for (const replacement of shadowReplacements) {
       lines.push(`\treplacemodel "${replacement.from}" "${replacement.to}"`);
     }
     lines.push("}");
@@ -487,6 +495,8 @@ export const decompileModelTool = defineTool({
     bodygroupFiles: z.array(z.string()),
     lodLevels: z.number(),
     lodFiles: z.array(z.string()),
+    shadowLods: z.number(),
+    shadowFiles: z.array(z.string()),
     triangleCount: z.number(),
     collisionTriangles: z.number(),
     boneCount: z.number(),
@@ -663,6 +673,7 @@ export const decompileModelTool = defineTool({
     // file maps to its own higher-LOD file, so a bodygroup and its LODs stay in sync.
     const lodSources: Array<{ smd: string; meshes: ModelMesh[] }> = [];
     const lodBlocksByDistance = new Map<number, LodReplacement[]>();
+    const shadowReplacements: LodReplacement[] = [];
     let shadowLods = 0;
     for (const [partIndex, part] of geometry.bodyParts.entries()) {
       for (const [modelIndex, model] of part.models.entries()) {
@@ -672,7 +683,14 @@ export const decompileModelTool = defineTool({
           const lod = model.lods[lodIndex];
           if (!lod || lod.meshes.length === 0) continue;
           if (lod.switchDistance < 0) {
+            // Source allows one shadow LOD per model; keep the first and still write its
+            // source so the file exists if the list is corrected later.
             shadowLods += 1;
+            const smd = `${from.replace(/\.smd$/i, "")}_shadow.smd`;
+            lodSources.push({ smd, meshes: lod.meshes });
+            if (!shadowReplacements.some((replacement) => replacement.from === from)) {
+              shadowReplacements.push({ from, to: smd });
+            }
             continue;
           }
           const smd = `${from.replace(/\.smd$/i, "")}_lod${lodIndex}.smd`;
@@ -773,14 +791,18 @@ export const decompileModelTool = defineTool({
       autoHitboxes,
       bodyGroups,
       lodBlocks,
+      shadowReplacements,
     );
     writeFileSync(qcPath, qc, "latin1");
     warnings.push(
       "Reference meshes are written for every VTX LOD and `$lod` replacements map each " +
-        "bodygroup model to its higher LODs; shadow LODs are not written.",
+        "bodygroup model to its higher LODs; shadow LODs use a `$shadowlod` block.",
     );
-    if (shadowLods > 0) {
-      warnings.push(`${shadowLods} shadow LODs (negative switch distance) were not written.`);
+    if (shadowLods > 1) {
+      warnings.push(
+        `${shadowLods} shadow LOD records were present; Source keeps one per model, so the ` +
+          "first was written.",
+      );
     }
     const skippedAttachments = attachments.filter(
       (attachment) =>
@@ -862,6 +884,8 @@ export const decompileModelTool = defineTool({
       bodygroupFiles,
       lodLevels,
       lodFiles,
+      shadowLods,
+      shadowFiles: shadowReplacements.map((replacement) => join(outDir, replacement.to)),
       triangleCount: geometry.meshes.reduce((sum, mesh) => sum + mesh.triangles.length / 3, 0),
       collisionTriangles,
       boneCount: bones.length,

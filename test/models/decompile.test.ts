@@ -80,7 +80,7 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain("$collisionmodel \"cara_84sedan_phys.smd\"");
     expect(qc).toContain("$concave");
     expect(qc).toContain('$sequence "idle" "cara_84sedan_idle.smd" fps 30.000000');
-    expect(r.warnings.join(" ")).toMatch(/shadow LODs are not written/);
+    expect(r.warnings.join(" ")).toMatch(/shadow LODs use a/);
 
     const smd = readFileSync(r.smd, "latin1");
     expect(smd.startsWith("version 1\nnodes\n")).toBe(true);
@@ -361,6 +361,52 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(rebuilt.lods.map((lod) => lod.triangleCount)).toEqual(
       source.lods.map((lod) => lod.triangleCount),
     );
+  });
+
+  it("writes shadow LOD replacements", async () => {
+    const outDir = join(scratch, "hgibs");
+    const r = (await decompileModelTool.handler(
+      {
+        model: "gibs/hgibs.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/hgibs.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string; shadowLods: number; shadowFiles: string[] };
+    expect(r.shadowLods).toBe(1);
+    expect(r.shadowFiles).toHaveLength(1);
+    const qc = readFileSync(r.qc, "utf8");
+    expect(qc).toContain("$shadowlod");
+    expect(qc).toContain('replacemodel "hgibs_ref.smd" "hgibs_ref_shadow.smd"');
+  });
+
+  it.skipIf(!has.toolchain)("recompiles hgibs with its shadow LOD", async () => {
+    const outDir = join(scratch, "hgibs-roundtrip");
+    const decompiled = (await decompileModelTool.handler(
+      {
+        model: "gibs/hgibs.mdl",
+        outDir,
+        overwrite: true,
+        confirm: true,
+        modelname: "hsmcp_decompile_test/hgibs.mdl",
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const compiled = (await runStudiomdlTool.handler(
+      { qc: decompiled.qc, timeoutMinutes: 5 } as never,
+      ctx,
+    )) as { ok: boolean; modelExists: boolean };
+    expect(compiled.ok).toBe(true);
+    expect(compiled.modelExists).toBe(true);
+
+    const source = loadGameModel(openGameVpk(ctx.config.gameDir!)!, "models/gibs/hgibs.mdl")!;
+    const rebuilt = readLooseGeometry("models/hsmcp_decompile_test/hgibs.mdl")!;
+    expect(rebuilt.lods.map((lod) => lod.switchDistance)).toEqual(
+      source.lods.map((lod) => lod.switchDistance),
+    );
+    expect(rebuilt.lods.some((lod) => lod.switchDistance < 0)).toBe(true);
   });
 
   it("writes skin families as a texturegroup and keeps the family mapping", async () => {

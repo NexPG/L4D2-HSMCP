@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.164-alpha - 2026-11-21
+
+- **`decompile_model` writes shadow LODs.** A VTX LOD with a negative switch distance now
+  becomes a `$shadowlod` block with `replacemodel` lines, instead of being skipped. Source
+  keeps one shadow LOD per model, so the first record wins and the count is reported when a
+  model had more than one.
+- **Verified by recompile:** `hgibs` has LOD distances 0/10/20/30/-1; decompile → recompile
+  returns the same five distances, including the negative shadow LOD.
+- **Skill docs updated:** shadow LODs are no longer in the decompiler's gap list.
+- **Tool count: 231.** Tests: 194 files, 1692 passed, 33 skipped.
+
 ## 0.0.163-alpha - 2026-11-21
 
 - **New tool `read_model_flexes` (#231).** It reports a compiled model's flex descriptor
