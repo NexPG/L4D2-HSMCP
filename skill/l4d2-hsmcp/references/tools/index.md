@@ -1,6 +1,6 @@
 # Tool catalogue
 
-253 tools. This page groups them by the job you are doing; each tool's own description is the
+254 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -293,6 +293,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `read_bsp_lump` | any BSP lump by name/index, LZMA-decoded |
 | `write_bsp_lump` | replace a lump, optionally compressed, verified by read-back |
 | `read_vpk` | list a `.vpk` (directory or numbered archive), optionally verifying every CRC |
+| `verify_vpk` | structural checks on a `.vpk`: tree, bounds, missing archives, CRC, version 2 MD5 sections and signature |
 | `run_vpk_extract` | extract a `.vpk` into a directory, refusing names that escape it |
 | `run_nav_generate` | launch the game and generate `.nav` + `<map>_nav.txt` for loose maps, with the add-on archives moved aside |
 | `run_map_test` | launch an installed map (directly or through Steam), wait for one pattern or an ordered list of `markers`, install a bsp/nav/scripts, run `schedule` commands at fixed seconds and capture the window |

@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.186-alpha - 2026-11-22
+
+- **`verify_vpk`**: structural verification of an archive, not just a listing. Checks duplicate
+  paths, entries past the end of the directory or a numbered archive, referenced archives that
+  are absent, every entry's CRC-32, and on version 2 the tree MD5, the archive-MD5 section's
+  own MD5, the whole-file MD5, every archive chunk's MD5 and the optional signature.
+- The verifier reuses the existing VPK reader; the directory/numbered-archive loader moved to
+  `formats/vpkio.ts` so `read_vpk` and `verify_vpk` open the same file. Presence and size are
+  checked with `stat`, so a structural pass over a multi-gigabyte game archive does not read
+  the data.
+- Measured on the stock `pak01_dir.vpk`: 22,273 entries, 34 numbered archives, zero structural
+  issues; the structural pass takes under a second.
+- **Tool count: 254.** Tests: 211 files, 1,794 passed, 33 skipped.
+
 ## 0.0.185-alpha - 2026-11-22
 
 - **`check_assets`**: the source-side half of `map_dependencies`. It reads a `.vmf` before

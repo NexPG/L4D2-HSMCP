@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **253 tools**.
+Last checked against the tool list on 22/11/2026: **254 tools**.
 
 ## The file itself
 
@@ -168,6 +168,7 @@ getting `ENOENT` on the first call.
 | Find the leak | `read_leak` | A position and the entity that caused it, from a compile that already ran |
 | Find the leak **before** compiling | `read_vmf_leak` | Hammer cannot. vbsp is the only thing that answers this today, and it costs a toolchain and minutes |
 | Pack content | `run_pack` | `auto:true` derives the list from the map. Native ZIP writer, no bspzip; verified byte for byte |
+| Verify a downloaded addon | `verify_vpk` | Hammer cannot: it does not open VPKs. Structure, bounds, missing archives, CRC and version 2 MD5s before the addon is installed |
 | Check what is missing before compiling | `check_assets` | The source-side answer: solid materials and their textures, model siblings and materials, decals, sounds, particles, VScripts and the skybox, all resolved against the game's mount order. `read_map_dependencies` is the compiled-map half |
 | Check what is missing after compiling | `read_map_dependencies` | The end of "purple checkerboard for the player, fine for me" |
 | Budgets | `read_map_report` | A verdict per criterion rather than another number |

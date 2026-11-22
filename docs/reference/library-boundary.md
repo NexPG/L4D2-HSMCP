@@ -36,7 +36,7 @@ shows up here as four concrete reasons:
 | VMF write/edit | `srctools.vmf` exists | byte-offset TypeScript parser/writer, splices, prefab/instance extraction | **intentional TS** (offsets, byte-identical edits) |
 | KeyValues | `srctools.keyvalues` | TypeScript lexer/parser with offsets | **intentional TS** (offsets) |
 | BSP read/audit/patch | `srctools.bsp`; sidecar `pakfile`, `static_props*` | TypeScript lump reader for hot compile/audit paths; sidecar for ZIP/pakfile, static props, LZMA | **hybrid, intentional** |
-| VPK | `srctools.vpk`/`filesys`; sidecar `vpk_list`, `vpk_read` | TypeScript VPK index/read for hot model/texture lookups | **intentional TS**; candidate for read-only tools if the subprocess cost is acceptable |
+| VPK | `srctools.vpk`/`filesys`; sidecar `vpk_list`, `vpk_read` | TypeScript VPK index/read for hot model/texture lookups; `verify_vpk` checks v2 MD5/signature, which srctools does not expose | **intentional TS**; candidate for read-only tools if the subprocess cost is acceptable |
 | VTF | `srctools.vtf`; sidecar `vtf_extract`, `vtf_convert`, `material_preview` | TypeScript decoder for in-process preview/software render | **intentional TS**; candidate |
 | VMT | `srctools.vmt`; sidecar `material_preview` | TypeScript VMT read/write for tools and previews | **intentional TS**; candidate |
 | Surface properties | `srctools.surfaceprop` (no verb yet) | TypeScript table parser with the prose-comment workaround | **candidate** — add a `surfaceprops` verb and delete the TS table parser |

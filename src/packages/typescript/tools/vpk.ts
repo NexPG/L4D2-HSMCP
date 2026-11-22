@@ -24,33 +24,11 @@ import {
   readVpk,
   readVpkEntry,
   vpkArchivePath,
-  vpkDirPath,
   writeVpk,
 } from "../../../formats/typescript/formats/vpk.js";
-import type { VpkArchive } from "../../../formats/typescript/formats/vpk.js";
+import { openVpk } from "../../../formats/typescript/formats/vpkio.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
-
-interface OpenVpk {
-  archive: VpkArchive;
-  /** Reads a numbered archive beside the directory file, or undefined when it is absent. */
-  openArchive: (index: number) => Buffer | undefined;
-}
-
-/** Opens a directory VPK, accepting a `_000.vpk` path as the same archive. */
-function openVpk(path: string): OpenVpk {
-  const dirPath = vpkDirPath(path);
-  const archive = readVpk(readFileSync(dirPath), dirPath);
-  const cache = new Map<number, Buffer | undefined>();
-  const openArchive = (index: number): Buffer | undefined => {
-    if (!cache.has(index)) {
-      const p = vpkArchivePath(dirPath, index);
-      cache.set(index, existsSync(p) ? readFileSync(p) : undefined);
-    }
-    return cache.get(index);
-  };
-  return { archive, openArchive };
-}
 
 /** Every file below `dir`, as archive-relative paths. */
 function walk(dir: string): Array<{ path: string; full: string; bytes: number }> {

@@ -17,6 +17,7 @@ answers "where is the test for this file" without a search.
 | [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching, directional connections |
 | [`models/`](models/) | model sources: SMD read/write, DMX?SMD, QC, deep `read_model_info`, the QC and MDL readers |
 | [`formats/`](formats/) | shared formats: DMX datamodels read/write |
+| [`packages/`](packages/) | addon packaging: VPK structure, CRC/MD5 verification |
 | [`textures/`](textures/) | textures: PNG decode, VTF write/convert/extract, DXT |
 | [`hammer/`](hammer/) | editor data: build registry and hash lookup, window cleanup |
 | [`campaign/`](campaign/) | mission files, convars, addons, finale contract |

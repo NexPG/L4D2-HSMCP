@@ -129,6 +129,7 @@ import { vtfConvertTools } from "./textures/typescript/tools/vtfconvert.js";
 import { vtfGenTools } from "./textures/typescript/tools/vtfgen.js";
 import { vtfTools } from "./textures/typescript/tools/vtf.js";
 import { vpkTools } from "./packages/typescript/tools/vpk.js";
+import { vpkVerifyTools } from "./packages/typescript/tools/vpkverify.js";
 import { vmtTools } from "./textures/typescript/tools/vmt.js";
 import { rectTools } from "./textures/typescript/tools/rect.js";
 import { vmfTools } from "./maps/typescript/tools/vmf.js";
@@ -262,6 +263,7 @@ export const allTools: AnyToolDef[] = [
   ...vtfConvertTools,
   ...dmxTools,
   ...vpkTools,
+  ...vpkVerifyTools,
   ...vmtTools,
   ...runtimeTools,
   ...vscriptTools,
