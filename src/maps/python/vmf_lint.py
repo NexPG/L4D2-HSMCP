@@ -88,6 +88,34 @@ def model_bounds(vmf: Any, game_dir: str | None) -> list[dict[str, Any]]:
     return out
 
 
+def _choice_values(kv: Any) -> list[str] | None:
+    """Allowed values for a `choices` key, or None for any other type.
+
+    The FGD is the authority on enumerations: `trigger_finale.type 3` and
+    `info_survivor_position.hideweapons 2` are values the engine silently treats as
+    default, and a mapper has no way to see that in Hammer after the picker closes.
+    Only `ValueTypes.CHOICES` is checked; a string key that happens to have suggestions is
+    still free text, and `spawnflags` is a bit field handled elsewhere.
+    """
+    try:
+        from srctools.fgd import ValueTypes
+    except Exception:  # noqa: BLE001
+        return None
+    if getattr(kv, "type", None) is not ValueTypes.CHOICES:
+        return None
+    options = getattr(kv, "options", None) or getattr(kv, "val_list", None) or []
+    values: list[str] = []
+    for option in options:
+        value = getattr(option, "value", None)
+        if value is None:
+            try:
+                value = option[0]
+            except (IndexError, TypeError):
+                continue
+        values.append(str(value))
+    return values or None
+
+
 def _flag_bits(value: str) -> int:
     """`spawnflags` as an int; a malformed value is 0, not an exception in a lint."""
     try:
@@ -529,6 +557,30 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                         entity_id=ent_id,
                         classname=classname,
                         key=key,
+                    )
+                )
+                continue
+            kv = None
+            for declared_key in cls.kv:
+                if declared_key.lower() == key.lower():
+                    kv = cls.kv[declared_key]
+                    break
+            allowed = _choice_values(kv) if kv is not None else None
+            value = str(ent[key, ""]).strip()
+            if allowed is not None and value and value.casefold() not in {
+                candidate.casefold() for candidate in allowed
+            }:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "invalid-keyvalue-choice",
+                        f'"{classname}" keyvalue "{key}" is "{value}", which is not one of '
+                        f'{", ".join(allowed[:12])}; the engine falls back to the default',
+                        entity_id=ent_id,
+                        classname=classname,
+                        key=key,
+                        value=value,
+                        allowed=allowed[:20],
                     )
                 )
 

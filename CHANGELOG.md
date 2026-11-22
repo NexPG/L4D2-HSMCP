@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.204-alpha - 2026-11-22
+
+- **`read_vmf_lint` checks enumerated FGD values**: a key declared by the class is not
+  enough when its value comes from a `CHOICES` block. `invalid-keyvalue-choice` reports a
+  value such as `trigger_finale.type 3` or `info_survivor_position.hideweapons 2`, which the
+  engine silently replaces with the default, and names the allowed values from the stock
+  FGD. String keys with suggestions and `spawnflags` bit fields are not touched.
+- **Tool count: 270.** Tests: 221 files, 1,876 passed, 33 skipped.
+
 ## 0.0.203-alpha - 2026-11-22
 
 - **MCP prompts for the skill routes**: `l4d2_task`, `l4d2_hud_override`,

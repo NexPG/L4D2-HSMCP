@@ -61,6 +61,7 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["unknown-classname"]).toBeUndefined();
     expect(r.byRule["bad-texture-scale"]).toBeUndefined();
     expect(r.byRule["unknown-keyvalue"]).toBeUndefined();
+    expect(r.byRule["invalid-keyvalue-choice"]).toBeUndefined();
   }, 60_000);
 
   it.skipIf(!ready)("catches a mistyped classname", async () => {
@@ -83,6 +84,24 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     );
     const r = await lint(path);
     expect(r.byRule["unknown-keyvalue"]).toBe(1);
+  }, 60_000);
+
+  it.skipIf(!ready)("catches a value the FGD choice list does not allow", async () => {
+    // hideweapons is a CHOICES key: 0/1. "2" is not a free-form string, and the engine
+    // silently falls back to the default, so the map compiles and the setting does nothing.
+    const path = broken(
+      "bad-choice",
+      (s) =>
+        s +
+        '\nentity\n{\n\t"id" "9001"\n\t"classname" "info_survivor_position"\n' +
+        '\t"hideweapons" "2"\n}\n',
+    );
+    const r = await lint(path);
+    expect(r.byRule["invalid-keyvalue-choice"]).toBe(1);
+    const finding = r.findings.find((f) => f["rule"] === "invalid-keyvalue-choice")!;
+    expect(finding["key"]).toBe("hideweapons");
+    expect(finding["value"]).toBe("2");
+    expect(finding["allowed"]).toEqual(["0", "1"]);
   }, 60_000);
 
   it.skipIf(!ready)("names the L4D2 transition faults instead of passing them", async () => {

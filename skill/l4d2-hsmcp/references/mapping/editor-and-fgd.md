@@ -83,5 +83,10 @@ only proof of runtime behaviour.
 3. Run `read_vmf_lint` and `read_vmf_leak` here — against the stock FGD.
 4. Compile with the chain `run_compile` reports, then generate nav and test.
 
+The lint checks more than names: a key declared by the class is not enough if its value is
+an enumeration. `invalid-keyvalue-choice` catches values such as `trigger_finale.type 3` or
+`info_survivor_position.hideweapons 2`, which the engine silently replaces with the default.
+The allowed list is in the finding, taken from the FGD's own `CHOICES` block.
+
 The editor's convenience and the engine's truth are different things; this project checks the
 second one.
