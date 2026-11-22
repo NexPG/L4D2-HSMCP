@@ -94,6 +94,9 @@ label, not in a wiki.
 `func_block_charge` or `func_nav_avoidance_obstacle` brush with a rotated face: those
 classes affect the brush's axis-aligned bounding box, so a diagonal brush covers a much
 larger region than it draws.
+`dead-keyvalue` names a key the stock FGD still declares but L4D2 ignores; currently
+`prop_door_rotating.health` and `.axis`, where the door has no breakable state and the hinge
+comes from the model origin and angles.
 
 The editor's convenience and the engine's truth are different things; this project checks the
 second one.

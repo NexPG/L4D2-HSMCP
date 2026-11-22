@@ -66,6 +66,7 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["invalid-keyvalue-choice"]).toBeUndefined();
     expect(r.byRule["obsolete-spawnflag"]).toBeUndefined();
     expect(r.byRule["aabb-region-nonaxis-aligned"]).toBeUndefined();
+    expect(r.byRule["dead-keyvalue"]).toBeUndefined();
   }, 60_000);
 
   it.skipIf(!ready)("catches a mistyped classname", async () => {
@@ -156,6 +157,25 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["aabb-region-nonaxis-aligned"]).toBe(1);
     const finding = r.findings.find((f) => f["rule"] === "aabb-region-nonaxis-aligned")!;
     expect(finding["classname"]).toBe("func_detail_blocker");
+  }, 60_000);
+
+  it.skipIf(!ready)("names a key the entity declares but ignores", async () => {
+    // Both keys are in the stock FGD's prop_door_rotating block; L4D2 ignores them. A map
+    // that sets health expecting a breakable door compiles and the door stays unbreakable.
+    const path = broken(
+      "dead-key",
+      (s) =>
+        s +
+        '\nentity\n{\n\t"id" "9003"\n\t"classname" "prop_door_rotating"\n' +
+        '\t"health" "100"\n\t"axis" "0 0 1"\n}\n',
+    );
+    const r = await lint(path);
+    expect(r.byRule["dead-keyvalue"]).toBe(2);
+    const keys = r.findings
+      .filter((f) => f["rule"] === "dead-keyvalue")
+      .map((f) => f["key"])
+      .sort();
+    expect(keys).toEqual(["axis", "health"]);
   }, 60_000);
 
   it.skipIf(!ready)("names the L4D2 transition faults instead of passing them", async () => {

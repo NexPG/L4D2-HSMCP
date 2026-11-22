@@ -130,6 +130,17 @@ def _finding(
     return {"severity": severity, "rule": rule, "message": message, **extra}
 
 
+# Keys the stock FGD still declares but L4D2's entity ignores. Each reason comes from the
+# reference study's FGD notes; a key is only listed when the engine behaviour was observed,
+# not because a helper FGD omitted it.
+DEAD_KEYVALUES: dict[str, dict[str, str]] = {
+    "prop_door_rotating": {
+        "health": "L4D2's prop_door_rotating ignores health; the door has no breakable state",
+        "axis": "L4D2's prop_door_rotating ignores axis; the hinge is the model's origin and angles",
+    },
+}
+
+
 def _spawnflag_options(kv: Any) -> list[Any]:
     """The FGD's `SPAWNFLAGS` options, or an empty list for any other type."""
     try:
@@ -625,6 +636,20 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                         key=key,
                         value=value,
                         allowed=allowed[:20],
+                    )
+                )
+            dead = DEAD_KEYVALUES.get(classname, {}).get(key.lower())
+            if dead is not None:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "dead-keyvalue",
+                        f'"{classname}" keyvalue "{key}" is declared by the FGD but does '
+                        f"nothing in L4D2: {dead}",
+                        entity_id=ent_id,
+                        classname=classname,
+                        key=key,
+                        value=value,
                     )
                 )
             if key.lower() == "spawnflags" and kv is not None:

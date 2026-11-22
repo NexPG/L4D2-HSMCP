@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.207-alpha - 2026-11-22
+
+- **`read_vmf_lint` names dead keyvalues**: `prop_door_rotating.health` and `.axis` are
+  still declared by the stock FGD, but L4D2 ignores them. `dead-keyvalue` reports both with
+  the reason, so a mapper expecting a breakable door or a custom hinge is told before the
+  compile.
+- **Tool count: 270.** Tests: 221 files, 1,879 passed, 33 skipped.
+
 ## 0.0.206-alpha - 2026-11-22
 
 - **`read_vmf_lint` catches AABB-region traps**: `func_detail_blocker`,
