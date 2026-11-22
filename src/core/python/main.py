@@ -1001,6 +1001,60 @@ def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("scenes_image_write")
+def _scenes_image_write(req: dict[str, Any]) -> dict[str, Any]:
+    """Builds a `scenes/scenes.image` from text VCD files.
+
+    `srctools.choreo.Entry.from_scene` computes the CRC from the filename and the duration,
+    last-speak time and sounds from the parsed scene; `save_scenes_image_sync` writes the
+    VSIF container. The output is parsed again before the reply, so a file that the engine
+    cannot read is never called success.
+    """
+    from srctools.choreo import Entry, Scene, parse_scenes_image, save_scenes_image_sync
+    from srctools.tokenizer import Tokenizer
+
+    paths = req["paths"]
+    out = req["out"]
+    version = int(req.get("version", 3))
+    if version not in (2, 3):
+        raise ValueError("scenes.image version must be 2 or 3")
+
+    entries = []
+    for path in paths:
+        raw = Path(path).read_bytes()
+        if raw[:4] == b"VSIF":
+            raise ValueError(f"{path} is a scenes.image, not a VCD")
+        if raw[:4] == b"bvcd":
+            raise ValueError(f"{path} is a binary VCD; write a text VCD or use the compiler")
+        try:
+            text = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text = raw.decode("cp1251", "replace")
+        scene = Scene.parse_text(Tokenizer(text, path))
+        entries.append(Entry.from_scene(Path(path).name, scene))
+
+    with open(out, "wb") as handle:
+        save_scenes_image_sync(handle, entries, version=version)
+
+    with open(out, "rb") as handle:
+        parsed = parse_scenes_image(handle)
+    result = sorted(parsed.values(), key=lambda entry: entry.checksum)
+    return {
+        "out": out,
+        "version": version,
+        "count": len(result),
+        "entries": [
+            {
+                "checksum": f"{entry.checksum:08x}",
+                "durationMs": entry.duration_ms,
+                "lastSpeakMs": entry.last_speak_ms,
+                "sounds": entry.sounds,
+            }
+            for entry in result
+        ],
+    }
+
+
 @verb("read_scenes_image")
 def _read_scenes_image(req: dict[str, Any]) -> dict[str, Any]:
     """Reads `scenes/scenes.image` through `srctools.choreo.parse_scenes_image`.

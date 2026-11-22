@@ -5,8 +5,11 @@
  * caller acts on. A `.vcd` is the timeline a scene uses (events, actor channels, times,
  * sounds); `scenes.image` is the CRC-keyed summary the engine loads first.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { z } from "zod";
+import { assertWritable } from "../../../core/typescript/fs/guard.js";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
@@ -270,9 +273,132 @@ export const editChoreoEventsTool = defineTool({
   },
 });
 
+const SCENES_ENTRY = z.object({
+  checksum: z.string(),
+  durationMs: z.number(),
+  lastSpeakMs: z.number(),
+  sounds: z.array(z.string()),
+});
+
+export const writeScenesImageTool = defineTool({
+  name: "write_scenes_image",
+  description:
+    "Builds a `scenes/scenes.image` VSIF container from text `.vcd` files. Each entry's " +
+    "CRC comes from the filename (`scenes/<name>`), and duration, last-speak time and sounds " +
+    "come from the parsed scene; `srctools.choreo.save_scenes_image_sync` writes it. The " +
+    "output is parsed again before `verified` is returned. This is only needed when a pack " +
+    "ships the compiled image; a loose VCD is loaded by filename without it. Duplicate " +
+    "filenames are refused because the image is keyed by CRC. A backup is taken when " +
+    "replacing an existing image.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    paths: z.array(z.string().min(1)).min(1).describe("Text .vcd files to index."),
+    path: z.string().describe("Where to write scenes.image, absolute or repo-relative."),
+    version: z.union([z.literal(2), z.literal(3)]).default(3),
+    backup: BACKUP,
+    dryRun: DRY_RUN,
+    overwrite: z.boolean().default(false),
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    backup: BACKUP_PATH,
+    written: z.boolean(),
+    count: z.number(),
+    version: z.number(),
+    verified: z.boolean(),
+    entries: z.array(SCENES_ENTRY),
+    bytes: z.number(),
+  },
+  handler: async (args, ctx) => {
+    const paths = args.paths.map((path) => resolveInput(path, ctx.config));
+    for (const path of paths) {
+      if (!existsSync(path)) throw new Error(`${path} does not exist`);
+      if (!path.toLowerCase().endsWith(".vcd")) throw new Error(`${path} is not a .vcd`);
+    }
+    const names = paths.map((path) => basename(path).toLowerCase());
+    const duplicate = names.find((name, index) => names.indexOf(name) !== index);
+    if (duplicate !== undefined) {
+      throw new Error(
+        `two VCDs are named ${duplicate}; scenes.image is keyed by filename CRC, so one ` +
+          `would replace the other`,
+      );
+    }
+    const out = resolveInput(args.path, ctx.config);
+    if (existsSync(out) && !args.overwrite) {
+      throw new Error(`${out} already exists; pass overwrite:true to replace it`);
+    }
+
+    const scratch = mkdtempSync(join(tmpdir(), "hsmcp-scenes-image-"));
+    const temp = join(scratch, "scenes.image");
+    try {
+      const reply = (await callSidecar(
+        "scenes_image_write",
+        { paths, out: temp, version: args.version },
+        ctx.config,
+        180_000,
+      )) as {
+        count: number;
+        version: number;
+        entries: Array<{
+          checksum: string;
+          durationMs: number;
+          lastSpeakMs: number;
+          sounds: string[];
+        }>;
+      };
+      const verified = reply.count === paths.length && reply.entries.length === paths.length;
+      if (!verified) {
+        throw new Error(
+          `the image has ${reply.entries.length} entries for ${paths.length} VCDs; ` +
+            `the engine would not find every scene`,
+        );
+      }
+      if (args.dryRun) {
+        return {
+          path: out,
+          backup: null,
+          written: false,
+          count: reply.count,
+          version: reply.version,
+          verified,
+          entries: reply.entries,
+          bytes: readFileSync(temp).length,
+        };
+      }
+
+      const target = assertWritable(out, ctx.config);
+      let backup: string | null = null;
+      if (args.backup ?? true) {
+        if (existsSync(target)) {
+          backup = assertWritable(`${target}.bak`, ctx.config);
+          copyFileSync(target, backup);
+        }
+      }
+      writeFileSync(target, readFileSync(temp));
+      ctx.audit.record({ kind: "file_write", data: { path: target, backup, scenes: reply.count } });
+      return {
+        path: target,
+        backup,
+        written: true,
+        count: reply.count,
+        version: reply.version,
+        verified,
+        entries: reply.entries,
+        bytes: readFileSync(temp).length,
+      };
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  },
+});
+
 export const choreoTools = [
   readChoreoTool,
   readScenesImageTool,
   editChoreoEventsTool,
+  writeScenesImageTool,
 ];
 

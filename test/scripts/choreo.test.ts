@@ -12,6 +12,7 @@ import {
   editChoreoEventsTool,
   readChoreoTool,
   readScenesImageTool,
+  writeScenesImageTool,
 } from "../../src/scripts/typescript/tools/choreo.js";
 import { ctx as sharedCtx, FIXTURES, has } from "../support/env.js";
 
@@ -281,5 +282,64 @@ describe.skipIf(!has.sidecar)("edit_choreo_events", () => {
     expect(speak.start).toBeCloseTo(0.2, 6);
     expect(speak.end).toBeCloseTo(1.5, 6);
     expect(read.sounds).toEqual(["Coach_Adrenaline02"]);
+  }, 120_000);
+});
+
+
+describe.skipIf(!has.sidecar)("write_scenes_image", () => {
+  it("builds a scenes.image that the reader finds again", async () => {
+    const out = join(scratch, "scenes.image");
+    const result = (await writeScenesImageTool.handler(
+      {
+        paths: [join(FIXTURES, "choreo_sample.vcd")],
+        path: out,
+        version: 3,
+        backup: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as {
+      written: boolean;
+      verified: boolean;
+      count: number;
+      entries: Array<{ durationMs: number; sounds: string[] }>;
+    };
+    expect(result.written).toBe(true);
+    expect(result.verified).toBe(true);
+    expect(result.count).toBe(1);
+    expect(result.entries[0]!.durationMs).toBe(2500);
+    expect(result.entries[0]!.sounds).toContain("campaign/test_line");
+
+    const reader = (await readScenesImageTool.handler(
+      { path: out, limit: 10 },
+      ctx,
+    )) as unknown as {
+      count: number;
+      entries: Array<{ sounds: string[]; durationMs: number }>;
+    };
+    expect(reader.count).toBe(1);
+    expect(reader.entries[0]!.sounds).toContain("campaign/test_line");
+    expect(reader.entries[0]!.durationMs).toBe(2500);
+
+    await expect(
+      writeScenesImageTool.handler(
+        { paths: [join(FIXTURES, "choreo_sample.vcd")], path: out, confirm: true } as never,
+        ctx,
+      ),
+    ).rejects.toThrow(/already exists/);
+
+    const dryOut = join(scratch, "dry-scenes.image");
+    const dry = (await writeScenesImageTool.handler(
+      {
+        paths: [join(FIXTURES, "choreo_sample.vcd")],
+        path: dryOut,
+        dryRun: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as { written: boolean; verified: boolean };
+    expect(dry.written).toBe(false);
+    expect(dry.verified).toBe(true);
+    expect(existsSync(dryOut)).toBe(false);
   }, 120_000);
 });

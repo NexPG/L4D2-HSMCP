@@ -1,6 +1,6 @@
 # Tool catalogue
 
-286 tools. This page groups them by the job you are doing; each tool's own description is the
+287 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -277,6 +277,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_options_probe` | adds a `logic_script` that prints the Director's merged `SessionOptions` at round start |
 | `edit_choreo_events` | retime, re-parameterise, remove or add VCD events (speak/firetrigger/stoppoint); re-serialised through `srctools.choreo.Scene` and read back |
 | `read_scenes_image` | scenes.image summary: CRC, duration, last speak, sounds; optional embedded scene details |
+| `write_scenes_image` | build a scenes.image from text VCDs, with each entry re-parsed before verified |
 | `read_model_ani` | external `.ani`: `IDAG` header, block byte ranges, clips and sequences per block, gap/overlap/orphan checks |
 | `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks with fade times and events, `$includemodel` entries, `$contents`/`$bbox`/`$cbox`, `$keyvalues`, `$ikchain`/`$ikautoplaylock`, optional `$definebone` lines, flex VTA frames with their controllers and rules, `$lod` options (`replacebone`, `replacematerial`, `facial`/`nofacial`, `removemodel`, `use_shadowlod_materials`), and `$collisionjoints` ragdolls with their constraints, and single-hull `$collisionmodel` for any root Euler pose |
 | `write_qc` | build a `.qc` from `$modelname`, `$body`, `$cdmaterials`, sequences and attachments |
