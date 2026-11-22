@@ -212,7 +212,7 @@ describe("what the compiler says about a hull", () => {
   const compileScratch = mkdtempSync(join(tmpdir(), "hammer-hull-c-"));
   afterAll(() => rmSync(compileScratch, { recursive: true, force: true }));
 
-  it.skipIf(!canCompile)(
+  it.skipIf(!canCompile || !has.sidecar)(
     "a hull built inside the probe's room compiles and does not leak",
     async () => {
       const probe = readFileSync(join(FIXTURES, "hmcp_probe.vmf"), "utf8");

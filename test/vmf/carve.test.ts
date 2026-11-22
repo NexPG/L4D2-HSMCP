@@ -243,7 +243,7 @@ describe("what the compiler says about a carved block", () => {
   const compileScratch = mkdtempSync(join(tmpdir(), "hammer-carve-c-"));
   afterAll(() => rmSync(compileScratch, { recursive: true, force: true }));
 
-  it.skipIf(!canCompile)(
+  it.skipIf(!canCompile || !has.sidecar)(
     "an indentation carved into the probe's floor still seals",
     async () => {
       // A pit, not a hole: the carver stops 24 units short of the floor's underside, so

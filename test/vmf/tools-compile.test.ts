@@ -663,7 +663,7 @@ describe.skipIf(!has.toolchain)("terrain through the whole displacement chain", 
     300_000,
   );
 });
-describe.skipIf(!has.toolchain)("instances, expanded before vbsp", () => {
+describe.skipIf(!has.toolchain || !has.sidecar)("instances, expanded before vbsp", () => {
   it(
     "a func_instance becomes the entity it points at, instead of crashing the compiler",
     async () => {
