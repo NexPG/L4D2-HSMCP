@@ -1,6 +1,6 @@
 # VMF authoring
 
-83 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+84 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -75,6 +75,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `set_smoothing_groups` | Sets the smoothing groups on selected faces. |
 | `sew_displacements` | Pulls displacements back together along the edges they share. |
 | `subdivide_displacements` | Hammer's Subdivide: raises a displacement's power from 2 or 3 to 3 or 4 while keeping its shape. |
+| `write_bsp_lightmap` | Patches the baked LDR lightmap of one compiled-map face: multiply every luxel by `scale`, add `offset`, or both. |
 | `write_cubemap_grid` | Places `env_cubemap` entities on a regular grid inside a bounds box. |
 | `write_decal` | Places `infodecal` entities at one or more points. |
 | `write_displacement` | Creates displacements on selected faces: the vertex grids that make every piece of terrain in Source. |

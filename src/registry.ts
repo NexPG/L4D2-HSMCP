@@ -71,7 +71,7 @@ import { instanceTools } from "./maps/typescript/tools/instance.js";
 import { instanceCreateTools } from "./maps/typescript/tools/instancecreate.js";
 import { instanceCollapseTools } from "./maps/typescript/tools/instancecollapse.js";
 import { lightmapTools } from "./maps/typescript/tools/lightmap.js";
-import { lightmapReadTools } from "./maps/typescript/tools/lightmaps.js";
+import { bspLightmapTools } from "./maps/typescript/tools/lightmaps.js";
 import { materialsTools } from "./textures/typescript/tools/materials.js";
 import { measureTools } from "./maps/typescript/tools/measure.js";
 import { measureTools2 } from "./maps/typescript/tools/measurespace.js";
@@ -175,7 +175,7 @@ export const allTools: AnyToolDef[] = [
   ...measureTools,
   ...materialsTools,
   ...lightmapTools,
-  ...lightmapReadTools,
+  ...bspLightmapTools,
   ...visleafTools,
   ...visTools,
   ...reportTools,

@@ -10,11 +10,12 @@
  * HDR); the first three bytes are the visible RGB. Compressed BSPs are refused rather than
  * decoded as records.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
+import { assertWritable } from "../../../core/typescript/fs/guard.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
-import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveInput } from "../../../core/typescript/tools/paths.js";
 import { readAt, readHeader } from "../bsp/header.js";
 import { readLightmapBudget } from "../bsp/lightmap.js";
 import { encodePng } from "../render/png.js";
@@ -222,4 +223,177 @@ export const readBspLightmapsTool = defineTool({
   },
 });
 
-export const lightmapReadTools = [readBspLightmapsTool];
+function averageRgbAt(bytes: Uint8Array, offset: number, luxels: number): [number, number, number] {
+  if (luxels === 0) return [0, 0, 0];
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  for (let i = 0; i < luxels; i += 1) {
+    r += bytes[offset + i * 4]!;
+    g += bytes[offset + i * 4 + 1]!;
+    b += bytes[offset + i * 4 + 2]!;
+  }
+  return [Math.round(r / luxels), Math.round(g / luxels), Math.round(b / luxels)];
+}
+
+function clampByte(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+export const writeBspLightmapTool = defineTool({
+  name: "write_bsp_lightmap",
+  description:
+    "Patches the baked LDR lightmap of one compiled-map face: multiply every luxel by " +
+    "`scale`, add `offset`, or both. The LIGHTING lump keeps its length and every face " +
+    "offset, so no other lump or record moves; this is the post-compile lighting fix that " +
+    "does not need vrad. The face's average before and after is reported and read back, and " +
+    "a dry run writes nothing. HDR RGBE is refused rather than edited as if it were RGB: " +
+    "compile `-both` and pass `hdr: 'ldr'` when the map has an LDR lump.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
+    face: z.number().int().min(0).describe("Face index, as read_bsp_lightmaps reports it."),
+    scale: z
+      .number()
+      .min(0)
+      .max(16)
+      .default(1)
+      .describe("Multiplier for every RGB channel. 1 leaves the value unchanged."),
+    offset: z
+      .tuple([z.number().int().min(-255).max(255), z.number().int().min(-255).max(255), z.number().int().min(-255).max(255)])
+      .default([0, 0, 0])
+      .describe("Per-channel addition after the scale. `scale: 0, offset: [r,g,b]` sets a flat colour."),
+    hdr: z
+      .enum(["auto", "ldr", "hdr"])
+      .default("auto")
+      .describe("Lighting lump. `auto` uses LDR when it exists; HDR editing is refused."),
+    out: z.string().optional().describe("Write a copy instead of changing the source .bsp."),
+    dryRun: DRY_RUN,
+    backup: BACKUP,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    out: z.string(),
+    source: z.literal("ldr"),
+    face: z.number(),
+    luxels: z.number(),
+    beforeAverage: z.tuple([z.number(), z.number(), z.number()]),
+    afterAverage: z.tuple([z.number(), z.number(), z.number()]),
+    written: z.boolean(),
+    backupPath: BACKUP_PATH,
+    bytes: z.number(),
+    verified: z.boolean(),
+    note: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    const header = readHeader(path);
+    const ldr = header.lumps[LUMP_LIGHTING];
+    const wanted = args.hdr ?? "auto";
+    const source =
+      wanted === "hdr" || (wanted === "auto" && (!ldr || ldr.length === 0))
+        ? ("hdr" as const)
+        : ("ldr" as const);
+    if (source === "hdr") {
+      throw new Error(
+        `face lightmap editing is implemented for LDR RGB only, and ` +
+          `${wanted === "hdr" ? "hdr: 'hdr' was requested" : "this map has no LDR lump"}. ` +
+          `Compile with -both and pass hdr: 'ldr', or use read_bsp_lightmaps to inspect HDR.`,
+      );
+    }
+    if (!ldr || ldr.length === 0) throw new Error(`${path} has no LDR LIGHTING lump`);
+    if (ldr.compressed) {
+      throw new Error(
+        `${path}: the LDR LIGHTING lump is LZMA-compressed; refusing to patch packed bytes`,
+      );
+    }
+    const budget = readLightmapBudget(path, 7);
+    const face = budget.faces.find((candidate) => candidate.index === args.face);
+    if (!face) throw new Error(`face ${args.face} does not exist in ${path}`);
+    if (!face.hasLightmap || face.lightofs < 0) {
+      throw new Error(`face ${args.face} has no baked LDR lightmap`);
+    }
+
+    const scale = args.scale ?? 1;
+    const offset = args.offset ?? [0, 0, 0];
+    if (scale === 1 && offset.every((value) => value === 0)) {
+      throw new Error("scale 1 and offset 0 change nothing");
+    }
+
+    const bytes = Buffer.from(readAt(path, ldr.offset, ldr.length));
+    const before = averageRgbAt(bytes, face.lightofs, face.luxels);
+    for (let i = 0; i < face.luxels; i += 1) {
+      const at = face.lightofs + i * 4;
+      bytes[at] = clampByte(bytes[at]! * scale + offset[0]);
+      bytes[at + 1] = clampByte(bytes[at + 1]! * scale + offset[1]);
+      bytes[at + 2] = clampByte(bytes[at + 2]! * scale + offset[2]);
+    }
+    const after = averageRgbAt(bytes, face.lightofs, face.luxels);
+
+    const target = args.out ? assertWritable(resolveInput(args.out, ctx.config), ctx.config) : assertWritable(path, ctx.config);
+    let backupPath: string | null = null;
+    let written = false;
+    if (args.dryRun !== true) {
+      const file = Buffer.from(readFileSync(path));
+      bytes.copy(file, ldr.offset);
+      if (target === path && (args.backup ?? true)) {
+        backupPath = assertWritable(`${target}.bak`, ctx.config);
+        copyFileSync(target, backupPath);
+      }
+      writeFileSync(target, file);
+      ctx.audit.record({
+        kind: "file_write",
+        data: {
+          path: target,
+          action: "patch_lightmap",
+          face: args.face,
+          scale,
+          offset,
+          backup: backupPath,
+        },
+      });
+      written = true;
+    }
+
+    let verified = false;
+    if (written) {
+      const check = Buffer.from(
+        readAt(target, readHeader(target).lumps[LUMP_LIGHTING]!.offset, readHeader(target).lumps[LUMP_LIGHTING]!.length),
+      );
+      const readBack = averageRgbAt(check, face.lightofs, face.luxels);
+      verified =
+        Math.abs(readBack[0] - after[0]) <= 1 &&
+        Math.abs(readBack[1] - after[1]) <= 1 &&
+        Math.abs(readBack[2] - after[2]) <= 1;
+      if (!verified) {
+        throw new Error(
+          `refusing to report success: face ${args.face} should average ${after.join(",")} ` +
+            `but reads back as ${readBack.join(",")}`,
+        );
+      }
+    }
+
+    return {
+      path,
+      out: target,
+      source: "ldr" as const,
+      face: args.face,
+      luxels: face.luxels,
+      beforeAverage: before,
+      afterAverage: after,
+      written,
+      backupPath,
+      bytes: written ? statSync(target).size : statSync(path).size,
+      verified,
+      note: written
+        ? "the LIGHTING lump kept its length; every face offset and every other lump is unchanged"
+        : "dry run: the patched bytes were computed but nothing was written",
+    };
+  },
+});
+
+export const bspLightmapTools = [readBspLightmapsTool, writeBspLightmapTool];

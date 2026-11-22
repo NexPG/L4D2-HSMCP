@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **269 tools**.
+Last checked against the tool list on 22/11/2026: **270 tools**.
 
 ## The file itself
 
@@ -279,6 +279,7 @@ map and looking, or by not happening at all.
 | `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
 | `read_bsp_faces` | nothing: Hammer reads the source, not the compiled faces, their masks or luxels |
 | `read_bsp_lightmaps` | nothing: baked RGB luxels and one face's lightmap as a PNG |
+| `write_bsp_lightmap` | nothing: Hammer cannot edit baked luxels, and vrad would rebuild the whole map |
 | `read_bsp_vis` | `mat_leafvis` shows the leaf the player is in; this decodes PVS cluster vectors |
 | `read_bsp_overlays` | nothing: vbsp replaces `info_overlay` with a 352-byte compiled record |
 | `diff_vmf` | a textual diff of a map is unreadable; this says which brushes, entities and worldspawn keys changed |
