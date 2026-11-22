@@ -212,8 +212,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `diff_vmf` | semantic diff of two VMFs: solids, entities, worldspawn |
 | `read_rect` | Hammer++ `.rect` hotspot rectangles |
 | `write_rect` | write a `.rect` hotspot file; refuses a degenerate rectangle |
-| `read_hud` | a VGUI `.res` screen as a control tree, with `[$WIN32]`-style conditions kept |
-| `write_hud` | edit a `.res` value or add a key without dropping conditions, comments or indentation |
+| `read_hud` | a VGUI `.res` screen as a control tree, with `[$WIN32]`-style conditions kept; `fromGame` reads the stock file from the VPK |
+| `write_hud` | edit a `.res` value, add a key, or batch-shift `xpos`/`ypos`; preserves conditions, comments and indentation; `fromGame` + `out` copies a stock screen |
 | `build_skybox` | copy, seal the room and place `sky_camera` in one call |
 | `write_skybox_copy` | copy brushes at 1/16 scale and move them to the skybox origin |
 | `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation |

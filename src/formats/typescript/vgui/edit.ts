@@ -21,13 +21,22 @@ export interface HudEdit {
   condition?: string;
 }
 
+export interface HudOffset {
+  x?: number;
+  y?: number;
+  /** Control paths/fieldNames; empty or absent means every control. */
+  controls?: string[];
+  /** Only shift pairs with this condition, e.g. `$WIN32`. */
+  condition?: string;
+}
+
 export interface AppliedHudEdit {
   control: string;
   key: string;
   value: string;
   condition: string | null;
   previous: string | null;
-  action: "replaced" | "added";
+  action: "replaced" | "added" | "shifted";
 }
 
 function conditionKey(text: string | null | undefined): string | null {
@@ -244,4 +253,89 @@ export function applyHudEdits(
     text = text.slice(0, splice.start) + splice.text + text.slice(splice.end);
   }
   return { text, edits: results, eol };
+}
+
+/** VGUI coordinates: a pixel number, optionally aligned with `c`, `r` or `l`. */
+const COORDINATE = /^([crl])?\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/i;
+
+function shifted(value: string, delta: number): string | null {
+  const match = COORDINATE.exec(value.trim());
+  if (!match) return null;
+  const prefix = match[1]?.toLowerCase() ?? "";
+  const original = Number(match[2]);
+  if (!Number.isFinite(original)) return null;
+  const result = original + delta;
+  if (result === original) return null;
+  // Keep an integer looking like an integer; a fractional input stays fractional.
+  const printed = Number.isInteger(result) ? String(result) : result.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+  return `${prefix}${printed}`;
+}
+
+/**
+ * Translates every `xpos`/`ypos` in the selected controls by a delta.
+ *
+ * The alignment prefix is preserved: `c-180` shifted by 20 is `c-160`, not `-160`. A value
+ * that is not a pixel number (`f0`, a translation token) is left alone and reported, because
+ * adding pixels to a fraction would change the control's layout rule, not its position.
+ */
+export function applyHudOffset(
+  source: string,
+  document: HudDocument,
+  offset: HudOffset,
+): { text: string; edits: AppliedHudEdit[]; skipped: string[] } {
+  const dx = offset.x ?? 0;
+  const dy = offset.y ?? 0;
+  const selected =
+    offset.controls && offset.controls.length > 0
+      ? offset.controls.map((selector) => findHudControl(document, selector))
+      : document.controls;
+  const seen = new Set<string>();
+  const wantedCondition = conditionKey(offset.condition);
+  const replacements: Array<{ start: number; end: number; text: string }> = [];
+  const edits: AppliedHudEdit[] = [];
+  const skipped: string[] = [];
+
+  for (const control of selected) {
+    if (seen.has(control.path)) continue;
+    seen.add(control.path);
+    for (const entry of control.block.entries) {
+      if (entry.kind !== "pair") continue;
+      const key = entry.key.toLowerCase();
+      if (key !== "xpos" && key !== "ypos") continue;
+      if (wantedCondition !== null && conditionKey(pairCondition(entry)) !== wantedCondition) {
+        continue;
+      }
+      const delta = key === "xpos" ? dx : dy;
+      if (delta === 0) continue;
+      const next = shifted(entry.value, delta);
+      if (next === null) {
+        if (!COORDINATE.test(entry.value.trim())) {
+          skipped.push(`${control.path} "${entry.key}" ${JSON.stringify(entry.value)} is not a pixel coordinate`);
+        }
+        continue;
+      }
+      const start = entry.valueStart;
+      const end = entry.valueEnd;
+      if (start === undefined || end === undefined) {
+        skipped.push(`${control.path} "${entry.key}" has no value range`);
+        continue;
+      }
+      replacements.push({ start, end, text: `"${next}"` });
+      edits.push({
+        control: control.path,
+        key: entry.key,
+        value: next,
+        condition: pairCondition(entry),
+        previous: entry.value,
+        action: "shifted",
+      });
+    }
+  }
+
+  replacements.sort((a, b) => b.start - a.start);
+  let text = source;
+  for (const splice of replacements) {
+    text = text.slice(0, splice.start) + splice.text + text.slice(splice.end);
+  }
+  return { text, edits, skipped };
 }

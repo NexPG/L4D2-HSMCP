@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.198-alpha - 2026-11-22
+
+- **`read_hud` from the game**: `fromGame: true` reads the stock `.res` out of
+  `pak01_dir.vpk`, so an override starts from the file the game actually ships. The reply
+  says `source: "vpk"` and names the resource path instead of a disk path.
+- **`write_hud` batch offset**: `offset: { x, y, controls?, condition? }` translates every
+  selected `xpos`/`ypos` by a pixel delta and preserves the `c`/`r` alignment (`c-180` + 20
+  is `c-160`). Fractional values such as `f0` are left alone and listed in `offsetSkipped`,
+  because adding pixels to a fraction would change the layout rule. Overlapping `edits`
+  and `offset` are refused.
+- `fromGame` reads a VPK that cannot be written; it requires `out` and writes the add-on
+  copy. Verified on the stock `resource/ui/l4d360ui/audio.res`.
+- **Tool count: 268.** Tests: 220 files, 1,862 passed, 33 skipped.
+
 ## 0.0.197-alpha - 2026-11-22
 
 - **`read_hud`**: a VGUI `.res` screen as a flat control tree — path, `ControlName`,

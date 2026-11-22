@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readHudTool, writeHudTool } from "../../src/textures/typescript/tools/hud.js";
-import { ctx as sharedCtx } from "../support/env.js";
+import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const readHud = async (args: Record<string, unknown>) => readHudTool.handler(args as never, ctx);
@@ -37,6 +37,7 @@ const SOURCE = [
   '\t\t"ControlName"\t\t"EditablePanel"',
   '\t\t"fieldName"\t\t"HudTest"',
   '\t\t"xpos"\t\t\t"0"',
+  '\t\t"ypos"\t\t\t"0"',
   "",
   '\t\t// the platform split: this control is Windows only',
   '\t\t"Child" [$WIN32]',
@@ -44,6 +45,7 @@ const SOURCE = [
   '\t\t\t"ControlName"\t"Label"',
   '\t\t\t"fieldName"\t\t"Child"',
   '\t\t\t"xpos"\t\t\t"c-10"',
+  '\t\t\t"ypos"\t\t\t"f0"',
   '\t\t\t"visible"\t\t"1" [!$OSX]',
   '\t\t\t"visible"\t\t"0" [$OSX]',
   "\t\t}",
@@ -52,6 +54,7 @@ const SOURCE = [
   '\t\t\t"ControlName"\t"ImagePanel"',
   '\t\t\t"fieldName"\t\t"Other"',
   '\t\t\t"xpos"\t\t\t"10"',
+  '\t\t\t"ypos"\t\t\t"10"',
   "\t\t}",
   "\t}",
   "}",
@@ -113,6 +116,88 @@ describe("read_hud", () => {
     expect(limited.returned).toBe(1);
     expect(limited.truncated).toBe(true);
     expect(limited.controlCount).toBe(3);
+  });
+});
+
+describe("write_hud offset", () => {
+  it("shifts pixel coordinates and preserves c/r alignment, leaving fractions alone", async () => {
+    const path = scratch(SOURCE);
+    const r = (await writeHud({
+      path,
+      offset: { x: 15, y: 5 },
+    })) as {
+      edits: Array<{ control: string; key: string; value: string; action: string }>;
+      offsetSkipped: string[];
+      source: string;
+    };
+    expect(r.source).toBe("loose");
+    const byKey = new Map(r.edits.map((edit) => [`${edit.control}/${edit.key}`, edit.value]));
+    expect(byKey.get("HudTest/xpos")).toBe("15");
+    expect(byKey.get("HudTest/ypos")).toBe("5");
+    expect(byKey.get("HudTest/Child/xpos")).toBe("c5");
+    expect(byKey.get("HudTest/Other/xpos")).toBe("25");
+    expect(byKey.get("HudTest/Other/ypos")).toBe("15");
+    expect(byKey.has("HudTest/Child/ypos")).toBe(false);
+    expect(r.offsetSkipped.join(" ")).toMatch(/f0.*not a pixel coordinate/);
+    expect(r.edits.every((edit) => edit.action === "shifted")).toBe(true);
+  });
+
+  it("limits the shift to named controls and refuses overlapping edits", async () => {
+    const path = scratch(SOURCE);
+    const r = (await writeHud({
+      path,
+      offset: { x: 15, y: 5, controls: ["Other"] },
+    })) as { edits: Array<{ control: string }> };
+    expect(r.edits.map((edit) => edit.control)).toEqual([
+      "HudTest/Other",
+      "HudTest/Other",
+    ]);
+
+    const other = scratch(SOURCE);
+    await expect(
+      writeHud({
+        path: other,
+        offset: { x: 15, controls: ["Other"] },
+        edits: [{ control: "Other", key: "xpos", value: "99" }],
+      }),
+    ).rejects.toThrow(/touched by both offset and edits/);
+  });
+});
+
+describe.skipIf(!has.gameContent)("write_hud from the game VPK", () => {
+  it("reads a stock .res and writes an add-on copy with one coordinate shifted", async () => {
+    const dir = scratch(SOURCE);
+    const source = (await readHud({
+      path: "resource/ui/l4d360ui/audio.res",
+      fromGame: true,
+    })) as HudReadReply & { source: string };
+    expect(source.source).toBe("vpk");
+    expect(source.root.toLowerCase()).toBe("resource/ui/audio.res");
+    expect(source.controlCount).toBeGreaterThan(20);
+
+    const out = join(dirname(dir), "audio-override.res");
+    const written = (await writeHud({
+      path: "resource/ui/l4d360ui/audio.res",
+      fromGame: true,
+      out,
+      offset: { x: -10, controls: ["SldGameVolume/BtnDropButton"] },
+    })) as { written: boolean; source: string; out: string; edits: unknown[] };
+    expect(written.written).toBe(true);
+    expect(written.source).toBe("vpk");
+    expect(written.edits).toHaveLength(1);
+    expect(readFileSync(out, "utf8")).toContain('"xpos"');
+    const back = (await readHud({ path: out, search: "SldGameVolume/BtnDropButton" })) as HudReadReply;
+    expect(back.controls[0]!.xpos).toBe("-10");
+  });
+
+  it("requires out, because a VPK cannot be written", async () => {
+    await expect(
+      writeHud({
+        path: "resource/ui/l4d360ui/audio.res",
+        fromGame: true,
+        offset: { x: 1 },
+      }),
+    ).rejects.toThrow(/pass `out`/);
   });
 });
 
