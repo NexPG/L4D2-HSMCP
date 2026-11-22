@@ -22,9 +22,12 @@ describe("docs/tools", () => {
   });
 
   it("matches the generated README and every area page", () => {
-    expect(readFileSync(join(dir, "README.md"), "utf8")).toBe(catalog.readme);
+    // A Windows checkout may have CRLF even though the generator writes LF; the content
+    // is what matters, and `.gitattributes` keeps the committed files LF.
+    const lf = (text: string): string => text.replace(/\r\n/g, "\n");
+    expect(lf(readFileSync(join(dir, "README.md"), "utf8"))).toBe(lf(catalog.readme));
     for (const [name, text] of Object.entries(catalog.files)) {
-      expect(readFileSync(join(dir, name), "utf8"), name).toBe(text);
+      expect(lf(readFileSync(join(dir, name), "utf8")), name).toBe(lf(text));
     }
   });
 

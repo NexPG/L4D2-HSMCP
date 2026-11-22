@@ -12,10 +12,12 @@ with a line here.
   changes it. `write_addoninfo`, `write_addon_scaffold`, `run_vpk_pack` and `write_campaign`
   use it when the caller omits `author`, and refuse with an instruction to ask the user when
   it is unset. The skill and campaign docs no longer show a person's name in examples.
-- **`docs/tools/`**: a generated catalogue. The README has the count per area and a total;
-  each area page groups its tools into logical tables (VPK, materials, collision, live edits,
-  …) with one row per tool and what it does. `pnpm docs:tools` regenerates it and
-  `test/tools/docs.test.ts` fails when the files fall behind the registry.
+- **`docs/tools/`**: a generated catalogue. The README has one row per **logical area** —
+  VMF authoring, map compilation, BSP, rendering, VScript authoring, runtime harness, VPK and
+  so on — with a count and a link; each page has logical tables and one row per tool with
+  what it does. Areas are not source directories and are not merged: a new kind of tool gets
+  a new row and page. `pnpm docs:tools` regenerates it and `test/tools/docs.test.ts` fails
+  when the files fall behind the registry.
 - **Tool count: 262.** Tests: 216 files, 1,826 passed, 33 skipped.
 
 ## 0.0.189-alpha - 2026-11-22

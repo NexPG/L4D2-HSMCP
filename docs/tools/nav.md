@@ -1,6 +1,6 @@
 # Navigation
 
-11 tools: nav areas, attributes, connections, hiding spots, encounters, path and sight queries.
+12 tools: nav areas, attributes, connections, hiding spots, encounters, path and sight queries.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -15,6 +15,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_nav_places` | Summarises a .nav's place table: each place with its 1-based id (0 = no place), area count, first area ids, bounds, centre and the spawn attributes its areas carry. |
 | `read_nav_visibility` | Reads nav visibility: each list entry stores the target area index, not its hash id, with NOT_VISIBLE 0, POTENTIALLY_VISIBLE 1, COMPLETELY_VISIBLE 2 or both. |
 | `write_nav_areas` | Changes nav area attributes, L4D2 spawn attributes and place names in place. |
+| `write_nav_attribute_region` | Writes a `func_nav_attribute_region` brush with the L4D2 spawnflags (CHECKPOINT 2048, FINALE 64, RESCUE_CLOSET 65536, ...). |
 
 ## Path and sight queries
 

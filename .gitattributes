@@ -4,3 +4,6 @@
 # Fixtures are compared byte for byte — line endings are part of what the tests assert,
 # and a Windows checkout must not rewrite them.
 test/fixtures/** -text
+
+# Generated docs are compared line by line by test/tools/docs.test.ts; keep them LF.
+docs/tools/** text eol=lf

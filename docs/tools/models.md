@@ -4,7 +4,7 @@
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
-## Inspection and source
+## Inspection
 
 | Tool | What it does |
 |---|---|
