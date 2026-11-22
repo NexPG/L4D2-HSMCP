@@ -1,6 +1,6 @@
 # Runtime harness
 
-6 tools: launching and probing the game: run_map_test, nav generation, console commands and class/nav probes.
+7 tools: launching and probing the game: run_map_test, nav generation, console commands and class/nav probes.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -13,6 +13,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_class_probe` | Writes a `logic_script` and a `.nut` that counts live entities by classname at chosen seconds and prints `HSMCP_CLASS <step> <class> <count>`. |
 | `write_nav_probe` | Samples the live nav mesh with VScript at chosen points and prints spawn/base attributes and whether each required attribute is present. |
 | `write_options_probe` | Writes a `logic_script` and a `.nut` that print the Director's effective merged `SessionOptions` on `round_start` / `player_spawn`, then `HSMCP_OPTIONS_DONE`. |
+| `write_special_infected_probe` | Adds a `logic_script` to a playable VMF that spawns the requested special-infected classes with `SendToConsole("z_spawn <class>")` after the local player exists, then prints their live counts and the effective `SessionOptions` keys. |
 
 ## Console channel
 

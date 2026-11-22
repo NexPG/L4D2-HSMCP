@@ -46,6 +46,29 @@ marker can match. The mode and its script must already be installed loose or in 
 VPK. `mode` is also returned in the result, and the generated command appears in
 `commandsRun`.
 
+## Special-infected probe
+
+Use a **playable campaign chapter** with player start, flow and generated nav, not
+`hmcp_probe`/`hmcp_backyard`. Add the probe to a VMF, compile, generate nav, then launch:
+
+```
+run_map_test
+  map: hsmcp_probe_m1
+  bsp: <compiled>
+  nav: <generated>
+  scriptsDir: <probe scripts>
+  commands: ["echo HSMCP_ENABLE"]     # forces sv_cheats 1 into listenserver.cfg
+  via: steam
+  waitFor: "\[HSMCP_SI\] boomer=[1-9]"
+```
+
+`SendToConsole("z_spawn boomer")` is the working route. A `point_servercommand` plus
+`EntFire` did not execute, and a direct `-insecure` launch on the test campaign attached no
+local player (`Cannot execute "z_spawn ...", no player`). Steam launch did.
+
+This spawns manually, so it proves the probe/class identity, not that a mutation's
+`BoomerLimit` was honoured. A zero count with `no player` means the host map is not playable.
+
 ## Effective DirectorOptions
 
 `write_options_probe` adds a `logic_script` to a VMF (or use its returned entity with

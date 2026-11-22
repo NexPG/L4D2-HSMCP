@@ -1,6 +1,6 @@
 # Tool catalogue
 
-287 tools. This page groups them by the job you are doing; each tool's own description is the
+288 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -275,6 +275,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `read_vscript_api` | game events and typed fields from `resource/modevents.res`, option catalogue and hooks |
 | `check_vscript_contract` | checks `OnGameEvent_*` hook names and `event_data` fields against the engine's event list |
 | `write_options_probe` | adds a `logic_script` that prints the Director's merged `SessionOptions` at round start |
+| `write_special_infected_probe` | adds a `logic_script` that spawns and counts requested SI on a playable map, via `SendToConsole` |
 | `edit_choreo_events` | retime, re-parameterise, remove or add VCD events (speak/firetrigger/stoppoint); re-serialised through `srctools.choreo.Scene` and read back |
 | `read_scenes_image` | scenes.image summary: CRC, duration, last speak, sounds; optional embedded scene details |
 | `write_scenes_image` | build a scenes.image from text VCDs, with each entry re-parsed before verified |

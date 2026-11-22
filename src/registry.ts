@@ -48,6 +48,7 @@ import { entityProbeTools } from "./maps/typescript/tools/entityprobe.js";
 import { navAttributeTools } from "./maps/typescript/tools/navattrs.js";
 import { classProbeTools } from "./scripts/typescript/tools/classprobe.js";
 import { optionsProbeTools } from "./scripts/typescript/tools/optionsprobe.js";
+import { specialInfectedProbeTools } from "./scripts/typescript/tools/siprobe.js";
 import { navProbeTools } from "./scripts/typescript/tools/navprobe.js";
 import { entityExtraTools } from "./maps/typescript/tools/entityextras.js";
 import { doorTools } from "./maps/typescript/tools/door.js";
@@ -237,6 +238,7 @@ export const allTools: AnyToolDef[] = [
   ...navAttributeTools,
   ...classProbeTools,
   ...optionsProbeTools,
+  ...specialInfectedProbeTools,
   ...navProbeTools,
   ...entityExtraTools,
   ...reviewTools,
