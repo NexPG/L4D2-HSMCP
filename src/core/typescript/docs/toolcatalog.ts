@@ -29,7 +29,7 @@ const AREAS: Area[] = [
     title: "VMF authoring",
     covers: "source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather",
     groups: {
-      "Files, entities and wiring": ["vmf", "vmfedit", "wiring", "worldspawn", "entityextras", "entityfamilies", "entityprobe", "detail", "sequences", "autosave", "door", "diff", "exportmap"],
+      "Files, entities and wiring": ["vmf", "vmfedit", "wiring", "worldspawn", "entityextras", "entityfamilies", "entityprobe", "detail", "autosave", "door", "diff", "exportmap"],
       "Geometry": ["build", "solids", "clip", "carve", "hull", "merge", "hollow", "vertex", "snap", "modify"],
       "Faces, lighting, overlays and terrain": ["face", "lightmap", "lightmaps", "overlay", "overlays", "dressing", "water", "terrain", "displacement", "cubemapgrid"],
       "Instances and prefabs": ["instance", "instancecollapse", "instancecreate", "prefab"],
@@ -42,7 +42,10 @@ const AREAS: Area[] = [
     slug: "compilation",
     title: "Map compilation",
     covers: "running vbsp/vvis/vrad, the Hammer++ chain, compile logs and sequences",
-    groups: { "Compile and run": ["compile"] },
+    groups: {
+      "Compile and run": ["compile"],
+      "Editor Run Map sequences": ["sequences"],
+    },
   },
   {
     slug: "audit",

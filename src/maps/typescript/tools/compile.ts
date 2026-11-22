@@ -7,6 +7,7 @@ import { parseCompileLog, stageClean } from "../compile/log.js";
 import { locateLeak, readPointfile } from "../compile/leak.js";
 import {
   ToolchainError,
+  TOOLCHAIN_ARG as TOOLCHAIN,
   chooseToolchain,
   compilerExe,
   runCompiler,
@@ -43,16 +44,8 @@ const FINDING = z.object({
  *
  * An absent `++` install falls back to stock and says so, rather than failing -- a default
  * that cannot run on a machine without Hammer++ would take CI and every fresh clone with it.
+ * The schema and that reasoning live beside `Toolchain` in `../compile/toolchain.ts`.
  */
-const TOOLCHAIN = z
-  .enum(["stock", "plusplus"])
-  .default("plusplus")
-  .describe(
-    "Which compilers to drive. The default 'plusplus' is ficool2's Hammer++ rebuild: much " +
-      "faster vvis and flags the stock chain does not have. Falls back to 'stock' when it " +
-      "is not installed, and the result says which one ran. 'stock' forces the compilers " +
-      "that ship with the game, which is what a comparison between the two needs.",
-  );
 
 const STAGE_RESULT = z.object({
   stage: z.string(),

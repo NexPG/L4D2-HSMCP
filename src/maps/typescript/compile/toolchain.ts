@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { run } from "@projectsociety/mcp-core";
 import type { RunResult } from "@projectsociety/mcp-core";
+import { z } from "zod";
 import type { Config } from "../../../core/typescript/config.js";
 import type { ResolvedGame } from "../../../core/typescript/games/profile.js";
 
@@ -44,6 +45,22 @@ export interface CompilerRun extends RunResult {
  * changed anything it should not have. Which is why every result says which chain ran.
  */
 export type Toolchain = "stock" | "plusplus";
+
+/**
+ * The `toolchain` argument shared by every tool that drives the compilers.
+ *
+ * The default is Hammer++ and an absent install falls back to stock with a note; the
+ * description says both because the fallback is otherwise invisible in the reply.
+ */
+export const TOOLCHAIN_ARG = z
+  .enum(["stock", "plusplus"])
+  .default("plusplus")
+  .describe(
+    "Which compilers to drive. The default 'plusplus' is ficool2's Hammer++ rebuild: much " +
+      "faster vvis and flags the stock chain does not have. Falls back to 'stock' when it " +
+      "is not installed, and the result says which one ran. 'stock' forces the compilers " +
+      "that ship with the game, which is what a comparison between the two needs.",
+  );
 
 /** The compile stages, and the pack step, that both toolchains provide. */
 export type CompileStage = "vbsp" | "vvis" | "vrad" | "bspzip";

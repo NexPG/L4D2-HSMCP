@@ -1,6 +1,6 @@
 # VMF authoring
 
-84 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+83 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -14,7 +14,6 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `normalize_vmf_io` | Rewrites the entity-output separators inside `connections` blocks to one style. |
 | `place_door` | Places a rotating door in an opening, with the entity origin on the hinge rather than in the middle of the leaf. |
 | `read_autosaves` | Finds Hammer's autosaves for one map and says which are newer than the saved .vmf. |
-| `read_compile_sequences` | Reads the editor's Run Map sequences: which steps are enabled, what each runs and with which parameters. |
 | `read_detail_sprites` | Reads a `detail.vbsp`: every detail type, its density, and the groups/models inside it (sprite or model, amount, alpha). |
 | `read_entity_report` | Hammer's Entity Report: every entity with its keyvalues, filterable by classname, targetname or the presence of a key. |
 | `read_fgd_autovisgroups` | Lists the FGD's `@AutoVisgroup` tree and the entity classes each group contains. |

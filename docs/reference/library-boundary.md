@@ -73,6 +73,7 @@ shows up here as four concrete reasons:
 | FGD | `srctools.fgd` via sidecar `fgd_class` | TypeScript tools call the sidecar | **delegated** |
 | Choreo, cmdseq | `srctools.choreo`, `srctools.cmdseq`; sidecar `read_choreo`, `cmdseq_read` | TypeScript only discovers the candidate sequence paths | **delegated** |
 | NAV, VTA, QC catalogue | no srctools module | TypeScript readers/writers | **necessary** |
+| Run Map execution | `srctools.cmdseq` supplies the commands; no library runs them | one thin runner: compilers through `runCompiler`, file steps through `node:fs`, argv through `compile/commandline.ts` | **necessary** |
 | Math/transform helpers | `srctools.math`; no JS dependency installed | small 3×4 affine/rotation helpers | **intentional TS** (no subprocess for arithmetic) |
 
 ## Duplication that was found and removed

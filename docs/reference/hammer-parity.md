@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **265 tools**.
+Last checked against the tool list on 22/11/2026: **266 tools**.
 
 ## The file itself
 
@@ -166,6 +166,7 @@ getting `ENOENT` on the first call.
 | Hammer | Here | Notes |
 |---|---|---|
 | Run map | `run_compile` | vbsp, vvis, vrad, stock or the Hammer++/Tools++ chain; the compilers are Windows-native here |
+| Run the editor's own sequence | `run_compile_sequence` | the flags the mapper's Run Map dialog would use, including Copy/Delete/Rename steps; the game launch is left to the user |
 | Open the map in the editor | `open_in_hammer` | Launches Hammer++ on the VMF and captures its window; the editor viewport is the one visual layer a writer cannot reproduce |
 | See the running map | `run_map_test` | waits for a marker, can install a bsp and nav, and can capture the game window as a real image; `screen` method |
 | Type a console command into the game | `send_console_command` | The engine's own `WM_COPYDATA` path (`Valve001`), the one `-hijack` uses: no synthetic keys, no focus. Reports the missing window class rather than a silent no-op |

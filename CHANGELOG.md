@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.195-alpha - 2026-11-22
+
+- **`run_compile_sequence`**: runs one of the editor's Run Map sequences with the editor's
+  own flags. Resolves `$path`, `$file`, `$gamedir`, `$bspdir`, `$bsp_exe`, `$vis_exe` and
+  `$light_exe`; runs the compilers and the Change Directory/Copy/Delete/Rename steps; checks
+  `ensure_file`; stops at the first failure. `$game_exe` is reported skipped because this
+  server never launches the game, an executable that is not a compiler alias is refused, a
+  map with `func_instance` is refused with a pointer to `run_compile`, and `dryRun` resolves
+  every step without writing.
+- **Windows argv splitter**: `splitWindowsArgs` follows `CommandLineToArgvW` and variables
+  are substituted per token, so `$gamedir` containing spaces stays one argument. The
+  alternative — substituting into the whole string and splitting afterwards — turned
+  `D:\...\Left 4 Dead 2` into four arguments.
+- **Tool count: 266.** Tests: 219 files, 1,848 passed, 33 skipped.
+
 ## 0.0.194-alpha - 2026-11-22
 
 - **`read_compile_sequences` now reads real files.** It delegates the format to
