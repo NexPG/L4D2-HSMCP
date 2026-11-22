@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **268 tools**.
+Last checked against the tool list on 22/11/2026: **269 tools**.
 
 ## The file itself
 
@@ -347,6 +347,7 @@ map and looking, or by not happening at all.
 | `restore_autosave` | opening the autosave by hand and saving it under a new name |
 | `read_vmt` | nothing: the material's parameters, its `%compile*` flags and its `Proxies` blocks are invisible in the editor |
 | `write_vmt` | a text editor, and remembering which shader takes which parameter |
+| `edit_vmt` | no editor changes one material value while preserving comments, `Proxies` and the file's own indentation |
 | `read_qc` | nothing: Hammer never reads a model's source |
 | `read_smd` | nothing: the model source is not opened by the editor |
 | `write_smd` | nothing: Hammer has no model-source writer |

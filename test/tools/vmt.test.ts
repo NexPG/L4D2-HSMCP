@@ -8,7 +8,7 @@
  * own archive, when this machine has one, because a parser that only agrees with itself is
  * not evidence of anything.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -23,10 +23,11 @@ import {
 } from "../../src/formats/typescript/formats/vmt.js";
 import { readVpk, readVpkEntry, vpkArchivePath } from "../../src/formats/typescript/formats/vpk.js";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
-import { readVmtTool, writeVmtTool } from "../../src/textures/typescript/tools/vmt.js";
+import { readVmtTool, writeVmtTool, editVmtTool } from "../../src/textures/typescript/tools/vmt.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
+const editVmt = (args: Record<string, unknown>) => editVmtTool.handler(args as never, ctx);
 const scratch = mkdtempSync(join(tmpdir(), "hammer-vmt-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
@@ -172,12 +173,17 @@ describe("vmt tools", () => {
       blocks: Array<{ name: string }>;
       compileFlags: Record<string, string>;
       warnings: string[];
+      tree: Record<string, unknown>;
     };
     expect(read.shader).toBe("LightmappedGeneric");
     expect(read.baseTexture).toBe("maps/test_wall");
     expect(read.surfaceProp).toBe("concrete");
     expect(read.blocks.map((b) => b.name)).toEqual(["proxies"]);
     expect(read.compileFlags).toEqual({ "%compileclip": "1" });
+    expect(read.tree).toMatchObject({
+      $basetexture: "maps/test_wall",
+      Proxies: { TextureScroll: { textureScrollRate: "5" } },
+    });
     expect(read.warnings).toEqual([]);
 
     expect(() =>
@@ -238,4 +244,104 @@ describe("vmt tools", () => {
     // L4D2 ships patches for its reskins; seeing none means the sample or the parser is wrong.
     expect(patches).toBeGreaterThan(0);
   }, 120_000);
+});
+
+describe("edit_vmt", () => {
+  function material(name: string, source = WALL): string {
+    const path = join(scratch, name);
+    writeFileSync(path, source, "utf8");
+    return path;
+  }
+
+  it("replaces one value and leaves the comment and the Proxies block alone", () => {
+    const path = material("edit-base.vmt");
+    const r = editVmt({
+      path,
+      edits: [{ path: ["$basetexture"], value: "concrete/wall_new" }],
+    }) as {
+      written: boolean;
+      verified: boolean;
+      edits: Array<{ previous: string; value: string }>;
+    };
+    expect(r.written).toBe(true);
+    expect(r.verified).toBe(true);
+    expect(r.edits[0]!.previous).toBe("concrete/cinderwall02");
+    const text = readFileSync(path, "utf8");
+    expect(text).toContain('"$basetexture" "concrete/wall_new"');
+    expect(text).toContain("// a comment the engine ignores");
+    expect(text).toContain('"%compileclip" "1"');
+    expect(text).toContain('"animatedtextureframerate" "10"');
+  });
+
+  it("edits a value nested inside Proxies and reads it back", () => {
+    const path = material("edit-proxy.vmt");
+    const r = editVmt({
+      path,
+      edits: [
+        {
+          path: ["Proxies", "AnimatedTexture", "animatedtextureframerate"],
+          value: "12",
+        },
+      ],
+    }) as { edits: Array<{ path: string[]; value: string }> };
+    expect(r.edits[0]!.value).toBe("12");
+    expect(readFileSync(path, "utf8")).toContain('"animatedtextureframerate" "12"');
+    const read = readVmtTool.handler({ path }, ctx) as { tree: Record<string, unknown> };
+    expect(read.tree).toMatchObject({
+      Proxies: { AnimatedTexture: { animatedtextureframerate: "12" } },
+    });
+  });
+
+  it("refuses a missing block or key and writes nothing", () => {
+    const path = material("edit-missing.vmt");
+    expect(() =>
+      editVmt({ path, edits: [{ path: ["Proxies", "Nope", "x"], value: "1" }] }),
+    ).toThrow(/no block "Nope"/);
+    expect(() =>
+      editVmt({ path, edits: [{ path: ["$missing"], value: "1" }] }),
+    ).toThrow(/no "\$missing"/);
+    expect(readFileSync(path, "utf8")).toBe(WALL);
+  });
+
+  it("refuses a duplicate key instead of choosing which one the engine keeps", () => {
+    const path = material(
+      "edit-duplicate.vmt",
+      '"VertexLitGeneric"\n{\n\t"$basetexture" "a"\n\t"$basetexture" "b"\n}\n',
+    );
+    expect(() =>
+      editVmt({ path, edits: [{ path: ["$basetexture"], value: "c" }] }),
+    ).toThrow(/appears 2 times/);
+  });
+
+  it("writes a dry run nowhere, an add-on copy elsewhere, and closes a repaired file", () => {
+    const path = material("edit-dry.vmt");
+    const dry = editVmt({
+      path,
+      edits: [{ path: ["$basetexture"], value: "dry" }],
+      dryRun: true,
+    }) as { written: boolean; backupPath: string | null };
+    expect(dry.written).toBe(false);
+    expect(dry.backupPath).toBeNull();
+    expect(readFileSync(path, "utf8")).toBe(WALL);
+
+    const out = join(scratch, "edit-copy.vmt");
+    const copied = editVmt({
+      path,
+      out,
+      edits: [{ path: ["$basetexture"], value: "copy" }],
+    }) as { out: string; written: boolean };
+    expect(copied.written).toBe(true);
+    expect(readFileSync(path, "utf8")).toBe(WALL);
+    expect(readFileSync(copied.out, "utf8")).toContain('"$basetexture" "copy"');
+
+    const broken = material(
+      "edit-broken.vmt",
+      '"UnlitGeneric"\n{\n\t"$basetexture" "vgui/white"\n\t"Proxies"\n\t{\n\t\t"AnimatedTexture"\n\t\t{\n\t\t\t"animatedtexturevar" "$basetexture"\n',
+    );
+    void editVmt({ path: broken, edits: [{ path: ["$basetexture"], value: "vgui/black" }] });
+    const closed = readFileSync(broken, "utf8");
+    expect(closed.trimEnd().endsWith("}")).toBe(true);
+    expect(parseVmt(closed).appendedBraces).toBe(0);
+    expect(parseVmt(closed).parameters.get("$basetexture")).toBe("vgui/black");
+  });
 });

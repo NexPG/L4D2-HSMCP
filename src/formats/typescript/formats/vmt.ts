@@ -100,13 +100,22 @@ function missingBraces(source: string): number {
   return Math.max(0, open - close);
 }
 
+export interface ParsedVmt {
+  document: VmtDocument;
+  /** The KeyValues nodes with source offsets, for a writer that splices values. */
+  nodes: KvNode[];
+  /** The parsed text; for a file with missing braces this is the repaired text. */
+  text: string;
+}
+
 /**
- * Parses a `.vmt`.
+ * Parses a `.vmt` and keeps the offset-carrying nodes.
  *
- * The shader is the first bare word, which is how every material is written; a file whose
- * first token is a quoted string has no shader and is reported rather than guessed at.
+ * `parseVmt` is the read-only view. A writer needs the nodes because replacing one value has
+ * to leave comments, indentation and a `Proxies` block byte-identical; a tree of strings
+ * cannot express where a value's quotes are.
  */
-export function parseVmt(source: string, path = "<text>"): VmtDocument {
+export function parseVmtSource(source: string, path = "<text>"): ParsedVmt {
   const warnings: string[] = [];
   // Valve's own materials open with a bare `LightmappedGeneric`, not a quoted one, which is
   // legal in this grammar. A byte-order mark would become part of that word, so it goes.
@@ -196,7 +205,12 @@ export function parseVmt(source: string, path = "<text>"): VmtDocument {
     );
   }
 
-  return document;
+  return { document, nodes, text };
+}
+
+/** Parses a `.vmt` into the read-only view most callers want. */
+export function parseVmt(source: string, path = "<text>"): VmtDocument {
+  return parseVmtSource(source, path).document;
 }
 
 /** Case-insensitive parameter lookup, the way the engine does it. */

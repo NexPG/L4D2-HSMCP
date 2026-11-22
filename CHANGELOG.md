@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.199-alpha - 2026-11-22
+
+- **`read_vmt` tree**: the reply now carries the whole nested material as `tree`, so a
+  `Proxies` block or a patch's `insert`/`replace` is visible with its values, not only as an
+  entry count.
+- **`edit_vmt`**: changes existing values by a case-insensitive block path
+  (`["Proxies", "AnimatedTexture", "animatedtextureframerate"]`) while copying every
+  untouched byte. A missing block/key or a duplicate key is refused rather than created or
+  guessed; `out`, `dryRun` and `backup` work as on the other writers. A file with missing
+  braces is written closed and re-parsed, and every edited value is read back before the
+  write.
+- **Tool count: 269.** Tests: 220 files, 1,867 passed, 33 skipped.
+
 ## 0.0.198-alpha - 2026-11-22
 
 - **`read_hud` from the game**: `fromGame: true` reads the stock `.res` out of

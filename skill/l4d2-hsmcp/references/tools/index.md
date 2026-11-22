@@ -1,6 +1,6 @@
 # Tool catalogue
 
-268 tools. This page groups them by the job you are doing; each tool's own description is the
+269 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -256,8 +256,9 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | Tool | Use |
 |---|---|
 | `read_text_file` | read UTF-8 source text (QC, SMD, VMT, mission) with a byte cap and line window |
-| `read_vmt` | material shader, parameters, `Proxies`/`patch` blocks, `%compile*` flags, textures |
+| `read_vmt` | material shader, parameters, `Proxies`/`patch` blocks as a nested `tree`, `%compile*` flags, textures |
 | `write_vmt` | create a `.vmt` from a shader and a parameter tree |
+| `edit_vmt` | change an existing VMT value by block path without reserialising; comments, Proxies and indentation survive |
 | `read_qc` | parse a `.qc` with its `$include` tree, variables/macros, sequences, materials, structural faults and a command catalogue that checks argument shapes |
 | `check_model` | QC or MDL: geometry, bodygroups, LODs, hitboxes, sequences, materials |
 | `read_model_collision` | `.phy`: solids, convex pieces, triangles/vertices, the ragdoll text (`solid`, `ragdollconstraint`, `collisionrules`, `editparams`) and the MDL checksum |
