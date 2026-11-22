@@ -130,6 +130,17 @@ def _finding(
     return {"severity": severity, "rule": rule, "message": message, **extra}
 
 
+def _spawnflag_options(kv: Any) -> list[Any]:
+    """The FGD's `SPAWNFLAGS` options, or an empty list for any other type."""
+    try:
+        from srctools.fgd import ValueTypes
+    except Exception:  # noqa: BLE001
+        return []
+    if getattr(kv, "type", None) is not ValueTypes.SPAWNFLAGS:
+        return []
+    return list(getattr(kv, "options", None) or getattr(kv, "val_list", None) or [])
+
+
 def _point_in_solid(vmf: Any, point: Any) -> int | None:
     """The id of the first *solid* brush containing this point, world or entity-owned.
 
@@ -583,6 +594,28 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                         allowed=allowed[:20],
                     )
                 )
+            if key.lower() == "spawnflags" and kv is not None:
+                bits = _flag_bits(value)
+                for option in _spawnflag_options(kv):
+                    bit = int(getattr(option, "bitflag", 0) or 0)
+                    name = str(getattr(option, "name", "") or "")
+                    desc = str(getattr(option, "desc", "") or "")
+                    if bit and bits & bit and (
+                        "obsolete" in name.casefold() or "obsolete" in desc.casefold()
+                    ):
+                        findings.append(
+                            _finding(
+                                "warning",
+                                "obsolete-spawnflag",
+                                f'"{classname}" sets spawnflag bit {bit} ({name}), which the '
+                                f"FGD marks obsolete; use the replacement key or value it "
+                                f"names",
+                                entity_id=ent_id,
+                                classname=classname,
+                                bit=bit,
+                                flag=name,
+                            )
+                        )
 
         for out in ent.outputs:
             # ESC is L4D2's own separator: stock maps store every output with 0x1b and zero

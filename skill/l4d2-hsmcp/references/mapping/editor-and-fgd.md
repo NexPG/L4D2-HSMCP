@@ -87,6 +87,9 @@ The lint checks more than names: a key declared by the class is not enough if it
 an enumeration. `invalid-keyvalue-choice` catches values such as `trigger_finale.type 3` or
 `info_survivor_position.hideweapons 2`, which the engine silently replaces with the default.
 The allowed list is in the finding, taken from the FGD's own `CHOICES` block.
+`obsolete-spawnflag` reports a set bit whose FGD label says `OBSOLETE`, such as
+`func_door` bit 1 ("Starts Open - OBSOLETE, use Spawn Position"); the replacement is in the
+label, not in a wiki.
 
 The editor's convenience and the engine's truth are different things; this project checks the
 second one.

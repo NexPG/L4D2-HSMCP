@@ -62,6 +62,7 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["bad-texture-scale"]).toBeUndefined();
     expect(r.byRule["unknown-keyvalue"]).toBeUndefined();
     expect(r.byRule["invalid-keyvalue-choice"]).toBeUndefined();
+    expect(r.byRule["obsolete-spawnflag"]).toBeUndefined();
   }, 60_000);
 
   it.skipIf(!ready)("catches a mistyped classname", async () => {
@@ -102,6 +103,24 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(finding["key"]).toBe("hideweapons");
     expect(finding["value"]).toBe("2");
     expect(finding["allowed"]).toEqual(["0", "1"]);
+  }, 60_000);
+
+  it.skipIf(!ready)("flags a spawnflag the FGD marks obsolete", async () => {
+    // func_door's bit 1 is "Starts Open - OBSOLETE, use 'Spawn Position'". It still
+    // compiles, and the door still starts closed for a mapper who trusted the label.
+    const path = broken(
+      "obsolete-spawnflag",
+      (s) =>
+        s +
+        '\nentity\n{\n\t"id" "9002"\n\t"classname" "func_door"\n' +
+        '\t"spawnflags" "1"\n}\n',
+    );
+    const r = await lint(path);
+    expect(r.byRule["obsolete-spawnflag"]).toBe(1);
+    const finding = r.findings.find((f) => f["rule"] === "obsolete-spawnflag")!;
+    expect(finding["classname"]).toBe("func_door");
+    expect(finding["bit"]).toBe(1);
+    expect(String(finding["flag"])).toMatch(/OBSOLETE/);
   }, 60_000);
 
   it.skipIf(!ready)("names the L4D2 transition faults instead of passing them", async () => {

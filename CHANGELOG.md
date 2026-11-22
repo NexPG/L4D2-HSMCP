@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.205-alpha - 2026-11-22
+
+- **`read_vmf_lint` reports FGD-obsolete spawnflags**: a set bit whose `SPAWNFLAGS` label
+  says `OBSOLETE` is now a finding with the bit, the label and the replacement the label
+  names. `func_door` bit 1 is the first case: it still compiles, but the door does not start
+  open.
+- **Tool count: 270.** Tests: 221 files, 1,877 passed, 33 skipped.
+
 ## 0.0.204-alpha - 2026-11-22
 
 - **`read_vmf_lint` checks enumerated FGD values**: a key declared by the class is not
