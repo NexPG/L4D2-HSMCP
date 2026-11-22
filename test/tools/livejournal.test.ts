@@ -21,7 +21,7 @@ import {
   readJournal,
 } from "../../src/hammer/typescript/live/journal.js";
 import { emptyVmf } from "../../src/maps/typescript/vmf/skeleton.js";
-import { ctx as sharedCtx } from "../support/env.js";
+import { ctx as sharedCtx, has } from "../support/env.js";
 import { pythonPath } from "../../src/core/typescript/sidecar/client.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "hammer-live-queue-"));
@@ -207,7 +207,7 @@ describe("the approval queue", () => {
     ).rejects.toThrow(/not approved/);
   });
 
-  it("cannot apply an approved edit when its editor is absent", async () => {
+  it.skipIf(!has.sidecar)("cannot apply an approved edit when its editor is absent", async () => {
     const vmf = newMap("apply.vmf");
     const staged = await stage(vmf, [
       { op: "setKeyvalue", classname: "info_target", origin: [0, 0, 0], key: "targetname", value: "x" },
