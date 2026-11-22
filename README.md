@@ -48,37 +48,6 @@ compiler falls back to the stock chain and says so, and without VTFCmd texture c
 simply unavailable. The Authoring Tools, Node.js, pnpm and Python are needed for the server to
 run at all.
 
-## Build from source
-
-`packageManager` in `package.json` pins the pnpm version, so corepack installs the same one
-CI uses:
-
-```bash
-corepack enable
-pnpm install --frozen-lockfile
-pnpm build
-pnpm typecheck
-pnpm lint
-pnpm test
-```
-
-Use `pnpm`, not `npm`: the repository ships `pnpm-lock.yaml`, and an `npm install` would
-write a second lockfile and resolve a different tree. Node 22 is the minimum; CI runs 22 and
-24 on Windows.
-
-## Tools
-
-262 tools, grouped by the work they do: maps and VMF, models, textures and materials, game
-assets, audio, campaigns, navigation, VScript and runtime, Hammer and the live editor, shared
-formats, packaging and VPK, and core configuration. The [tool catalogue](docs/tools/README.md)
-has the count per area, and each area page has logical tables with one row per tool.
-
-`addonauthor` in `addoninfo.txt` and `Author` in a mission file are the person making the
-content, not the toolkit author. The agent asks once, stores the answer with
-`set_addon_author` in `.hammer-mcp/config.json`, and uses it for every addon and campaign;
-calling `set_addon_author` again changes the name for later writes. There is deliberately no
-built-in name: a default would sign someone else's content with it.
-
 ## Credits
 
 This project is built on work by others. The projects whose code or data it actually uses,
