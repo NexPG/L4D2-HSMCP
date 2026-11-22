@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+﻿import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { z } from "zod";
@@ -82,6 +82,13 @@ export const runStudiomdlTool = defineTool({
   inputSchema: {
     qc: z.string().describe("Path to the .qc, absolute or relative to the repo root."),
     game: GAME,
+    compiler: z
+      .enum(["auto", "studiomdl++", "studiomdl"])
+      .optional()
+      .describe(
+        "auto prefers StudioMDL++ and falls back to the stock compiler; explicit " +
+          "studiomdl++ refuses when it is absent; studiomdl uses the game's own binary.",
+      ),
     timeoutMinutes: z.number().int().min(1).max(120).default(10),
     confirm: CONFIRM,
   },
@@ -110,8 +117,15 @@ export const runStudiomdlTool = defineTool({
     const stockExe = join(profile.binDir ?? join(dirname(gameDir), "bin"), "studiomdl.exe");
     const plusPlusBin = profile.plusPlusBinDir ?? ctx.config.plusPlusBinDir;
     const modernExe = plusPlusBin ? join(plusPlusBin, "studiomdl++.exe") : null;
-    const modern = modernExe !== null && existsSync(modernExe);
-    const exe = modern ? modernExe : stockExe;
+    const modernAvailable = modernExe !== null && existsSync(modernExe);
+    const compilerChoice = args.compiler ?? "auto";
+    if (compilerChoice === "studiomdl++" && !modernAvailable) {
+      throw new Error(
+        `StudioMDL++ was requested but ${modernExe ?? "the plusplus bin directory"} does not exist`,
+      );
+    }
+    const modern = compilerChoice === "studiomdl" ? false : modernAvailable;
+    const exe: string = modern && modernExe ? modernExe : stockExe;
     if (!existsSync(exe)) {
       throw new Error(
         `${exe} does not exist. Install the Left 4 Dead 2 Authoring Tools (Steam app 563) ` +

@@ -46,7 +46,7 @@ Source units (a player is 72 tall).
    link; the tool refuses anything else and reads the file back.
 2. `write_qc` — `$modelname`, `$body` pointing at that SMD, `$cdmaterials`, `$surfaceprop`,
    and `$staticprop: true`.
-3. `run_studiomdl` - compiles with StudioMDL++/studiomdl, then proves the `.mdl`, `.vvd` and `.dx90.vtx` exist.
+3. `run_studiomdl` - compiles with StudioMDL++/studiomdl, then proves the `.mdl`, `.vvd` and `.dx90.vtx` exist. `compiler: "studiomdl"` forces the stock binary if the ++ build crashes.
 4. `write_vmt` + `write_vtf` — the material and its texture; both are native.
 5. `read_model_info` — bounds to place it, `hasPhysics` to know whether it is solid.
 
@@ -169,7 +169,7 @@ direct recompile cannot overwrite the source.
 | Convert FBX geometry, skeleton, weights and animations | `fbx_to_smd` (optionally with a `qc` block) |
 | Turn a VMF brush into a model | `brush_to_model` (Propper++ path) |
 | Write a QC | `write_qc`; `read_qc` parses includes and faults |
-| Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
+| Compile a QC | `run_studiomdl` (StudioMDL++ first, stock studiomdl otherwise; `compiler` can force either; reads `$modelname`, proves the `.mdl` and companions exist, reports `compiler`) |
 | Read hull, skins, sequences, materials, `.phy` | `read_model_info` |
 | Read `.phy` solids, convex pieces, `$concave` need and `prop_data` | `read_model_collision` |
 | Read a model's flex descriptors, rules and vertex deltas | `read_model_flexes` |
