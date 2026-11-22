@@ -1,11 +1,35 @@
-# Library boundary: srctools, the sidecar and TypeScript
+# Library and project boundary: never a second implementation
 
-This page is the standing answer to “are we writing something srctools already does?”. It is
-checked against **srctools 2.7.0** and the **47 verbs** registered in
+This page is the standing answer to **two** questions:
+
+1. “Are we writing something `srctools` already does?”
+2. “Are we writing something this repository already does?”
+
+It is checked against **srctools 2.7.0** and the **47 verbs** registered in
 `src/core/python/main.py`.
 
-The rule itself is in [`AGENTS.md`](../../AGENTS.md): call the library first; a second copy of
-an existing implementation is a defect unless the library cannot express the operation.
+The rule itself is in [`AGENTS.md`](../../AGENTS.md) and
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md): use or extend an existing implementation, whether
+it is a library or a helper in `src/`. A second copy is a defect unless the library cannot
+express the operation, and the reason is recorded below.
+
+## Project duplicates are the same defect
+
+The audit is not only about srctools. This repository has helpers whose whole purpose is to
+prevent drift, and a tool that copies one of them is a duplicate even though no library is
+involved:
+
+| Concern | One owner | Examples of the old copies |
+|---|---|---|
+| Solid/face selectors | `src/maps/typescript/vmf/select.ts` | field sets in `modify`, `organise`, `hollow`, `clip`, `optimise`, `face`, `displacement`, `skyboxbuild`, `skyboxcopy` |
+| Temp file → sidecar verb → guarded write | `src/maps/typescript/tools/sidecarvmf.ts` | `collapse_instances`, `carve_solids`, `hull_solids` |
+| “An attribute edit must not move a volume” | `assertGeometryUntouched` in `src/maps/typescript/vmf/solid.ts` | `face`, `displacement`, `organise` |
+| Instance expansion | sidecar `vmf_collapse` / `srctools.instancing` | a deleted TypeScript expander |
+| Model/MDL readers | `src/models/typescript/formats/` | a second parser in a tool would be the defect; tools import the format module |
+
+Before adding a tool, search `src/` for the concern, not just `node_modules` and the sidecar.
+If a helper exists, import it; if it is close but parameterised differently, change the
+helper and its tests rather than forking it into the new tool.
 
 ## How the boundary is chosen
 

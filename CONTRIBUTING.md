@@ -32,10 +32,21 @@ Before taking code, data or an asset from another repository:
 A component missing from `third_party/NOTICES.md` is a compliance defect even if the code is
 correct. A missing feature is recoverable; a licence violation is not.
 
-## 0.1 Library first; never a second implementation
+## 0.1 Never a second implementation — library or project
 
-`srctools` already does a great deal of this work, and the sidecar already exposes it. Before
-writing a parser, converter, packer or editor:
+This rule has **two** sources, and both must be checked before a parser, converter, packer,
+editor or helper is written:
+
+1. **A library that already does it.** `srctools` is the large one and is exposed through
+   the sidecar; the npm packages in `package.json` are the other.
+2. **This repository itself.** A selector, a guarded write, a sidecar-call scaffold or a
+   format reader may already exist in `src/`. A second copy inside a new tool is the same
+   defect as a copy of srctools.
+
+If either answer is yes, use or extend that implementation. A duplicate is a defect even
+when it is shorter, “fits this tool better”, or was easier to type.
+
+### The library
 
 1. search `src/*/python/` and the verbs in `src/core/python/main.py`;
 2. search the installed `srctools` modules and the npm dependencies;
@@ -44,14 +55,25 @@ writing a parser, converter, packer or editor:
 4. reimplement only when the library cannot express the operation: byte-offset-preserving
    writes, records the library does not expose, or a hot/offline path where a subprocess is
    not acceptable. Say which in the module comment;
-5. never add a second copy of a helper this repository already has — extend the existing one.
-   That includes selectors (`vmf/select.ts`), the guarded write (`fs/write.ts`) and the
-   sidecar-call scaffold (`tools/sidecarvmf.ts`), not only srctools itself.
+5. do not transplant srctools or other upstream code; use it as a dependency or write an
+   independent implementation from the format.
+
+### This repository
+
+- **Search `src/` before writing.** The helper has one owner: selectors in
+  `vmf/select.ts`, the guarded write in `fs/write.ts`, the temp-file/sidecar/write scaffold
+  in `tools/sidecarvmf.ts`, the geometry guard in `vmf/solid.ts`. A new tool imports them.
+- **Never fork a helper to avoid touching it.** Change the shared helper and its tests; a
+  fork hides the divergence until the two copies disagree.
+- **A near-copy is a bug even if it compiles.** Two files that differ only in wording or in
+  one default are unified, with the difference kept as a parameter.
+- **Do not re-add something that was deleted as a duplicate.** If a name disappeared from
+  `src/`, look at the commit that removed it before bringing it back.
 
 [`AGENTS.md`](AGENTS.md) is the short version for agents;
 [`docs/reference/library-boundary.md`](docs/reference/library-boundary.md) is the audited
-table of what is delegated and what is intentionally TypeScript, including the known
-candidates for migration.
+table of what is delegated, what is intentionally TypeScript, and which project helpers are
+shared, including the known candidates for migration.
 
 ## 1. A passing test proves nothing until it has been shown it can fail
 
