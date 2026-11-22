@@ -209,9 +209,9 @@ material; the instructions live in one place.
   LDR lump, or recompile with vrad.
 - **Evaluating HUD conditions.** `read_hud` shows `[$WIN32]`/`[!$OSX]`; it does not decide
   which ones apply, and `write_hud` edits existing controls rather than creating new ones.
-- **A full patch chain in `check_vmt`.** It resolves the first `include` and reports its
-  base shader/`$basetexture`; a patch that includes another patch is named as the next
-  link, not merged into an effective material.
+- **A material patch chain longer than 16 links.** `check_vmt` follows the chain, applies
+  each `insert`/`replace`, and reports the effective `$basetexture` and textures; a cycle or
+  a missing link is a finding, and a deeper chain is refused rather than followed forever.
 - **Arbitrary executables and the game launch in `run_compile_sequence`.** It runs the
   three compiler aliases and the file steps; `$game_exe` is skipped and any other executable
   is refused. Use `run_compile` for `func_instance` maps, which the sequence runner refuses.

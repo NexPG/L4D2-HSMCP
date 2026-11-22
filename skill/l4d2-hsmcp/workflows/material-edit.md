@@ -49,9 +49,10 @@ check_vmt({
 ```
 
 A `patch` is only a diff. `check_vmt` normalises the `include`, finds the base under
-`materialsDirs`, and reports its shader and `$basetexture`. A missing base, an unreadable
-base, or a base with no `$basetexture` is a finding. If the include is itself a patch, the
-report names that next link; it does not merge a full chain.
+`materialsDirs`, and follows a chain of patches (up to 16 links), applying each
+`insert`/`replace`. It reports the base shader, the effective `$basetexture` and every
+effective texture. A missing link, a cycle, or a material with no `$basetexture` is a
+finding.
 
 ## 5. Pack and look
 

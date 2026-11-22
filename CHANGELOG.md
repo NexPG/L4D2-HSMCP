@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.211-alpha - 2026-11-22
+
+- **`check_vmt` follows a patch chain**: the include is resolved, and if it is itself a
+  patch the chain continues (up to 16 links). Every `insert`/`replace` is applied and the
+  reply reports the base shader, the effective `$basetexture` and every effective texture.
+  A cycle or a missing link is a finding; the old one-link report is gone.
+- **Tool count: 270.** Tests: 222 files, 1,885 passed, 33 skipped.
+
 ## 0.0.210-alpha - 2026-11-22
 
 - **`write_vtf` writes animated textures**: `frames` takes an ordered list of PNGs, writes

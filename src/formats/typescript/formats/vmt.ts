@@ -253,12 +253,22 @@ export function vmtTree(document: VmtDocument): VmtTree {
   return nodesToTree(document.entries);
 }
 
+function cloneTree(tree: VmtTree): VmtTree {
+  const out: VmtTree = {};
+  for (const [key, value] of Object.entries(tree)) {
+    out[key] = typeof value === "string" ? value : cloneTree(value);
+  }
+  return out;
+}
+
 /**
- * Merges own parameters over an upstream material, the way a `patch` does: `replace` wins,
- * `insert` adds what is missing. Returned as a tree for `serializeVmt`.
+ * Merges one patch over an already-resolved tree.
+ *
+ * Split from `applyVmtPatch` so a patch chain can resolve its base once and then apply each
+ * link without turning a tree back into a document.
  */
-export function applyVmtPatch(base: VmtDocument, patch: VmtDocument): VmtTree {
-  const tree = vmtTree(base);
+export function applyVmtTreePatch(base: VmtTree, patch: VmtDocument): VmtTree {
+  const tree = cloneTree(base);
   const replace = patch.blocks.get("replace") ?? [];
   const insert = patch.blocks.get("insert") ?? [];
   for (const node of replace) {
@@ -276,6 +286,14 @@ export function applyVmtPatch(base: VmtDocument, patch: VmtDocument): VmtTree {
     if (!(key in tree)) tree[key] = value;
   }
   return tree;
+}
+
+/**
+ * Merges own parameters over an upstream material, the way a `patch` does: `replace` wins,
+ * `insert` adds what is missing. Returned as a tree for `serializeVmt`.
+ */
+export function applyVmtPatch(base: VmtDocument, patch: VmtDocument): VmtTree {
+  return applyVmtTreePatch(vmtTree(base), patch);
 }
 
 function quote(value: string): string {

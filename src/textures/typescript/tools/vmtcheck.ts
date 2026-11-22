@@ -9,7 +9,29 @@ import { join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
-import { parseVmt, vmtCompileFlags, vmtTextures } from "../../../formats/typescript/formats/vmt.js";
+import { VMT_TEXTURE_KEYS, applyVmtTreePatch, parseVmt, vmtCompileFlags, vmtTextures, vmtTree } from "../../../formats/typescript/formats/vmt.js";
+import type { VmtTree } from "../../../formats/typescript/formats/vmt.js";
+
+function treeParameter(tree: VmtTree, key: string): string | undefined {
+  const wanted = key.toLowerCase();
+  for (const [name, value] of Object.entries(tree)) {
+    if (name.toLowerCase() === wanted && typeof value === "string") return value;
+  }
+  return undefined;
+}
+
+function treeTextures(tree: VmtTree): Array<{ key: string; texture: string }> {
+  const out: Array<{ key: string; texture: string }> = [];
+  for (const key of VMT_TEXTURE_KEYS) {
+    const value = treeParameter(tree, key);
+    if (!value) continue;
+    out.push({
+      key,
+      texture: value.replace(/\\/g, "/").replace(/^materials\//i, "").replace(/\.vtf$/i, ""),
+    });
+  }
+  return out;
+}
 
 const SHADERS = new Set([
   "vertexlitgeneric",
@@ -44,9 +66,10 @@ export const checkVmtTool = defineTool({
     "non-patch material, no filesystem path or .vtf suffix in the texture name, numeric " +
     "%compile flags, duplicate keys and repaired braces. With `materialsDirs` it also checks " +
     "that each named texture has a `.vtf` (or a `.vmt` for a patch include), and resolves a " +
-    "patch's `include` to the base material, reporting its shader and `$basetexture`; a " +
-    "missing base is a warning, not an assumption. It does not compile the material; " +
-    "vbsp/vtex are still the final authority.",
+    "patch's `include`, following a chain of patches and applying each insert/replace. It " +
+    "reports the base shader, effective `$basetexture` and effective textures; a missing " +
+    "link or cycle is a finding. It does not compile the material; vbsp/vtex are still the " +
+    "final authority.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .vmt, absolute or relative to the repo root."),
@@ -69,6 +92,9 @@ export const checkVmtTool = defineTool({
         exists: z.boolean().nullable(),
         shader: z.string().nullable(),
         baseTexture: z.string().nullable(),
+        chain: z.array(z.string()),
+        cycle: z.boolean(),
+        effectiveTextures: z.array(z.object({ key: z.string(), texture: z.string() })),
         note: z.string(),
       })
       .nullable(),
@@ -173,6 +199,9 @@ export const checkVmtTool = defineTool({
       exists: boolean | null;
       shader: string | null;
       baseTexture: string | null;
+      chain: string[];
+      cycle: boolean;
+      effectiveTextures: Array<{ key: string; texture: string }>;
       note: string;
     } | null = null;
     if (patch) {
@@ -185,6 +214,9 @@ export const checkVmtTool = defineTool({
             exists: null,
             shader: null,
             baseTexture: null,
+            chain: [],
+            cycle: false,
+            effectiveTextures: [],
             note:
               "pass materialsDirs to resolve the include; a patch without its base is only " +
               "half a material",
@@ -195,60 +227,97 @@ export const checkVmtTool = defineTool({
             message: "the patch include was not resolved because no materialsDirs were given",
           });
         } else {
-          const relative = include.replace(/\\/g, "/").replace(/^materials\//i, "");
-          const candidate = /\.vmt$/i.test(relative) ? relative : `${relative}.vmt`;
-          const resolved = roots.map((root) => join(root, candidate)).find(existsSync) ?? null;
-          if (resolved === null) {
-            patchInfo = {
-              include,
-              resolved: null,
-              exists: false,
-              shader: null,
-              baseTexture: null,
-              note: `${candidate} was not found under the material roots`,
-            };
+          const patches = [document];
+          const chain: string[] = [];
+          const visited = new Set<string>([path.toLowerCase()]);
+          let current = document;
+          let cycle = false;
+          let missing: string | null = null;
+          let readError: string | null = null;
+
+          for (let depth = 0; depth < 16 && current.shader.toLowerCase() === "patch"; depth += 1) {
+            const nextInclude = current.parameters.get("include");
+            if (!nextInclude) {
+              missing = "(an intermediate patch has no include)";
+              break;
+            }
+            const relative = nextInclude.replace(/\\/g, "/").replace(/^materials\//i, "");
+            const candidate = /\.vmt$/i.test(relative) ? relative : `${relative}.vmt`;
+            const resolved = roots.map((root) => join(root, candidate)).find(existsSync) ?? null;
+            if (resolved === null) {
+              missing = candidate;
+              break;
+            }
+            if (visited.has(resolved.toLowerCase())) {
+              cycle = true;
+              break;
+            }
+            visited.add(resolved.toLowerCase());
+            chain.push(resolved);
+            try {
+              current = parseVmt(readFileSync(resolved, "utf8"), resolved);
+              patches.push(current);
+            } catch (error) {
+              readError = error instanceof Error ? error.message : String(error);
+              break;
+            }
+          }
+
+          const base = current.shader.toLowerCase() === "patch" ? null : current;
+          let effective: VmtTree | null = null;
+          if (base !== null && !cycle && missing === null && readError === null) {
+            effective = vmtTree(base);
+            for (const layer of patches.slice(0, -1).reverse()) {
+              effective = applyVmtTreePatch(effective, layer);
+            }
+          }
+          const shaderName = base?.shader ?? null;
+          const baseTexture = effective ? (treeParameter(effective, "$basetexture") ?? null) : null;
+          patchInfo = {
+            include,
+            resolved: chain[0] ?? null,
+            exists: chain.length > 0,
+            shader: shaderName,
+            baseTexture,
+            chain,
+            cycle,
+            effectiveTextures: effective ? treeTextures(effective) : [],
+            note:
+              cycle
+                ? `the include chain loops after ${chain.length} link(s)`
+                : missing !== null
+                  ? `${missing} was not found under the material roots`
+                  : readError !== null
+                    ? readError
+                    : `${chain.length} link(s) resolved; the effective $basetexture is reported`,
+          };
+          if (cycle) {
+            findings.push({
+              severity: "warning",
+              rule: "vmt-patch-cycle",
+              message: `${path} includes a cycle: ${chain.join(" -> ")}`,
+            });
+          } else if (missing !== null) {
             findings.push({
               severity: "warning",
               rule: "vmt-patch-missing",
-              message: `include names ${candidate}, which is not under the material roots`,
+              message: `the patch chain stops at ${missing}, which is not under the material roots`,
             });
-          } else {
-            try {
-              const base = parseVmt(readFileSync(resolved, "utf8"), resolved);
-              const baseTexture = base.parameters.get("$basetexture") ?? null;
-              patchInfo = {
-                include,
-                resolved,
-                exists: true,
-                shader: base.shader,
-                baseTexture,
-                note:
-                  base.shader.toLowerCase() === "patch"
-                    ? "the include is itself a patch; its own include is the next link"
-                    : "the included material was read; its $basetexture is reported",
-              };
-              if (baseTexture === null) {
-                findings.push({
-                  severity: "warning",
-                  rule: "vmt-patch-base-no-texture",
-                  message: `${resolved} has no $basetexture, so the patch changes nothing visible`,
-                });
-              }
-            } catch (error) {
-              patchInfo = {
-                include,
-                resolved,
-                exists: true,
-                shader: null,
-                baseTexture: null,
-                note: error instanceof Error ? error.message : String(error),
-              };
-              findings.push({
-                severity: "warning",
-                rule: "vmt-patch-base",
-                message: `${resolved} could not be read as a material`,
-              });
-            }
+          } else if (readError !== null) {
+            findings.push({
+              severity: "warning",
+              rule: "vmt-patch-base",
+              message:
+                chain.length > 0
+                  ? `${chain[chain.length - 1]} could not be read as a material`
+                  : "the included material could not be read",
+            });
+          } else if (base !== null && baseTexture === null) {
+            findings.push({
+              severity: "warning",
+              rule: "vmt-patch-base-no-texture",
+              message: `${chain[chain.length - 1] ?? include} has no $basetexture, so the patch changes nothing visible`,
+            });
           }
         }
       }

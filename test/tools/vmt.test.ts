@@ -375,6 +375,8 @@ describe("check_vmt patch resolution", () => {
         exists: boolean | null;
         shader: string | null;
         baseTexture: string | null;
+        chain: string[];
+        effectiveTextures: Array<{ key: string; texture: string }>;
       } | null;
       findings: Array<{ rule: string }>;
     };
@@ -382,11 +384,49 @@ describe("check_vmt patch resolution", () => {
       include: "materials/concrete/base.vmt",
       exists: true,
       shader: "LightmappedGeneric",
-      baseTexture: "concrete/base",
+      baseTexture: "concrete/new",
     });
     expect(r.patch!.resolved).toBe(join(root, "concrete", "base.vmt"));
     expect(r.overall).toBe("pass");
     expect(r.findings.map((finding) => finding.rule)).not.toContain("vmt-patch-missing");
+  });
+
+  it("applies a patch chain and reports the effective material", () => {
+    const root = materials("patch-chain");
+    const middle = join(root, "concrete", "middle.vmt");
+    const outer = join(root, "concrete", "outer.vmt");
+    writeFileSync(
+      middle,
+      '"patch"\n{\n\t"include" "materials/concrete/base.vmt"\n\t"replace"\n\t{\n\t\t"$surfaceprop" "metal"\n\t}\n}\n',
+      "utf8",
+    );
+    writeFileSync(
+      outer,
+      '"patch"\n{\n\t"include" "materials/concrete/middle.vmt"\n\t"replace"\n\t{\n\t\t"$basetexture" "concrete/outer"\n\t}\n}\n',
+      "utf8",
+    );
+    const r = checkVmtTool.handler({ path: outer, materialsDirs: [root] }, ctx) as {
+      overall: string;
+      patch: {
+        shader: string | null;
+        baseTexture: string | null;
+        chain: string[];
+        effectiveTextures: Array<{ key: string; texture: string }>;
+        note: string;
+      } | null;
+    };
+    expect(r.patch?.shader).toBe("LightmappedGeneric");
+    expect(r.patch?.baseTexture).toBe("concrete/outer");
+    expect(r.patch?.chain).toEqual([
+      join(root, "concrete", "middle.vmt"),
+      join(root, "concrete", "base.vmt"),
+    ]);
+    expect(r.patch?.effectiveTextures).toContainEqual({
+      key: "$basetexture",
+      texture: "concrete/outer",
+    });
+    expect(r.patch?.note).toMatch(/2 link/);
+    expect(r.overall).toBe("pass");
   });
 
   it("names a missing include and a patch with no roots to search", () => {
