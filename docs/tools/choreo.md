@@ -8,6 +8,6 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 
 | Tool | What it does |
 |---|---|
-| `edit_choreo_events` | Edits existing events in a text .vcd choreography timeline: start, end and the three parameter slots. |
+| `edit_choreo_events` | Edits a text .vcd choreography timeline: change the start, end and parameter slots of existing events, remove one, or add a speak/firetrigger/stoppoint event to an existing actor channel. |
 | `read_choreo` | Reads a text VCD choreography scene: map name, FPS, duration, every event on the timeline (type, start/end, parameters, flags), the actor/channel tree, and the sounds it uses. |
 | `read_scenes_image` | Reads `scenes/scenes.image`: one entry per choreo scene, keyed by CRC, with its duration, the end of the last spoken line and the sounds it uses. |

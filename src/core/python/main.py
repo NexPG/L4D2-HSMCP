@@ -769,7 +769,7 @@ def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
     fields on the selected events, export it, parse the export again and compare. The
     round-trip is measured over every stock L4D2 scene; it is not assumed.
     """
-    from srctools.choreo import Scene
+    from srctools.choreo import Curve, Event, EventType, Scene, SpeakEvent
     from srctools.tokenizer import Tokenizer
 
     path = req["path"]
@@ -833,13 +833,41 @@ def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
             )
         return matches[occurrence]
 
-    updates = req["updates"]
+    def event_list(actor_name: str | None, channel_name: str | None) -> list[Any]:
+        if actor_name is None:
+            return scene.events
+        for actor in scene.actors:
+            if actor.name != actor_name:
+                continue
+            for channel in actor.channels:
+                if channel.name == channel_name:
+                    return channel.events
+            raise ValueError(f'actor "{actor_name}" has no channel "{channel_name}"')
+        raise ValueError(f'no actor named "{actor_name}"')
+
+    def normalise_parameters(values: Any, default: str = "") -> tuple[str, str, str]:
+        params = [str(value) for value in (values or [])]
+        if len(params) > 3:
+            raise ValueError("a choreo event has three parameter slots")
+        while len(params) < 3:
+            params.append(default if len(params) == 0 else "")
+        return tuple(params)  # type: ignore[return-value]
+
+    updates = req.get("updates") or []
+    additions = req.get("add") or []
+    if not updates and not additions:
+        raise ValueError("give at least one update or add")
+
     for update in updates:
-        if not any(key in update for key in ("start", "end", "parameters")):
+        remove = bool(update.get("remove", False))
+        if not remove and not any(key in update for key in ("start", "end", "parameters")):
             raise ValueError(
-                f'update for "{update["name"]}" changes nothing; give start, end or parameters'
+                f'update for "{update["name"]}" changes nothing; give start, end, parameters or remove'
             )
-        event, _, _ = resolve(refs(scene), update)
+        event, actor_name, channel_name = resolve(refs(scene), update)
+        if remove:
+            event_list(actor_name, channel_name).remove(event)
+            continue
         if "start" in update:
             start = float(update["start"])
             if start < 0:
@@ -865,6 +893,53 @@ def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
                 f'start {event.start_time}'
             )
 
+    for addition in additions:
+        kind = str(addition["type"]).casefold()
+        name = str(addition["name"])
+        actor_name = str(addition["actor"])
+        channel_name = str(addition["channel"])
+        start = float(addition["start"])
+        if start < 0:
+            raise ValueError(f'add "{name}" has a negative start time')
+        end = addition.get("end")
+        end_time = -1.0 if end is None else float(end)
+        if end_time != -1.0 and end_time <= start:
+            raise ValueError(f'add "{name}" ends at {end_time}, not after its start {start}')
+        parameters = normalise_parameters(addition.get("parameters"), name)
+        if kind == "speak":
+            event = SpeakEvent(
+                name=name,
+                start_time=start,
+                end_time=end_time,
+                parameters=parameters,
+                ramp=Curve(),
+            )
+        elif kind == "firetrigger":
+            event = Event(
+                type=EventType.FireTrigger,
+                name=name,
+                start_time=start,
+                end_time=end_time,
+                parameters=parameters,
+                ramp=Curve(),
+            )
+        elif kind == "stoppoint":
+            event = Event(
+                type=EventType.StopPoint,
+                name=name,
+                start_time=start,
+                end_time=end_time,
+                parameters=parameters,
+                ramp=Curve(),
+            )
+        else:
+            raise ValueError(
+                f'add type "{addition["type"]}" is not supported; use speak, firetrigger or stoppoint'
+            )
+        target = event_list(actor_name, channel_name)
+        target.append(event)
+        target.sort(key=lambda item: item.start_time)
+
     import io
 
     out = io.StringIO()
@@ -875,6 +950,17 @@ def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
     written_scene = Scene.parse_text(Tokenizer(new_text, path))
     written_refs = refs(written_scene)
     for update in updates:
+        if bool(update.get("remove", False)):
+            if any(
+                event.name == update["name"]
+                and ("actor" not in update or actor == update["actor"])
+                and ("channel" not in update or channel == update["channel"])
+                for event, actor, channel in written_refs
+            ):
+                raise ValueError(
+                    f'removal of "{update["name"]}" did not survive the rewrite'
+                )
+            continue
         event, _, _ = resolve(written_refs, update)
         if "start" in update and abs(event.start_time - float(update["start"])) > 1e-9:
             raise ValueError(f'start time did not survive the rewrite for "{update["name"]}"')
@@ -889,9 +975,26 @@ def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
                     f'parameters did not survive the rewrite for "{update["name"]}"'
                 )
 
+    for addition in additions:
+        event_name = str(addition["name"])
+        actor_name = str(addition["actor"])
+        channel_name = str(addition["channel"])
+        found = [
+            event
+            for event, actor, channel in written_refs
+            if event.name == event_name and actor == actor_name and channel == channel_name
+        ]
+        if not found:
+            raise ValueError(f'added event "{event_name}" did not survive the rewrite')
+        wanted = normalise_parameters(addition.get("parameters"), event_name)
+        if not any(tuple(event.parameters) == wanted for event in found):
+            raise ValueError(f'parameters of added event "{event_name}" did not survive the rewrite')
+
     return {
         "text": new_text,
-        "updated": len(updates),
+        "updated": sum(1 for update in updates if not update.get("remove", False)),
+        "removed": sum(1 for update in updates if update.get("remove", False)),
+        "added": len(additions),
         "eventCount": len(written_refs),
         "duration": written_scene.duration(),
         "verified": True,

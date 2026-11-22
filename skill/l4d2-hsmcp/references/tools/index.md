@@ -275,7 +275,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `read_vscript_api` | game events and typed fields from `resource/modevents.res`, option catalogue and hooks |
 | `check_vscript_contract` | checks `OnGameEvent_*` hook names and `event_data` fields against the engine's event list |
 | `write_options_probe` | adds a `logic_script` that prints the Director's merged `SessionOptions` at round start |
-| `edit_choreo_events` | retime or re-parameterise existing VCD events, including a speak event's sound; re-serialised through `srctools.choreo.Scene` and read back |
+| `edit_choreo_events` | retime, re-parameterise, remove or add VCD events (speak/firetrigger/stoppoint); re-serialised through `srctools.choreo.Scene` and read back |
 | `read_scenes_image` | scenes.image summary: CRC, duration, last speak, sounds; optional embedded scene details |
 | `read_model_ani` | external `.ani`: `IDAG` header, block byte ranges, clips and sequences per block, gap/overlap/orphan checks |
 | `decompile_model` | compiled `.mdl` -> QC + reference SMDs + animation SMDs + collision SMD, with the original bone weights, attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, shadow LODs, sectioned and external `.ani` clips, multi-blend `$sequence` blocks with fade times and events, `$includemodel` entries, `$contents`/`$bbox`/`$cbox`, `$keyvalues`, `$ikchain`/`$ikautoplaylock`, optional `$definebone` lines, flex VTA frames with their controllers and rules, `$lod` options (`replacebone`, `replacematerial`, `facial`/`nofacial`, `removemodel`, `use_shadowlod_materials`), and `$collisionjoints` ragdolls with their constraints, and single-hull `$collisionmodel` for any root Euler pose |

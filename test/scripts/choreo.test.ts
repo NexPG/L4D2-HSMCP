@@ -160,6 +160,49 @@ describe.skipIf(!has.sidecar)("edit_choreo_events", () => {
     expect(existsSync(`${path}.bak`)).toBe(true);
   });
 
+  it("adds a speak event and removes an existing loop", async () => {
+    const path = copyFixture("add-remove.vcd");
+    const result = (await editChoreoEventsTool.handler(
+      {
+        path,
+        updates: [{ name: "intro_loop", remove: true }],
+        add: [
+          {
+            type: "speak",
+            name: "campaign/new_line",
+            actor: "actor_a",
+            channel: "voice",
+            start: 3.0,
+            end: 4.0,
+            parameters: ["campaign/new_line"],
+          },
+        ],
+        backup: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as { verified: boolean; added: number; removed: number; eventCount: number };
+
+    expect(result.verified).toBe(true);
+    expect(result.added).toBe(1);
+    expect(result.removed).toBe(1);
+    expect(result.eventCount).toBe(2);
+
+    const read = (await readChoreoTool.handler({ path }, ctx)) as unknown as {
+      events: Event[];
+      sounds: string[];
+      duration: number;
+    };
+    expect(read.events.map((event) => event.name)).toEqual([
+      "campaign/test_line",
+      "campaign/new_line",
+    ]);
+    expect(read.events.find((event) => event.name === "campaign/new_line")!.start).toBeCloseTo(3, 6);
+    expect(read.events.find((event) => event.name === "campaign/new_line")!.end).toBeCloseTo(4, 6);
+    expect(read.sounds).toContain("campaign/new_line");
+    expect(read.duration).toBeCloseTo(4, 6);
+  });
+
   it("refuses an event that is not there and an empty update", async () => {
     const path = copyFixture("refused.vcd");
     const before = readFileSync(path);

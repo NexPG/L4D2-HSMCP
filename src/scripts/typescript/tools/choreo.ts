@@ -161,16 +161,38 @@ const EVENT_UPDATE = z.object({
       "Replace the event's parameter slots. A speak event's first parameter is its sound " +
         "name; missing slots are written as empty strings.",
     ),
+  remove: z
+    .boolean()
+    .default(false)
+    .describe("Delete the selected event. Other fields are ignored when this is true."),
+});
+
+const EVENT_ADD = z.object({
+  type: z.enum(["speak", "firetrigger", "stoppoint"]),
+  name: z
+    .string()
+    .min(1)
+    .describe("Event name as the VCD writes it; for speak, the sound is the first parameter."),
+  actor: z.string().min(1).describe("Existing actor to put the event on."),
+  channel: z.string().min(1).describe("Existing channel on that actor, e.g. voice or triggers."),
+  start: z.number().min(0),
+  end: z.number().min(0).nullable().optional(),
+  parameters: z
+    .array(z.string())
+    .max(3)
+    .optional()
+    .describe("Parameter slots; a speak event defaults its first slot to the event name."),
 });
 
 export const editChoreoEventsTool = defineTool({
   name: "edit_choreo_events",
   description:
-    "Edits existing events in a text .vcd choreography timeline: start, end and the three " +
-    "parameter slots. For a speak event the first parameter is the sound name, so this is " +
-    "how a dialogue line is swapped or retimed without Faceposer. Select by event name, " +
+    "Edits a text .vcd choreography timeline: change the start, end and parameter slots of " +
+    "existing events, remove one, or add a speak/firetrigger/stoppoint event to an existing " +
+    "actor channel. For a speak event the first parameter is the sound name, so this is how " +
+    "a dialogue line is created, swapped or retimed without Faceposer. Select by event name, " +
     "optionally narrowed by actor and channel; a name that appears more than once needs " +
-    "occurrence. It cannot add or remove events. The file is re-serialised by " +
+    "occurrence. The file is re-serialised by " +
     "srctools.choreo.Scene and then parsed again: `verified` means every requested field " +
     "came back. Formatting and indentation are normalised, comments are not kept, and the " +
     "semantic round-trip is measured against the stock L4D2 scenes. Read first with " +
@@ -180,7 +202,14 @@ export const editChoreoEventsTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to a text .vcd, absolute or relative to the repo root."),
-    updates: z.array(EVENT_UPDATE).min(1),
+    updates: z
+      .array(EVENT_UPDATE)
+      .default([])
+      .describe("Existing events to retime, re-parameterise or remove."),
+    add: z
+      .array(EVENT_ADD)
+      .default([])
+      .describe("New events to insert into an existing actor channel."),
     backup: BACKUP,
     dryRun: DRY_RUN,
     confirm: CONFIRM,
@@ -190,6 +219,8 @@ export const editChoreoEventsTool = defineTool({
     backup: BACKUP_PATH,
     written: z.boolean(),
     updated: z.number(),
+    removed: z.number(),
+    added: z.number(),
     eventCount: z.number(),
     duration: z.number(),
     verified: z.boolean(),
@@ -201,12 +232,14 @@ export const editChoreoEventsTool = defineTool({
     const before = readFileSync(path, "utf8");
     const reply = (await callSidecar(
       "choreo_edit_events",
-      { path, updates: args.updates },
+      { path, updates: args.updates ?? [], add: args.add ?? [] },
       ctx.config,
       120_000,
     )) as {
       text: string;
       updated: number;
+      removed: number;
+      added: number;
       eventCount: number;
       duration: number;
       verified: boolean;
@@ -227,6 +260,8 @@ export const editChoreoEventsTool = defineTool({
       backup: write.backupPath,
       written: write.written,
       updated: reply.updated,
+      removed: reply.removed,
+      added: reply.added,
       eventCount: reply.eventCount,
       duration: reply.duration,
       verified: reply.verified,

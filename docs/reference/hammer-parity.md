@@ -269,7 +269,7 @@ map and looking, or by not happening at all.
 | `read_model_flexes` | nothing: Hammer cannot inspect a compiled model's flex descriptors, rules or vertex deltas |
 | `read_model_eyes` | nothing: the editor cannot show eyeballs or lids, and L4D2's compiler has no `$eyeball` command to recreate them |
 | `read_model_jiggle` | nothing: the editor cannot show a jigglebone's stiffness, constraints or boing parameters |
-| `edit_choreo_events` | nothing: Faceposer edits a scene by hand, and Hammer cannot open a VCD |
+| `edit_choreo_events` | nothing: Faceposer edits a scene by hand, and Hammer cannot open a VCD; this can also add a speak/trigger event or remove one |
 | `read_choreo` | nothing: choreo scenes are authored in Faceposer, not Hammer |
 | `read_scenes_image` | nothing: the image is engine dialogue metadata |
 | `read_model_ani` | nothing: an external `.ani` block table is not exposed by the editor |
