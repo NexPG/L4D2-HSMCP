@@ -47,12 +47,12 @@ not files already written.
 `addonAICredit` entry in `addoninfo.txt` by default:
 
 ```
-"addonAICredit" "Created by AI via L4D2-HSMCP 0.0.168-alpha"
+"addonAICredit" "Created by AI via L4D2-HSMCP <version>"
 ```
 
-The version is read from the toolkit's `package.json`; do not hard-code an older one. If you
-write `addoninfo.txt` by hand instead of passing it to `run_vpk_pack`, add the same key as
-the last entry. The current skill version is `0.0.168-alpha`.
+The version is read from the toolkit's `package.json`; do not hard-code an older one. Read
+it with `health` or from the package itself, and use the same value in files you write by
+hand. There is deliberately no fixed number in this skill: a number here would drift.
 
 ## Route the task first
 
@@ -63,6 +63,10 @@ the last entry. The current skill version is `0.0.168-alpha`.
 | Rebuild, pack and deploy | `workflows/build-and-deploy.md` |
 | Check a build in game | `workflows/playtest.md` |
 | Make a prop/model without a DCC | `workflows/make-a-prop.md` |
+| Re-skin or move a HUD screen | `workflows/hud-override.md` |
+| Change a material or resolve a patch | `workflows/material-edit.md` |
+| Fix baked lighting without vrad | `workflows/compiled-light-fix.md` |
+| Build exactly what the editor's Run Map would | `workflows/editor-sequence.md` |
 | Campaign missing from the menu | `troubleshooting/campaign-not-in-menu.md` |
 | Chapter does not change | `troubleshooting/chapter-does-not-change.md` |
 | Bots wander instead of advancing | `troubleshooting/bots-wander.md` |
@@ -77,6 +81,11 @@ the last entry. The current skill version is `0.0.168-alpha`.
 |---|---|
 | `workflows/from-a-wish.md` | the user describes a campaign instead of naming files |
 | `workflows/new-campaign.md` | the spec exists and the first .vmf is about to be written |
+| `workflows/make-a-prop.md` | a model or prop from glTF/FBX or a brush, through StudioMDL |
+| `workflows/hud-override.md` | reading a stock `.res`, shifting controls and writing an add-on copy |
+| `workflows/material-edit.md` | changing one VMT value, checking a patch include and packing a reskin |
+| `workflows/compiled-light-fix.md` | patching one face's baked LDR lightmap without recompiling |
+| `workflows/editor-sequence.md` | running the editor's own Run Map steps, and when not to |
 | `references/campaign/mission-file.md` | writing or debugging a mission file |
 | `references/campaign/safe-room-and-transition.md` | building a chapter exit |
 | `references/campaign/finale.md` | building or debugging the last chapter |
@@ -190,6 +199,17 @@ the last entry. The current skill version is `0.0.168-alpha`.
   (`No Steam logon`), and no dedicated server is installed here. `run_map_test` proves map
   load, mode script and HUD; a real Versus/Scavenge round still needs a server or a second
   account. See `references/testing/multi-client.md`.
+- **HDR baked-light editing.** `write_bsp_lightmap` patches LDR RGB only. HDR is RGBE; the
+  tool refuses it rather than changing the exponent's meaning. Compile `-both` and use the
+  LDR lump, or recompile with vrad.
+- **Evaluating HUD conditions.** `read_hud` shows `[$WIN32]`/`[!$OSX]`; it does not decide
+  which ones apply, and `write_hud` edits existing controls rather than creating new ones.
+- **A full patch chain in `check_vmt`.** It resolves the first `include` and reports its
+  base shader/`$basetexture`; a patch that includes another patch is named as the next
+  link, not merged into an effective material.
+- **Arbitrary executables and the game launch in `run_compile_sequence`.** It runs the
+  three compiler aliases and the file steps; `$game_exe` is skipped and any other executable
+  is refused. Use `run_compile` for `func_instance` maps, which the sequence runner refuses.
 - **A full Survival wave.** Setup and HUD are verified; the round still starts from the
   map's own `trigger_finale` or `ForcePanicEvent`, which the map author must place.
 - **HLMV's 3D canvas in a headless session.** The editor launches and its UI captures; the

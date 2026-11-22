@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.202-alpha - 2026-11-22
+
+- **The skill is served as MCP resources**: every Markdown page under `skill/l4d2-hsmcp` is
+  registered under `l4d2-hsmcp://skill/...`, so a client with only the server can read the
+  entry page, the workflows and the references. `skill` is included in the npm package;
+  `dist` alone was not enough for that promise.
+- **Skill route pages for the new capabilities**: a HUD override, a material edit with patch
+  resolution, a compiled-light fix, and the editor's own Run Map sequence. The route and
+  reference tables in `SKILL.md` point at them.
+- **The skill no longer hard-codes its own version.** It says to read `package.json` and
+  gives `<version>` in the `addonAICredit` example, so a version bump cannot leave stale
+  text behind.
+- **Skill link test**: every workflow page must be routed from `SKILL.md`, and every
+  backticked Markdown link must resolve under the skill or the repository.
+- **Tool count: 270.** Tests: 221 files, 1,874 passed, 33 skipped.
+
 ## 0.0.201-alpha - 2026-11-22
 
 - **`write_bsp_lightmap`**: patches one compiled face's baked LDR lightmap in place, by

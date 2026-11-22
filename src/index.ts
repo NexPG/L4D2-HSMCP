@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadConfig } from "./core/typescript/config.js";
 import { runInstall } from "./core/typescript/install.js";
@@ -7,6 +9,7 @@ import { sweepWindows } from "./core/typescript/process/windows.js";
 import { ToolRegistry } from "./core/typescript/mcp/registry.js";
 import type { ToolContext } from "./core/typescript/mcp/registry.js";
 import { createMcpServer } from "./core/typescript/mcp/server.js";
+import { registerSkillResources } from "./core/typescript/mcp/skill.js";
 
 /**
  * Handed to the client at connection time.
@@ -28,7 +31,10 @@ large map would stall this transport.
 
 Realms: \`map\` is pure file work, \`local\` shells out to a host binary. Tools that write
 or execute are guarded and take confirm:true. It never talks to a running game or a
-dedicated server and holds no lock.`;
+dedicated server and holds no lock.
+
+The L4D2-HSMCP skill is also served as MCP resources under \`l4d2-hsmcp://skill/\`: start
+with \`l4d2-hsmcp://skill/SKILL.md\`, then the workflow or reference it names.`;
 import { allTools } from "./registry.js";
 import { preapprove } from "./core/typescript/mcp/preapprove.js";
 import { VERSION } from "./core/typescript/version.js";
@@ -74,12 +80,15 @@ async function main(): Promise<void> {
     version: VERSION,
     instructions: INSTRUCTIONS,
   });
+  const skillRoot = join(import.meta.dirname, "..", "skill", "l4d2-hsmcp");
+  const skillCount = existsSync(skillRoot) ? registerSkillResources(server, skillRoot) : 0;
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(
     `hammer-mcp ${VERSION} ready -- repoRoot=${config.repoRoot} ` +
-      `platform=${process.platform} tools=${registry.list().length}\n`,
+      `platform=${process.platform} tools=${registry.list().length} ` +
+      `skillResources=${skillCount}\n`,
   );
 }
 
