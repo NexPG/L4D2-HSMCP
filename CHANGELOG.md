@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.212-alpha - 2026-11-22
+
+- **`write_bsp_overlay`**: patches one compiled overlay's texinfo, render order, U/V ranges,
+  four UV points, origin or basis normal in place. The record stays 352 bytes and no lump or
+  face offset moves, so a compiled decal can be corrected without vbsp. `out`, `backup` and
+  `dryRun` work as on the other compiled-map writers; every changed field is read back.
+- **`read_bsp_overlays`** shares the same record reader, so the reader and writer cannot
+  disagree about the layout.
+- **Tool count: 271.** Tests: 222 files, 1,887 passed, 33 skipped.
+
 ## 0.0.211-alpha - 2026-11-22
 
 - **`check_vmt` follows a patch chain**: the include is resolved, and if it is itself a

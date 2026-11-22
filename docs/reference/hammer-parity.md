@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **270 tools**.
+Last checked against the tool list on 22/11/2026: **271 tools**.
 
 ## The file itself
 
@@ -282,6 +282,7 @@ map and looking, or by not happening at all.
 | `write_bsp_lightmap` | nothing: Hammer cannot edit baked luxels, and vrad would rebuild the whole map |
 | `read_bsp_vis` | `mat_leafvis` shows the leaf the player is in; this decodes PVS cluster vectors |
 | `read_bsp_overlays` | nothing: vbsp replaces `info_overlay` with a 352-byte compiled record |
+| `write_bsp_overlay` | nothing: Hammer edits the source `info_overlay`; a compiled 352-byte record is not exposed |
 | `diff_vmf` | a textual diff of a map is unreadable; this says which brushes, entities and worldspawn keys changed |
 | `review_map` | no editor runs the whole checklist in one call, and none distinguishes clean from a check that did not run |
 | `check_bsp` | nothing says whether a compiled map is structurally sound or stale against its VMF |

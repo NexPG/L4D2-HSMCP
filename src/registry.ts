@@ -85,7 +85,7 @@ import { navTroubleTools } from "./nav/typescript/tools/navtrouble.js";
 import { optimiseTools } from "./maps/typescript/tools/optimise.js";
 import { organiseTools } from "./maps/typescript/tools/organise.js";
 import { overlayTools } from "./maps/typescript/tools/overlay.js";
-import { overlayReadTools } from "./maps/typescript/tools/overlays.js";
+import { overlayTools as bspOverlayTools } from "./maps/typescript/tools/overlays.js";
 import { pakfileAddTools } from "./maps/typescript/tools/pakfileadd.js";
 import { pakfileTools } from "./packages/typescript/tools/pakfile.js";
 import { planTools } from "./maps/typescript/tools/plan.js";
@@ -279,7 +279,7 @@ export const allTools: AnyToolDef[] = [
   ...choreoTools,
   ...vscriptTools,
   ...overlayTools,
-  ...overlayReadTools,
+  ...bspOverlayTools,
   ...instanceTools,
   ...skyboxTools,
   ...skyboxCopyTools,

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-270 tools. This page groups them by the job you are doing; each tool's own description is the
+271 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -103,6 +103,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_bsp_lightmap` | scale/add one face's baked LDR luxels without moving any lump or face offset |
 | `read_bsp_vis` | PVS: cluster table, vector sizes, and one cluster's visible set |
 | `read_bsp_overlays` | compiled overlay records: faces, material, UV basis, origin and normal |
+| `write_bsp_overlay` | patch one compiled overlay's texinfo, UVs, origin or normal in place |
 | `check_bsp` | header/lump integrity, and whether the compiled map still matches its VMF |
 | `edit_bsp_entities` | add/update/remove entities in a compiled map, append-only |
 | `read_map_extents` | real map size from the world model |

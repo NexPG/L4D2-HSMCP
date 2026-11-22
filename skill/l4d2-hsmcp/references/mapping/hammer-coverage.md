@@ -79,6 +79,7 @@ covered: this table is the summary.
 | Baked lightmap editing | `write_bsp_lightmap` | **verified on an installed map with an LDR lump**: scaling one face by 0.5 changed only that face, the file length stayed identical, and the reader reported the new average |
 | PVS | `read_bsp_vis` | **verified on `c1m1_hotel`**: 1,812 clusters, 227-byte vectors, cluster 0's visible set decoded |
 | Compiled overlays | `read_bsp_overlays` | **verified**: `c1m1_hotel` has 156 records; the decoded one is `decals/blood7` over faces 3182/4046. A one-overlay test map decodes as `decals/blood1`, 4 faces, normal +Z |
+| Compiled overlay editing | `write_bsp_overlay` | **verified**: a record's origin was shifted in place, the file length stayed the same, the backup existed, and the reader returned the new origin; `out` left the source alone |
 | Light entities | `write_light` for point/environment/dynamic/sun/shadow, `edit_vmf` for the rest | verified: the five kinds compile into the entity lump; `_light` is the four-number form and `light_environment` gets angles/ambient (`tools-compile.test.ts`) |
 | Postprocess | `write_postprocess` | verified: a tonemap controller wired to `logic_auto` with three `OnMapSpawn` outputs compiles; `color_correction` is the L4D2 class name, not `colorcorrection` |
 | Decals | `write_decal` for `infodecal`, `write_overlay` for a sized overlay | verified: decals written at surface points reach the entity lump |
