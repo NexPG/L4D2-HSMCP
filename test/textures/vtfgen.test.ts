@@ -15,6 +15,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { crc32 } from "../../src/formats/typescript/formats/vpk.js";
 import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
 import { readVtfTool } from "../../src/textures/typescript/tools/vtf.js";
+import { writeVtfTool } from "../../src/textures/typescript/tools/vtfgen.js";
 import { config, has } from "../support/env.js";
 import { ctx } from "../support/env.js";
 
@@ -227,5 +228,68 @@ describe.skipIf(!installed)("write_vtf", () => {
     await expect(
       callSidecar("vtf_write", { path: join(scratch, "small.vtf"), image, version: "7.9" }, config),
     ).rejects.toThrow(/7\.2 through 7\.5/);
+  });
+});
+
+describe.skipIf(!installed)("write_vtf frames", () => {
+  it("writes an animated VTF and verifies every frame", async () => {
+    const first = join(scratch, "frame_a.png");
+    const second = join(scratch, "frame_b.png");
+    writeFileSync(first, png(8, 8, gradient(8, 8)));
+    const flipped = gradient(8, 8);
+    for (let at = 0; at < flipped.length; at += 4) {
+      flipped[at] = 255 - flipped[at]!;
+      flipped[at + 1] = 255 - flipped[at + 1]!;
+    }
+    writeFileSync(second, png(8, 8, flipped));
+    const path = join(scratch, "animated.vtf");
+
+    const result = await callSidecar<WriteResult & { frameCount: number; images: string[] }>(
+      "vtf_write",
+      { path, frames: [first, second], resize: "none" },
+      config,
+    );
+    expect(result.frameCount).toBe(2);
+    expect(result.images).toEqual([first, second]);
+    expect(result.verified).toBe(true);
+    expect(result.format).toBe("BGRA8888");
+
+    const header = (await readVtfTool.handler({ path }, ctx as never)) as {
+      frames: number;
+      width: number;
+      height: number;
+    };
+    expect(header.frames).toBe(2);
+    expect(header.width).toBe(8);
+    expect(header.height).toBe(8);
+  });
+
+  it("passes frames through the write_vtf tool", async () => {
+    const first = join(scratch, "tool_a.png");
+    const second = join(scratch, "tool_b.png");
+    writeFileSync(first, png(8, 8, gradient(8, 8)));
+    writeFileSync(second, png(8, 8, gradient(8, 8)));
+    const path = join(scratch, "tool-animated.vtf");
+    const result = (await writeVtfTool.handler(
+      { path, frames: [first, second], confirm: true } as never,
+      ctx as never,
+    )) as { frameCount: number; images: string[]; verified: boolean };
+    expect(result.frameCount).toBe(2);
+    expect(result.images).toEqual([first, second]);
+    expect(result.verified).toBe(true);
+  });
+
+  it("refuses frames that do not share dimensions", async () => {
+    const first = join(scratch, "size_a.png");
+    const second = join(scratch, "size_b.png");
+    writeFileSync(first, png(8, 8, gradient(8, 8)));
+    writeFileSync(second, png(4, 4, gradient(4, 4)));
+    await expect(
+      callSidecar(
+        "vtf_write",
+        { path: join(scratch, "size-mismatch.vtf"), frames: [first, second], resize: "none" },
+        config,
+      ),
+    ).rejects.toThrow(/share dimensions/);
   });
 });

@@ -5,6 +5,13 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.210-alpha - 2026-11-22
+
+- **`write_vtf` writes animated textures**: `frames` takes an ordered list of PNGs, writes
+  one VTF with `frameCount` matching, and verifies every frame through the reader, not just
+  the first. Every frame must share dimensions; the error names the odd one out.
+- **Tool count: 270.** Tests: 222 files, 1,884 passed, 33 skipped.
+
 ## 0.0.209-alpha - 2026-11-22
 
 - **`read_asset_catalog` honours the material browser's exclusions**: the

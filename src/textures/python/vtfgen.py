@@ -76,29 +76,51 @@ def _resize(rgba: bytes, width: int, height: int, new_width: int, new_height: in
 
 
 def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
-    """Writes a VTF from a PNG, then reads it back and compares the pixels."""
+    """Writes a VTF from one PNG, or an animated one from several, and verifies the pixels."""
     from srctools.vtf import ImageFormats, VTF, VTFFlags
 
-    image_path = Path(str(req.get("image", ""))).resolve()
-    if not image_path.is_file():
-        raise ValueError(f"{image_path} does not exist")
-    if image_path.suffix.lower() != ".png":
+    raw_frames = req.get("frames")
+    if raw_frames is not None:
+        if not isinstance(raw_frames, list) or not raw_frames:
+            raise ValueError("frames must be a non-empty list of PNG paths")
+        image_paths = [Path(str(item)).resolve() for item in raw_frames]
+    else:
+        image_paths = [Path(str(req.get("image", ""))).resolve()]
+
+    decoded_frames: list[tuple[int, int, bytes]] = []
+    for image_path in image_paths:
+        if not image_path.is_file():
+            raise ValueError(f"{image_path} does not exist")
+        if image_path.suffix.lower() != ".png":
+            raise ValueError(
+                f"{image_path.suffix or 'a file with no extension'} is not a PNG. This writer "
+                "takes PNG because that is what this server can decode without an external "
+                "library; run_vtf_convert takes TGA and the rest through VTFCmd."
+            )
+        try:
+            decoded = decode_png(image_path.read_bytes())
+        except ImageError as exc:
+            raise ValueError(f"{image_path.name}: {exc}") from exc
+        width = int(decoded["width"])
+        height = int(decoded["height"])
+        rgba = decoded["rgba"]
+        assert isinstance(rgba, bytes)
+        decoded_frames.append((width, height, rgba))
+
+    first_width, first_height, _ = decoded_frames[0]
+    mismatched = [
+        path
+        for path, (width, height, _) in zip(image_paths, decoded_frames, strict=True)
+        if (width, height) != (first_width, first_height)
+    ]
+    if mismatched:
         raise ValueError(
-            f"{image_path.suffix or 'a file with no extension'} is not a PNG. This writer takes "
-            "PNG because that is what this server can decode without an external library; "
-            "run_vtf_convert takes TGA and the rest through VTFCmd."
+            "animated VTF frames must share dimensions; "
+            + ", ".join(f"{p.name} is not {first_width}x{first_height}" for p in mismatched)
         )
 
-    try:
-        decoded = decode_png(image_path.read_bytes())
-    except ImageError as exc:
-        raise ValueError(f"{image_path.name}: {exc}") from exc
-
-    width = int(decoded["width"])
-    height = int(decoded["height"])
-    rgba = decoded["rgba"]
-    assert isinstance(rgba, bytes)
-
+    width = first_width
+    height = first_height
     resize = str(req.get("resize", "nearest")).lower()
     if resize not in {"nearest", "bilinear", "none"}:
         raise ValueError("resize must be nearest, bilinear or none")
@@ -110,9 +132,13 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
                 'resize: "nearest" or "bilinear" to scale it, or resize the source.'
             )
         new_width, new_height = _next_pot(width), _next_pot(height)
-        rgba = _resize(rgba, width, height, new_width, new_height, resize)
+        decoded_frames = [
+            (new_width, new_height, _resize(rgba, width, height, new_width, new_height, resize))
+            for _, _, rgba in decoded_frames
+        ]
         width, height = new_width, new_height
 
+    frame_count = len(decoded_frames)
     fmt_name = str(req.get("format", "BGRA8888")).upper()
     if fmt_name not in _WRITABLE:
         raise ValueError(
@@ -139,7 +165,10 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     # VTFEdit/sourcepp set the alpha flag so the engine knows the texture has transparency.
     # Without it an alpha-tested material can render opaque on some shaders. BGRX stores no
     # alpha, so it is never flagged; DXT1 keeps one bit, DXT5 and the 32-bit formats eight.
-    has_alpha = fmt_name != "BGRX8888" and any(rgba[at] < 255 for at in range(3, len(rgba), 4))
+    has_alpha = fmt_name != "BGRX8888" and any(
+        any(rgba[at] < 255 for at in range(3, len(rgba), 4))
+        for _, _, rgba in decoded_frames
+    )
     alpha_mode = "none"
     if has_alpha:
         if fmt_name == "DXT1":
@@ -151,11 +180,23 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
 
     # Reflectivity is the average colour the engine uses for bounced light. Zero is legal
     # but makes a bright texture light its surroundings as if it were black.
-    pixels = max(1, len(rgba) // 4)
+    pixels = sum(max(1, len(rgba) // 4) for _, _, rgba in decoded_frames)
     reflectivity = (
-        round(sum(rgba[at] for at in range(0, len(rgba), 4)) / (255 * pixels), 4),
-        round(sum(rgba[at] for at in range(1, len(rgba), 4)) / (255 * pixels), 4),
-        round(sum(rgba[at] for at in range(2, len(rgba), 4)) / (255 * pixels), 4),
+        round(
+            sum(rgba[at] for _, _, rgba in decoded_frames for at in range(0, len(rgba), 4))
+            / (255 * pixels),
+            4,
+        ),
+        round(
+            sum(rgba[at] for _, _, rgba in decoded_frames for at in range(1, len(rgba), 4))
+            / (255 * pixels),
+            4,
+        ),
+        round(
+            sum(rgba[at] for _, _, rgba in decoded_frames for at in range(2, len(rgba), 4))
+            / (255 * pixels),
+            4,
+        ),
     )
 
     if fmt_name in {"DXT1", "DXT5"}:
@@ -167,13 +208,15 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         ref=reflectivity,
         flags=flags,
         fmt=ImageFormats[fmt_name],
+        frames=frame_count,
         thumb_fmt=ImageFormats.NONE,
     )
-    frame = vtf.get()
-    # `Frame._data` is RGBA8888 in this library's own convention and `save()` converts to
-    # the target format. There is no public setter for a whole frame, and filling pixel by
-    # pixel would turn a 2048² texture into four million Python calls.
-    frame._data = array("B", rgba)  # noqa: SLF001 -- the library's documented frame storage
+    for index, (_, _, rgba) in enumerate(decoded_frames):
+        frame = vtf.get(frame=index)
+        # `Frame._data` is RGBA8888 in this library's own convention and `save()` converts to
+        # the target format. There is no public setter for a whole frame, and filling pixel by
+        # pixel would turn a 2048² texture into four million Python calls.
+        frame._data = array("B", rgba)  # noqa: SLF001 -- the library's documented frame storage
     # The constructor records the *last mip index* while a VTF header stores the *number of
     # mips* (a stock 32x32 file reads 6 for mips 0-5). Without this, save() writes
     # `range(count)` and silently drops the smallest level.
@@ -190,40 +233,52 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     # open is the failure this check exists to catch.
     with path.open("rb") as fh:
         back = VTF.read(fh)
-        back_frame = back.get()
-        back_frame.load()
-    written_rgba = bytes(back_frame._data)  # noqa: SLF001
-    expected = rgba
+        if back.frame_count != frame_count:
+            raise ValueError(
+                f"the file was written with {frame_count} frame(s) but reads back as "
+                f"{back.frame_count}"
+            )
+        written_frames: list[bytes] = []
+        for index in range(frame_count):
+            back_frame = back.get(frame=index)
+            back_frame.load()
+            written_frames.append(bytes(back_frame._data))  # noqa: SLF001
+
+    expected_frames = [rgba for _, _, rgba in decoded_frames]
     if fmt_name == "BGRX8888":
-        opaque = bytearray(rgba)
-        opaque[3::4] = b"\xff" * (len(rgba) // 4)
-        expected = bytes(opaque)
+        opaque: list[bytes] = []
+        for rgba in expected_frames:
+            converted = bytearray(rgba)
+            converted[3::4] = b"\xff" * (len(rgba) // 4)
+            opaque.append(bytes(converted))
+        expected_frames = opaque
 
     if fmt_name in {"DXT1", "DXT5"}:
         # A DXT block is lossy by definition. Comparing bytes would report every correct
         # write as a failure; comparing nothing would make `verified` meaningless. Measure
         # the error and state it. DXT1 stores one bit of alpha, so a pixel the source marks
-        # transparent has no meaningful RGB — comparing it would measure the colour of
+        # transparent has no meaningful RGB -- comparing it would measure the colour of
         # "transparent", not the encoder.
         total = 0
         peak = 0
         samples = 0
         alpha_bits_kept = True
-        for at in range(0, len(expected), 4):
-            source_alpha = expected[at + 3]
-            if fmt_name == "DXT1":
-                if source_alpha < 128:
-                    if written_rgba[at + 3] >= 128:
+        for expected, written in zip(expected_frames, written_frames, strict=True):
+            for at in range(0, len(expected), 4):
+                source_alpha = expected[at + 3]
+                if fmt_name == "DXT1":
+                    if source_alpha < 128:
+                        if written[at + 3] >= 128:
+                            alpha_bits_kept = False
+                        continue
+                    if written[at + 3] < 128:
                         alpha_bits_kept = False
-                    continue
-                if written_rgba[at + 3] < 128:
-                    alpha_bits_kept = False
-            channels = 3 if fmt_name == "DXT1" else 4
-            for channel in range(channels):
-                delta = abs(expected[at + channel] - written_rgba[at + channel])
-                total += delta
-                peak = max(peak, delta)
-                samples += 1
+                channels = 3 if fmt_name == "DXT1" else 4
+                for channel in range(channels):
+                    delta = abs(expected[at + channel] - written[at + channel])
+                    total += delta
+                    peak = max(peak, delta)
+                    samples += 1
         mean_error = round(total / samples, 3) if samples else 0.0
         max_error = peak
         verified = mean_error <= 48 and alpha_bits_kept
@@ -231,20 +286,24 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
     else:
         mean_error = 0.0
         max_error = 0
-        verified = written_rgba == expected
+        verified = all(expected == written for expected, written in zip(expected_frames, written_frames, strict=True))
         alpha_preserved = True
 
+    frame_note = "" if frame_count == 1 else f" The VTF has {frame_count} frames; "
     note = (
-        "Pixels were compared with the source after a round-trip through the VTF reader. "
+        frame_note
+        + "Pixels were compared with the source after a round-trip through the VTF reader. "
         "A BGRX8888 copy is opaque: alpha was forced to 255 before comparing."
         if fmt_name == "BGRX8888"
         else (
-            "DXT is lossy, so `verified` means the measured mean error is at most 48/255 "
+            frame_note
+            + "DXT is lossy, so `verified` means the measured mean error is at most 48/255 "
             f"({mean_error}); `maxError` is the worst single channel. DXT1 keeps at most "
             "one bit of alpha. vtex or VTFCmd produce a higher-quality DXT from the same "
             "source if quality matters more than independence."
             if fmt_name in {"DXT1", "DXT5"}
-            else "Pixels were compared with the source after a round-trip through the VTF "
+            else frame_note
+            + "Pixels were compared with the source after a round-trip through the VTF "
             "reader. An uncompressed VTF is larger than DXT1/DXT5; vtex or VTFCmd can "
             "compress the same image if the addon's size matters."
         )
@@ -254,7 +313,9 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         "path": str(path),
         "written": True,
         "bytes": path.stat().st_size,
-        "image": str(image_path),
+        "image": str(image_paths[0]),
+        "images": [str(item) for item in image_paths],
+        "frameCount": frame_count,
         "version": f"{back.version[0]}.{back.version[1]}",
         "width": back.width,
         "height": back.height,
@@ -274,6 +335,7 @@ def vtf_write(req: dict[str, Any]) -> dict[str, Any]:
         "alphaPreserved": alpha_preserved,
         "note": note,
     }
+
 
 def _read_vtf_frame(path: Path, face: str | None = None):
     from srctools.vtf import CubeSide, VTF

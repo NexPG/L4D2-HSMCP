@@ -13,4 +13,4 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_vtf` | Reads a `.vtf` header: version, dimensions, flags, frames, format name and whether it is a cubemap. |
 | `run_vtf_convert` | Converts an image (.tga, .png, .bmp, .jpg ...) into a .vtf the engine can load, written beside the source. |
 | `write_cubemap_vtf` | Builds a six-face cubemap .vtf from six PNGs, with the VTF CubeSide order stated explicitly (right, left, back, front, up, down). |
-| `write_vtf` | Turns a PNG into a .vtf the engine can load, without VTFCmd or vtex. |
+| `write_vtf` | Turns one PNG, or an ordered set of PNG frames, into a .vtf the engine can load, without VTFCmd or vtex. |

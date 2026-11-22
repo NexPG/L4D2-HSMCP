@@ -321,7 +321,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `run_tga2skybox` | six TGAs into LDR and HDR cubemaps |
 | `run_cubemap2hdr` | LDR cubemap to HDR `.vtf` |
 | `run_vtf_convert` | an image to `.vtf` with VTFCmd; reads the header back to say which format came out |
-| `write_vtf` | PNG to `.vtf` natively, with mipmaps and a pixel round-trip; no VTFCmd needed |
+| `write_vtf` | PNG to `.vtf` natively, with mipmaps and a pixel round-trip; `frames` writes an animated VTF; no VTFCmd needed |
 | `convert_vtf` | reformat/resize an existing `.vtf` (DXT included) and verify the result |
 | `write_cubemap_vtf` | six named PNG faces into a cubemap VTF, every face verified |
 | `extract_vtf` | decode any `.vtf` to a PNG the agent can look at |

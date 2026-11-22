@@ -175,7 +175,7 @@ direct recompile cannot overwrite the source.
 | Decompile a compiled model | `decompile_model` - QC + reference SMDs + animation SMDs + collision SMD; attachments, custom hitboxes, skin families, bodygroup alternatives, LOD replacements, flex VTA; bodygroup presets are reported |
 | Open in HLMV | `run_hlmv`; prefers HLMV++, probes it, falls back to stock HLMV on a crash, creates the model's loose folder tree first (HLMV cannot open a VPK model without it), captures and closes by default, `close:false` leaves it for a person |
 | Clear leftover editor/model/game windows | `close_windows` (dry-run first; Hammer needs `force` to discard unsaved work) |
-| Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `run_vtf_convert` for TGA/DDS through VTFCmd |
+| Make a texture from a PNG | `write_vtf` (native, 7.4, full mip chain, DXT1/DXT5); `frames` for an animated sheet; `run_vtf_convert` for TGA/DDS through VTFCmd |
 | Reformat or resize a shipped VTF | `convert_vtf` — decode, resize, re-encode, verify |
 | Look at a texture directly | `extract_vtf` — any VTF to a PNG, no VMT needed; `face` selects a cubemap side |
 | Build a cubemap | `write_cubemap_vtf` — six named PNG faces, verified one by one |

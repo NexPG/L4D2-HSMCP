@@ -15,19 +15,32 @@ import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 export const writeVtfTool = defineTool({
   name: "write_vtf",
   description:
-    "Turns a PNG into a .vtf the engine can load, without VTFCmd or vtex. Decodes the PNG " +
-    "itself (non-interlaced, 8/16-bit, grey/RGB/palette/RGBA), scales a non-power-of-two " +
-    "image to the next power of two when asked, builds the full mip chain, and writes VTF " +
-    "7.4 - the version every L4D2 material uses, measured on the stock pak. Formats are " +
-    "BGRA8888/RGBA8888 (lossless), BGRX8888 (opaque) and DXT1/DXT5 (this server's encoder). " +
-    "The alpha flag (one-bit for DXT1, eight-bit otherwise) and the average reflectivity are " +
-    "set, so transparency and bounced light are not left at zero. The file is read back and " +
-    "pixels are compared - exactly for lossless, by measured error for DXT - so `verified` " +
-    "means the round-trip matched. Needs the Python sidecar.",
+    "Turns one PNG, or an ordered set of PNG frames, into a .vtf the engine can load, " +
+    "without VTFCmd or vtex. Decodes the PNG itself (non-interlaced, 8/16-bit, " +
+    "grey/RGB/palette/RGBA), scales a non-power-of-two image to the next power of two when " +
+    "asked, builds the full mip chain, and writes VTF 7.4 - the version every L4D2 material " +
+    "uses, measured on the stock pak. `frames` writes an animated texture; every frame must " +
+    "share dimensions. Formats are BGRA8888/RGBA8888 (lossless), BGRX8888 (opaque) and " +
+    "DXT1/DXT5 (this server's encoder). The alpha flag (one-bit for DXT1, eight-bit " +
+    "otherwise) and the average reflectivity are set, so transparency and bounced light are " +
+    "not left at zero. The file is read back and pixels are compared - exactly for lossless, " +
+    "by measured error for DXT - so `verified` means the round-trip matched. Needs the " +
+    "Python sidecar.",
   realm: "local",
   guarded: true,
   inputSchema: {
-    image: z.string().describe("Path to the source .png, absolute or relative to the repo root."),
+    image: z
+      .string()
+      .optional()
+      .describe("Path to the single source .png, absolute or relative to the repo root."),
+    frames: z
+      .array(z.string())
+      .min(2)
+      .optional()
+      .describe(
+        "Ordered PNG frames for an animated VTF. Give this instead of `image`; every frame " +
+          "must share dimensions.",
+      ),
     path: z
       .string()
       .describe("Where to write the .vtf. The .vtf suffix is added if missing."),
@@ -56,6 +69,8 @@ export const writeVtfTool = defineTool({
     written: z.boolean(),
     bytes: z.number(),
     image: z.string(),
+    images: z.array(z.string()),
+    frameCount: z.number(),
     version: z.string(),
     width: z.number(),
     height: z.number(),
@@ -75,8 +90,15 @@ export const writeVtfTool = defineTool({
     note: z.string(),
   },
   handler: async (args, ctx) => {
-    const image = resolveInput(args.image, ctx.config);
-    if (!existsSync(image)) throw new Error(`${image} does not exist`);
+    if ((args.image === undefined) === (args.frames === undefined)) {
+      throw new Error("give exactly one of `image` or `frames`");
+    }
+    const images = (args.frames ?? (args.image ? [args.image] : [])).map((item) =>
+      resolveInput(item, ctx.config),
+    );
+    for (const image of images) {
+      if (!existsSync(image)) throw new Error(`${image} does not exist`);
+    }
     const requested = resolveInput(args.path, ctx.config);
     const path = requested.toLowerCase().endsWith(".vtf") ? requested : `${requested}.vtf`;
     if (existsSync(path) && !args.overwrite) {
@@ -85,7 +107,7 @@ export const writeVtfTool = defineTool({
     const result = (await callSidecar(
       "vtf_write",
       {
-        image,
+        ...(args.frames ? { frames: images } : { image: images[0] }),
         path,
         format: args.format,
         version: args.version,
