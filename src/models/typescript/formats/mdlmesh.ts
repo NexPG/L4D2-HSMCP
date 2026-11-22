@@ -89,8 +89,18 @@ export interface ModelBodyPartModel {
 
 export interface ModelBodyPart {
   name: string;
+  /** Mixed-radix base used by `$bodygrouppreset` decoding. */
+  base: number;
   /** Alternatives in bodygroup-value order; index 0 is the default. */
   models: ModelBodyPartModel[];
+}
+
+export interface ModelBodyGroupPreset {
+  name: string;
+  value: number;
+  mask: number;
+  /** The bodypart values the preset selects, in body-part order. */
+  parts: Array<{ part: string; index: number }>;
 }
 
 export interface ModelGeometry {
@@ -109,6 +119,8 @@ export interface ModelGeometry {
   meshes: ModelMesh[];
   /** Every body part and every bodygroup alternative, at LOD 0. */
   bodyParts: ModelBodyPart[];
+  /** `$bodygrouppreset` entries; empty when the model has none. */
+  presets: ModelBodyGroupPreset[];
   /** The LOD-0 fixed vertex list the VTA basis frame and flex indices refer to. */
   lod0Vertices: ModelVertex[];
   /** Flex descriptors, controllers and rules from the header. */
@@ -262,6 +274,8 @@ interface MdModel {
 interface MdBodyPart {
   name: string;
   modelCount: number;
+  /** Mixed-radix base for bodygroup presets. */
+  base: number;
   models: MdModel[];
 }
 
@@ -272,9 +286,10 @@ function readBodyParts(mdl: Buffer, header: MdlHeader): MdBodyPart[] {
     if (base + 16 > mdl.length) break;
     const name = readName(mdl, base + mdl.readInt32LE(base), base + 16);
     const modelCount = mdl.readInt32LE(base + 4);
+    const partBase = mdl.readInt32LE(base + 8);
     const modelsOffset = mdl.readInt32LE(base + 12);
     if (modelCount <= 0 || modelCount > 256) {
-      parts.push({ name, modelCount, models: [] });
+      parts.push({ name, modelCount, base: partBase, models: [] });
       continue;
     }
     const models: MdModel[] = [];
@@ -304,7 +319,7 @@ function readBodyParts(mdl: Buffer, header: MdlHeader): MdBodyPart[] {
         meshes,
       });
     }
-    parts.push({ name, modelCount, models });
+    parts.push({ name, modelCount, base: partBase, models });
   }
   return parts;
 }
@@ -711,6 +726,51 @@ function buildModelMeshes(
  * checksums disagree, so a mismatched `.vvd`/`.vtx` pair is refused rather than drawn as a
  * different model's mesh.
  */
+/**
+ * Decodes the v49 `$bodygrouppreset` table.
+ *
+ * A preset is a mixed-radix number: the mask says which multi-model parts participate,
+ * `base` is the radix, and `value` carries one digit per participating part. Crowbar's
+ * `WriteBodyGroupPresetCommand` walks the parts backwards and subtracts `base` from the mask
+ * and the value; that is the only published description of the encoding, and it is what this
+ * function implements. Records are 12 bytes at header offset 448; the name offset is relative
+ * to the record, and the two header fields are at 444 (count) and 448 (offset).
+ */
+function readBodyGroupPresets(
+  mdl: Buffer,
+  parts: readonly ModelBodyPart[],
+): ModelBodyGroupPreset[] {
+  if (mdl.length < 452) return [];
+  const count = mdl.readInt32LE(444);
+  const offset = mdl.readInt32LE(448);
+  if (count <= 0 || count > 1024 || offset <= 0 || offset + 12 > mdl.length) return [];
+  const presets: ModelBodyGroupPreset[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const at = offset + i * 12;
+    if (at + 12 > mdl.length) break;
+    const nameOffset = mdl.readInt32LE(at);
+    const value = mdl.readInt32LE(at + 4);
+    const mask = mdl.readInt32LE(at + 8);
+    const name = nameOffset > 0 ? readName(mdl, at + nameOffset) : "";
+    let accumMask = mask;
+    let accumValue = value;
+    const selected: Array<{ part: string; index: number }> = [];
+    for (let partIndex = parts.length - 1; partIndex >= 0; partIndex -= 1) {
+      const part = parts[partIndex]!;
+      if (part.models.length <= 1 || accumMask < part.base) continue;
+      accumMask -= part.base;
+      let index = 0;
+      while (accumValue >= part.base) {
+        index += 1;
+        accumValue -= part.base;
+      }
+      selected.unshift({ part: part.name, index });
+    }
+    presets.push({ name, value, mask, parts: selected });
+  }
+  return presets;
+}
+
 export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): ModelGeometry | null {
   const header = readMdlHeader(mdl);
   if (!header) return null;
@@ -819,7 +879,11 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
       });
     }
     if (models.length > 0) {
-      modelBodyParts.push({ name: part.name || `bodypart_${partIndex}`, models });
+      modelBodyParts.push({
+        name: part.name || `bodypart_${partIndex}`,
+        base: part.base,
+        models,
+      });
     }
   }
 
@@ -846,6 +910,7 @@ export function parseModelGeometry(mdl: Buffer, vvd: Buffer, vtx: Buffer): Model
     lods,
     meshes: lods[0]!.meshes,
     bodyParts: modelBodyParts,
+    presets: readBodyGroupPresets(mdl, modelBodyParts),
     lod0Vertices,
     flex: readFlexHeader(mdl),
     vertexCount: rawVertices.length,

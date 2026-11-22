@@ -571,10 +571,18 @@ function qcText(
     .replace(/\\/g, "/")
     .replace(/^models\//i, "")
     .replace(/\.mdl$/i, "");
+  if (geometry.presets.length > 0) {
+    warnings.push(
+      `${geometry.presets.length} bodygroup preset(s) were read but not emitted: L4D2's ` +
+        "studiomdl rejects `$bodygrouppreset` with \"bad command\", so emitting it would stop " +
+        "the compile. The presets stay in the compiled model; use `read_model_bodygroups` to " +
+        "inspect them.",
+    );
+  }
   const lines: string[] = [
     `// Decompiled by L4D2-HSMCP: reference meshes, bodygroup alternatives and LOD replacements.`,
     `// Sequences stored in the .mdl are decoded; attachments, custom hitboxes and skin families`,
-    `// are written. Flex deltas are written as VTA frames; bodygroup presets are not.`,
+    `// are written. Flex deltas are written as VTA frames; bodygroup presets are read but not emitted.`,
     "",
     `$modelname "${modelname}.mdl"`,
     ...(proceduralVrd ? [`$proceduralbones "${proceduralVrd}"`] : []),

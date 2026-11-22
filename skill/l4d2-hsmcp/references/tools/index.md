@@ -1,6 +1,6 @@
 # Tool catalogue
 
-259 tools. This page groups them by the job you are doing; each tool's own description is the
+260 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -165,6 +165,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_model_jiggle` | jigglebones: flags, length, stiffness, constraints, base spring and boing, plus the exact `$jigglebone` block |
 | `read_model_procedural` | quat-interp helpers and aim rules, plus the `.vrd` text `$proceduralbones` needs |
 | `read_model_lods` | every LOD with switch distance, shadow flag, counts, materials, `facial`, material/bone replacements and removed bodygroup models |
+| `read_model_bodygroups` | body parts with mixed-radix bases and any `$bodygrouppreset` entries; write-back is blocked by L4D2's compiler |
 
 ## Build and edit
 

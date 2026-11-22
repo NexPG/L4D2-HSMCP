@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.189-alpha - 2026-11-22
+
+- **`read_model_bodygroups`**: body parts with their mixed-radix `base`, and the
+  `$bodygrouppreset` table decoded with Crowbar's algorithm (walk parts backwards, subtract
+  `base` from the mask, divide the value). No stock L4D2 model has presets, so the decoder is
+  tested by injecting records into a real MDL.
+- **Write-back stays blocked, now with evidence.** A QC carrying `$bodygrouppreset` makes
+  L4D2's `studiomdl` answer `bad command $bodygrouppreset`; the compiler test records that.
+  `decompile_model` reads the presets, warns that they are not emitted, and names
+  `read_model_bodygroups` for inspection. Emitting the command would stop the compile.
+- **Tool count: 260.** Tests: 214 files, 1,816 passed, 33 skipped.
+
 ## 0.0.188-alpha - 2026-11-22
 
 - **Human-in-the-loop live edits.** `stage_live_edit` records a proposed edit (ops, exact

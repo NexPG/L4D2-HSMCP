@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **259 tools**.
+Last checked against the tool list on 22/11/2026: **260 tools**.
 
 ## The file itself
 
@@ -266,6 +266,7 @@ map and looking, or by not happening at all.
 | `read_model_ani` | nothing: an external `.ani` block table is not exposed by the editor |
 | `read_model_procedural` | nothing: Hammer cannot show quat-interp helpers or aim rules, and has no `.vrd` view |
 | `read_model_lods` | nothing: switch distances, `facial`, material/bone replacements and removed bodygroup models are not in the editor |
+| `read_model_bodygroups` | nothing: body parts with their mixed-radix bases and the `$bodygrouppreset` table. L4D2's compiler rejects the command, so write-back is blocked and documented |
 | `read_vta` | nothing: a VTA is a compiler input the editor never shows |
 | `write_vta` | nothing: flex targets are authored in a 3D package, not in Hammer |
 | `edit_static_props` | Hammer edits the VMF; a compiled map's baked prop has no editor command |
