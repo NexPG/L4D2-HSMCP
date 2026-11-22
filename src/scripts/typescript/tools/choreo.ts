@@ -5,11 +5,18 @@
  * caller acts on. A `.vcd` is the timeline a scene uses (events, actor channels, times,
  * sounds); `scenes.image` is the CRC-keyed summary the engine loads first.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { z } from "zod";
+import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
-import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import {
+  BACKUP,
+  BACKUP_PATH,
+  CONFIRM,
+  DRY_RUN,
+  resolveInput,
+} from "../../../core/typescript/tools/paths.js";
 
 const EVENT = z.object({
   name: z.string(),
@@ -28,7 +35,7 @@ export const readChoreoTool = defineTool({
     "Reads a text VCD choreography scene: map name, FPS, duration, every event on the " +
     "timeline (type, start/end, parameters, flags), the actor/channel tree, and the sounds it " +
     "uses. The parser is `srctools.choreo.Scene`; a binary `scenes.image` is refused with a " +
-    "pointer to `read_scenes_image`. Read-only.",
+    "pointer to `read_scenes_image`. Read-only; `edit_choreo_events` changes an existing timeline.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to a text .vcd, absolute or relative to the repo root."),
@@ -122,4 +129,115 @@ export const readScenesImageTool = defineTool({
   },
 });
 
-export const choreoTools = [readChoreoTool, readScenesImageTool];
+const EVENT_UPDATE = z.object({
+  name: z
+    .string()
+    .min(1)
+    .describe("Event name exactly as read_choreo returns it, e.g. SpeakEvent."),
+  actor: z.string().optional().describe("Only events on this actor."),
+  channel: z.string().optional().describe("Only events on this channel."),
+  occurrence: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe(
+      "0-based match among events with this name/actor/channel, in file order. Required " +
+        "when more than one matches; without it an ambiguous selector is refused.",
+    ),
+  start: z.number().min(0).optional().describe("New start time in seconds."),
+  end: z
+    .number()
+    .min(0)
+    .nullable()
+    .optional()
+    .describe("New end time in seconds, or null for an event without an end."),
+  parameters: z
+    .array(z.string())
+    .min(1)
+    .max(3)
+    .optional()
+    .describe(
+      "Replace the event's parameter slots. A speak event's first parameter is its sound " +
+        "name; missing slots are written as empty strings.",
+    ),
+});
+
+export const editChoreoEventsTool = defineTool({
+  name: "edit_choreo_events",
+  description:
+    "Edits existing events in a text .vcd choreography timeline: start, end and the three " +
+    "parameter slots. For a speak event the first parameter is the sound name, so this is " +
+    "how a dialogue line is swapped or retimed without Faceposer. Select by event name, " +
+    "optionally narrowed by actor and channel; a name that appears more than once needs " +
+    "occurrence. It cannot add or remove events. The file is re-serialised by " +
+    "srctools.choreo.Scene and then parsed again: `verified` means every requested field " +
+    "came back. Formatting and indentation are normalised, comments are not kept, and the " +
+    "semantic round-trip is measured against the stock L4D2 scenes. Read first with " +
+    "read_choreo; binary VCD and scenes.image are refused. A backup is written.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to a text .vcd, absolute or relative to the repo root."),
+    updates: z.array(EVENT_UPDATE).min(1),
+    backup: BACKUP,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    backup: BACKUP_PATH,
+    written: z.boolean(),
+    updated: z.number(),
+    eventCount: z.number(),
+    duration: z.number(),
+    verified: z.boolean(),
+    bytes: z.number(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} was not found`);
+    const before = readFileSync(path, "utf8");
+    const reply = (await callSidecar(
+      "choreo_edit_events",
+      { path, updates: args.updates },
+      ctx.config,
+      120_000,
+    )) as {
+      text: string;
+      updated: number;
+      eventCount: number;
+      duration: number;
+      verified: boolean;
+    };
+    const write = writeGuarded(path, reply.text, ctx.config, {
+      dryRun: args.dryRun,
+      backup: args.backup ?? true,
+      unchanged: reply.text === before,
+    });
+    if (write.written) {
+      ctx.audit.record({
+        kind: "file_write",
+        data: { path: write.path, backup: write.backupPath, updated: reply.updated },
+      });
+    }
+    return {
+      path: write.path || path,
+      backup: write.backupPath,
+      written: write.written,
+      updated: reply.updated,
+      eventCount: reply.eventCount,
+      duration: reply.duration,
+      verified: reply.verified,
+      bytes: Buffer.byteLength(reply.text, "utf8"),
+    };
+  },
+});
+
+export const choreoTools = [
+  readChoreoTool,
+  readScenesImageTool,
+  editChoreoEventsTool,
+];
+

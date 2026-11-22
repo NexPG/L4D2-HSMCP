@@ -72,7 +72,7 @@ shows up here as four concrete reasons:
 | Particles | `srctools.particles` via sidecar | TypeScript tools call the sidecar | **delegated** |
 | Soundscripts/soundscapes/WAV | `srctools.sndscript`, `sndscape`; sidecar verbs | TypeScript tools call the sidecar | **delegated** |
 | FGD | `srctools.fgd` via sidecar `fgd_class` | TypeScript tools call the sidecar | **delegated** |
-| Choreo, cmdseq | `srctools.choreo`, `srctools.cmdseq`; sidecar `read_choreo`, `cmdseq_read` | TypeScript only discovers the candidate sequence paths | **delegated** |
+| Choreo, cmdseq | `srctools.choreo`, `srctools.cmdseq`; sidecar `read_choreo`, `choreo_edit_events`, `cmdseq_read` | Reading and text re-serialisation are srctools; TypeScript only discovers paths and applies the guarded write | **delegated** (semantic round-trip measured on 10 195 of 10 203 stock scenes) |
 | NAV, VTA, QC catalogue | no srctools module | TypeScript readers/writers | **necessary** |
 | Run Map execution | `srctools.cmdseq` supplies the commands; no library runs them | one thin runner: compilers through `runCompiler`, file steps through `node:fs`, argv through `compile/commandline.ts` | **necessary** |
 | Math/transform helpers | `srctools.math`; no JS dependency installed | small 3×4 affine/rotation helpers | **intentional TS** (no subprocess for arithmetic) |

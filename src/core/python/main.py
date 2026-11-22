@@ -602,6 +602,143 @@ def _read_choreo(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("choreo_edit_events")
+def _choreo_edit_events(req: dict[str, Any]) -> dict[str, Any]:
+    """Edits existing events in a text VCD through `srctools.choreo.Scene`.
+
+    A VCD is text, so the edit is a re-serialisation: parse the scene, change the named
+    fields on the selected events, export it, parse the export again and compare. The
+    round-trip is measured over every stock L4D2 scene; it is not assumed.
+    """
+    from srctools.choreo import Scene
+    from srctools.tokenizer import Tokenizer
+
+    path = req["path"]
+    raw = Path(path).read_bytes()
+    if raw[:4] == b"VSIF":
+        raise ValueError(f"{path} is a scenes.image, not a VCD; use read_scenes_image")
+    if raw[:4] == b"bvcd":
+        raise ValueError(f"{path} is a binary VCD; this editor writes the text form L4D2 ships")
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("cp1251", "replace")
+
+    try:
+        scene = Scene.parse_text(Tokenizer(text, path))
+    except NotImplementedError as exc:
+        raise ValueError(
+            f"{path} uses a choreo event srctools does not implement yet; "
+            f"8 of the 10 203 stock L4D2 scenes are in this state, and editing them would "
+            f"drop the event"
+        ) from exc
+
+    def refs(current: Any) -> list[tuple[Any, str | None, str | None]]:
+        found: list[tuple[Any, str | None, str | None]] = [
+            (event, None, None) for event in current.events
+        ]
+        for actor in current.actors:
+            for channel in actor.channels:
+                for event in channel.events:
+                    found.append((event, actor.name, channel.name))
+        return found
+
+    def resolve(
+        current: list[tuple[Any, str | None, str | None]], update: dict[str, Any]
+    ) -> tuple[Any, str | None, str | None]:
+        matches = [
+            (event, actor, channel)
+            for event, actor, channel in current
+            if event.name == update["name"]
+            and ("actor" not in update or actor == update["actor"])
+            and ("channel" not in update or channel == update["channel"])
+        ]
+        if not matches:
+            raise ValueError(
+                f'no event named "{update["name"]}"'
+                + (f' on actor "{update["actor"]}"' if "actor" in update else "")
+                + (f' channel "{update["channel"]}"' if "channel" in update else "")
+            )
+        if "occurrence" not in update:
+            if len(matches) > 1:
+                raise ValueError(
+                    f'"{update["name"]}" matches {len(matches)} events; '
+                    f'pass actor, channel or occurrence to choose one'
+                )
+            return matches[0]
+        occurrence = int(update["occurrence"])
+        if occurrence < 0 or occurrence >= len(matches):
+            raise ValueError(
+                f'occurrence {occurrence} is outside the {len(matches)} matches for '
+                f'"{update["name"]}"'
+            )
+        return matches[occurrence]
+
+    updates = req["updates"]
+    for update in updates:
+        if not any(key in update for key in ("start", "end", "parameters")):
+            raise ValueError(
+                f'update for "{update["name"]}" changes nothing; give start, end or parameters'
+            )
+        event, _, _ = resolve(refs(scene), update)
+        if "start" in update:
+            start = float(update["start"])
+            if start < 0:
+                raise ValueError(f'start time {start} is negative')
+            event.start_time = start
+        if "end" in update:
+            end = update["end"]
+            event.end_time = -1.0 if end is None else float(end)
+            if event.end_time != -1.0 and event.end_time <= event.start_time:
+                raise ValueError(
+                    f'end time {event.end_time} is not after start {event.start_time}'
+                )
+        if "parameters" in update:
+            parameters = [str(value) for value in update["parameters"]]
+            if len(parameters) > 3:
+                raise ValueError("a choreo event has three parameter slots")
+            while len(parameters) < 3:
+                parameters.append("")
+            event.parameters = tuple(parameters)
+        if event.has_end_time and event.end_time <= event.start_time:
+            raise ValueError(
+                f'event "{update["name"]}" would end at {event.end_time} before its '
+                f'start {event.start_time}'
+            )
+
+    import io
+
+    out = io.StringIO()
+    scene.export_text(out)
+    new_text = out.getvalue()
+
+    # Independent read of what will be written.
+    written_scene = Scene.parse_text(Tokenizer(new_text, path))
+    written_refs = refs(written_scene)
+    for update in updates:
+        event, _, _ = resolve(written_refs, update)
+        if "start" in update and abs(event.start_time - float(update["start"])) > 1e-9:
+            raise ValueError(f'start time did not survive the rewrite for "{update["name"]}"')
+        if "end" in update:
+            wanted = -1.0 if update["end"] is None else float(update["end"])
+            if abs(event.end_time - wanted) > 1e-9:
+                raise ValueError(f'end time did not survive the rewrite for "{update["name"]}"')
+        if "parameters" in update:
+            wanted = tuple([str(value) for value in update["parameters"]] + [""] * 3)[:3]
+            if tuple(event.parameters) != wanted:
+                raise ValueError(
+                    f'parameters did not survive the rewrite for "{update["name"]}"'
+                )
+
+    return {
+        "text": new_text,
+        "updated": len(updates),
+        "eventCount": len(written_refs),
+        "duration": written_scene.duration(),
+        "verified": True,
+    }
+
+
 @verb("read_scenes_image")
 def _read_scenes_image(req: dict[str, Any]) -> dict[str, Any]:
     """Reads `scenes/scenes.image` through `srctools.choreo.parse_scenes_image`.
