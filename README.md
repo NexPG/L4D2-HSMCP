@@ -28,8 +28,9 @@ files, building and checking content, compiling and packaging it -- and the comp
 provides the knowledge of how that content has to fit together.
 
 It is built for agents and usable by people: every operation is a described, checked tool, and
-anything that writes asks for confirmation. See the [tool catalogue](docs/tools/README.md) for the 262 tools grouped by the job they
-do, with a page per logical area.
+anything that writes asks for confirmation.
+
+See the [tool catalogue](docs/tools/README.md).
 
 ## Requirements
 
