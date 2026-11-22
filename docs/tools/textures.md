@@ -1,6 +1,6 @@
 # Textures (VTF)
 
-6 tools: reading, writing, converting and extracting VTF textures.
+8 tools: reading, writing, converting and extracting VTF textures.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -14,3 +14,5 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `run_vtf_convert` | Converts an image (.tga, .png, .bmp, .jpg ...) into a .vtf the engine can load, written beside the source. |
 | `write_cubemap_vtf` | Builds a six-face cubemap .vtf from six PNGs, with the VTF CubeSide order stated explicitly (right, left, back, front, up, down). |
 | `write_vtf` | Turns one PNG, or an ordered set of PNG frames, into a .vtf the engine can load, without VTFCmd or vtex. |
+| `write_vtf_hotspot` | Writes the Strata Source hotspot resource into a .vtf: rectangles in pixels that Hammer++/Strata use to retexture a brush face from a texture atlas. |
+| `write_vtf_particle_sheet` | Writes the particle-spritesheet resource into a .vtf: named sequences of frame rectangles that the particle system samples instead of a whole texture. |

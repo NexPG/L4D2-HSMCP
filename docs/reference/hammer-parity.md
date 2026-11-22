@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **275 tools**.
+Last checked against the tool list on 22/11/2026: **277 tools**.
 
 ## The file itself
 
@@ -367,6 +367,8 @@ map and looking, or by not happening at all.
 | `fbx_to_smd` | nothing: Hammer cannot compile a model, and studiomdl cannot read FBX |
 | `brush_to_model` | Propper++ turns a brush into a model; Hammer itself has no such command |
 | `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
+| `write_vtf_hotspot` | nothing: Hammer++ reads `.rect` hotspots, but only Strata stores them inside the VTF |
+| `write_vtf_particle_sheet` | nothing: the texture browser cannot edit a particle spritesheet's sequences |
 | `read_wav` | nothing: the editor never opens a sound |
 | `convert_wav` | nothing: sound conversion is a separate editor |
 | `read_compile_sequences` | the Run Map dialog, one sequence at a time, without saying which steps are disabled; the file also names special steps that are not compilers |

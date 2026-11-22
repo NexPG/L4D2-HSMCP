@@ -17,15 +17,33 @@
  *   rather than worked around -- moving the caller's file to satisfy a tool is not this
  *   server's business.
  */
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { z } from "zod";
 import { readVtfHeader } from "../bsp/vtf.js";
+import {
+  VTF_RESOURCE_HOTSPOT,
+  VTF_RESOURCE_PARTICLE_SHEET,
+  buildVtfHotspot,
+  buildVtfParticleSheet,
+  hotspotFlags,
+  particleSheetVersion,
+  readVtfResourcePayload,
+  writeVtfResource,
+} from "../formats/vtfresources.js";
+import type { VtfHotspotRect, VtfSheetFrameCoords } from "../formats/vtfresources.js";
 import { runExternalTool } from "../../../maps/typescript/compile/external.js";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
-import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
+import {
+  BACKUP,
+  BACKUP_PATH,
+  CONFIRM,
+  DRY_RUN,
+  resolveInput,
+} from "../../../core/typescript/tools/paths.js";
 
 export const VTFCMD_EXE = "VTFCmd.exe";
 
@@ -246,4 +264,276 @@ export const readVtfTool = defineTool({
   },
 });
 
-export const vtfTools = [runVtfConvert, readVtfTool];
+const SHEET_COORDS = z.tuple([z.number(), z.number(), z.number(), z.number()]);
+
+const SHEET_FRAME = z.object({
+  duration: z.number().min(0).describe("Seconds this frame is held."),
+  coords: z
+    .array(SHEET_COORDS)
+    .length(4)
+    .optional()
+    .describe(
+      "Four corners as [left, top, right, bottom], matching read_vtf's frame shape. " +
+        "Omitted means the single left/top/right/bottom rectangle is repeated four times.",
+    ),
+  left: z.number().optional(),
+  top: z.number().optional(),
+  right: z.number().optional(),
+  bottom: z.number().optional(),
+});
+
+const SHEET_SEQUENCE = z.object({
+  sequence: z.number().int().min(0).max(63).describe("Engine sequence number, 0..63."),
+  clamp: z.boolean().default(false).describe("Hold the last frame instead of wrapping."),
+  duration: z.number().min(0).describe("Total sequence time in seconds."),
+  frames: z.array(SHEET_FRAME).min(1),
+});
+
+function sheetCoords(frame: z.infer<typeof SHEET_FRAME>, at: number): VtfSheetFrameCoords {
+  if (frame.coords) {
+    return frame.coords as unknown as VtfSheetFrameCoords;
+  }
+  if ([frame.left, frame.top, frame.right, frame.bottom].some((value) => value === undefined)) {
+    throw new Error(
+      `frame ${at} needs either coords or all four of left/top/right/bottom`,
+    );
+  }
+  const rect: [number, number, number, number] = [
+    frame.left!,
+    frame.top!,
+    frame.right!,
+    frame.bottom!,
+  ];
+  return [rect, rect, rect, rect];
+}
+
+function validateSheetCoords(coords: VtfSheetFrameCoords, label: string): void {
+  for (const [corner, rect] of coords.entries()) {
+    for (const value of rect) {
+      if (!Number.isFinite(value) || value < 0 || value > 1) {
+        throw new Error(`${label} corner ${corner} coordinate ${value} is outside 0..1`);
+      }
+    }
+    if (rect[0] > rect[2] || rect[1] > rect[3]) {
+      throw new Error(`${label} corner ${corner} has left/right or top/bottom reversed`);
+    }
+  }
+}
+
+function commitVtf(
+  path: string,
+  bytes: Buffer,
+  backup: boolean,
+  dryRun: boolean,
+  ctx: ToolContext,
+): { target: string; backup: string | null } {
+  const target = assertWritable(path, ctx.config);
+  if (dryRun) return { target, backup: null };
+  let backupPath: string | null = null;
+  if (backup) {
+    backupPath = assertWritable(`${target}.bak`, ctx.config);
+    copyFileSync(target, backupPath);
+  }
+  writeFileSync(target, bytes);
+  ctx.audit.record({ kind: "file_write", data: { path: target, backup: backupPath } });
+  return { target, backup: backupPath };
+}
+
+const HOTSPOT_RECT = z.object({
+  minX: z.number().int().min(0).max(65535),
+  minY: z.number().int().min(0).max(65535),
+  maxX: z.number().int().min(0).max(65535),
+  maxY: z.number().int().min(0).max(65535),
+  randomRotation: z.boolean().default(false),
+  randomReflection: z.boolean().default(false),
+  alternate: z.boolean().default(false),
+});
+
+export const writeVtfHotspotTool = defineTool({
+  name: "write_vtf_hotspot",
+  description:
+    "Writes the Strata Source hotspot resource into a .vtf: rectangles in pixels that " +
+    "Hammer++/Strata use to retexture a brush face from a texture atlas. Replaces the " +
+    "rectangle list, optionally with the implementation flags byte. The image and every mip " +
+    "stay byte-identical: only the resource directory and an appended block change, so a " +
+    "DXT texture is not recompressed. The resource does not exist in stock L4D2 materials, " +
+    "but the compiled map that ships it reads fine. A backup is written and the payload is " +
+    "read back.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vtf, absolute or relative to the repo root."),
+    rects: z.array(HOTSPOT_RECT).min(1),
+    flags: z
+      .number()
+      .int()
+      .min(0)
+      .max(255)
+      .optional()
+      .describe("Implementation flags byte. Kept from an existing resource when omitted."),
+    backup: BACKUP,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    backup: BACKUP_PATH,
+    written: z.boolean(),
+    rects: z.number(),
+    flags: z.number(),
+    verified: z.boolean(),
+    bytes: z.number(),
+    version: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    const bytes = readFileSync(path);
+    const header = readVtfHeader(bytes);
+    if (!header) throw new Error(`${path} is not a VTF (no VTF\\0 signature)`);
+
+    for (const [index, rect] of args.rects.entries()) {
+      if (rect.maxX <= rect.minX || rect.maxY <= rect.minY) {
+        throw new Error(`rectangle ${index} is empty: max must be greater than min`);
+      }
+      if (rect.maxX > header.width || rect.maxY > header.height) {
+        throw new Error(
+          `rectangle ${index} reaches (${rect.maxX}, ${rect.maxY}) in a ` +
+            `${header.width}x${header.height} texture`,
+        );
+      }
+    }
+    const existing = readVtfResourcePayload(bytes, VTF_RESOURCE_HOTSPOT);
+    const flags = args.flags ?? hotspotFlags(existing);
+    const rects: VtfHotspotRect[] = args.rects;
+    const payload = buildVtfHotspot(rects, flags);
+    const next = writeVtfResource(bytes, VTF_RESOURCE_HOTSPOT, payload);
+    const readBack = readVtfResourcePayload(next, VTF_RESOURCE_HOTSPOT);
+    const inMemory = readBack !== null && readBack.equals(payload);
+    if (!inMemory) throw new Error("the hotspot payload did not survive the rewrite");
+    const after = readVtfHeader(next);
+    if (
+      after === null ||
+      after.version !== header.version ||
+      after.width !== header.width ||
+      after.height !== header.height ||
+      after.format !== header.format
+    ) {
+      throw new Error("the image header changed while writing the resource");
+    }
+
+    const written = commitVtf(path, next, args.backup ?? true, args.dryRun ?? false, ctx);
+    const onDisk = args.dryRun
+      ? inMemory
+      : readVtfResourcePayload(readFileSync(written.target), VTF_RESOURCE_HOTSPOT)?.equals(payload) ??
+        false;
+    return {
+      path: written.target,
+      backup: written.backup,
+      written: !args.dryRun,
+      rects: rects.length,
+      flags,
+      verified: onDisk,
+      bytes: next.length,
+      version: header.version,
+    };
+  },
+});
+
+export const writeVtfParticleSheetTool = defineTool({
+  name: "write_vtf_particle_sheet",
+  description:
+    "Writes the particle-spritesheet resource into a .vtf: named sequences of frame " +
+    "rectangles that the particle system samples instead of a whole texture. Replaces the " +
+    "sequence list; `coords` matches read_vtf's four-corner frame shape, and a single " +
+    "left/top/right/bottom rectangle is repeated four times when coords is omitted. Version " +
+    "1 of the payload is written unless the file already uses version 0. Only the resource " +
+    "directory and an appended block change: the image and its mips stay byte-identical. A " +
+    "backup is written and the payload is read back.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vtf, absolute or relative to the repo root."),
+    sequences: z.array(SHEET_SEQUENCE).min(1).max(64),
+    version: z
+      .union([z.literal(0), z.literal(1)])
+      .optional()
+      .describe("Payload version. Kept from an existing resource when omitted, else 1."),
+    backup: BACKUP,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+  },
+  outputSchema: {
+    path: z.string(),
+    backup: BACKUP_PATH,
+    written: z.boolean(),
+    sequences: z.number(),
+    frames: z.number(),
+    version: z.number(),
+    verified: z.boolean(),
+    bytes: z.number(),
+    headerVersion: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    const bytes = readFileSync(path);
+    const header = readVtfHeader(bytes);
+    if (!header) throw new Error(`${path} is not a VTF (no VTF\\0 signature)`);
+
+    const existing = readVtfResourcePayload(bytes, VTF_RESOURCE_PARTICLE_SHEET);
+    const version = args.version ?? particleSheetVersion(existing) ?? 1;
+    const sequences = args.sequences.map((sequence) => ({
+      sequence: sequence.sequence,
+      clamp: sequence.clamp,
+      duration: sequence.duration,
+      frames: sequence.frames.map((frame, index) => {
+        const coords = sheetCoords(frame, index);
+        validateSheetCoords(coords, `sequence ${sequence.sequence} frame ${index}`);
+        return { duration: frame.duration, coords };
+      }),
+    }));
+    const payload = buildVtfParticleSheet(sequences, version);
+    const next = writeVtfResource(bytes, VTF_RESOURCE_PARTICLE_SHEET, payload);
+    const readBack = readVtfResourcePayload(next, VTF_RESOURCE_PARTICLE_SHEET);
+    const inMemory = readBack !== null && readBack.equals(payload);
+    if (!inMemory) throw new Error("the particle-sheet payload did not survive the rewrite");
+    const after = readVtfHeader(next);
+    if (
+      after === null ||
+      after.version !== header.version ||
+      after.width !== header.width ||
+      after.height !== header.height ||
+      after.format !== header.format
+    ) {
+      throw new Error("the image header changed while writing the resource");
+    }
+
+    const written = commitVtf(path, next, args.backup ?? true, args.dryRun ?? false, ctx);
+    const onDisk = args.dryRun
+      ? inMemory
+      : readVtfResourcePayload(
+          readFileSync(written.target),
+          VTF_RESOURCE_PARTICLE_SHEET,
+        )?.equals(payload) ?? false;
+    return {
+      path: written.target,
+      backup: written.backup,
+      written: !args.dryRun,
+      sequences: sequences.length,
+      frames: sequences.reduce((sum, sequence) => sum + sequence.frames.length, 0),
+      version,
+      verified: onDisk,
+      bytes: next.length,
+      headerVersion: header.version,
+    };
+  },
+});
+
+export const vtfTools = [
+  runVtfConvert,
+  readVtfTool,
+  writeVtfHotspotTool,
+  writeVtfParticleSheetTool,
+];
+
