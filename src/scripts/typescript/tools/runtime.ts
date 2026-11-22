@@ -42,6 +42,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { captureWindow } from "../../../maps/typescript/screenshot/window.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { SCHEDULE_FILE, scheduleScript } from "../vscript/schedule.js";
+import { sweepInterruptedState } from "../game/state.js";
 
 /** The lump name the engine appends to a BSP that has a string-table dictionary. */
 const DICTIONARY_MARKER = Buffer.from("stringtable_dictionary");
@@ -90,48 +91,6 @@ async function stopGame(): Promise<void> {
   }
   await sleep(500);
 }
-
-/** Restores a `.hsmcp-backup` file left by an interrupted run. */
-function restoreBackup(backup: string): boolean {
-  if (!existsSync(backup)) return false;
-  const target = backup.slice(0, -".hsmcp-backup".length);
-  try {
-    copyFileSync(backup, target);
-    rmSync(backup, { force: true });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Sweeps the state an interrupted `run_map_test` can leave behind.
- *
- * The run has a `finally`, but a killed process or a closed terminal never reaches it. The
- * next run restores those files **before** touching the game, so a stale `listenserver.cfg`,
- * script backup or map backup cannot make the next launch read yesterday's command.
- */
-export function sweepInterruptedState(gameDir: string): number {
-  let restored = 0;
-  const known = [
-    join(gameDir, "cfg", "listenserver.cfg.hsmcp-backup"),
-    ...(existsSync(join(gameDir, "maps"))
-      ? readdirSync(join(gameDir, "maps"))
-          .filter((entry) => entry.endsWith(".hsmcp-backup"))
-          .map((entry) => join(gameDir, "maps", entry))
-      : []),
-    ...(existsSync(join(gameDir, "scripts", "vscripts"))
-      ? readdirSync(join(gameDir, "scripts", "vscripts"))
-          .filter((entry) => entry.endsWith(".hsmcp-backup"))
-          .map((entry) => join(gameDir, "scripts", "vscripts", entry))
-      : []),
-  ];
-  for (const backup of known) {
-    if (restoreBackup(backup)) restored += 1;
-  }
-  return restored;
-}
-
 
 /**
  * Makes the engine append its string-table dictionary to a loose BSP.

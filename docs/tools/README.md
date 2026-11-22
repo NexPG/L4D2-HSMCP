@@ -1,6 +1,6 @@
 # Tools by area
 
-285 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
+286 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
 rendering, the runtime harness, and so on — not a source directory and not a bucket for
 several jobs. A new kind of tool gets a new row and a new page.
 
@@ -34,10 +34,10 @@ not this file.
 | Addons | addoninfo, scaffolding, validation, installation and Workshop metadata | 9 | [addons.md](addons.md) |
 | VPK and pakfile | building, reading, extracting and verifying VPK archives, and editing a map's pakfile | 5 | [vpk.md](vpk.md) |
 | Shared formats | DMX datamodels | 2 | [formats.md](formats.md) |
-| Configuration and health | toolchain health and the stored add-on author | 3 | [configuration.md](configuration.md) |
+| Configuration and health | toolchain health and the stored add-on author | 4 | [configuration.md](configuration.md) |
 | Game discovery | how Left 4 Dead 2 was found on this machine | 1 | [games.md](games.md) |
 | File and text primitives | path resolution and raw UTF-8 text files | 2 | [text.md](text.md) |
-| **Total** | | **285** | |
+| **Total** | | **286** | |
 
 Each area page has logical tables inside it (for example, “Geometry”, “Faces, lighting,
 overlays and terrain” and “Instances and prefabs” inside VMF authoring).

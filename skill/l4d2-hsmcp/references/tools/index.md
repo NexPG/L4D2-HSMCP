@@ -1,6 +1,6 @@
 # Tool catalogue
 
-285 tools. This page groups them by the job you are doing; each tool's own description is the
+286 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -9,6 +9,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 
 | Tool | Use |
 |---|---|
+| `check_game_state` | reports and restores backups, hidden archives and a non-blank listenserver.cfg left by an interrupted run |
 | `health` | game profile, compilers, FGD, sidecar, tool count, whether the build is stale |
 | `read_addon_author` | the name used for `addonauthor`/`Author`, or null before it is configured |
 | `set_addon_author` | ask once and store the person's author name for every addon and campaign |

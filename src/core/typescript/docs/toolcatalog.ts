@@ -219,7 +219,7 @@ const AREAS: Area[] = [
     slug: "configuration",
     title: "Configuration and health",
     covers: "toolchain health and the stored add-on author",
-    groups: { "Health and author identity": ["health", "author"] },
+    groups: { "Health and author identity": ["health", "author", "gamestate"] },
   },
   {
     slug: "games",

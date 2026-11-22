@@ -6,6 +6,9 @@ or a tool that has one, not by hand afterwards.
 
 ## Interrupted runs
 
+`check_game_state` reports the leftovers (and `restore: true` restores the backups and
+hidden archives). `run_map_test` and `run_nav_generate` run the same sweep before a launch.
+
 `run_map_test` and `run_nav_generate` sweep `<file>.hsmcp-backup` in `cfg/`, `maps/` and
 `scripts/vscripts/` before launching. That restores a previous `listenserver.cfg`, map or
 script even when the earlier process was killed before its `finally` could run. `.vpk.off`

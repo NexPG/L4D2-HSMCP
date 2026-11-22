@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { sweepInterruptedState } from "../../src/scripts/typescript/tools/runtime.js";
+import { sweepInterruptedState } from "../../src/scripts/typescript/game/state.js";
 
 const scratch = mkdtempSync(join(tmpdir(), "hsmcp-runtime-sweep-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));

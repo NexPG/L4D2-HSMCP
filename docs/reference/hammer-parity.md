@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **285 tools**.
+Last checked against the tool list on 22/11/2026: **286 tools**.
 
 ## The file itself
 
@@ -407,6 +407,7 @@ map and looking, or by not happening at all.
 | `read_vscript_api` | nothing: the engine's game-event list and option types are not in Hammer |
 | `check_vscript_contract` | nothing: a misspelled event hook is invisible in Hammer and in the console |
 | `write_options_probe` | nothing: Hammer cannot show the Director's merged runtime options |
+| `check_game_state` | nothing: Hammer does not know what a previous automated run left in the game install |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
 | `check_campaign_wiring` | nothing: no editor follows a chapter's changelevel into the next map and compares the landmark pair |
 | `run_vpk_pack` | nothing: Hammer has no addon packaging |
