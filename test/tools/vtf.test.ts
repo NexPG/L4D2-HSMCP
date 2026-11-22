@@ -117,3 +117,93 @@ describe("read_vtf", () => {
     });
   });
 });
+
+/**
+ * A 7.4 VTF with a CRC integer resource and one particle-sheet sequence.
+ *
+ * `srctools` pops the particle resource out of the table and decodes it into `sheet_info`,
+ * so this also proves that the resource table and the decoded sheets are reported separately.
+ */
+function writeResourceVtf(path: string): void {
+  const headerSize = 112;
+  const sheetOffset = headerSize;
+  const sheet = Buffer.alloc(44);
+  sheet.writeUInt32LE(0, 0); // Resource version 0.
+  sheet.writeUInt32LE(1, 4); // One sequence.
+  sheet.writeUInt32LE(0, 8); // Sequence 0.
+  sheet.writeUInt8(0, 15); // clamp = false
+  sheet.writeUInt32LE(1, 16); // One frame.
+  sheet.writeFloatLE(1.0, 20); // Sequence duration.
+  sheet.writeFloatLE(1.0, 24); // Frame duration.
+  sheet.writeFloatLE(0.0, 28);
+  sheet.writeFloatLE(0.0, 32);
+  sheet.writeFloatLE(1.0, 36);
+  sheet.writeFloatLE(1.0, 40);
+
+  const file = Buffer.alloc(sheetOffset + 4 + sheet.length);
+  file.write("VTF\0", 0, "latin1");
+  file.writeUInt32LE(7, 4);
+  file.writeUInt32LE(4, 8);
+  file.writeUInt32LE(headerSize, 12);
+  file.writeUInt16LE(64, 16);
+  file.writeUInt16LE(64, 18);
+  file.writeUInt32LE(0, 20);
+  file.writeUInt16LE(1, 24);
+  file.writeInt32LE(13, 52); // DXT1
+  file.writeUInt8(1, 56); // one mipmap
+  file.writeInt32LE(-1, 57); // no low-res image
+  file.writeUInt16LE(1, 63); // depth
+  file.writeUInt32LE(3, 68);
+
+  let entry = 80;
+  const put = (id: [number, number, number], flags: number, data: number): void => {
+    file.set(id, entry);
+    file.writeUInt8(flags, entry + 3);
+    file.writeUInt32LE(data, entry + 4);
+    entry += 8;
+  };
+  put([0x30, 0, 0], 0, sheetOffset); // HIGH_RES
+  put([0x43, 0x52, 0x43], 2, 0x0badf00d); // CRC, inline integer
+  put([0x10, 0, 0], 0, sheetOffset); // PARTICLE_SHEET
+
+  file.writeUInt32LE(sheet.length, sheetOffset);
+  sheet.copy(file, sheetOffset + 4);
+  writeFileSync(path, file);
+}
+
+describe.skipIf(!has.sidecar)("read_vtf details", () => {
+  it("reads the resource table and decodes particle-sheet sequences", async () => {
+    const path = join(scratch, "particle.vtf");
+    writeResourceVtf(path);
+    const r = (await readVtfTool.handler({ path, details: true }, ctx)) as {
+      version: string;
+      resources: Array<{ id: string | null; flags: number; kind: string; value: number | null }>;
+      sheetInfo: Array<{
+        sequence: number;
+        frameCount: number;
+        frames?: Array<{ coords: number[][] }>;
+      }>;
+      hotspotInfo: unknown;
+    };
+    expect(r.version).toBe("7.4");
+    expect(r.resources).toEqual([
+      { id: "CRC", rawId: "435243", flags: 2, kind: "integer", value: 0x0badf00d, size: null },
+    ]);
+    expect(r.sheetInfo).toHaveLength(1);
+    expect(r.sheetInfo[0]).toMatchObject({ sequence: 0, frameCount: 1 });
+    expect(r.sheetInfo[0]!.frames![0]!.coords).toEqual([
+      [0, 0, 1, 1],
+      [0, 0, 1, 1],
+      [0, 0, 1, 1],
+      [0, 0, 1, 1],
+    ]);
+    expect(r.hotspotInfo).toBeNull();
+  });
+
+  it("still reads a header when details is false", async () => {
+    const path = join(scratch, "particle.vtf");
+    writeResourceVtf(path);
+    const r = (await readVtfTool.handler({ path }, ctx)) as { resources?: unknown };
+    expect(r.resources).toBeUndefined();
+  });
+});

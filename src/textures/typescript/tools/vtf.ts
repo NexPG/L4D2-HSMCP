@@ -24,6 +24,7 @@ import { readVtfHeader } from "../bsp/vtf.js";
 import { runExternalTool } from "../../../maps/typescript/compile/external.js";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 
 export const VTFCMD_EXE = "VTFCmd.exe";
@@ -158,10 +159,19 @@ export const readVtfTool = defineTool({
     "Reads a `.vtf` header: version, dimensions, flags, frames, format name and whether it " +
     "is a cubemap. This is the texture-side answer Hammer's texture browser does not give " +
     "as data: it tells an agent whether a texture is DXT1 or DXT5, six faces or one, and " +
-    "whether the size is what the material expects. It reads 80 bytes, not the image.",
+    "whether the size is what the material expects. It reads 80 bytes, not the image. " +
+    "`details: true` also reads the version 7.3+ resource table, particle-sheet sequences " +
+    "and hotspot rectangles through `srctools.vtf`; that needs the Python sidecar.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .vtf, absolute or relative to the repo root."),
+    details: z
+      .boolean()
+      .optional()
+      .describe(
+        "Also read the resource table, particle-sheet sequences and hotspots. " +
+          "Default false, which is a header read only.",
+      ),
   },
   outputSchema: {
     path: z.string(),
@@ -173,13 +183,66 @@ export const readVtfTool = defineTool({
     cubemap: z.boolean(),
     format: z.string(),
     frames: z.number(),
+    resources: z
+      .array(
+        z.object({
+          id: z.string().nullable(),
+          rawId: z.string(),
+          flags: z.number(),
+          kind: z.string(),
+          value: z.number().nullable(),
+          size: z.number().nullable(),
+        }),
+      )
+      .optional(),
+    sheetInfo: z
+      .array(
+        z.object({
+          sequence: z.number(),
+          clamp: z.boolean(),
+          duration: z.number(),
+          frameCount: z.number(),
+          frames: z
+            .array(
+              z.object({
+                duration: z.number(),
+                coords: z.array(z.array(z.number())),
+              }),
+            )
+            .optional(),
+        }),
+      )
+      .optional(),
+    hotspotInfo: z
+      .array(
+        z.object({
+          minX: z.number(),
+          minY: z.number(),
+          maxX: z.number(),
+          maxY: z.number(),
+          randomRotation: z.boolean(),
+          randomReflection: z.boolean(),
+          alternate: z.boolean(),
+        }),
+      )
+      .nullable()
+      .optional(),
+    hotspotFlags: z.number().optional(),
   },
-  handler: (args, ctx) => {
+  handler: async (args, ctx) => {
     const path = resolveInput(args.path, ctx.config);
     const bytes = readFileSync(path);
     const header = readVtfHeader(bytes);
     if (!header) throw new Error(`${path} is not a VTF (no VTF\\0 signature)`);
-    return { path, bytes: bytes.length, ...header };
+    const base = { path, bytes: bytes.length, ...header };
+    if (!args.details) return base;
+    const details = (await callSidecar("vtf_resources", { path, frames: true }, ctx.config, 120_000)) as {
+      resources: unknown;
+      sheetInfo: unknown;
+      hotspotInfo: unknown;
+      hotspotFlags: number;
+    };
+    return { ...base, ...details };
   },
 });
 

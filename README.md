@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.192--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.193--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and

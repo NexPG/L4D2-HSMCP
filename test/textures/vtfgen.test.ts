@@ -107,7 +107,7 @@ describe.skipIf(!installed)("write_vtf", () => {
     expect(result.flags & 0x4).toBe(0x4);
 
     // The header tool the agent uses must agree with what the writer reported.
-    const header = readVtfTool.handler({ path }, ctx as never) as {
+    const header = (await readVtfTool.handler({ path }, ctx as never)) as {
       version: string;
       width: number;
       height: number;

@@ -649,6 +649,85 @@ def _read_scenes_image(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("vtf_resources")
+def _vtf_resources(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads a VTF's version 7.3+ resources, particle-sheet frames and hotspot rectangles.
+
+    `srctools.vtf.VTF` owns the format, including `SheetSequence` and `HotspotRect`; this verb
+    only turns their fields into JSON. `header_only` avoids decoding the image itself.
+    """
+    from srctools.vtf import ResourceID, VTF
+
+    path = req["path"]
+    with open(path, "rb") as handle:
+        vtf = VTF.read(handle, header_only=True)
+
+    resources = []
+    for rid, resource in vtf.resources.items():
+        if isinstance(rid, ResourceID):
+            resource_id = rid.name
+            raw_id = rid.value.hex()
+        else:
+            resource_id = None
+            raw_id = rid.hex()
+        data = resource.data
+        resources.append(
+            {
+                "id": resource_id,
+                "rawId": raw_id,
+                "flags": resource.flags,
+                "kind": "integer" if isinstance(data, int) else "bytes",
+                "value": data if isinstance(data, int) else None,
+                "size": None if isinstance(data, int) else len(data),
+            }
+        )
+    resources.sort(key=lambda item: (item["id"] or "", item["rawId"]))
+
+    include_frames = bool(req.get("frames", False))
+    sheets = []
+    for sequence, sheet in sorted(vtf.sheet_info.items()):
+        item: dict[str, Any] = {
+            "sequence": sequence,
+            "clamp": sheet.clamp,
+            "duration": sheet.duration,
+            "frameCount": len(sheet.frames),
+        }
+        if include_frames:
+            item["frames"] = [
+                {
+                    "duration": frame[0],
+                    "coords": [
+                        [coord.left, coord.top, coord.right, coord.bottom]
+                        for coord in frame[1:]
+                    ],
+                }
+                for frame in sheet.frames
+            ]
+        sheets.append(item)
+
+    hotspots = None
+    if vtf.hotspot_info is not None:
+        hotspots = [
+            {
+                "minX": rect.min_x,
+                "minY": rect.min_y,
+                "maxX": rect.max_x,
+                "maxY": rect.max_y,
+                "randomRotation": rect.random_rotation,
+                "randomReflection": rect.random_reflection,
+                "alternate": rect.is_alternate,
+            }
+            for rect in vtf.hotspot_info
+        ]
+
+    return {
+        "resources": resources,
+        "sheetInfo": sheets,
+        "hotspotInfo": hotspots,
+        "hotspotFlags": vtf.hotspot_flags,
+    }
+
+
 @verb("map_dependencies")
 def _map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     """Every asset a compiled map references, and where each one will come from."""

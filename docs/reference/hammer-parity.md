@@ -338,7 +338,7 @@ map and looking, or by not happening at all.
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |
 | `write_soundscript` | nothing: sound scripts are edited by hand |
-| `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames or whether it is a cubemap |
+| `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames, whether it is a cubemap, or which resources and particle sequences the file carries |
 | `close_windows` | nothing: Hammer leaves every HLMV it opens running |
 | `read_autosaves` | nothing: the editor knows where it put them and will not say |
 | `restore_autosave` | opening the autosave by hand and saving it under a new name |

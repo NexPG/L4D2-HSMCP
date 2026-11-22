@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.193-alpha - 2026-11-22
+
+- **`read_vtf` details**: `details: true` also reads the format 7.3+ resource table (ID,
+  flags, and either the inline integer or the payload size), every particle-sheet sequence
+  with its frame coordinates, and Strata hotspot rectangles. The work is `srctools.vtf`
+  through the sidecar; the default stays an 80-byte header read with no Python.
+- The probe was the stock `fire_explosion_1.vtf` (two sequences, 50 frames each); the test
+  builds a 7.4 VTF with a CRC integer resource and one sequence, so an empty table cannot
+  pass for a decoded one.
+- **Tool count: 265.** Tests: 217 files, 1,834 passed, 33 skipped.
+
 ## 0.0.192-alpha - 2026-11-22
 
 - **`read_fgd_class` search**: when listing, `search` matches a case-insensitive substring in

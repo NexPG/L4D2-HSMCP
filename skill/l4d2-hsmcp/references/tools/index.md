@@ -326,4 +326,4 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_soundscript` | add one sound block, appending to the file |
 | `read_wav` | WAV format, duration, loop and whether it is L4D2-game-ready |
 | `convert_wav` | resample and mix a WAV to 16-bit PCM mono/stereo at 22050/44100 |
-| `read_vtf` | a `.vtf` header: version, size, flags, frames, format, cubemap |
+| `read_vtf` | a `.vtf` header: version, size, flags, frames, format, cubemap; `details` adds the resource table, particle-sheet sequences and hotspots |
