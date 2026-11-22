@@ -1267,6 +1267,8 @@ export interface QcSpec {
     block?: string[];
   }>;
   attachments?: Array<{ name: string; bone: string; position?: [number, number, number] }>;
+  /** `$poseparameter`: a named slider studiomdl exposes to sequences and blends. */
+  poseParameters?: Array<{ name: string; min: number; max: number; loop?: number }>;
   /** `$bodygroup`: named alternatives, each a studio SMD or a blank index. */
   bodygroups?: Array<{
     name: string;
@@ -1348,6 +1350,20 @@ export function buildQc(spec: QcSpec): string {
     lines.push(
       `$attachment ${quote(attachment.name)} ${quote(attachment.bone)} ` +
         `position ${position.join(" ")}`,
+    );
+  }
+
+  for (const pose of spec.poseParameters ?? []) {
+    if (!pose.name || /["\r\n]/.test(pose.name)) {
+      throw new Error(`a $poseparameter name cannot be empty or contain a quote/newline`);
+    }
+    for (const value of [pose.min, pose.max, pose.loop ?? 0]) {
+      if (!Number.isFinite(value)) {
+        throw new Error(`$poseparameter ${pose.name} needs finite min/max/loop values`);
+      }
+    }
+    lines.push(
+      `$poseparameter ${quote(pose.name)} ${pose.min} ${pose.max} ${pose.loop ?? 0}`,
     );
   }
 

@@ -468,6 +468,10 @@ $Loop
       staticprop: true,
       sequences: [{ name: "idle", smd: "crate_idle.smd", fps: 30 }],
       attachments: [{ name: "attach", bone: "root", position: [0, 0, 64] }],
+      poseParameters: [
+        { name: "move_x", min: -1, max: 1, loop: 0 },
+        { name: "body_yaw", min: -90, max: 90, loop: 360 },
+      ],
       collision: { smd: "crate_phys.smd", mass: 25 },
       extra: ["$keyvalues { prop_data { base \"Wooden.Medium\" } }"],
     });
@@ -475,6 +479,8 @@ $Loop
     expect(text).toContain('$modelname "props_myaddon/crate.mdl"');
     expect(text).toContain("$staticprop");
     expect(text).toContain("$attachment");
+    expect(text).toContain('$poseparameter "move_x" -1 1 0');
+    expect(text).toContain('$poseparameter "body_yaw" -90 90 360');
     expect(text).toContain('$collisionmodel "crate_phys.smd"');
     expect(text).toContain("$mass 25");
 
@@ -491,6 +497,12 @@ $Loop
     expect(() =>
       buildQc({ modelname: "models/a.mdl", collision: { smd: "a.smd", mass: 0 } }),
     ).toThrow(/mass/);
+    expect(() =>
+      buildQc({
+        modelname: "models/a.mdl",
+        poseParameters: [{ name: "x", min: Number.NaN, max: 1 }],
+      }),
+    ).toThrow(/finite/);
   });
 });
 

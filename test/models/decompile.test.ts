@@ -125,6 +125,8 @@ describe.skipIf(!has.gameContent)("decompile_model", () => {
     expect(qc).toContain("$cdmaterials \"models/props_vehicles/\"");
     expect(qc).toContain("$collisionmodel");
     expect(qc).toContain("$concave");
+    expect(qc).toContain("$collisiontext");
+    expect(qc).toMatch(/"name"\s+"carA_84sedan_physbox"/);
     expect(qc).toContain('$sequence "idle" "cara_84sedan_idle.smd" fps 30.000000');
     expect(r.warnings.join(" ")).toMatch(/shadow LODs use a/);
 

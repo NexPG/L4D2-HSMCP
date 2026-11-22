@@ -193,6 +193,17 @@ export const writeQcTool = defineTool({
         }),
       )
       .optional(),
+    poseParameters: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          min: z.number(),
+          max: z.number(),
+          loop: z.number().int().default(0).describe("Loop value, usually 0 or 360."),
+        }),
+      )
+      .optional()
+      .describe("`$poseparameter` sliders, e.g. move_x -1 1 0."),
     attachments: z
       .array(z.object({ name: z.string(), bone: z.string(), position: POSITION.optional() }))
       .optional(),
@@ -265,6 +276,7 @@ export const writeQcTool = defineTool({
       ...(args.surfaceprop === undefined ? {} : { surfaceprop: args.surfaceprop }),
       staticprop: args.staticprop,
       ...(args.sequences === undefined ? {} : { sequences: args.sequences }),
+      ...(args.poseParameters === undefined ? {} : { poseParameters: args.poseParameters }),
       ...(args.attachments === undefined ? {} : { attachments: args.attachments }),
       ...(args.bodygroups === undefined ? {} : { bodygroups: args.bodygroups }),
       ...(args.lods === undefined ? {} : { lods: args.lods }),

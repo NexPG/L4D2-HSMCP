@@ -258,6 +258,8 @@ interface CollisionModel {
   pieces: number[];
   /** False when the single-hull frame could not be reproduced; do not write it. */
   usable: boolean;
+  /** The PHY's KeyValues collision text, emitted as `$collisiontext` when present. */
+  collisionText: string | null;
   warnings: string[];
 }
 
@@ -406,6 +408,7 @@ function collisionSmd(
     maxConvexPieces: report.maxConvexPieces,
     pieces: report.solids.map((solid) => solid.convexPieces),
     usable,
+    collisionText: report.collisionText,
     warnings,
   };
 }
@@ -888,6 +891,25 @@ function qcText(
       }
     }
     lines.push("}");
+    if (collision.collisionText && !collision.jointed) {
+      let text = collision.collisionText.trim();
+      // The PHY tail also stores `editparams`, which is not a QC command. `$collisiontext`
+      // is only the preceding KeyValues block.
+      const editParams = text.toLowerCase().indexOf("editparams");
+      if (editParams >= 0) text = text.slice(0, editParams).trim();
+      lines.push("", "$collisiontext");
+      if (text.startsWith("{")) {
+        // The PHY stores the block braces and may include nested blocks such as
+        // `editparams`; write it verbatim rather than wrapping it a second time.
+        lines.push(...text.split(/\r?\n/));
+      } else {
+        lines.push("{");
+        for (const line of text.split(/\r?\n/)) {
+          if (line.trim()) lines.push(`\t${line.trim()}`);
+        }
+        lines.push("}");
+      }
+    }
   }
 
   // `$keyvalues` is the only QC carrier for `prop_data` and weapon particle attachments.
