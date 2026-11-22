@@ -21,6 +21,7 @@ answers "where is the test for this file" without a search.
 | [`textures/`](textures/) | textures: PNG decode, VTF write/convert/extract, DXT |
 | [`hammer/`](hammer/) | editor data: build registry and hash lookup, window cleanup |
 | [`campaign/`](campaign/) | mission files, convars, addons, finale contract |
+| [`mutations/`](mutations/) | `modes/*.txt` mutation definitions, `MutationOptions`, add-on scaffolding |
 | [`game/`](game/) | game-directory staging: hide/restore archives, install a BSP/nav pair |
 | [`kv/`](kv/) | KeyValues parse/serialise |
 | [`tools/`](tools/) | tool contracts and their own suites: output schemas, parity, overlays, instances, skybox, VScript, game runtime |

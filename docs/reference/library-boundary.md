@@ -5,7 +5,7 @@ This page is the standing answer to **two** questions:
 1. “Are we writing something `srctools` already does?”
 2. “Are we writing something this repository already does?”
 
-It is checked against **srctools 2.7.0** and the **47 verbs** registered in
+It is checked against **srctools 2.7.0** and the **54 verbs** registered in
 `src/core/python/main.py`.
 
 The rule itself is in [`AGENTS.md`](../../AGENTS.md) and
@@ -72,6 +72,7 @@ shows up here as four concrete reasons:
 | Particles | `srctools.particles` via sidecar | TypeScript tools call the sidecar | **delegated** |
 | Soundscripts/soundscapes/WAV | `srctools.sndscript`, `sndscape`; sidecar verbs | TypeScript tools call the sidecar | **delegated** |
 | FGD | `srctools.fgd` via sidecar `fgd_class` | TypeScript tools call the sidecar | **delegated** |
+| Game modes and mutations | `srctools.keyvalues` via sidecar `mode_read`; the existing `checkNut` reads Squirrel | TypeScript validates the contract and scaffolds the files; the guarded write is shared | **delegated** for parsing, project-owned for the contract |
 | Choreo, cmdseq | `srctools.choreo`, `srctools.cmdseq`; sidecar `read_choreo`, `choreo_edit_events`, `cmdseq_read` | Reading and text re-serialisation are srctools; TypeScript only discovers paths and applies the guarded write | **delegated** (semantic round-trip measured on 10 195 of 10 203 stock scenes) |
 | NAV, VTA, QC catalogue | no srctools module | TypeScript readers/writers | **necessary** |
 | Run Map execution | `srctools.cmdseq` supplies the commands; no library runs them | one thin runner: compilers through `runCompiler`, file steps through `node:fs`, argv through `compile/commandline.ts` | **necessary** |

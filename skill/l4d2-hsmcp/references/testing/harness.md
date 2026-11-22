@@ -27,6 +27,25 @@ run_map_test
 `withinSeconds` is measured from the previous marker, not from launch. A step that should
 follow in 20 seconds fails in 20 seconds.
 
+## A mutation or custom mode
+
+Pass `mode: <name>` instead of hand-writing the command:
+
+```
+run_map_test
+  map: c1m1_hotel
+  mode: hsmcp_mut_probe
+  waitFor: "Mutation hsmcp_mut_probe loaded"
+```
+
+Measured on this client: `+mp_gamemode` is an **unknown command**, and a second argument to
+`+map` is ignored (the log says `Script not found (coop)`). The map command itself accepts
+the mode, so the harness starts the map once and then runs
+`map <map> <mode>` from `cfg/listenserver.cfg`; the mutation's top-level `printl` is what a
+marker can match. The mode and its script must already be installed loose or in an add-on
+VPK. `mode` is also returned in the result, and the generated command appears in
+`commandsRun`.
+
 ## The trap: `commands` run before the map's entities exist
 
 `commands` are written to `cfg/listenserver.cfg`. The engine executes that file at **server

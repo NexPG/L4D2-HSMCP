@@ -119,7 +119,7 @@ export const readVscriptTool = defineTool({
   name: "read_vscript",
   description:
     "Reads a .nut as Squirrel without running it: functions, IncludeScript targets, the " +
-    "DirectorOptions table, the custom-finale stage list, whether a load banner exists, and " +
+    "DirectorOptions and MutationOptions tables, the custom-finale stage list, whether a load banner exists, and " +
     "diagnostics. Errors are the Lua habits and unbalanced delimiters that stop the engine " +
     "compiling; a missing stage or a stage beyond A_CustomFinale_StageCount is an error or " +
     "warning; an unknown DirectorOptions key is information, because this checker does not " +
@@ -134,6 +134,7 @@ export const readVscriptTool = defineTool({
     functions: z.array(z.string()),
     includes: z.array(z.string()),
     directorOptions: z.record(z.string()),
+    mutationOptions: z.record(z.string()),
     stageCount: z.number().nullable(),
     stages: z.array(z.object({ index: z.number(), type: z.string(), value: z.string().nullable() })),
     hasBanner: z.boolean(),

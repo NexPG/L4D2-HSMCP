@@ -33,6 +33,7 @@ export interface NutReport {
   functions: string[];
   includes: string[];
   directorOptions: Record<string, string>;
+  mutationOptions: Record<string, string>;
   stageCount: number | null;
   stages: NutStage[];
   hasBanner: boolean;
@@ -391,12 +392,21 @@ export function checkNut(source: string, path = "<script>"): NutReport {
     }
   }
 
+  let mutationOptions: Record<string, string> = {};
+  const mutationAssignment = /MutationOptions\s*(?:<-|=)\s*\{/.exec(code);
+  if (mutationAssignment) {
+    const start = mutationAssignment.index + mutationAssignment[0].length - 1;
+    const table = tableBody(code, start);
+    if (table) mutationOptions = tableEntries(table.body);
+  }
+
   return {
     path,
     ok: !diagnostics.some((entry) => entry.severity === "error"),
     functions,
     includes,
     directorOptions,
+    mutationOptions,
     stageCount,
     stages,
     hasBanner,

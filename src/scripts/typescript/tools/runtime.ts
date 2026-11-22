@@ -429,6 +429,15 @@ export const runMapTest = defineTool({
   guarded: true,
   inputSchema: {
     map: z.string().describe("Map name without a path or .bsp, for example hsmcp_test_m1."),
+    mode: z
+      .string()
+      .optional()
+      .describe(
+        "Mode or mutation name: a modes/<name>.txt stem installed loose or in an add-on " +
+          "VPK. L4D2 has no +mp_gamemode command and +map ignores a second argument, so " +
+          "the first server start runs `map <map> <mode>` from listenserver.cfg. Omit for " +
+          "the campaign's normal game mode.",
+      ),
     bsp: z
       .string()
       .optional()
@@ -572,6 +581,7 @@ export const runMapTest = defineTool({
   },
   outputSchema: {
     map: z.string(),
+    mode: z.string().nullable(),
     via: z.enum(["direct", "steam"]),
     matched: z.boolean(),
     reason: z.enum(["matched", "exited", "timeout"]),
@@ -673,6 +683,15 @@ export const runMapTest = defineTool({
     const cfgPath = join(gameDir, "cfg", "listenserver.cfg");
     const cfgBackup = `${cfgPath}.hsmcp-backup`;
     let commands = args.commands ?? [];
+    if (args.mode) {
+      // Measured: `+mp_gamemode` is an unknown command in this client, and a second
+      // argument to `+map` is ignored (the log says "Script not found (coop)"). The map
+      // command itself accepts the mode, and listenserver.cfg is where it can run.
+      if (!/^[A-Za-z0-9_.-]+$/.test(args.mode)) {
+        throw new Error(`mode "${args.mode}" is not a mode name`);
+      }
+      commands = [...commands, `map ${args.map} ${args.mode}`];
+    }
     if (args.schedule.length > 0) {
       // Time moves only for map entities, so a test that looks four minutes in is driven by
       // a generated `logic_timer` script rather than by the harness.
@@ -841,6 +860,7 @@ export const runMapTest = defineTool({
     const log = readLog(consoleLog);
     return {
       map: args.map,
+      mode: args.mode ?? null,
       via: args.via,
       matched: reason === "matched",
       reason,

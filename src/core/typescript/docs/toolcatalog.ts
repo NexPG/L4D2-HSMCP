@@ -159,6 +159,12 @@ const AREAS: Area[] = [
     },
   },
   {
+    slug: "mutations",
+    title: "Game modes and mutations",
+    covers: "modes/*.txt definitions, MutationOptions scripts, validation and add-on scaffolding",
+    groups: { "Mutation definitions and scaffolding": ["mutations"] },
+  },
+  {
     slug: "vscript",
     title: "VScript authoring",
     covers: "Squirrel source: writing and checking .nut files, DirectorOptions and include paths",

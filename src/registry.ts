@@ -13,6 +13,7 @@ import { campaignTools } from "./campaigns/typescript/tools/campaign.js";
 import { campaignBuildTools } from "./campaigns/typescript/tools/campaignbuild.js";
 import { gameplayTools } from "./campaigns/typescript/tools/gameplay.js";
 import { checkModeTools } from "./campaigns/typescript/tools/modes.js";
+import { mutationTools } from "./mutations/typescript/tools/mutations.js";
 import { addonTools } from "./packages/typescript/tools/addon.js";
 import { addonCheckTools } from "./packages/typescript/tools/addoncheck.js";
 import { manifestTools } from "./packages/typescript/tools/manifests.js";
@@ -162,6 +163,7 @@ export const allTools: AnyToolDef[] = [
   ...campaignBuildTools,
   ...gameplayTools,
   ...checkModeTools,
+  ...mutationTools,
   ...gateTools,
   ...addonTools,
   ...addonCheckTools,

@@ -530,6 +530,97 @@ def _check_assets(req: dict[str, Any]) -> dict[str, Any]:
     return check_assets(vmf, req, info)
 
 
+@verb("mode_read")
+def _mode_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads a Left 4 Dead 2 `modes/<name>.txt` through `srctools.keyvalues`.
+
+    This is the file that defines a mutation: `base`, player count, menu metadata and a
+    `convar` block. Valve's parser accepts newlines inside quoted values, which is exactly
+    how `Description` is written; the project's VMF KeyValues lexer is deliberately stricter
+    and is not used here.
+    """
+    from srctools.keyvalues import Keyvalues, NoKeyError
+
+    path = req["path"]
+    raw = Path(path).read_bytes()
+    text = None
+    for encoding in ("utf-8-sig", "cp1251", "latin1"):
+        try:
+            text = raw.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    if text is None:
+        raise ValueError(f"{path} is not decodable text")
+
+    root = Keyvalues.parse(text, path)
+    blocks = [child for child in root if child.has_children()]
+    if not blocks:
+        raise ValueError(f"{path} has no mode block")
+    block = blocks[0]
+
+    metadata_keys = {
+        "displaytitle",
+        "shortdescription",
+        "description",
+        "image",
+        "author",
+    }
+
+    def value(key: str) -> str | None:
+        try:
+            return block.find_key(key).value
+        except NoKeyError:
+            return None
+
+    convars: list[dict[str, str]] = []
+    for child in block:
+        if child.name.casefold() != "convar":
+            continue
+        for convar in child:
+            convars.append({"name": convar.name, "value": convar.value})
+
+    known = {
+        "base",
+        "maxplayers",
+        "hasdifficulty",
+        "singlechapter",
+        "playercontrolledzombies",
+        "displaytitle",
+        "shortdescription",
+        "description",
+        "image",
+        "author",
+    }
+    unknown = [
+        child.name
+        for child in block
+        if child.name.casefold() not in known and child.name.casefold() != "convar"
+    ]
+    for index, extra in enumerate(blocks[1:], start=1):
+        unknown.append(f"extra block {index}: {extra.name}")
+
+    return {
+        "path": path,
+        "name": block.name,
+        "blocks": [child.name for child in blocks],
+        "base": value("base"),
+        "maxPlayers": value("maxplayers"),
+        "hasDifficulty": value("hasdifficulty"),
+        "singleChapter": value("singlechapter"),
+        "playerControlledZombies": value("playercontrolledzombies"),
+        "metadata": {
+            "displayTitle": value("displaytitle"),
+            "shortDescription": value("shortdescription"),
+            "description": value("description"),
+            "image": value("image"),
+            "author": value("author"),
+        },
+        "convars": convars,
+        "unknownKeys": unknown,
+    }
+
+
 @verb("read_choreo")
 def _read_choreo(req: dict[str, Any]) -> dict[str, Any]:
     """Reads a text VCD choreography scene through `srctools.choreo.Scene`.
