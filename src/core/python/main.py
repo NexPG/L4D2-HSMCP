@@ -297,6 +297,7 @@ def _load_vmf(path: str, req: dict[str, Any] | None = None) -> tuple[Any, dict[s
         vmf,
         path,
         (req or {}).get("gameDir"),
+        recur_limit=int((req or {}).get("recurLimit", 16)),
         instance_path=(req or {}).get("instancePath"),
     )
     info["requested"] = True

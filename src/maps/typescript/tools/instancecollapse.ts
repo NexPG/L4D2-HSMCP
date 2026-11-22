@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { gameBlock, gameFor } from "../../../core/typescript/games/resolve.js";
@@ -16,27 +17,32 @@ import {
 } from "../../../core/typescript/tools/paths.js";
 import { parse } from "../../../formats/typescript/kv/parse.js";
 import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
-import { collapseInstances, VmfCollapseError } from "../vmf/collapse.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 
+/**
+ * `collapse_instances` is a thin wrapper around the sidecar's `vmf_collapse`, which delegates
+ * the expansion to `srctools.instancing` — the same library-backed implementation already
+ * used by `read_vmf`'s `collapseInstances` option. There is no second instance expander in
+ * this repository: writing one would be a duplicate of a tested library, and the fixup rules
+ * are exactly where a hand-written copy goes subtly wrong.
+ *
+ * The sidecar writes its result to a temporary file; this tool reads it back and lets the
+ * normal guarded write path handle `out`, backups and dry runs.
+ */
 export const collapseInstancesTool = defineTool({
   name: "collapse_instances",
   description:
-    "Expands every `func_instance` the way vbsp does and writes an ordinary VMF: world " +
-    "brushes and entities are inserted with fresh ids, rotated and translated by the " +
-    "instance's origin/angles, and renamed by its fixup style (prefix, postfix or none). " +
-    "Nested instances are expanded recursively, with cycle and depth checks. Outputs whose " +
-    "target is a classname or `!self`/`@` are left alone; a `func_instance_io_proxy` is " +
-    "removed with a warning because its input/output bridge is not reconstructed. Guarded, " +
-    "with an optional backup and dry run.",
+    "Expands every `func_instance` the way vbsp does and writes an ordinary VMF. The " +
+    "expansion is delegated to the Python sidecar's `vmf_collapse` (srctools.instancing): " +
+    "fresh ids, full origin/angles transform, prefix/postfix/none name fixup, nested " +
+    "instances, cycle and depth checks. Requires the sidecar; see health. Guarded, with an " +
+    "optional backup and dry run.",
   realm: "map",
   guarded: true,
   inputSchema: {
     path: z.string().describe("Map .vmf to collapse."),
-    out: z
-      .string()
-      .optional()
-      .describe("Output .vmf. Default: rewrite `path` in place."),
+    out: z.string().optional().describe("Output .vmf. Default: rewrite `path` in place."),
     instancePath: z
       .string()
       .optional()
@@ -44,7 +50,7 @@ export const collapseInstancesTool = defineTool({
         "Directory instances resolve from when they are not beside the map. Default: the " +
           "game's `InstancePath` from gameinfo.txt.",
       ),
-    maxDepth: z.number().int().min(1).max(100).default(20),
+    maxDepth: z.number().int().min(1).max(100).default(16),
     overwrite: z.boolean().default(false).describe("Allow replacing an existing different `out`."),
     dryRun: DRY_RUN,
     backup: BACKUP,
@@ -59,62 +65,60 @@ export const collapseInstancesTool = defineTool({
     backupPath: BACKUP_PATH,
     collapsed: z.number(),
     files: z.array(z.string()),
+    depthLimit: z.number().nullable(),
     solidCount: z.number(),
     entityCount: z.number(),
-    warnings: z.array(z.string()),
   },
-  handler: (args, ctx) => {
+  handler: async (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const out = args.out ? resolveInput(args.out, ctx.config) : path;
     if (out !== path && existsSync(out) && !args.overwrite && !args.dryRun) {
       throw new Error(`${out} already exists; pass overwrite:true to replace it`);
     }
     const { game, from } = gameFor(ctx.config, args.game);
-    const declared = args.instancePath ?? game.instancePath ?? null;
-    const instancePath =
-      declared === null
-        ? null
-        : isAbsolute(declared)
-          ? declared
-          : game.gameDir
-            ? join(game.gameDir, declared.replace(/\\/g, "/"))
-            : resolve(declared);
-
-    const before = readFileSync(path, "utf8");
-    let result;
+    const scratch = mkdtempSync(join(tmpdir(), "hammer-collapse-"));
+    const tempOut = join(scratch, "collapsed.vmf");
     try {
-      result = collapseInstances(before, path, {
-        instancePath,
-        maxDepth: args.maxDepth,
+      const reply = (await callSidecar(
+        "vmf_collapse",
+        {
+          path,
+          out: tempOut,
+          gameDir: game.gameDir ?? ctx.config.gameDir,
+          recurLimit: args.maxDepth,
+          ...(args.instancePath ? { instancePath: args.instancePath } : {}),
+        },
+        ctx.config,
+        300_000,
+      )) as { collapsed: number; files: string[]; depthLimit: number | null };
+      const text = readFileSync(tempOut, "utf8");
+      const write = writeGuarded(out, text, ctx.config, {
+        dryRun: args.dryRun,
+        backup: args.backup,
+        unchanged: false,
       });
-    } catch (error) {
-      if (error instanceof VmfCollapseError) throw error;
-      throw error;
+      const roots = parse(text).filter((node): node is KvBlock => node.kind === "block");
+      const entityCount = roots.filter((block) => block.name === "entity").length;
+      const solidCount = checkVmfSolids(path, text).solidCount;
+      ctx.audit.record({
+        kind: "file_write",
+        data: { path: out, backup: write.backupPath, instances: reply.collapsed },
+      });
+      return {
+        path,
+        out,
+        game: gameBlock(game, from),
+        written: write.written,
+        backupPath: write.backupPath,
+        collapsed: reply.collapsed,
+        files: reply.files,
+        depthLimit: reply.depthLimit ?? null,
+        solidCount,
+        entityCount,
+      };
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
     }
-    const roots = parse(result.text).filter((node): node is KvBlock => node.kind === "block");
-    const entityCount = roots.filter((block) => block.name === "entity").length;
-    const solidCount = checkVmfSolids(path, result.text).solidCount;
-    const write = writeGuarded(out, result.text, ctx.config, {
-      dryRun: args.dryRun,
-      backup: args.backup,
-      unchanged: result.text === before,
-    });
-    ctx.audit.record({
-      kind: "file_write",
-      data: { path: out, backup: write.backupPath, instances: result.collapsed },
-    });
-    return {
-      path,
-      out,
-      game: gameBlock(game, from),
-      written: write.written,
-      backupPath: write.backupPath,
-      collapsed: result.collapsed,
-      files: result.files,
-      solidCount,
-      entityCount,
-      warnings: result.warnings,
-    };
   },
 });
 
