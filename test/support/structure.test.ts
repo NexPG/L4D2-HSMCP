@@ -28,6 +28,7 @@ const SKILL = join(ROOT, "skill");
 const ROOT_FILES = new Set([
   ".gitattributes",
   ".gitignore",
+  "AGENTS.md",
   "CHANGELOG.md",
   "CONTRIBUTING.md",
   "LICENSE",

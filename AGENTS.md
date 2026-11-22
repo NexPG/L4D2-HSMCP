@@ -22,8 +22,11 @@ Before writing a parser, converter, packer or editor for a format:
 4. **When you do reimplement, say why in the module comment and add it to
    [`docs/reference/library-boundary.md`](docs/reference/library-boundary.md).** “It was
    easier” is not a reason.
-5. **Never add a second implementation of something this repository already has.** Search
-   `src/` for the helper and extend it; do not fork it into a tool.
+5. **Never add a second implementation of something this repository already has.**
+   Selection (`vmf/select.ts`), the guarded write (`fs/write.ts`), the
+   temporary-file/sidecar/guarded-write scaffold (`tools/sidecarvmf.ts`), the KV/VMF
+   readers — search `src/` first and extend the helper. A copy inside a new tool is the
+   same defect as a copy of srctools. Do not fork it into a tool.
 6. **Do not transplant srctools or other upstream code.** Use it as a dependency (sidecar)
    or write an independent implementation from the format, and cite the reference.
 

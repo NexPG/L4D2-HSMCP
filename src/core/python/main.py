@@ -324,6 +324,170 @@ def _vmf_collapse(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("carve_solids")
+def _carve_solids(req: dict[str, Any]) -> dict[str, Any]:
+    """Carve one brush out of one or more target brushes.
+
+    The boolean itself is `srctools.geometry.Geometry.carve`; this verb only maps Hammer
+    ids to solids, keeps the result in the target's owner (world or brush entity) and
+    exports the map. The carver is removed unless `keepCarver` is set, matching Hammer's
+    Carve tool.
+    """
+    from srctools.geometry import Geometry
+
+    vmf, _info = _load_vmf(req["path"])
+    owner_by_id: dict[int, Any] = {}
+    for ent in [vmf.spawn, *vmf.entities]:
+        for solid in ent.solids:
+            owner_by_id[solid.id] = ent
+
+    target_ids = [int(value) for value in req["targets"]]
+    carver_id = int(req["carver"])
+    if len(set(target_ids)) != len(target_ids):
+        raise ValueError("targets contains a duplicate id")
+    if carver_id in target_ids:
+        raise ValueError("the carver cannot also be a target")
+    missing = [value for value in [*target_ids, carver_id] if value not in owner_by_id]
+    if missing:
+        raise ValueError(f"no solid with id {', '.join(map(str, missing))} in this map")
+
+    targets = [next(s for s in owner_by_id[target_id].solids if s.id == target_id) for target_id in target_ids]
+    carver = next(s for s in owner_by_id[carver_id].solids if s.id == carver_id)
+    owner = owner_by_id[target_ids[0]]
+    if any(owner_by_id[target_id] is not owner for target_id in target_ids):
+        raise ValueError("all targets must belong to the same world or brush entity")
+
+    material = str(req.get("material") or "TOOLS/TOOLSNODRAW")
+    geometries = [Geometry.from_brush(solid) for solid in targets]
+    result = Geometry.carve(geometries, Geometry.from_brush(carver))
+    rebuilt = [geometry.rebuild(vmf, material) for geometry in result]
+    for solid in rebuilt:
+        solid.group_id = targets[0].group_id
+        solid.visgroup_ids = set(targets[0].visgroup_ids)
+        solid.editor_color = targets[0].editor_color
+
+    for solid in targets:
+        if solid in owner.solids:
+            owner.solids.remove(solid)
+    owner.solids.extend(rebuilt)
+
+    carver_owner = owner_by_id[carver_id]
+    if not req.get("keepCarver", False) and carver in carver_owner.solids:
+        carver_owner.solids.remove(carver)
+
+    out = req["out"]
+    with open(out, "w", encoding="utf8", newline="\n") as handle:
+        vmf.export(handle)
+    return {
+        "targets": target_ids,
+        "carver": carver_id,
+        "keepCarver": bool(req.get("keepCarver", False)),
+        "newSolidIds": [solid.id for solid in rebuilt],
+        "removedTargetCount": len(targets),
+        "removedCarver": not bool(req.get("keepCarver", False)),
+        "owner": owner["classname", "worldspawn"],
+        "out": out,
+    }
+
+
+@verb("hull_solids")
+def _hull_solids(req: dict[str, Any]) -> dict[str, Any]:
+    """Build one convex brush around the vertices of some brushes, or around points.
+
+    The hull uses srctools' `quickhull` and `Geometry.from_dup_planes`; the note below
+    explains why that is not `Geometry.from_points`. This verb only collects vertices, keeps
+    the result in the first source's owner and exports the map. Sources are kept unless
+    `keepSources` is false, so an accidental hull cannot delete geometry.
+    """
+    from srctools.geometry import Geometry, Plane
+    from srctools.math import Vec, quickhull
+
+    vmf, _info = _load_vmf(req["path"])
+    owner_by_id: dict[int, Any] = {}
+    for ent in [vmf.spawn, *vmf.entities]:
+        for solid in ent.solids:
+            owner_by_id[solid.id] = ent
+
+    source_ids = [int(value) for value in req.get("solidIds") or []]
+    if len(set(source_ids)) != len(source_ids):
+        raise ValueError("solidIds contains a duplicate id")
+    missing = [value for value in source_ids if value not in owner_by_id]
+    if missing:
+        raise ValueError(f"no solid with id {', '.join(map(str, missing))} in this map")
+
+    sources = [next(s for s in owner_by_id[sid].solids if s.id == sid) for sid in source_ids]
+    owner = owner_by_id[source_ids[0]] if sources else vmf.spawn
+    if any(owner_by_id[sid] is not owner for sid in source_ids):
+        raise ValueError("all solidIds must belong to the same world or brush entity")
+
+    points: list[Vec] = []
+    for solid in sources:
+        for poly in Geometry.from_brush(solid):
+            points.extend(poly.vertices)
+    points.extend(Vec(float(p[0]), float(p[1]), float(p[2])) for p in (req.get("points") or []))
+    if not points:
+        raise ValueError("give solidIds, points, or both: a hull needs vertices")
+
+    unique = {(round(p.x, 6), round(p.y, 6), round(p.z, 6)) for p in points}
+    if len(unique) < 4:
+        raise ValueError(f"a hull needs at least 4 distinct points, got {len(unique)}")
+    span = [max(v[i] for v in unique) - min(v[i] for v in unique) for i in range(3)]
+    flat = [axis for axis, size in zip("XYZ", span) if size < 1e-6]
+    if flat:
+        raise ValueError(
+            f"the points are coplanar (zero extent on {', '.join(flat)}); a hull needs volume"
+        )
+
+    try:
+        # `Geometry.from_points` is the obvious call, but in srctools 2.7.0 its planes come
+        # out facing inward and `from_dup_planes` then keeps no polygon at all (a cube's
+        # corners yield an empty Geometry). Use the library's `quickhull` directly and give
+        # each plane the outward orientation `from_dup_planes` expects: the centroid of a
+        # convex hull is behind every face.
+        cloud = [Vec(*p) for p in unique]
+        centroid = sum(cloud, Vec(0.0, 0.0, 0.0)) / len(cloud)
+        planes = []
+        for a, b, c in quickhull(cloud):
+            normal = Vec.cross(a - b, b - c).norm()
+            if normal.dot(centroid - a) > 0:
+                normal = -normal
+            planes.append(Plane(normal, a.dot(normal)))
+        geometry = Geometry.from_dup_planes(planes)
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"convex hull failed: {type(exc).__name__}: {exc}") from exc
+    if len(geometry.polys) < 4:
+        raise ValueError(
+            f"the hull has {len(geometry.polys)} faces, so it is not a closed volume"
+        )
+
+    material = str(req.get("material") or "TOOLS/TOOLSNODRAW")
+    solid = geometry.rebuild(vmf, material)
+    if sources:
+        solid.group_id = sources[0].group_id
+        solid.visgroup_ids = set(sources[0].visgroup_ids)
+        solid.editor_color = sources[0].editor_color
+
+    if not req.get("keepSources", True):
+        for source in sources:
+            if source in owner.solids:
+                owner.solids.remove(source)
+    owner.solids.append(solid)
+
+    out = req["out"]
+    with open(out, "w", encoding="utf8", newline="\n") as handle:
+        vmf.export(handle)
+    return {
+        "solidIds": source_ids,
+        "newSolidId": solid.id,
+        "pointCount": len(unique),
+        "planeCount": len(solid.sides),
+        "keepSources": bool(req.get("keepSources", True)),
+        "removedSourceCount": 0 if req.get("keepSources", True) else len(sources),
+        "owner": owner["classname", "worldspawn"],
+        "out": out,
+    }
+
+
 @verb("map_dependencies")
 def _map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     """Every asset a compiled map references, and where each one will come from."""

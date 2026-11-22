@@ -1,6 +1,6 @@
 # Tool catalogue
 
-250 tools. This page groups them by the job you are doing; each tool's own description is the
+252 tools. This page groups them byy the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -175,9 +175,11 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_vmf_fitting` | door casing, counter, skirting, cornice |
 | `transform_solids` | move, turn, scale, mirror brushes |
 | `merge_solids` | merge convex brushes into the one brush around them |
+| `hull_solids` | convex hull around selected brushes' vertices and/or explicit points, via srctools' `quickhull` |
 | `move_to_surface` | drop or raise brushes to a traced floor or ceiling, optionally aligned |
 | `delete_solids` | remove brushes |
 | `clip_solids` | cut with a plane, keep front, back or both |
+| `carve_solids` | Hammer's Carve: subtract one brush from the selected brushes, via `srctools.geometry` |
 | `move_vertices` | Hammer's vertex manipulation |
 | `hollow_solids` | turn blocks into room walls |
 | `set_face_material` | material on selected faces |

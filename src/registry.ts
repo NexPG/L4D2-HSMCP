@@ -62,6 +62,8 @@ import { healthTools } from "./core/typescript/tools/health.js";
 import { hlmvTools } from "./hammer/typescript/tools/hlmv.js";
 import { inputTools } from "./hammer/typescript/tools/input.js";
 import { hollowTools } from "./maps/typescript/tools/hollow.js";
+import { carveTools } from "./maps/typescript/tools/carve.js";
+import { hullTools } from "./maps/typescript/tools/hull.js";
 import { instanceTools } from "./maps/typescript/tools/instance.js";
 import { instanceCreateTools } from "./maps/typescript/tools/instancecreate.js";
 import { instanceCollapseTools } from "./maps/typescript/tools/instancecollapse.js";
@@ -236,6 +238,8 @@ export const allTools: AnyToolDef[] = [
   ...clipTools,
   ...vertexTools,
   ...hollowTools,
+  ...carveTools,
+  ...hullTools,
   ...faceTools,
   ...organiseTools,
   ...optimiseTools,

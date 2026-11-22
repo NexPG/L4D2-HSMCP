@@ -7,8 +7,9 @@ checkable. A README can claim parity. A row per command can be argued with.
 Four things are true of every row below, and worth saying once rather than in each of them:
 
 - **Coverage means the *result* is reachable**, not that the command was reimplemented.
-  Hammer's Carve is not here and never will be; what it produces comes out of `clip_solids`
-  used more than once, without the shattered brushes it is famous for.
+  Hammer's Carve *is* reachable as `carve_solids`, but the boolean is not ours: it is
+  `srctools.geometry.Geometry.carve`, the same library other VMF reads already use. A convex
+  hull around a selection is `hull_solids` (srctools' `quickhull`).
 - **Everything writes by splicing.** A tool changes the bytes it names and no others, so a
   diff of a machine edit reads like a diff of a human one.
 - **Four reasons are admitted for never covering something**, and no others: the mouse, the
@@ -18,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **250 tools**.
+Last checked against the tool list on 22/11/2026: **252 tools**.
 
 ## The file itself
 
@@ -55,7 +56,8 @@ getting `ENOENT` on the first call.
 | **Clip tool** | `clip_solids` | Front, back or both. Both must sum to the original volume or the write is refused. Two cuts (the 3-point clip) compiled with vbsp |
 | **Vertex manipulation** | `move_vertices` | Refuses what Hammer refuses: a move that leaves a face non-planar. A broadened edge compiled with vbsp |
 | Make Hollow | `hollow_solids` | Mitred. Hammer's own version overlaps at the corners. Verified by vbsp |
-| **Carve** | *not implemented, on purpose* | Its result comes from `clip_solids` repeated. An operation whose correct use is "don't" is not a gap |
+| **Carve** | `carve_solids` | One convex brush subtracted from the selected brushes; the pieces are `srctools.geometry`'s result, not a reimplementation. The carver is removed unless `keepCarver` |
+| Convex hull around a selection | `hull_solids` | srctools' `quickhull` over selected vertices and/or explicit points; sources kept by default |
 | Snap to grid | `transform_solids` (`grid`) | Optional and measured: snapping is what makes a face stop being flat |
 | Nudge | `transform_solids` (`move`) | |
 | Merge brushes | `merge_solids` | One convex brush; refuses a non-convex or overlapping selection |
@@ -179,7 +181,7 @@ getting `ENOENT` on the first call.
 |---|---|
 | The 2D and 3D views | The mouse. Placing something by eye is not a thing a tool call is. **Looking** is now covered from both sides: `render_vmf_view` draws the map from any camera and `render_vmf_plan` draws it as a dimensioned plan, both without the game and without a compile. What neither can be is a viewport you drag things in |
 | Judging whether a map looks right | Aesthetic judgement does not have a number. A tool that produced one would be producing a false one |
-| Carve | Covered by `clip_solids`; see above |
+| Carve | No longer a gap: `carve_solids` delegates to `srctools.geometry`; see above |
 | VIS/RAD preview in the editor | The running engine |
 | Driving the game console interactively | `run_map_test` waits for a log pattern; it does not type commands into a live session |
 

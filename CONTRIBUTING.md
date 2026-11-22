@@ -45,6 +45,8 @@ writing a parser, converter, packer or editor:
    writes, records the library does not expose, or a hot/offline path where a subprocess is
    not acceptable. Say which in the module comment;
 5. never add a second copy of a helper this repository already has — extend the existing one.
+   That includes selectors (`vmf/select.ts`), the guarded write (`fs/write.ts`) and the
+   sidecar-call scaffold (`tools/sidecarvmf.ts`), not only srctools itself.
 
 [`AGENTS.md`](AGENTS.md) is the short version for agents;
 [`docs/reference/library-boundary.md`](docs/reference/library-boundary.md) is the audited

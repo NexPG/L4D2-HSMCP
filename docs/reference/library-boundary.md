@@ -1,10 +1,10 @@
 # Library boundary: srctools, the sidecar and TypeScript
 
 This page is the standing answer to “are we writing something srctools already does?”. It is
-checked against **srctools 2.7.0** and the **41 verbs** registered in
+checked against **srctools 2.7.0** and the **45 verbs** registered in
 `src/core/python/main.py`.
 
-The rule itself is in [`AGENTS.md`](../AGENTS.md): call the library first; a second copy of
+The rule itself is in [`AGENTS.md`](../../AGENTS.md): call the library first; a second copy of
 an existing implementation is a defect unless the library cannot express the operation.
 
 ## How the boundary is chosen
@@ -30,6 +30,7 @@ shows up here as four concrete reasons:
 | Domain | Library / sidecar | What this repository does | Verdict |
 |---|---|---|---|
 | `func_instance` expansion | `srctools.instancing` via sidecar `vmf_collapse` | wrapper only: paths, guarded write, temp file | **delegated** (a duplicate TS expander was deleted) |
+| Brush carve and convex hull | `srctools.geometry.Geometry.carve`, `srctools.math.quickhull` via sidecar `carve_solids`, `hull_solids` | wrapper only: selector resolution, ids, guarded write | **delegated** (see the `from_points` note below) |
 | VMF read, lint, dependencies, displacements, static props | sidecar `vmf_read`, `vmf_lint`, `map_dependencies`, `vmf_displacements`, `static_props*` | read-side tools call the sidecar | **delegated** |
 | VMF write/edit | `srctools.vmf` exists | byte-offset TypeScript parser/writer, splices, prefab/instance extraction | **intentional TS** (offsets, byte-identical edits) |
 | KeyValues | `srctools.keyvalues` | TypeScript lexer/parser with offsets | **intentional TS** (offsets) |
@@ -53,6 +54,28 @@ shows up here as four concrete reasons:
 had `vmf_collapse`, which calls `srctools.instancing.collapse_all`; the TypeScript copy was
 deleted in commit `1699b05`. The tool is now a wrapper that keeps this project's `out`,
 backup and dry-run semantics, and passes `maxDepth` as the sidecar's `recurLimit`.
+
+The carve/hull wave found the same problem inside the project. `SolidSelector` and
+`FaceSelector` zod fields and their flat-argument mappers had been copied into
+`modify`, `organise`, `hollow`, `clip`, `optimise`, `face`, `displacement`, `skyboxbuild`
+and `skyboxcopy`; they now live once in `vmf/select.ts`. The temp-directory/sidecar/
+guarded-write scaffold was about to get its third copy, so it became
+`tools/sidecarvmf.ts` and `collapse_instances`, `carve_solids` and `hull_solids` use it.
+The rule is not only about srctools: **if the project already has the helper, import it.**
+
+## Upstream defect: `Geometry.from_points` returns nothing
+
+In srctools 2.7.0, `Geometry.from_points(cube_corners)` returns an empty `Geometry`.
+`from_points` builds a `Plane` from each quickhull triangle with
+`Vec.cross(a - b, b - c)`, but those normals face *into* the hull, while
+`Geometry.from_dup_planes` expects outward-facing planes (the same orientation
+`from_brush` produces). Every polygon is therefore discarded.
+
+The sidecar's `hull_solids` verb calls `quickhull` directly and flips each plane against
+the point cloud's centroid before `from_dup_planes`. That keeps the library's hull
+algorithm and plane-deduplication; it does not introduce a second hull implementation.
+If upstream fixes `from_points`, the loop can be replaced by a single call, and the cube
+oracle in `test/vmf/hull.test.ts` will say so.
 
 ## Known candidates, not hidden
 
