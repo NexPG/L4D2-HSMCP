@@ -61,6 +61,9 @@ data — without the game running — with the two tools that read and patch a `
 | `read_nav_areas` | Every area with its attributes, L4D2 spawn attributes, place, centre, size and connection counts. Filter by `MOB_ONLY`, `SPAWN_NO_MOBS`, a place name |
 | `write_nav_areas` | Set/clear attribute and spawn bits on one or more area ids, or assign an existing place. Writes a `.bak` and reads the file back |
 | `edit_nav_connections` | Add, remove or replace directional links by area id; mirrored on the target by default. Rewrites only the four connection lists and reads every edited area back |
+| `read_nav_ladders` / `write_nav_ladders` | List and patch ladder records: width, top/bottom points, length, direction and the five area ids. The 60-byte record keeps its size |
+| `read_nav_hiding_spots` / `write_nav_hiding_spots` | List and patch hiding spots: position and flag bits. The 17-byte record keeps its size |
+| `write_nav_places` | Append a place or rename one without renumbering the table; area place ids stay valid |
 
 **Attributes are masks, not values.** An area may carry bits this toolkit has no name for;
 `write_nav_areas` changes only the bits named in the call, so those survive. A `.nav` is not

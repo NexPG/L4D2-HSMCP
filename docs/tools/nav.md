@@ -1,6 +1,6 @@
 # Navigation
 
-12 tools: nav areas, attributes, connections, hiding spots, encounters, path and sight queries.
+16 tools: nav areas, attributes, connections, hiding spots, encounters, path and sight queries.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -30,3 +30,12 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | Tool | What it does |
 |---|---|
 | `nav_trouble_report` | Runs Left 4 Dead 2's own `nav_trouble_report` in the engine and returns its checks as structured findings, or analyses a `<map>_nav.txt` dump offline. |
+
+## Edit records
+
+| Tool | What it does |
+|---|---|
+| `read_nav_ladders` | Lists the ladder records in a .nav: id, width, top and bottom points, length, direction and the four top areas plus the bottom area. |
+| `write_nav_hiding_spots` | Changes an existing hiding spot's position or flags in place. |
+| `write_nav_ladders` | Changes an existing ladder record in place: width, top/bottom points, length, direction or the five area ids. |
+| `write_nav_places` | Adds places to a .nav place table or renames existing ones without changing their ids, so every area's place reference stays valid. |

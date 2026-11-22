@@ -79,6 +79,7 @@ const AREAS: Area[] = [
       "Areas, attributes and connections": ["navareas", "navconnections", "navdetails", "maps/navattrs"],
       "Path and sight queries": ["navpath"],
       "Troubleshooting": ["navtrouble"],
+      "Edit records": ["navwrite"],
     },
   },
   {

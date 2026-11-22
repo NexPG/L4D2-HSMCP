@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **271 tools**.
+Last checked against the tool list on 22/11/2026: **275 tools**.
 
 ## The file itself
 
@@ -241,6 +241,9 @@ map and looking, or by not happening at all.
 | `read_nav_encounters` | nothing: encounter paths and the spots a bot looks at along them are generated data Hammer cannot show |
 | `write_nav_areas` | the nav edit commands, typed one area at a time with no undo |
 | `edit_nav_connections` | the nav connection commands, one area and one direction at a time |
+| `read_nav_ladders` / `write_nav_ladders` | `nav_build_ladder`, one ladder at a time; this reads and patches the record itself |
+| `write_nav_hiding_spots` | nothing: hiding spots are generated data Hammer shows only as cover, not as editable records |
+| `write_nav_places` | nothing: Hammer has no place table to add to or rename |
 | `nav_trouble_report` | `nav_trouble_report` in the console, read by eye; this selects the same areas and returns their coordinates |
 | `nav_path` | nothing: the editor cannot ask whether a route exists or where it goes |
 | `nav_reachable` | nothing: a mapper finds a disconnected region by playing it |

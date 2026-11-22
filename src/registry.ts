@@ -80,6 +80,7 @@ import { modifyTools } from "./maps/typescript/tools/modify.js";
 import { navAreasTools } from "./nav/typescript/tools/navareas.js";
 import { navPathTools } from "./nav/typescript/tools/navpath.js";
 import { navDetailsTools } from "./nav/typescript/tools/navdetails.js";
+import { navWriteTools } from "./nav/typescript/tools/navwrite.js";
 import { navConnectionTools } from "./nav/typescript/tools/navconnections.js";
 import { navTroubleTools } from "./nav/typescript/tools/navtrouble.js";
 import { optimiseTools } from "./maps/typescript/tools/optimise.js";
@@ -239,6 +240,7 @@ export const allTools: AnyToolDef[] = [
   ...navAreasTools,
   ...navPathTools,
   ...navDetailsTools,
+  ...navWriteTools,
   ...navConnectionTools,
   ...buildTools,
   ...modifyTools,

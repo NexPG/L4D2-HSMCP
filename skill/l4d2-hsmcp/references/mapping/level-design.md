@@ -49,7 +49,9 @@ Nav is the map's second geometry: the Director spawns and hides only where the m
 `read_nav_places` groups areas the way the Director does, `read_nav_hiding_spots` lists the
 generated cover positions with their flags, and `read_nav_visibility` shows which areas see
 which (including inherited deltas). Hiding spots are created by `nav_analyze`; do not treat
-them as hand-placed entities.
+them as hand-placed entities. When a generated detail is wrong, `write_nav_hiding_spots` and
+`write_nav_ladders` patch the record in place, and `write_nav_places` adds or renames a place
+without renumbering the area references.
 
 ## Verticality
 

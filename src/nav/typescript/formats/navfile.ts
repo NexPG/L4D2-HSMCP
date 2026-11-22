@@ -91,6 +91,8 @@ export const SPAWN_FLAGS: Record<number, string> = {
 
 /** One `CNavHidingSpot`: id, world position and the raw flag byte. */
 export interface NavHidingSpot {
+  /** Byte offset of this 17-byte record in the file. */
+  offset: number;
   id: number;
   x: number;
   y: number;
@@ -209,6 +211,8 @@ export interface NavArea {
 
 /** One `CNavLadder` record from the end of the file. */
 export interface NavLadder {
+  /** Byte offset of this 60-byte record in the file. */
+  offset: number;
   id: number;
   width: number;
   top: { x: number; y: number; z: number };
@@ -230,6 +234,10 @@ export interface NavFile {
   bspSize: number;
   analyzed: boolean;
   places: string[];
+  /** Byte offset of the place count, or -1 when the version has no place table. */
+  placeTableOffset: number;
+  /** Byte offset just past the place table and the `hasUnnamedAreas` byte. */
+  placeTableEnd: number;
   hasUnnamedAreas: boolean;
   /** L4D2 population type, e.g. `c1streets`; null when the sub-version has none. */
   zombiePopulation: string | null;
@@ -345,7 +353,10 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
 
   const places: string[] = [];
   let hasUnnamedAreas = false;
+  let placeTableOffset = -1;
+  let placeTableEnd = -1;
   if (version >= 5) {
+    placeTableOffset = cursor.at;
     const placeCount = cursor.u16();
     plausibleCount(placeCount, bytes, cursor.at, 2);
     for (let i = 0; i < placeCount; i += 1) {
@@ -354,6 +365,7 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
       places.push(cursor.string(length).replace(/\0.*$/s, ""));
     }
     if (version > 11) hasUnnamedAreas = cursor.u8() !== 0;
+    placeTableEnd = cursor.at;
   }
 
   // L4D2 stores its population type and fog place list before the areas. The fields depend
@@ -412,7 +424,9 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     const hidingSpots = cursor.u8();
     const hidingSpotList: NavHidingSpot[] = [];
     for (let i = 0; i < hidingSpots; i += 1) {
+      const spotOffset = cursor.at;
       hidingSpotList.push({
+        offset: spotOffset,
         id: cursor.u32(),
         x: cursor.f32(),
         y: cursor.f32(),
@@ -574,7 +588,9 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     const ladderCount = cursor.u32();
     if (ladderCount > 0 && ladderCount <= 4096 && cursor.at + ladderCount * 60 <= bytes.length) {
       for (let index = 0; index < ladderCount; index += 1) {
+        const ladderOffset = cursor.at;
         ladders.push({
+          offset: ladderOffset,
           id: cursor.u32(),
           width: cursor.f32(),
           top: { x: cursor.f32(), y: cursor.f32(), z: cursor.f32() },
@@ -598,6 +614,8 @@ export function readNavFile(bytes: Buffer, path = "<buffer>"): NavFile {
     bspSize,
     analyzed,
     places,
+    placeTableOffset,
+    placeTableEnd,
     hasUnnamedAreas,
     zombiePopulation,
     fogPlaces,
@@ -683,6 +701,170 @@ export function patchNavAreas(nav: NavFile, updates: readonly NavAreaUpdate[]): 
 
   return out;
 }
+
+export interface NavHidingSpotUpdate {
+  areaId: number;
+  spotId: number;
+  x?: number;
+  y?: number;
+  z?: number;
+  /** Raw flag byte; `HIDING_SPOT_FLAGS` names the bits. */
+  flags?: number;
+}
+
+/** Patches existing hiding-spot records in place; the record size does not change. */
+export function patchNavHidingSpots(
+  nav: NavFile,
+  updates: readonly NavHidingSpotUpdate[],
+): Buffer {
+  const out = Buffer.from(nav.bytes);
+  for (const update of updates) {
+    const area = nav.areas.find((candidate) => candidate.id === update.areaId);
+    if (!area) throw new Error(`area ${update.areaId} is not in ${nav.path}`);
+    const spot = area.hidingSpotList.find((candidate) => candidate.id === update.spotId);
+    if (!spot) {
+      throw new Error(
+        `area ${update.areaId} has no hiding spot ${update.spotId}; ` +
+          `read_nav_hiding_spots lists the ids`,
+      );
+    }
+    for (const [axis, value] of [
+      [0, update.x],
+      [1, update.y],
+      [2, update.z],
+    ] as const) {
+      if (value === undefined) continue;
+      if (!Number.isFinite(value)) throw new Error(`hiding spot ${update.spotId} has a non-finite coordinate`);
+      out.writeFloatLE(value, spot.offset + 4 + axis * 4);
+    }
+    if (update.flags !== undefined) {
+      if (!Number.isInteger(update.flags) || update.flags < 0 || update.flags > 255) {
+        throw new Error(`hiding spot ${update.spotId} flags must be a byte, got ${update.flags}`);
+      }
+      out.writeUInt8(update.flags, spot.offset + 16);
+    }
+  }
+  return out;
+}
+
+export interface NavLadderUpdate {
+  id: number;
+  width?: number;
+  top?: readonly [number, number, number];
+  bottom?: readonly [number, number, number];
+  length?: number;
+  direction?: number;
+  topForwardAreaId?: number;
+  topLeftAreaId?: number;
+  topRightAreaId?: number;
+  topBehindAreaId?: number;
+  bottomAreaId?: number;
+}
+
+function writeVec(out: Buffer, at: number, value: readonly [number, number, number], label: string): void {
+  for (const [axis, coordinate] of value.entries()) {
+    if (!Number.isFinite(coordinate)) throw new Error(`${label} has a non-finite coordinate`);
+    out.writeFloatLE(coordinate, at + axis * 4);
+  }
+}
+
+/** Patches existing ladder records in place; the 60-byte record size does not change. */
+export function patchNavLadders(nav: NavFile, updates: readonly NavLadderUpdate[]): Buffer {
+  const out = Buffer.from(nav.bytes);
+  for (const update of updates) {
+    const ladder = nav.ladders.find((candidate) => candidate.id === update.id);
+    if (!ladder) {
+      throw new Error(
+        `ladder ${update.id} is not in ${nav.path}; ` +
+          `read_nav_ladders lists the ids`,
+      );
+    }
+    if (update.width !== undefined) {
+      if (!Number.isFinite(update.width) || update.width <= 0) {
+        throw new Error(`ladder ${update.id} width must be positive`);
+      }
+      out.writeFloatLE(update.width, ladder.offset + 4);
+    }
+    if (update.top) writeVec(out, ladder.offset + 8, update.top, `ladder ${update.id} top`);
+    if (update.bottom) writeVec(out, ladder.offset + 20, update.bottom, `ladder ${update.id} bottom`);
+    if (update.length !== undefined) {
+      if (!Number.isFinite(update.length) || update.length < 0) {
+        throw new Error(`ladder ${update.id} length must be non-negative`);
+      }
+      out.writeFloatLE(update.length, ladder.offset + 32);
+    }
+    const ints: Array<[number, number | undefined]> = [
+      [36, update.direction],
+      [40, update.topForwardAreaId],
+      [44, update.topLeftAreaId],
+      [48, update.topRightAreaId],
+      [52, update.topBehindAreaId],
+      [56, update.bottomAreaId],
+    ];
+    for (const [at, value] of ints) {
+      if (value === undefined) continue;
+      if (!Number.isInteger(value) || value < 0) {
+        throw new Error(`ladder ${update.id} field at ${at} must be a non-negative integer`);
+      }
+      out.writeUInt32LE(value >>> 0, ladder.offset + at);
+    }
+  }
+  return out;
+}
+
+
+export interface NavPlaceUpdate {
+  /** New place names to append; each gets the next 1-based id. */
+  add?: readonly string[];
+  /** Rename an existing place without changing ids, so area place references stay valid. */
+  rename?: ReadonlyArray<{ from: string; to: string }>;
+}
+
+/**
+ * Rewrites the place table. Area place ids are 1-based indexes into this table, so the
+ * table is rebuilt in place and every byte after it is shifted by name length only; no
+ * area id changes. Removal is refused because it would renumber every following place.
+ */
+export function patchNavPlaces(nav: NavFile, update: NavPlaceUpdate): Buffer {
+  if (nav.placeTableOffset < 0) {
+    throw new Error(`${nav.path} is nav version ${nav.version}, which has no place table`);
+  }
+  const places = [...nav.places];
+  for (const rename of update.rename ?? []) {
+    const index = places.findIndex((name) => name.toLowerCase() === rename.from.toLowerCase());
+    if (index === -1) {
+      throw new Error(`"${rename.from}" is not in ${nav.path}'s place table`);
+    }
+    places[index] = rename.to;
+  }
+  for (const name of update.add ?? []) {
+    if (places.some((existing) => existing.toLowerCase() === name.toLowerCase())) {
+      throw new Error(`place "${name}" already exists in ${nav.path}`);
+    }
+    places.push(name);
+  }
+  if (places.length > 65535) throw new Error("a nav cannot hold more than 65535 places");
+
+  const parts: Buffer[] = [];
+  const count = Buffer.alloc(2);
+  count.writeUInt16LE(places.length);
+  parts.push(count);
+  for (const place of places) {
+    const value = `${place}\0`;
+    if (!/^[\x00-\xff]*$/.test(value)) {
+      throw new Error(`place "${place}" has characters outside latin-1`);
+    }
+    const bytes = Buffer.from(value, "latin1");
+    if (bytes.length > 65535) throw new Error(`place "${place}" is too long for the table`);
+    const length = Buffer.alloc(2);
+    length.writeUInt16LE(bytes.length);
+    parts.push(length, bytes);
+  }
+  const tail = nav.version > 11 ? Buffer.from([nav.hasUnnamedAreas ? 1 : 0]) : Buffer.alloc(0);
+  parts.push(tail, nav.bytes.subarray(nav.placeTableEnd));
+  return Buffer.concat([nav.bytes.subarray(0, nav.placeTableOffset), ...parts]);
+}
+
 
 export type NavDirection = "north" | "east" | "south" | "west";
 

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-271 tools. This page groups them by the job you are doing; each tool's own description is the
+275 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
