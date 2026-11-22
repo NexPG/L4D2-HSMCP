@@ -88,7 +88,7 @@ covered: this table is the summary.
 | Build cubemaps in engine | `run_build_cubemaps` | verified HDR/LDR/both; `pack` copies them into an `outBsp` |
 | Loading screen / poster / map thumbnail | `write_loading_screen` | verified by unit: PNG to VTF + UnlitGeneric VMT, material path derived from `materials/` |
 | HUD screens (`.res`) | `read_hud`, `write_hud` | condition-preserving control tree, value edit and batch coordinate offset; the stock `resource/ui/l4d360ui/audio.res` (39 controls) reads from the VPK and an offset copy was written |
-| Material and sound validation | `check_vmt`, `check_sound` | verified by unit: bad shader/base texture and a non-game-ready WAV are named |
+| Material and sound validation | `check_vmt`, `check_sound` | verified by unit: bad shader/base texture and a non-game-ready WAV are named; a patch's include resolves under `materialsDirs` or is reported missing |
 | Material editing | `read_vmt`, `write_vmt`, `edit_vmt` | verified by unit: a value and a nested Proxies value change in place, comments and untouched bytes survive |
 
 ## Detail, hints, portals

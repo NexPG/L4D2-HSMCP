@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.200-alpha - 2026-11-22
+
+- **`check_vmt` resolves a patch's `include`**: with `materialsDirs` it locates the base
+  material, reads its shader and `$basetexture`, and reports the resolved path. A missing
+  base is a warning, an include that is itself a patch is named as the next link, and
+  calling without material roots says the include was not resolved instead of implying it
+  was fine.
+- **Tool count: 269.** Tests: 220 files, 1,869 passed, 33 skipped.
+
 ## 0.0.199-alpha - 2026-11-22
 
 - **`read_vmt` tree**: the reply now carries the whole nested material as `tree`, so a

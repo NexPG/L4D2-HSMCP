@@ -8,7 +8,7 @@
  * own archive, when this machine has one, because a parser that only agrees with itself is
  * not evidence of anything.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -24,6 +24,7 @@ import {
 import { readVpk, readVpkEntry, vpkArchivePath } from "../../src/formats/typescript/formats/vpk.js";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readVmtTool, writeVmtTool, editVmtTool } from "../../src/textures/typescript/tools/vmt.js";
+import { checkVmtTool } from "../../src/textures/typescript/tools/vmtcheck.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -343,5 +344,75 @@ describe("edit_vmt", () => {
     expect(closed.trimEnd().endsWith("}")).toBe(true);
     expect(parseVmt(closed).appendedBraces).toBe(0);
     expect(parseVmt(closed).parameters.get("$basetexture")).toBe("vgui/black");
+  });
+});
+
+describe("check_vmt patch resolution", () => {
+  function materials(name: string): string {
+    const root = join(scratch, name, "materials");
+    mkdirSync(join(root, "concrete"), { recursive: true });
+    writeFileSync(
+      join(root, "concrete", "base.vmt"),
+      '"LightmappedGeneric"\n{\n\t"$basetexture" "concrete/base"\n\t"$surfaceprop" "concrete"\n}\n',
+      "utf8",
+    );
+    return root;
+  }
+
+  it("resolves a patch include under materialsDirs and reports its base", () => {
+    const root = materials("patch-ok");
+    const path = join(root, "concrete", "reskin.vmt");
+    writeFileSync(
+      path,
+      '"patch"\n{\n\t"include" "materials/concrete/base.vmt"\n\t"replace"\n\t{\n\t\t"$basetexture" "concrete/new"\n\t}\n}\n',
+      "utf8",
+    );
+    const r = checkVmtTool.handler({ path, materialsDirs: [root] }, ctx) as {
+      overall: string;
+      patch: {
+        include: string;
+        resolved: string | null;
+        exists: boolean | null;
+        shader: string | null;
+        baseTexture: string | null;
+      } | null;
+      findings: Array<{ rule: string }>;
+    };
+    expect(r.patch).toMatchObject({
+      include: "materials/concrete/base.vmt",
+      exists: true,
+      shader: "LightmappedGeneric",
+      baseTexture: "concrete/base",
+    });
+    expect(r.patch!.resolved).toBe(join(root, "concrete", "base.vmt"));
+    expect(r.overall).toBe("pass");
+    expect(r.findings.map((finding) => finding.rule)).not.toContain("vmt-patch-missing");
+  });
+
+  it("names a missing include and a patch with no roots to search", () => {
+    const root = materials("patch-missing");
+    const path = join(root, "concrete", "broken.vmt");
+    writeFileSync(
+      path,
+      '"patch"\n{\n\t"include" "materials/concrete/not-here.vmt"\n\t"replace"\n\t{\n\t}\n}\n',
+      "utf8",
+    );
+    const missing = checkVmtTool.handler({ path, materialsDirs: [root] }, ctx) as {
+      overall: string;
+      patch: { exists: boolean | null; note: string } | null;
+      findings: Array<{ rule: string }>;
+    };
+    expect(missing.patch?.exists).toBe(false);
+    expect(missing.patch?.note).toMatch(/not found/);
+    expect(missing.overall).toBe("warn");
+    expect(missing.findings.map((finding) => finding.rule)).toContain("vmt-patch-missing");
+
+    const unresolved = checkVmtTool.handler({ path, materialsDirs: [] }, ctx) as {
+      patch: { exists: boolean | null; note: string } | null;
+      findings: Array<{ rule: string }>;
+    };
+    expect(unresolved.patch?.exists).toBeNull();
+    expect(unresolved.patch?.note).toMatch(/materialsDirs/);
+    expect(unresolved.findings.map((finding) => finding.rule)).toContain("vmt-patch-unresolved");
   });
 });

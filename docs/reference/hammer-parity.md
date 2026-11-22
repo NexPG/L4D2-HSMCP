@@ -306,7 +306,7 @@ map and looking, or by not happening at all.
 | `read_hud` | Hammer does not expose a `.res` control tree; its VGUI screens are edited by hand, and the stock files live inside the VPK |
 | `write_hud` | no editor edits one `.res` value, batch-shifts HUD coordinates, or preserves `[$WIN32]` tags, comments and indentation |
 | `write_cubemap_grid` | Hammer places one cubemap at a time; this lays out a grid |
-| `check_vmt` | no editor validates a material's shader, base texture or compile flags |
+| `check_vmt` | no editor validates a material's shader, base texture, compile flags, texture files or a patch's include |
 | `check_sound` | no editor says whether a WAV is L4D2's shape or a soundscript wave is missing |
 | `write_brush_entity` | any brush entity by class, volume and outputs; no editor enum limits it |
 | `write_point_entity` | any point entity by class, origin and outputs |

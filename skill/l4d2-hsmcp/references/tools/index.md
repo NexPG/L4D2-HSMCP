@@ -51,7 +51,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_detail_sprites` | list detail types, density and groups |
 | `check_particle` | validate a PCF, its child systems and renderer materials |
 | `write_cubemap_grid` | place `env_cubemap` samples on a regular grid inside a bounds box |
-| `check_vmt` | validate shader, base texture, compile flags and texture files |
+| `check_vmt` | validate shader, base texture, compile flags, texture files and a patch's include |
 | `check_sound` | validate a WAV's format or a soundscript's waves |
 ## Entity families
 
