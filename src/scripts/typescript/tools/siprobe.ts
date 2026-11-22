@@ -5,13 +5,39 @@
  * `hmcp_backyard` have none, and a map without a player gives `z_spawn ... no player`.
  * `SendToConsole` is the working route; a `point_servercommand` + `EntFire` did not execute
  * in the same runs. `via: "steam"` is what attaches a local player to the listen server.
+ *
+ * A host with a live chapter exit is refused unless `stripExit` is set: the checkpoint warp
+ * lands the team in `info_changelevel`, and with the next chapter absent the engine restarts
+ * the same map forever (measured: 53 `Host_NewGame` lines, no `Loading:` line).
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import { addEntities, verifyEntities } from "../../../maps/typescript/tools/entityfamilies.js";
+import { applyVmfOps, readEntities } from "../../../maps/typescript/vmf/edit.js";
+import type { VmfOp } from "../../../maps/typescript/vmf/edit.js";
+
+const EXIT_WARP = "WarpAllSurvivorsToCheckpoint";
+
+/**
+ * Finds the entities that let a map leave itself: an `info_changelevel` brush, and whatever
+ * runs `Director.WarpAllSurvivorsToCheckpoint()`.
+ *
+ * This is a guard, not a format reader: `readEntities` keeps the source offsets, so the
+ * check is a slice of the block that already exists, and the removal goes through
+ * `applyVmfOps`, the same path `edit_vmf` uses.
+ */
+function findChapterExits(text: string) {
+  const { entities } = readEntities(text);
+  return entities.filter(
+    (entity) =>
+      entity.classname === "info_changelevel" ||
+      text.slice(entity.block.start, entity.block.end).includes(EXIT_WARP),
+  );
+}
 
 const CLASSES = ["boomer", "smoker", "hunter", "spitter", "jockey", "charger", "tank", "witch"] as const;
 const DEFAULT_KEYS = [
@@ -79,9 +105,11 @@ export const writeSpecialInfectedProbeTool = defineTool({
     "prints their live counts and the effective `SessionOptions` keys. The map must have a " +
     "player start, flow and a generated nav; a fixture room without them gives " +
     "`z_spawn ... no player`. Launch with `run_map_test` `via: \"steam\"` and the returned " +
-    "markers; direct `-insecure` launch did not attach a player on the test campaign. The " +
-    "spawns are manual, not Director limits: use it to prove the probe and class identity, " +
-    "not that `BoomerLimit` was honoured.",
+    "markers; direct `-insecure` launch did not attach a player on the test campaign. A host " +
+    "with a live `info_changelevel` or a checkpoint warp is refused unless `stripExit` is " +
+    "set, because such a map restarts itself on the loading screen when the next chapter is " +
+    "absent. The spawns are manual, not Director limits: use it to prove the probe and class " +
+    "identity, not that `BoomerLimit` was honoured.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -92,6 +120,14 @@ export const writeSpecialInfectedProbeTool = defineTool({
     scriptName: z.string().min(1).default("hsmcp_si_probe"),
     scriptsDir: z.string().optional().describe("Defaults to <vmf dir>/scripts/vscripts."),
     targetname: z.string().optional(),
+    stripExit: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Remove an `info_changelevel` and the checkpoint-warp chain before adding the probe. " +
+          "Without this, a probe host that carries a live chapter exit is refused: with the " +
+          "next chapter missing, the engine restarts the same map on the loading screen.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -101,6 +137,13 @@ export const writeSpecialInfectedProbeTool = defineTool({
     logicScriptId: z.number().nullable(),
     spawn: z.array(z.string()),
     keys: z.array(z.string()),
+    strippedExits: z.array(
+      z.object({
+        classname: z.string(),
+        targetname: z.string().nullable(),
+        id: z.number().nullable(),
+      }),
+    ),
     markers: z.array(
       z.object({ name: z.string(), pattern: z.string(), withinSeconds: z.number() }),
     ),
@@ -119,6 +162,40 @@ export const writeSpecialInfectedProbeTool = defineTool({
     if (!/^[A-Za-z0-9_]+$/.test(scriptName)) {
       throw new Error("scriptName must be letters, digits and underscores");
     }
+
+    const source = readFileSync(vmf, "utf8");
+    const exits = findChapterExits(source);
+    const strippedExits = exits.map((entity) => ({
+      classname: entity.classname,
+      targetname: entity.targetname,
+      id: entity.id,
+    }));
+    if (exits.length > 0 && !args.stripExit) {
+      const names = exits
+        .map((entity) => `${entity.classname}${entity.targetname ? ` "${entity.targetname}"` : ""}`)
+        .join(", ");
+      throw new Error(
+        `The probe host has a live chapter exit (${names}). A map that can changelevel ` +
+          "restarts itself on the loading screen when the next chapter is not installed " +
+          "(measured: 53 `Host_NewGame` lines for one map and no `Loading:` line). Remove " +
+          'the exit with `edit_vmf` (`op: "remove"` on those targetnames) and compile under ' +
+          "its own name, or pass `stripExit: true`.",
+      );
+    }
+    if (exits.length > 0) {
+      const ops: VmfOp[] = exits.map((entity) =>
+        entity.id !== null
+          ? { op: "remove", match: { id: entity.id } }
+          : { op: "remove", match: { index: entity.index } },
+      );
+      const applied = applyVmfOps(source, ops);
+      writeGuarded(vmf, applied.text, ctx.config, { unchanged: applied.unchanged });
+      ctx.audit.record({
+        kind: "vmf_edit",
+        data: { path: vmf, ops: ops.length, written: true, reason: "strip chapter exit" },
+      });
+    }
+
     const scriptsDir = args.scriptsDir
       ? resolveInput(args.scriptsDir, ctx.config)
       : join(dirname(vmf), "scripts", "vscripts");
@@ -147,6 +224,7 @@ export const writeSpecialInfectedProbeTool = defineTool({
       logicScriptId,
       spawn,
       keys,
+      strippedExits,
       markers: [
         {
           name: "si_done",
@@ -163,7 +241,8 @@ export const writeSpecialInfectedProbeTool = defineTool({
         "Compile the VMF and generate nav, then run_map_test with `via: \"steam\"`, " +
         "`scriptsDir` set to this directory, and `markerOrder: \"any\"`. A zero count with " +
         "`no player` in the log means the map has no local player; use a playable campaign " +
-        "chapter, not a fixture room.",
+        "chapter, not a fixture room. If the load never finishes, check `strippedExits`: an " +
+        "exit that is still present restarts the map forever when the next chapter is absent.",
     };
   },
 });

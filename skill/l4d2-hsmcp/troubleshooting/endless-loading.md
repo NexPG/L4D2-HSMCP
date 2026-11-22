@@ -58,6 +58,8 @@ told apart from a loop on its own.
   the `selftest_start` / `selftest_warp` chain, then compile under its own name. `edit_vmf`
   `op: "remove"` on a `targetname` removes the brush entity together with its solids (measured:
   42 → 39 entities, 53 → 52 solids, zero `info_changelevel` left).
+  `write_special_infected_probe` does the same check and refuses a host that still has one;
+  pass `stripExit: true` and it removes the exit entities and reports them in `strippedExits`.
 - **Or install the whole campaign.** A mission plus every chapter in one VPK lets the
   transition resolve; a loose `.bsp` alone does not.
 - Check the install afterwards with `check_game_state`; it must report `clean: true`.

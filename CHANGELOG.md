@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.229-alpha - 2026-11-23
+
+- **`write_special_infected_probe` refuses an endless-loading host.** A VMF that carries an
+  `info_changelevel` or a `Director.WarpAllSurvivorsToCheckpoint()` chain is rejected by name,
+  because with the next chapter missing the engine restarts the same map forever (measured: 53
+  `Host_NewGame` lines for one map and no `Loading:` line). `stripExit: true` removes those
+  entities through the same `applyVmfOps` path as `edit_vmf` and returns them in
+  `strippedExits`.
+- **A 38-area chapter cannot host a natural special-infected spawn.** Five reports over 100 s,
+  survivors teleported and `director_start` issued, logged 0 commons and 0 specials; the
+  requirement is now recorded in the skill, not retried.
+- **Tool count: 288.** Tests: 229 files, 1,919 passed, 30 skipped.
+
 ## 0.0.212-alpha - 2026-11-22
 
 - **`write_bsp_overlay`**: patches one compiled overlay's texinfo, render order, U/V ranges,

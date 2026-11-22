@@ -68,9 +68,17 @@ local player (`Cannot execute "z_spawn ...", no player`). Steam launch did.
 
 A probe host with a live `info_changelevel` and checkpoint warp restarts forever on the
 loading screen, so strip the exit first (see "A loading bar that never finishes" below).
+`write_special_infected_probe` refuses such a host and names the entities; `stripExit: true`
+removes them and reports them in `strippedExits`.
 
 This spawns manually, so it proves the probe/class identity, not that a mutation's
 `BoomerLimit` was honoured. A zero count with `no player` means the host map is not playable.
+
+**A 38-area test chapter does not host a natural spawn.** Five probe reports over 100 s on the
+exit-stripped test chapter, with all four survivors teleported to the far end and
+`director_start` issued, logged `0` commons and `0` specials. The Director needs a full-size
+flow chapter before "it spawned on its own" can be asserted; do not read that silence as a
+failed limit or a failed probe.
 
 ## Effective DirectorOptions
 
