@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.203-alpha - 2026-11-22
+
+- **MCP prompts for the skill routes**: `l4d2_task`, `l4d2_hud_override`,
+  `l4d2_material_edit`, `l4d2_compiled_light` and `l4d2_editor_sequence`. A prompt names the
+  resource page and carries the caller's map/screen/material; the workflow text stays in one
+  place.
+- **Connection instructions rewritten**: they now describe the full toolkit (campaigns, nav,
+  VScript, models, textures, materials, HUD, audio, particles, VPK) and point at the skill
+  resources and prompts, rather than only VMF/BSP/compilers.
+- **Skill route note**: `SKILL.md` says the same routes exist as prompts.
+- **Tool count: 270.** Tests: 221 files, 1,875 passed, 33 skipped.
+
 ## 0.0.202-alpha - 2026-11-22
 
 - **The skill is served as MCP resources**: every Markdown page under `skill/l4d2-hsmcp` is

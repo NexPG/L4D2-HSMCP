@@ -10,6 +10,7 @@ import { ToolRegistry } from "./core/typescript/mcp/registry.js";
 import type { ToolContext } from "./core/typescript/mcp/registry.js";
 import { createMcpServer } from "./core/typescript/mcp/server.js";
 import { registerSkillResources } from "./core/typescript/mcp/skill.js";
+import { registerSkillPrompts } from "./core/typescript/mcp/prompts.js";
 
 /**
  * Handed to the client at connection time.
@@ -19,22 +20,23 @@ import { registerSkillResources } from "./core/typescript/mcp/skill.js";
  * So it says what the server is FOR and when to reach for it -- not how each tool works,
  * which the tool definitions already carry.
  */
-const INSTRUCTIONS = `Offline map tooling for Left 4 Dead 2.
+const INSTRUCTIONS = `Offline, local-first tooling for Left 4 Dead 2: maps, campaigns, nav meshes,
+VScripts, models, textures, materials, HUD screens, audio, particles and addon VPKs.
 
-Reach for it to: measure a map (extents, entity counts and histogram, lump sizes) --
-including a 1 GB shipped .bsp, which it reads by offset in milliseconds rather than
-loading whole; inspect or edit a .vmf; and drive the Windows compilers natively, with the
-game's own FGD as the entity schema.
-
-Prefer it over reading map files by hand: a .bsp is binary, and a naive full read of a
-large map would stall this transport.
+Reach for it to read or edit a .vmf, inspect or patch a .bsp, compile through the game's
+own toolchain or the editor's Run Map sequence, generate and inspect nav, author and compile
+models, write VTF/VMT/particles/audio content, build and verify VPKs, and launch/probe the
+game for evidence. Prefer it over reading binary map files by hand: a .bsp is read by offset,
+not loaded whole.
 
 Realms: \`map\` is pure file work, \`local\` shells out to a host binary. Tools that write
 or execute are guarded and take confirm:true. It never talks to a running game or a
 dedicated server and holds no lock.
 
-The L4D2-HSMCP skill is also served as MCP resources under \`l4d2-hsmcp://skill/\`: start
-with \`l4d2-hsmcp://skill/SKILL.md\`, then the workflow or reference it names.`;
+The L4D2-HSMCP skill is served as MCP resources under \`l4d2-hsmcp://skill/\`: start with
+\`l4d2-hsmcp://skill/SKILL.md\`, then the workflow or reference it names. The same routes
+are MCP prompts (\`l4d2_task\`, \`l4d2_hud_override\`, \`l4d2_material_edit\`,
+\`l4d2_compiled_light\`, \`l4d2_editor_sequence\`).`;
 import { allTools } from "./registry.js";
 import { preapprove } from "./core/typescript/mcp/preapprove.js";
 import { VERSION } from "./core/typescript/version.js";
@@ -82,13 +84,14 @@ async function main(): Promise<void> {
   });
   const skillRoot = join(import.meta.dirname, "..", "skill", "l4d2-hsmcp");
   const skillCount = existsSync(skillRoot) ? registerSkillResources(server, skillRoot) : 0;
+  const promptCount = registerSkillPrompts(server);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(
     `hammer-mcp ${VERSION} ready -- repoRoot=${config.repoRoot} ` +
       `platform=${process.platform} tools=${registry.list().length} ` +
-      `skillResources=${skillCount}\n`,
+      `skillResources=${skillCount} prompts=${promptCount}\n`,
   );
 }
 

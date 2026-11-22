@@ -11,6 +11,7 @@ import {
   listSkillFiles,
   readSkillFile,
 } from "../../src/core/typescript/mcp/skill.js";
+import { SKILL_PROMPTS, registerSkillPrompts } from "../../src/core/typescript/mcp/prompts.js";
 import { REPO } from "../support/env.js";
 
 const SKILL = join(REPO, "skill", "l4d2-hsmcp");
@@ -53,5 +54,38 @@ describe("skill resources", () => {
       missing.push(path);
     }
     expect(missing, "linked in SKILL.md and absent from the repository").toEqual([]);
+  });
+
+  it("registers prompts that route to resources and carry the caller's arguments", () => {
+    const names = SKILL_PROMPTS.map((prompt) => prompt.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toEqual([
+      "l4d2_task",
+      "l4d2_hud_override",
+      "l4d2_material_edit",
+      "l4d2_compiled_light",
+      "l4d2_editor_sequence",
+    ]);
+    for (const prompt of SKILL_PROMPTS) {
+      expect(prompt.render({})).toContain("l4d2-hsmcp://skill/");
+    }
+
+    const hud = SKILL_PROMPTS.find((prompt) => prompt.name === "l4d2_hud_override")!;
+    const text = hud.render({
+      screen: "resource/ui/l4d360ui/audio.res",
+      change: "shift the volume slider 10 px left",
+    });
+    expect(text).toContain("l4d2-hsmcp://skill/workflows/hud-override.md");
+    expect(text).toContain("resource/ui/l4d360ui/audio.res");
+    expect(text).toContain("shift the volume slider 10 px left");
+
+    const registered: string[] = [];
+    const count = registerSkillPrompts({
+      registerPrompt: (name: string) => {
+        registered.push(name);
+      },
+    } as never);
+    expect(count).toBe(SKILL_PROMPTS.length);
+    expect(registered).toEqual(names);
   });
 });

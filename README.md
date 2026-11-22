@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.202--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.203--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -29,7 +29,9 @@ provides the knowledge of how that content has to fit together.
 
 The same skill is served by the server as MCP resources under
 `l4d2-hsmcp://skill/`. A client that has only the server can read `SKILL.md`, the workflow
-pages and the references without a separate skill installation.
+pages and the references without a separate skill installation. The common routes are also
+MCP prompts: `l4d2_task`, `l4d2_hud_override`, `l4d2_material_edit`,
+`l4d2_compiled_light` and `l4d2_editor_sequence`.
 
 It is built for agents and usable by people: every operation is a described, checked tool, and
 anything that writes asks for confirmation.

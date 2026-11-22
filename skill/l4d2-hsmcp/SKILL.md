@@ -56,6 +56,11 @@ hand. There is deliberately no fixed number in this skill: a number here would d
 
 ## Route the task first
 
+The same routes are MCP prompts: `l4d2_task` for a general request,
+`l4d2_hud_override`, `l4d2_material_edit`, `l4d2_compiled_light` and
+`l4d2_editor_sequence`. They point at the resource page and carry the caller's map, screen or
+material; the instructions live in one place.
+
 | Task | Read |
 |---|---|
 | Turn a user's campaign wish into a spec and build | `workflows/from-a-wish.md` |
