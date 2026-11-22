@@ -353,12 +353,12 @@ export const writeVtfHotspotTool = defineTool({
   name: "write_vtf_hotspot",
   description:
     "Writes the Strata Source hotspot resource into a .vtf: rectangles in pixels that " +
-    "Hammer++/Strata use to retexture a brush face from a texture atlas. Replaces the " +
-    "rectangle list, optionally with the implementation flags byte. The image and every mip " +
-    "stay byte-identical: only the resource directory and an appended block change, so a " +
-    "DXT texture is not recompressed. The resource does not exist in stock L4D2 materials, " +
-    "but the compiled map that ships it reads fine. A backup is written and the payload is " +
-    "read back.",
+    "Strata uses to retexture a brush face from a texture atlas. Replaces the rectangle " +
+    "list, optionally with the implementation flags byte. The image and every mip stay " +
+    "byte-identical: only the resource directory and an appended block change, so a DXT " +
+    "texture is not recompressed. Stock L4D2 ships no hotspot resource; the reader that " +
+    "decodes it is the same srctools reader this is verified against. A backup is written " +
+    "and the payload is read back.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
