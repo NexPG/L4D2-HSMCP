@@ -12,27 +12,10 @@ import {
 } from "../vmf/dispwrite.js";
 import { checkSeal, SEAL_MATERIAL, sealDisplacements } from "../vmf/dispseal.js";
 import { faceSelectorFrom } from "../vmf/select.js";
-import { checkVmfSolids } from "../vmf/solid.js";
+import { assertGeometryUntouched, checkVmfSolids } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 /** Refuses to write when a displacement edit moved a brush, which it never should. */
-function assertGeometryUntouched(path: string, before: string, after: string): void {
-  const b = checkVmfSolids(path, before);
-  const a = checkVmfSolids(path, after);
-  if (a.solidCount !== b.solidCount) {
-    throw new Error(
-      `refusing to write: a displacement edit changed the solid count from ${b.solidCount} ` +
-        `to ${a.solidCount}. A displacement is drawn over a face; it does not move one.`,
-    );
-  }
-  for (const x of b.solids) {
-    if (x.id === null) continue;
-    const y = a.solids.find((s) => s.id === x.id);
-    if (!y || y.volume !== x.volume) {
-      throw new Error(`refusing to write: solid ${x.id} changed shape. It never should.`);
-    }
-  }
-}
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
 
@@ -213,7 +196,7 @@ export const writeDisplacementTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
     const result = writeDisplacements(before, faceSelectorFrom(args, "this would put a displacement on every quadrilateral face in the map"), { power: args.power });
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a displacement edit", "A displacement is drawn over a face; it does not move one.");
 
     // The oracle: the reader has to find every grid this wrote, at the size it claims.
     const back = readDisplacements(result.text).displacements;
@@ -315,7 +298,7 @@ export const sewDisplacementsTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
     const result = sewDisplacements(before, args.tolerance ?? 0.1);
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a displacement edit", "A displacement is drawn over a face; it does not move one.");
 
     const after = readDisplacements(result.text);
     const write = writeGuarded(path, result.text, ctx.config, {
@@ -396,7 +379,7 @@ export const sculptDisplacementTool = defineTool({
       args.solidIds ? { solidIds: args.solidIds } : {},
       args.shape as never,
     );
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a displacement edit", "A displacement is drawn over a face; it does not move one.");
 
     const after = readDisplacements(result.text);
     const write = writeGuarded(path, result.text, ctx.config, {
@@ -472,7 +455,7 @@ export const paintDisplacementTool = defineTool({
       args.solidIds ? { solidIds: args.solidIds } : {},
       args.rule as never,
     );
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a displacement edit", "A displacement is drawn over a face; it does not move one.");
 
     // Painting must not move anything: the shape and the blend are different channels.
     const was = readDisplacements(before).displacements;

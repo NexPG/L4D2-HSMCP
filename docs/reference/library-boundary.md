@@ -61,7 +61,9 @@ The carve/hull wave found the same problem inside the project. `SolidSelector` a
 and `skyboxcopy`; they now live once in `vmf/select.ts`. The temp-directory/sidecar/
 guarded-write scaffold was about to get its third copy, so it became
 `tools/sidecarvmf.ts` and `collapse_instances`, `carve_solids` and `hull_solids` use it.
-The rule is not only about srctools: **if the project already has the helper, import it.**
+The same search found `assertGeometryUntouched` copied into `face`, `displacement` and
+`organise`; it now lives in `vmf/solid.ts`. The rule is not only about srctools: **if the
+project already has the helper, import it.**
 
 ## Upstream defect: `Geometry.from_points` returns nothing
 

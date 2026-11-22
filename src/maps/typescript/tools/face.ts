@@ -7,29 +7,10 @@ import { gameFor } from "../../../core/typescript/games/resolve.js";
 import { alignFaces, normaliseMaterial, copyFaceAlignment, setFaceMaterial, setFaceUv, setSmoothingGroups } from "../vmf/face.js";
 import type { AlignMode } from "../vmf/face.js";
 import { FACE_SELECTOR_FIELDS, faceSelectorFrom } from "../vmf/select.js";
-import { checkVmfSolids } from "../vmf/solid.js";
+import { assertGeometryUntouched, checkVmfSolids } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, GAME, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 /** Refuses to write when a face edit moved any geometry, which it never should. */
-function assertGeometryUntouched(path: string, before: string, after: string): void {
-  const b = checkVmfSolids(path, before);
-  const a = checkVmfSolids(path, after);
-  if (a.solidCount !== b.solidCount) {
-    throw new Error(
-      `refusing to write: a face edit changed the number of solids from ${b.solidCount} ` +
-        `to ${a.solidCount}. It never should.`,
-    );
-  }
-  for (const x of b.solids) {
-    if (x.id === null) continue;
-    const y = a.solids.find((s) => s.id === x.id);
-    if (!y || y.volume !== x.volume) {
-      throw new Error(
-        `refusing to write: solid ${x.id} changed shape during a face edit. It never should.`,
-      );
-    }
-  }
-}
 
 /** The algebra oracle: read_vmf_solids refuses axes no texture can use. */
 function assertAxesAccepted(path: string, text: string): void {
@@ -100,7 +81,7 @@ export const setFaceMaterialTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
     const result = setFaceMaterial(before, faceSelectorFrom(args), args.newMaterial);
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a face edit");
 
     const write = writeGuarded(path, result.text, ctx.config, {
       dryRun: args.dryRun,
@@ -260,7 +241,7 @@ export const alignFacesTool = defineTool({
         ? { fitRect: args.fitRect as { mins: [number, number]; maxs: [number, number] } }
         : {}),
     });
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a face edit");
 
     // The algebra oracle, run before the file is touched: read_vmf_solids already refuses
     // a texture axis lying along the face normal, a zero scale and a degenerate pair. An
@@ -347,7 +328,7 @@ export const setFaceUvTool = defineTool({
       ...(args.vScale !== undefined ? { vScale: args.vScale } : {}),
       ...(args.rotation !== undefined ? { rotation: args.rotation } : {}),
     });
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a face edit");
     assertAxesAccepted(path, result.text);
 
     const write = writeGuarded(path, result.text, ctx.config, {
@@ -445,7 +426,7 @@ export const copyFaceAlignmentTool = defineTool({
           : {}),
       },
     );
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a face edit");
     assertAxesAccepted(path, result.text);
 
     const write = writeGuarded(path, result.text, ctx.config, {
@@ -511,7 +492,7 @@ export const setSmoothingGroupsTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
     const result = setSmoothingGroups(before, faceSelectorFrom(args), args.groups);
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "a face edit");
 
     const write = writeGuarded(path, result.text, ctx.config, {
       dryRun: args.dryRun,

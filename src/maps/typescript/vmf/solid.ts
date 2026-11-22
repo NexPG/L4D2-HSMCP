@@ -642,3 +642,39 @@ export function checkVmfSolids(path: string, source: string, options: CheckOptio
     gridHistogram,
   };
 }
+
+/**
+ * Refuses to write when an edit that must not move geometry moved it.
+ *
+ * Face, displacement and organisation edits change attributes, not shapes. Three tools had
+ * written this same loop with three slightly different messages; the loop and the two
+ * comparisons live here so a fourth cannot invent a weaker one.
+ *
+ * `what` names the edit in the message ("a face edit"); `detail` replaces the default
+ * sentence for tools that can say why the invariant matters to them.
+ */
+export function assertGeometryUntouched(
+  path: string,
+  before: string,
+  after: string,
+  what: string,
+  detail = "It never should.",
+): void {
+  const b = checkVmfSolids(path, before);
+  const a = checkVmfSolids(path, after);
+  if (a.solidCount !== b.solidCount) {
+    throw new Error(
+      `refusing to write: ${what} changed the solid count from ${b.solidCount} ` +
+        `to ${a.solidCount}. ${detail}`,
+    );
+  }
+  for (const x of b.solids) {
+    if (x.id === null) continue;
+    const y = a.solids.find((s) => s.id === x.id);
+    if (!y || y.volume !== x.volume) {
+      throw new Error(
+        `refusing to write: solid ${x.id} changed shape during ${what}. It never should.`,
+      );
+    }
+  }
+}

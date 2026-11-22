@@ -4,30 +4,13 @@ import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { autoVisgroups, groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/organise.js";
 import { SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../vmf/select.js";
-import { checkVmfSolids } from "../vmf/solid.js";
+import { assertGeometryUntouched, checkVmfSolids } from "../vmf/solid.js";
 import type { Vec3 } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
 
 /** Refuses to write when an organisation edit moved geometry, which it never should. */
-function assertGeometryUntouched(path: string, before: string, after: string): void {
-  const b = checkVmfSolids(path, before);
-  const a = checkVmfSolids(path, after);
-  if (a.solidCount !== b.solidCount) {
-    throw new Error(
-      `refusing to write: an organisation edit changed the solid count from ${b.solidCount} ` +
-        `to ${a.solidCount}. It never should.`,
-    );
-  }
-  for (const x of b.solids) {
-    if (x.id === null) continue;
-    const y = a.solids.find((s) => s.id === x.id);
-    if (!y || y.volume !== x.volume) {
-      throw new Error(`refusing to write: solid ${x.id} changed shape. It never should.`);
-    }
-  }
-}
 
 const VisgroupNode: z.ZodType<unknown> = z.lazy(() =>
   z.object({
@@ -121,7 +104,7 @@ export const setVisgroupTool = defineTool({
       ...(args.remove !== undefined ? { remove: args.remove } : {}),
       ...(args.color !== undefined ? { color: args.color } : {}),
     });
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "an organisation edit");
 
     // The membership and the declaration have to agree, and the reader is what says so.
     const after = readOrganisation(result.text);
@@ -201,7 +184,7 @@ export const autoVisgroupsTool = defineTool({
       entityPrefix: args.entityPrefix,
       materialPrefix: args.materialPrefix,
     });
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "an organisation edit");
 
     const after = readOrganisation(result.text);
     const orphaned = after.warnings.filter((w) => w.includes("declared nowhere"));
@@ -266,7 +249,7 @@ export const groupSolidsTool = defineTool({
     const result = groupSolids(before, solidSelectorFrom(args), {
       ...(args.ungroup !== undefined ? { ungroup: args.ungroup } : {}),
     });
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "an organisation edit");
 
     const write = writeGuarded(path, result.text, ctx.config, {
       dryRun: args.dryRun,
@@ -330,7 +313,7 @@ export const setCordonTool = defineTool({
         ...(args.active !== undefined ? { active: args.active } : {}),
       },
     );
-    assertGeometryUntouched(path, before, result.text);
+    assertGeometryUntouched(path, before, result.text, "an organisation edit");
 
     // Read it back: a cordon this tool writes and its own reader cannot recover is a
     // cordon Hammer will not recover either.
