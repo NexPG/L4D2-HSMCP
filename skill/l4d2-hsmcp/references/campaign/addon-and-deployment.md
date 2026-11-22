@@ -24,7 +24,7 @@ addon/
 {
     "addonSteamAppID"       "550"
     "addontitle"            "My Campaign"
-    "addonauthor"           "NexPG"
+    "addonauthor"           "<author from read_addon_author>"
     "addonversion"          "1"
     "addonContent_Campaign" "1"
     "addonDescription"      "A two-chapter campaign."

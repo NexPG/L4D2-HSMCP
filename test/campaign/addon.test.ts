@@ -66,15 +66,15 @@ describe.skipIf(!has.sidecar || !has.vpk)("run_vpk_pack", () => {
   it("refuses to replace an archive unasked, and replaces it when told", async () => {
     const dir = staging("PackTwo");
     const out = join(scratch, "packtwo.vpk");
-    await pack({ dir, out, addoninfo: { title: "Pack Two" } });
-    await expect(pack({ dir, out, addoninfo: { title: "Pack Two" } })).rejects.toThrow(
+    await pack({ dir, out, addoninfo: { title: "Pack Two", author: "Tester" } });
+    await expect(pack({ dir, out, addoninfo: { title: "Pack Two", author: "Tester" } })).rejects.toThrow(
       /already exists/,
     );
     const again = await pack({
       dir,
       out,
       overwrite: true,
-      addoninfo: { title: "Pack Two, rebuilt" },
+      addoninfo: { title: "Pack Two, rebuilt", author: "Tester" },
     });
     expect(again.entries).toContain("addoninfo.txt");
   }, 120_000);

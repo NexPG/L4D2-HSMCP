@@ -12,7 +12,7 @@ in the campaign list.
 {
     "Name"          "MyCampaign"     // A-Z and 0-9 only
     "Version"       "1"              // digits only
-    "Author"        "NexPG"
+    "Author"        "<author from read_addon_author>"
     "DisplayTitle"  "My Campaign"    // what the menu shows
     "Description"   "Two chapters."
     "Image"         "maps/c1"        // VGUI path, no extension

@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **260 tools**.
+Last checked against the tool list on 22/11/2026: **262 tools**.
 
 ## The file itself
 
@@ -220,6 +220,8 @@ map and looking, or by not happening at all.
 | Tool | What Hammer has instead |
 |---|---|
 | `health` | nothing |
+| `read_addon_author` | nothing: the editor does not track who authors an add-on |
+| `set_addon_author` | nothing: one stored name for `addonauthor`/`Author` across generated content |
 | `read_hammerpp` | nothing: the editor's settings file is not a map command, but it decides I/O and brush precision |
 | `open_in_hammer` | launching the editor is the one visual layer a writer cannot reproduce |
 | `read_source_games` | a dialog you fill in yourself |

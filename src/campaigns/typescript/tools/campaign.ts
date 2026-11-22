@@ -13,6 +13,7 @@ import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { addonAuthor } from "../../../core/typescript/tools/author.js";
 
 const CHAPTER = z.object({
   key: z.string(),
@@ -215,7 +216,11 @@ export const writeCampaignTool = defineTool({
   },
   handler: (args, ctx) => {
     if (!args.out) throw new Error("`out` is required: where should the campaign be written?");
-    const mission = missionFromSpec(args);
+    const out = resolveInput(args.out, ctx.config);
+    if (existsSync(out) && !args.overwrite) {
+      throw new Error(`${out} already exists; pass overwrite: true to replace it`);
+    }
+    const mission = missionFromSpec({ ...args, author: addonAuthor(ctx.config, args.author) });
     const findings = checkMissionStructure(mission);
     const errors = findings.filter((f) => f.severity === "error");
     if (errors.length > 0) {
@@ -223,11 +228,6 @@ export const writeCampaignTool = defineTool({
         `refusing to write an invalid campaign:\n` +
           errors.map((f) => `  - ${f.rule}: ${f.message}`).join("\n"),
       );
-    }
-
-    const out = resolveInput(args.out, ctx.config);
-    if (existsSync(out) && !args.overwrite) {
-      throw new Error(`${out} already exists; pass overwrite: true to replace it`);
     }
     mkdirSync(dirname(out), { recursive: true });
     const text = serializeMission(mission);

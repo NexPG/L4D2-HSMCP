@@ -6,6 +6,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { run } from "../../../core/typescript/proc/run.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
+import { addonAuthor } from "../../../core/typescript/tools/author.js";
 import { parse } from "../../../formats/typescript/kv/parse.js";
 
 /** Quoting for the addon manifest; the grammar has no escapes. */
@@ -137,7 +138,14 @@ export const runVpkPackTool = defineTool({
     let addoninfoWritten = false;
     if (args.addoninfo) {
       const target = join(dir, "addoninfo.txt");
-      writeGuarded(target, addonInfoText(args.addoninfo), ctx.config);
+      writeGuarded(
+        target,
+        addonInfoText({
+          ...args.addoninfo,
+          author: addonAuthor(ctx.config, args.addoninfo.author),
+        }),
+        ctx.config,
+      );
       addoninfoWritten = true;
     }
     if (!existsSync(join(dir, "addoninfo.txt"))) {
@@ -277,12 +285,13 @@ export const writeAddonInfoTool = defineTool({
     if (existsSync(path) && args.overwrite !== true) {
       throw new Error(`${path} already exists; pass overwrite: true to replace it`);
     }
+    const author = addonAuthor(ctx.config, args.author);
     mkdirSync(dirname(path), { recursive: true });
     const text = addonInfoText(
       {
         title: args.title,
         ...(args.description === undefined ? {} : { description: args.description }),
-        ...(args.author === undefined ? {} : { author: args.author }),
+        author,
         ...(args.version === undefined ? {} : { version: args.version }),
         ...(args.tag === undefined ? {} : { tag: args.tag }),
         ...(args.tagline === undefined ? {} : { tagline: args.tagline }),
@@ -400,11 +409,12 @@ export const scaffoldAddonTool = defineTool({
     if (existsSync(infoPath) && args.overwrite !== true) {
       throw new Error(`${infoPath} already exists; pass overwrite: true to replace it`);
     }
+    const author = addonAuthor(ctx.config, args.author);
     mkdirSync(join(dir, "scripts", "vscripts"), { recursive: true });
     const text = addonInfoText(
       {
         title: args.title,
-        ...(args.author === undefined ? {} : { author: args.author }),
+        author,
         ...(args.version === undefined ? {} : { version: args.version }),
         ...(args.tag === undefined ? {} : { tag: args.tag }),
         ...(args.tagline === undefined ? {} : { tagline: args.tagline }),

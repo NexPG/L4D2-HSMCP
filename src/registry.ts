@@ -59,6 +59,7 @@ import { hammerLiveTools } from "./hammer/typescript/tools/hammerlive.js";
 import { windowTools } from "./hammer/typescript/tools/windows.js";
 import { hammerPlusPlusTools } from "./hammer/typescript/tools/hammerpp.js";
 import { healthTools } from "./core/typescript/tools/health.js";
+import { authorTools } from "./core/typescript/tools/author.js";
 import { hlmvTools } from "./hammer/typescript/tools/hlmv.js";
 import { inputTools } from "./hammer/typescript/tools/input.js";
 import { liveQueueTools } from "./hammer/typescript/tools/livequeue.js";
@@ -145,6 +146,7 @@ import { worldspawnTools } from "./maps/typescript/tools/worldspawn.js";
 
 export const allTools: AnyToolDef[] = [
   ...healthTools,
+  ...authorTools,
   ...hammerTools,
   ...hammerLiveTools,
   ...windowTools,

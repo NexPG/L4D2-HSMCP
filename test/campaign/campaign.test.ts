@@ -155,6 +155,7 @@ describe("the campaign tools", () => {
       {
         out,
         name: "TESTCAMP",
+        author: "Tester",
         modes: [{ name: "coop", chapters: [{ map: "testm1", displayName: "One" }] }],
         overwrite: false,
         dryRun: false,

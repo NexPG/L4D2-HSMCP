@@ -34,6 +34,15 @@ does not. `write_class_probe` counts what the Director spawned, and `write_nav_p
 attributes the region applied to the live mesh. Use them for spawners, borders and anything
 invisible in a screenshot.
 
+**Author identity.** `addonauthor` in `addoninfo.txt` and `Author` in a mission file are
+the person making the content, not the toolkit author. Before the first addon or campaign,
+call `read_addon_author`. If it returns `null`, ask the user once — “What name should appear
+as the add-on author?” — and store the answer with `set_addon_author`. Use the returned name
+in every `addonauthor`/`Author` field. **Never copy `NexPG` from the documentation examples**
+(or any other example name): those authors are the examples' authors, not this user. If the
+user asks to change the name later, call `set_addon_author` again; it changes future writes,
+not files already written.
+
 **Addon provenance.** Every addon or campaign packed with `run_vpk_pack` gets an
 `addonAICredit` entry in `addoninfo.txt` by default:
 

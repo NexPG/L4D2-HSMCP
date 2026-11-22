@@ -13,7 +13,7 @@ from the game's own files or measured on a real install, not copied from a wiki.
 {
     "Name"          "MyCampaign"     // A-Z and 0-9 only
     "Version"       "1"              // digits only
-    "Author"        "NexPG"
+    "Author"        "<author from read_addon_author>"
     "DisplayTitle"  "My Campaign"    // what the menu shows
     "Description"   "Two chapters."
     "Image"         "maps/c1"        // campaign image; required for the menu entry
@@ -74,7 +74,7 @@ addon/
 {
     "addonSteamAppID"       "550"
     "addonTitle"            "My Campaign"
-    "addonAuthor"           "NexPG"
+    "addonAuthor"           "<author from read_addon_author>"
     "addonVersion"          "1"
     "addonTag"              "campaign"
     "addonContent_Campaign" "1"

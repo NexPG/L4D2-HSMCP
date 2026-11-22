@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.189--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.190--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -63,6 +63,19 @@ pnpm test
 Use `pnpm`, not `npm`: the repository ships `pnpm-lock.yaml`, and an `npm install` would
 write a second lockfile and resolve a different tree. Node 22 is the minimum; CI runs 22 and
 24 on Windows.
+
+## Tools
+
+262 tools, grouped by the work they do: maps and VMF, models, textures and materials, game
+assets, audio, campaigns, navigation, VScript and runtime, Hammer and the live editor, shared
+formats, packaging and VPK, and core configuration. The [tool catalogue](docs/tools/README.md)
+has the count per area, and each area page has logical tables with one row per tool.
+
+`addonauthor` in `addoninfo.txt` and `Author` in a mission file are the person making the
+content, not the toolkit author. The agent asks once, stores the answer with
+`set_addon_author` in `.hammer-mcp/config.json`, and uses it for every addon and campaign;
+calling `set_addon_author` again changes the name for later writes. There is deliberately no
+built-in name: a default would sign someone else's content with it.
 
 ## Credits
 

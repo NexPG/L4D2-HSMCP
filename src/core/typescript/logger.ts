@@ -10,6 +10,7 @@ export type AuditKind =
   | "tool_result"
   | "file_write"
   | "vmf_edit"
+  | "config_write"
   | "compile_start"
   | "compile_end"
   | "hammer_capture_failed"

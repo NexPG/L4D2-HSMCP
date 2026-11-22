@@ -10,7 +10,8 @@
  * machine-specific by nature. Nothing here may be assumed to exist: every tool that
  * depends on `binDir` degrades to a reported reason rather than throwing.
  */
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { loadConfig as coreLoadConfig } from "@projectsociety/mcp-core";
 import { z } from "zod";
 import { GameProfileOverride } from "./games/profile.js";
@@ -44,6 +45,14 @@ export const ConfigFile = z.object({
   sidecarPython: z.string().optional(),
   /** Tools allowed without confirmation. Empty means the default policy. */
   toolAllowlist: z.array(z.string()).default([]),
+  /**
+   * The name written as `addonauthor` in addoninfo.txt and `Author` in a campaign mission.
+   *
+   * This is a person, not the toolkit's author. It is asked once and stored here; there is
+   * deliberately no built-in default, because a default would put the wrong name on someone
+   * else's addon. A generation tool refuses until this is set.
+   */
+  addonAuthor: z.string().optional(),
 });
 export type ConfigFile = z.infer<typeof ConfigFile>;
 
@@ -109,6 +118,44 @@ export function loadConfig(cwd: string = process.cwd()): Config {
   lazy(config, "plusPlusBinDir", () => active()?.plusPlusBinDir ?? null);
 
   return config;
+}
+
+/** The local configuration file: `<repoRoot>/.hammer-mcp/config.json`. */
+export function configFilePath(repoRoot: string): string {
+  return join(repoRoot, ".hammer-mcp", "config.json");
+}
+
+/**
+ * Writes one configuration value, preserving every other field in the file.
+ *
+ * The file is local (`<repoRoot>/.hammer-mcp/config.json`, gitignored), not the example at
+ * the repository root. It is rewritten as JSON, which is the format the loader reads; a
+ * person's existing fields and unknown fields survive.
+ */
+export function writeConfigValue(
+  repoRoot: string,
+  key: string,
+  value: unknown,
+): { path: string; previous: unknown } {
+  const path = configFilePath(repoRoot);
+  let existing: Record<string, unknown> = {};
+  if (existsSync(path)) {
+    try {
+      const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        existing = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // A malformed local file must not be silently replaced by a one-key object: the
+      // person would lose their paths. Refuse and name the file instead.
+      throw new Error(`${path} is not valid JSON; fix or move it before changing ${key}`);
+    }
+  }
+  const previous = existing[key];
+  existing[key] = value;
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(existing, null, 2)}\n`, "utf8");
+  return { path, previous };
 }
 
 export { findRepoRoot } from "@projectsociety/mcp-core";

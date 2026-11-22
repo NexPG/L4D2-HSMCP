@@ -1,6 +1,6 @@
 # Tool catalogue
 
-260 tools. This page groups them by the job you are doing; each tool's own description is the
+262 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -10,6 +10,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | Tool | Use |
 |---|---|
 | `health` | game profile, compilers, FGD, sidecar, tool count, whether the build is stale |
+| `read_addon_author` | the name used for `addonauthor`/`Author`, or null before it is configured |
+| `set_addon_author` | ask once and store the person's author name for every addon and campaign |
 | `review_map` | one-call audit: lint, rules, organisation, budgets, deps; `deep` adds rooms/sightlines |
 | `compare_renders` | render the same camera against two VMFs and diff the frames |
 | `read_hammerpp` | Hammer++ settings by section, game config/build programs, keybindings, warnings |

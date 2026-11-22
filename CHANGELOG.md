@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.190-alpha - 2026-11-22
+
+- **The add-on author is configured, not hard-coded.** `addonAuthor` lives in
+  `.hammer-mcp/config.json`; `read_addon_author` reports it and `set_addon_author` stores or
+  changes it. `write_addoninfo`, `write_addon_scaffold`, `run_vpk_pack` and `write_campaign`
+  use it when the caller omits `author`, and refuse with an instruction to ask the user when
+  it is unset. The skill and campaign docs no longer show a person's name in examples.
+- **`docs/tools/`**: a generated catalogue. The README has the count per area and a total;
+  each area page groups its tools into logical tables (VPK, materials, collision, live edits,
+  …) with one row per tool and what it does. `pnpm docs:tools` regenerates it and
+  `test/tools/docs.test.ts` fails when the files fall behind the registry.
+- **Tool count: 262.** Tests: 216 files, 1,826 passed, 33 skipped.
+
 ## 0.0.189-alpha - 2026-11-22
 
 - **`read_model_bodygroups`**: body parts with their mixed-radix `base`, and the
