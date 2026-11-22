@@ -33,7 +33,7 @@ jobs:
 
       # No `version:` here on purpose: pnpm/action-setup reads `packageManager` from
       # package.json, so the CI version and a contributor's corepack version are one number.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v4
         with:
