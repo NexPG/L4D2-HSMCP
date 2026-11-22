@@ -16,6 +16,7 @@
  * I made last call": the caller reads ids back from every writer, and an implicit "last"
  * would be the selection state this file exists to avoid.
  */
+import { z } from "zod";
 import { children, get } from "../../../formats/typescript/kv/parse.js";
 import type { KvBlock, KvPair } from "../../../formats/typescript/kv/parse.js";
 import type { SolidCheck, SolidSide, Vec3 } from "./solid.js";
@@ -61,6 +62,124 @@ export interface SolidSelector {
 /** True when the selector names nothing at all, which every caller must refuse. */
 export function isEmptySelector(sel: SolidSelector | FaceSelector): boolean {
   return Object.values(sel).every((v) => v === undefined);
+}
+
+const VEC3 = z.tuple([z.number(), z.number(), z.number()]);
+
+/**
+ * The zod fields of a `SolidSelector`, for spreading into a tool's `inputSchema`.
+ *
+ * These were copied into eight tools and had begun to differ in wording and in which
+ * fields they accepted; the copy in `hollow_solids` and the one in `set_lightmap_scale`
+ * already disagreed about `owner`. One definition keeps "what a brush selector can say"
+ * the same everywhere.
+ */
+export const SOLID_SELECTOR_FIELDS = {
+  solidIds: z
+    .array(z.number())
+    .optional()
+    .describe("Hammer ids, as read_vmf_solids reports them."),
+  owner: z
+    .string()
+    .optional()
+    .describe("'world', or a brush entity classname such as func_detail."),
+  material: z
+    .string()
+    .optional()
+    .describe("Brushes carrying this on at least one face. Substring, case-insensitive."),
+  within: z
+    .object({ mins: VEC3, maxs: VEC3 })
+    .optional()
+    .describe(
+      "Brushes lying entirely inside this box. Entirely, not partly: a half-caught brush " +
+        "is how a box selection catches something the caller could not see it had touched.",
+    ),
+};
+
+export interface SolidSelectorArgs {
+  solidIds?: number[];
+  owner?: string;
+  material?: string;
+  within?: { mins: readonly number[]; maxs: readonly number[] };
+}
+
+/** Map a tool's flat arguments to the `SolidSelector` the readers use. */
+export function solidSelectorFrom(args: SolidSelectorArgs): SolidSelector {
+  return {
+    ...(args.solidIds !== undefined ? { ids: args.solidIds } : {}),
+    ...(args.owner !== undefined ? { owner: args.owner } : {}),
+    ...(args.material !== undefined ? { material: args.material } : {}),
+    ...(args.within !== undefined
+      ? {
+          within: {
+            mins: args.within.mins as unknown as Vec3,
+            maxs: args.within.maxs as unknown as Vec3,
+          },
+        }
+      : {}),
+  };
+}
+
+/** The zod fields of a `FaceSelector`; `all` is the caller's override, not a selector. */
+export const FACE_SELECTOR_FIELDS = {
+  solidIds: z.array(z.number()).optional().describe("Only faces of these solids."),
+  sideIds: z
+    .array(z.number())
+    .optional()
+    .describe("Only these side ids, for targeting one exact face."),
+  material: z
+    .string()
+    .optional()
+    .describe("Only faces already carrying this. Substring, case-insensitive."),
+  facing: z
+    .enum(["up", "down", "side", "any"])
+    .optional()
+    .describe(
+      "Only faces pointing this way. 'up' is a floor, 'down' a ceiling, 'side' a wall; " +
+        "the cut is at 45 degrees, so a ramp counts as what it is closer to being.",
+    ),
+  minArea: z.number().optional().describe("Only faces at least this large, in square units."),
+};
+
+export interface FaceSelectorArgs {
+  solidIds?: number[];
+  sideIds?: number[];
+  material?: string;
+  facing?: FaceSelector["facing"];
+  minArea?: number;
+  /** The tool's explicit opt-in for a map-wide edit. */
+  all?: boolean;
+}
+
+/**
+ * Map a tool's flat arguments to a `FaceSelector`, refusing the two ways a scoped edit
+ * becomes a map-wide one: an empty material (which `matchesFace` treats as "matches all")
+ * and no criterion at all without `all:true`.
+ */
+export function faceSelectorFrom(
+  args: FaceSelectorArgs,
+  what = "this would touch every face in the map",
+): FaceSelector {
+  if (args.material !== undefined && args.material.trim().length === 0) {
+    throw new Error(
+      "material is empty, which matches every face rather than none. Give a name, or pass " +
+        "all:true if a map-wide edit is what was meant.",
+    );
+  }
+  const sel: FaceSelector = {
+    ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
+    ...(args.sideIds !== undefined ? { sideIds: args.sideIds } : {}),
+    ...(args.material !== undefined ? { material: args.material } : {}),
+    ...(args.facing !== undefined ? { facing: args.facing } : {}),
+    ...(args.minArea !== undefined ? { minArea: args.minArea } : {}),
+  };
+  if (Object.keys(sel).length === 0 && args.all !== true) {
+    throw new Error(
+      `${what}. Name solidIds, a material, a facing or a minArea, or pass all:true to say ` +
+        "you meant it.",
+    );
+  }
+  return sel;
 }
 
 /**

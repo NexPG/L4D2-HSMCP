@@ -11,41 +11,9 @@ import {
   writeDisplacements,
 } from "../vmf/dispwrite.js";
 import { checkSeal, SEAL_MATERIAL, sealDisplacements } from "../vmf/dispseal.js";
-import type { FaceSelector } from "../vmf/select.js";
+import { faceSelectorFrom } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
-
-const faceSelectorFrom = (args: {
-  solidIds?: number[];
-  material?: string;
-  facing?: "up" | "down" | "side" | "any";
-  minArea?: number;
-  all?: boolean;
-}): FaceSelector => {
-  // The same guard the face tools carry, and it was missing here -- on the one tool that
-  // rewrites every eligible face of the map. An empty material is refused for the same
-  // reason: the key being present satisfied the guard while matchesFace treated "" as
-  // falsy and matched everything.
-  if (args.material !== undefined && args.material.trim().length === 0) {
-    throw new Error(
-      "material is empty, which matches every face rather than none. Give a name, or pass " +
-        "all:true if displacing the whole map is what was meant.",
-    );
-  }
-  const sel: FaceSelector = {
-    ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
-    ...(args.material !== undefined ? { material: args.material } : {}),
-    ...(args.facing !== undefined ? { facing: args.facing } : {}),
-    ...(args.minArea !== undefined ? { minArea: args.minArea } : {}),
-  };
-  if (Object.keys(sel).length === 0 && args.all !== true) {
-    throw new Error(
-      "this would put a displacement on every quadrilateral face in the map. Name solidIds, " +
-        "a material, a facing or a minArea, or pass all:true to say you meant it.",
-    );
-  }
-  return sel;
-};
 
 /** Refuses to write when a displacement edit moved a brush, which it never should. */
 function assertGeometryUntouched(path: string, before: string, after: string): void {
@@ -244,7 +212,7 @@ export const writeDisplacementTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const result = writeDisplacements(before, faceSelectorFrom(args), { power: args.power });
+    const result = writeDisplacements(before, faceSelectorFrom(args, "this would put a displacement on every quadrilateral face in the map"), { power: args.power });
     assertGeometryUntouched(path, before, result.text);
 
     // The oracle: the reader has to find every grid this wrote, at the size it claims.

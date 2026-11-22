@@ -6,8 +6,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { applyVmfOps } from "../../../maps/typescript/vmf/edit.js";
 import { cloneSolids } from "../../../maps/typescript/vmf/clone.js";
 import { insertSolids } from "../../../maps/typescript/vmf/build.js";
-import { matchesSolid } from "../../../maps/typescript/vmf/select.js";
-import type { SolidSelector } from "../../../maps/typescript/vmf/select.js";
+import { matchesSolid, SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../../../maps/typescript/vmf/select.js";
 import { checkVmfSolids, WORLD_BOUND } from "../../../maps/typescript/vmf/solid.js";
 import type { Vec3 } from "../../../maps/typescript/vmf/solid.js";
 import { insideRoom, planSkybox, pointInsideSolid } from "../../../maps/typescript/vmf/skybox.js";
@@ -60,16 +59,7 @@ export const buildSkyboxTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    solidIds: z.array(z.number()).optional().describe("Brushes to copy into the skybox."),
-    within: z
-      .object({ mins: Vec3Schema, maxs: Vec3Schema })
-      .optional()
-      .describe("Copy brushes lying entirely inside this box."),
-    owner: z.string().optional().describe("'world' or a brush entity classname."),
-    material: z
-      .string()
-      .optional()
-      .describe("Copy brushes carrying this material. Substring, case-insensitive."),
+    ...SOLID_SELECTOR_FIELDS,
     origin: Vec3Schema.optional().describe(
       "Where the scaled map origin lands: the sky_camera's position. Omit to place the " +
         "room in the first free direction outside the map.",
@@ -135,12 +125,7 @@ export const buildSkyboxTool = defineTool({
       );
     }
 
-    const selector: SolidSelector = {
-      ...(args.solidIds !== undefined ? { ids: args.solidIds } : {}),
-      ...(args.within !== undefined ? { within: { mins: args.within.mins, maxs: args.within.maxs } } : {}),
-      ...(args.owner !== undefined ? { owner: args.owner } : {}),
-      ...(args.material !== undefined ? { material: args.material } : {}),
-    };
+    const selector = solidSelectorFrom(args);
     if (Object.keys(selector).length === 0) {
       throw new Error(
         "name what belongs in the skybox: solidIds, within, owner or material. Copying the " +

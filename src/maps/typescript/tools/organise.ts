@@ -3,33 +3,12 @@ import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { autoVisgroups, groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/organise.js";
-import type { SolidSelector } from "../vmf/select.js";
+import { SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import type { Vec3 } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
-
-const SELECTOR = {
-  solidIds: z.array(z.number()).optional(),
-  owner: z.string().optional().describe("'world', or a brush entity classname."),
-  material: z.string().optional().describe("Brushes carrying this on at least one face."),
-  within: z.object({ mins: Vec, maxs: Vec }).optional(),
-};
-
-const selectorFrom = (args: {
-  solidIds?: number[];
-  owner?: string;
-  material?: string;
-  within?: { mins: [number, number, number]; maxs: [number, number, number] };
-}): SolidSelector => ({
-  ...(args.solidIds !== undefined ? { ids: args.solidIds } : {}),
-  ...(args.owner !== undefined ? { owner: args.owner } : {}),
-  ...(args.material !== undefined ? { material: args.material } : {}),
-  ...(args.within !== undefined
-    ? { within: { mins: args.within.mins, maxs: args.within.maxs } }
-    : {}),
-});
 
 /** Refuses to write when an organisation edit moved geometry, which it never should. */
 function assertGeometryUntouched(path: string, before: string, after: string): void {
@@ -118,7 +97,7 @@ export const setVisgroupTool = defineTool({
     name: z.string().describe("Visgroup name, as Hammer's tree shows it."),
     remove: z.boolean().optional().describe("Take the brushes out instead of putting them in."),
     color: z.string().optional().describe("Editor colour, 'r g b'. Default '255 255 255'."),
-    ...SELECTOR,
+    ...SOLID_SELECTOR_FIELDS,
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -137,7 +116,7 @@ export const setVisgroupTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const result = setVisgroup(before, selectorFrom(args), {
+    const result = setVisgroup(before, solidSelectorFrom(args), {
       name: args.name,
       ...(args.remove !== undefined ? { remove: args.remove } : {}),
       ...(args.color !== undefined ? { color: args.color } : {}),
@@ -266,7 +245,7 @@ export const groupSolidsTool = defineTool({
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
     ungroup: z.boolean().optional().describe("Take the brushes out of their group instead."),
-    ...SELECTOR,
+    ...SOLID_SELECTOR_FIELDS,
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -284,7 +263,7 @@ export const groupSolidsTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const result = groupSolids(before, selectorFrom(args), {
+    const result = groupSolids(before, solidSelectorFrom(args), {
       ...(args.ungroup !== undefined ? { ungroup: args.ungroup } : {}),
     });
     assertGeometryUntouched(path, before, result.text);

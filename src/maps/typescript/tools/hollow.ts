@@ -7,13 +7,14 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { insertSolids } from "../vmf/build.js";
 import { hollowSolid, materialByNormal } from "../vmf/hollow.js";
 import { deleteSolids } from "../vmf/modify.js";
-import { isEmptySelector, matchesSolid } from "../vmf/select.js";
-import type { SolidSelector } from "../vmf/select.js";
+import {
+  isEmptySelector,
+  matchesSolid,
+  SOLID_SELECTOR_FIELDS,
+  solidSelectorFrom,
+} from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
-import type { Vec3 } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
-
-const Vec = z.tuple([z.number(), z.number(), z.number()]);
 
 export const hollowSolidsTool = defineTool({
   name: "hollow_solids",
@@ -32,10 +33,7 @@ export const hollowSolidsTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    solidIds: z.array(z.number()).optional().describe("Hammer ids of the brushes to hollow."),
-    owner: z.string().optional().describe("'world', or a brush entity classname."),
-    material: z.string().optional().describe("Brushes carrying this on at least one face."),
-    within: z.object({ mins: Vec, maxs: Vec }).optional(),
+    ...SOLID_SELECTOR_FIELDS,
     thickness: z.number().describe("Wall thickness, in Hammer units."),
     direction: z
       .enum(["in", "out"])
@@ -80,14 +78,7 @@ export const hollowSolidsTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
 
-    const selector: SolidSelector = {
-      ...(args.solidIds !== undefined ? { ids: args.solidIds } : {}),
-      ...(args.owner !== undefined ? { owner: args.owner } : {}),
-      ...(args.material !== undefined ? { material: args.material } : {}),
-      ...(args.within !== undefined
-        ? { within: { mins: args.within.mins as Vec3, maxs: args.within.maxs as Vec3 } }
-        : {}),
-    };
+    const selector = solidSelectorFrom(args);
     if (isEmptySelector(selector)) {
       throw new Error(
         "refusing an empty selector: it would hollow every brush in the map. Name ids, an " +

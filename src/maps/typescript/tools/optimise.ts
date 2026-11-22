@@ -7,6 +7,7 @@ import type { FaceInfo } from "../vmf/build.js";
 import { MAX_BRUSH_LUXELS_PER_AXIS, setLightmapScale } from "../vmf/lightmap.js";
 import { reclassSolids } from "../vmf/reclass.js";
 import type { ReclassTarget } from "../vmf/reclass.js";
+import { FACE_SELECTOR_FIELDS, faceSelectorFrom } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
@@ -275,13 +276,7 @@ export const setLightmapScaleTool = defineTool({
       .number()
       .positive()
       .describe("Units per luxel. Hammer's default is 16; powers of two are the convention."),
-    solidIds: z.array(z.number()).optional().describe("Only faces of these solids."),
-    material: z.string().optional().describe("Only faces whose material contains this text."),
-    facing: z
-      .enum(["up", "down", "side", "any"])
-      .optional()
-      .describe("Only faces pointing this way: up is a floor, down a ceiling, side a wall."),
-    minArea: z.number().optional().describe("Only faces of at least this many square units."),
+    ...FACE_SELECTOR_FIELDS,
     all: z
       .boolean()
       .optional()
@@ -322,20 +317,8 @@ export const setLightmapScaleTool = defineTool({
     // Format before arguments: someone who passed a compiled map should hear about that
     // rather than about a selector, which is advice for a file this tool cannot read.
     const path = resolveVmfInput(args.path, ctx.config);
-    const selector = {
-      ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
-      ...(args.material !== undefined ? { material: args.material } : {}),
-      ...(args.facing !== undefined ? { facing: args.facing } : {}),
-      ...(args.minArea !== undefined ? { minArea: args.minArea } : {}),
-    };
-    if (Object.keys(selector).length === 0 && args.all !== true) {
-      // Rescaling a whole map is legitimate and is never what someone meant by accident.
-      throw new Error(
-        "no selector given. Pass solidIds, material, facing or minArea -- or all:true to " +
-          "rescale every face in the file, which is a different intention and should look " +
-          "like one.",
-      );
-    }
+    // Rescaling a whole map is legitimate and is never what someone meant by accident.
+    const selector = faceSelectorFrom(args, "no selector given");
 
     const before = readFileSync(path, "utf8");
     const result = setLightmapScale(before, args.scale, selector);

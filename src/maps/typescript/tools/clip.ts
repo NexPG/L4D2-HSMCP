@@ -3,7 +3,7 @@ import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { clipSolids } from "../vmf/clip.js";
-import type { SolidSelector } from "../vmf/select.js";
+import { SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../vmf/select.js";
 import { checkVmfSolids, planeFromPoints } from "../vmf/solid.js";
 import type { Plane, Vec3 } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
@@ -26,13 +26,7 @@ export const clipSolidsTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    solidIds: z.array(z.number()).optional().describe("Hammer ids of the brushes to cut."),
-    owner: z.string().optional().describe("'world', or a brush entity classname."),
-    material: z.string().optional().describe("Brushes carrying this on at least one face."),
-    within: z
-      .object({ mins: Vec, maxs: Vec })
-      .optional()
-      .describe("Brushes lying entirely inside this box."),
+    ...SOLID_SELECTOR_FIELDS,
     plane: z
       .union([
         z.object({
@@ -96,19 +90,7 @@ export const clipSolidsTool = defineTool({
       plane = { normal: n, dist: n[0] * pt[0] + n[1] * pt[1] + n[2] * pt[2] };
     }
 
-    const selector: SolidSelector = {
-      ...(args.solidIds !== undefined ? { ids: args.solidIds } : {}),
-      ...(args.owner !== undefined ? { owner: args.owner } : {}),
-      ...(args.material !== undefined ? { material: args.material } : {}),
-      ...(args.within !== undefined
-        ? {
-            within: {
-              mins: args.within.mins as Vec3,
-              maxs: args.within.maxs as Vec3,
-            },
-          }
-        : {}),
-    };
+    const selector = solidSelectorFrom(args);
 
     const beforeReport = checkVmfSolids(path, before);
     const result = clipSolids(before, selector, plane, {

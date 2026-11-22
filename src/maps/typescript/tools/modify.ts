@@ -4,8 +4,7 @@ import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { cloneSolids } from "../vmf/clone.js";
 import { deleteSolids, transformSolids } from "../vmf/modify.js";
-import { matchesSolid } from "../vmf/select.js";
-import type { SolidSelector } from "../vmf/select.js";
+import { matchesSolid, SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import { IDENTITY, mirror, rotation, scaling, translation } from "../vmf/transform.js";
 import type { Mat34 } from "../vmf/transform.js";
@@ -13,46 +12,6 @@ import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../..
 
 const Vec3 = z.tuple([z.number(), z.number(), z.number()]);
 
-const SELECTOR = {
-  solidIds: z
-    .array(z.number())
-    .optional()
-    .describe("Hammer ids, as read_vmf_solids reports them."),
-  owner: z
-    .string()
-    .optional()
-    .describe("'world', or a brush entity classname such as func_detail."),
-  material: z
-    .string()
-    .optional()
-    .describe("Brushes carrying this on at least one face. Substring, case-insensitive."),
-  within: z
-    .object({ mins: Vec3, maxs: Vec3 })
-    .optional()
-    .describe(
-      "Brushes lying entirely inside this box. Entirely, not partly: a half-caught brush " +
-        "is how a box selection catches something the caller could not see it had touched.",
-    ),
-};
-
-const selectorFrom = (args: {
-  solidIds?: number[];
-  owner?: string;
-  material?: string;
-  within?: { mins: number[]; maxs: number[] };
-}): SolidSelector => ({
-  ...(args.solidIds !== undefined ? { ids: args.solidIds } : {}),
-  ...(args.owner !== undefined ? { owner: args.owner } : {}),
-  ...(args.material !== undefined ? { material: args.material } : {}),
-  ...(args.within !== undefined
-    ? {
-        within: {
-          mins: args.within.mins as [number, number, number],
-          maxs: args.within.maxs as [number, number, number],
-        },
-      }
-    : {}),
-});
 
 const TRANSFORM_FIELDS = {
   move: Vec3.optional().describe("Translate by this, in Hammer units."),
@@ -160,7 +119,7 @@ export const transformSolidsTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    ...SELECTOR,
+    ...SOLID_SELECTOR_FIELDS,
     ...TRANSFORM_FIELDS,
     dryRun: DRY_RUN,
     backup: BACKUP,
@@ -194,7 +153,7 @@ export const transformSolidsTool = defineTool({
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
 
-    const selector = selectorFrom(args);
+    const selector = solidSelectorFrom(args);
     const report = checkVmfSolids(path, before);
     // The whole selector, not half of it. Filtering on ids and owner only meant that a
     // rotation selected by material or by bounding box turned the narrower selection
@@ -298,7 +257,7 @@ export const deleteSolidsTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    ...SELECTOR,
+    ...SOLID_SELECTOR_FIELDS,
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -322,7 +281,7 @@ export const deleteSolidsTool = defineTool({
     const before = readFileSync(path, "utf8");
     const beforeReport = checkVmfSolids(path, before);
 
-    const result = deleteSolids(before, selectorFrom(args));
+    const result = deleteSolids(before, solidSelectorFrom(args));
 
     const afterReport = checkVmfSolids(path, result.text);
     const expected = beforeReport.solidCount - result.matched;
@@ -384,7 +343,7 @@ export const cloneSolidsTool = defineTool({
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    ...SELECTOR,
+    ...SOLID_SELECTOR_FIELDS,
     count: z
       .number()
       .int()
@@ -414,7 +373,7 @@ export const cloneSolidsTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const selector = selectorFrom(args);
+    const selector = solidSelectorFrom(args);
     const report = checkVmfSolids(path, before);
     const chosenSolids = report.solids.filter((s) => matchesSolid(s, selector));
     const centre = (): [number, number, number] => {

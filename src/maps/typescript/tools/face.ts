@@ -6,66 +6,9 @@ import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { gameFor } from "../../../core/typescript/games/resolve.js";
 import { alignFaces, normaliseMaterial, copyFaceAlignment, setFaceMaterial, setFaceUv, setSmoothingGroups } from "../vmf/face.js";
 import type { AlignMode } from "../vmf/face.js";
-import type { FaceSelector } from "../vmf/select.js";
+import { FACE_SELECTOR_FIELDS, faceSelectorFrom } from "../vmf/select.js";
 import { checkVmfSolids } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, GAME, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
-
-const SELECTOR = {
-  solidIds: z.array(z.number()).optional().describe("Only faces of these solids."),
-  sideIds: z
-    .array(z.number())
-    .optional()
-    .describe("Only these side ids, for targeting one exact face."),
-  material: z
-    .string()
-    .optional()
-    .describe("Only faces already carrying this. Substring, case-insensitive."),
-  facing: z
-    .enum(["up", "down", "side", "any"])
-    .optional()
-    .describe(
-      "Only faces pointing this way. 'up' is a floor, 'down' a ceiling, 'side' a wall; " +
-        "the cut is at 45 degrees, so a ramp counts as what it is closer to being.",
-    ),
-  minArea: z.number().optional().describe("Only faces at least this large, in square units."),
-  all: z
-    .boolean()
-    .optional()
-    .describe("Every face of the map. Required when no other criterion is given."),
-};
-
-const selectorFrom = (args: {
-  solidIds?: number[];
-  sideIds?: number[];
-  material?: string;
-  facing?: "up" | "down" | "side" | "any";
-  minArea?: number;
-  all?: boolean;
-}): FaceSelector => {
-  // An empty material is not a criterion: matchesFace treats "" as falsy and matches
-  // every face, while the presence of the key was enough to satisfy the all:true guard.
-  // A default empty form value could therefore turn a scoped edit into a map-wide one.
-  if (args.material !== undefined && args.material.trim().length === 0) {
-    throw new Error(
-      "material is empty, which matches every face rather than none. Give a name, or pass " +
-        "all:true if a map-wide edit is what was meant.",
-    );
-  }
-  const sel: FaceSelector = {
-    ...(args.solidIds !== undefined ? { solidIds: args.solidIds } : {}),
-    ...(args.sideIds !== undefined ? { sideIds: args.sideIds } : {}),
-    ...(args.material !== undefined ? { material: args.material } : {}),
-    ...(args.facing !== undefined ? { facing: args.facing } : {}),
-    ...(args.minArea !== undefined ? { minArea: args.minArea } : {}),
-  };
-  if (Object.keys(sel).length === 0 && args.all !== true) {
-    throw new Error(
-      "this would touch every face in the map. Name solidIds, a material, a facing or a " +
-        "minArea, or pass all:true to say you meant it.",
-    );
-  }
-  return sel;
-};
 
 /** Refuses to write when a face edit moved any geometry, which it never should. */
 function assertGeometryUntouched(path: string, before: string, after: string): void {
@@ -127,7 +70,11 @@ export const setFaceMaterialTool = defineTool({
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
     newMaterial: z.string().describe("Material to apply, in any of the usual forms."),
-    ...SELECTOR,
+    ...FACE_SELECTOR_FIELDS,
+    all: z
+      .boolean()
+      .optional()
+      .describe("Every face of the map. Required when no other criterion is given."),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -152,7 +99,7 @@ export const setFaceMaterialTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const result = setFaceMaterial(before, selectorFrom(args), args.newMaterial);
+    const result = setFaceMaterial(before, faceSelectorFrom(args), args.newMaterial);
     assertGeometryUntouched(path, before, result.text);
 
     const write = writeGuarded(path, result.text, ctx.config, {
@@ -225,7 +172,11 @@ export const alignFacesTool = defineTool({
           "face is fitted to this hotspot instead of the whole texture; the origin is the " +
           "top-left and maxs must be below and right of mins.",
       ),
-    ...SELECTOR,
+    ...FACE_SELECTOR_FIELDS,
+    all: z
+      .boolean()
+      .optional()
+      .describe("Every face of the map. Required when no other criterion is given."),
     game: GAME,
     dryRun: DRY_RUN,
     backup: BACKUP,
@@ -298,7 +249,7 @@ export const alignFacesTool = defineTool({
         if (sizes.size > 0) textureSizes = sizes;
       }
     }
-    const result = alignFaces(before, selectorFrom(args), {
+    const result = alignFaces(before, faceSelectorFrom(args), {
       mode: args.mode as AlignMode,
       ...(textureSizes ? { textureSizes } : {}),
       ...(args.scale !== undefined ? { scale: args.scale } : {}),
@@ -357,7 +308,11 @@ export const setFaceUvTool = defineTool({
     uScale: z.number().optional().describe("U scale; zero is refused."),
     vScale: z.number().optional().describe("V scale; zero is refused."),
     rotation: z.number().optional().describe("The side's `rotation` key, in degrees."),
-    ...SELECTOR,
+    ...FACE_SELECTOR_FIELDS,
+    all: z
+      .boolean()
+      .optional()
+      .describe("Every face of the map. Required when no other criterion is given."),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -383,7 +338,7 @@ export const setFaceUvTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const result = setFaceUv(before, selectorFrom(args), {
+    const result = setFaceUv(before, faceSelectorFrom(args), {
       ...(args.uaxis !== undefined ? { uaxis: args.uaxis as [number, number, number] } : {}),
       ...(args.vaxis !== undefined ? { vaxis: args.vaxis as [number, number, number] } : {}),
       ...(args.uShift !== undefined ? { uShift: args.uShift } : {}),
@@ -440,7 +395,11 @@ export const copyFaceAlignmentTool = defineTool({
       .boolean()
       .optional()
       .describe("Also copy an explicit lightmapscale. Off by default."),
-    ...SELECTOR,
+    ...FACE_SELECTOR_FIELDS,
+    all: z
+      .boolean()
+      .optional()
+      .describe("Every face of the map. Required when no other criterion is given."),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -478,7 +437,7 @@ export const copyFaceAlignmentTool = defineTool({
       before,
       args.sourceSolidId,
       args.sourceSideId,
-      selectorFrom(args),
+      faceSelectorFrom(args),
       {
         ...(args.copyMaterial !== undefined ? { copyMaterial: args.copyMaterial } : {}),
         ...(args.copyLightmapScale !== undefined
@@ -527,7 +486,11 @@ export const setSmoothingGroupsTool = defineTool({
     groups: z
       .array(z.number().int().min(1).max(32))
       .describe("Hammer's group numbers, 1 to 32. Empty clears every group."),
-    ...SELECTOR,
+    ...FACE_SELECTOR_FIELDS,
+    all: z
+      .boolean()
+      .optional()
+      .describe("Every face of the map. Required when no other criterion is given."),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -547,7 +510,7 @@ export const setSmoothingGroupsTool = defineTool({
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
-    const result = setSmoothingGroups(before, selectorFrom(args), args.groups);
+    const result = setSmoothingGroups(before, faceSelectorFrom(args), args.groups);
     assertGeometryUntouched(path, before, result.text);
 
     const write = writeGuarded(path, result.text, ctx.config, {
