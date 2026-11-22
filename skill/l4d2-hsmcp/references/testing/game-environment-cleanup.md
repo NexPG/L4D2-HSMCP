@@ -4,6 +4,16 @@ The game directory is the user's installation, not a scratch directory. Every ex
 writes into it must restore it, even when the experiment fails. Do the work in a `try/finally`
 or a tool that has one, not by hand afterwards.
 
+## Interrupted runs
+
+`run_map_test` and `run_nav_generate` sweep `<file>.hsmcp-backup` in `cfg/`, `maps/` and
+`scripts/vscripts/` before launching. That restores a previous `listenserver.cfg`, map or
+script even when the earlier process was killed before its `finally` could run. `.vpk.off`
+archives are restored at the same point. The count is returned as `stateRestored`.
+
+A test that is killed still deserves the checklist below; the sweep is a safety net, not a
+licence to interrupt runs.
+
 ## Before the run
 
 1. List what you are about to change. A test map, a `materials/maps/<map>/` directory, a
@@ -11,7 +21,9 @@ or a tool that has one, not by hand afterwards.
 2. If a file already existed and will be modified (for example a Valve map), copy it to a
    backup with a name **you will remove**, and record its size/hash.
 3. Prefer a copy with a test name over modifying a shipped map. If the map must keep its
-   name for the engine to derive paths, back up and restore.
+   name for the engine to derive paths, back up and restore. A **stock** BSP is not a probe
+   host: renaming it breaks its `materials/maps/<name>/` pakfile paths, and an edited copy
+   has hung at the loading screen. Use a custom map.
 4. Hide add-ons that can shadow a loose map (`run_nav_generate` takes `addonsToHide`).
    A mounted VPK can win over `left4dead2/maps/<map>.bsp`, and then the injected entities
    never load.

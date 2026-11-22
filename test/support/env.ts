@@ -81,6 +81,9 @@ export const has = {
    * The game's own content, as srctools mounts it: `gameinfo.txt` is the honest predicate.
    */
   gameContent: config.gameDir !== null && existsSync(join(config.gameDir, "gameinfo.txt")),
+  hammerSettings:
+    config.binDir !== null &&
+    existsSync(join(config.binDir, "hammerplusplus", "hammerplusplus_settings.ini")),
   /**
    * ficool2's bsp_rename, a standalone download that belongs to no game install.
    *
@@ -113,6 +116,7 @@ const LABELS: Record<keyof typeof has, string> = {
   tttSource: "a large Hammer-written .vmf",
   navPair: "a .nav / .bsp pair",
   gameContent: `the game's own content (${config.gameDir ?? "not found"})`,
+  hammerSettings: "Hammer++'s settings.ini (created after the first launch)",
   bspRename: `ficool2's bsp_rename.exe in ${config.externalToolsDir} (optional)`,
   tga2skybox: `ficool2's tga2skybox.exe in ${config.externalToolsDir} (optional)`,
   cubemap2hdr: `ficool2's cubemap2hdr.exe in ${config.externalToolsDir} (optional)`,

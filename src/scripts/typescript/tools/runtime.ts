@@ -91,6 +91,48 @@ async function stopGame(): Promise<void> {
   await sleep(500);
 }
 
+/** Restores a `.hsmcp-backup` file left by an interrupted run. */
+function restoreBackup(backup: string): boolean {
+  if (!existsSync(backup)) return false;
+  const target = backup.slice(0, -".hsmcp-backup".length);
+  try {
+    copyFileSync(backup, target);
+    rmSync(backup, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sweeps the state an interrupted `run_map_test` can leave behind.
+ *
+ * The run has a `finally`, but a killed process or a closed terminal never reaches it. The
+ * next run restores those files **before** touching the game, so a stale `listenserver.cfg`,
+ * script backup or map backup cannot make the next launch read yesterday's command.
+ */
+export function sweepInterruptedState(gameDir: string): number {
+  let restored = 0;
+  const known = [
+    join(gameDir, "cfg", "listenserver.cfg.hsmcp-backup"),
+    ...(existsSync(join(gameDir, "maps"))
+      ? readdirSync(join(gameDir, "maps"))
+          .filter((entry) => entry.endsWith(".hsmcp-backup"))
+          .map((entry) => join(gameDir, "maps", entry))
+      : []),
+    ...(existsSync(join(gameDir, "scripts", "vscripts"))
+      ? readdirSync(join(gameDir, "scripts", "vscripts"))
+          .filter((entry) => entry.endsWith(".hsmcp-backup"))
+          .map((entry) => join(gameDir, "scripts", "vscripts", entry))
+      : []),
+  ];
+  for (const backup of known) {
+    if (restoreBackup(backup)) restored += 1;
+  }
+  return restored;
+}
+
+
 /**
  * Makes the engine append its string-table dictionary to a loose BSP.
  *
@@ -224,6 +266,7 @@ export const runNavGenerate = defineTool({
   handler: async (args, ctx) => {
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
+    sweepInterruptedState(gameDir);
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
 
@@ -598,6 +641,7 @@ export const runMapTest = defineTool({
     commandsRun: z.array(z.string()),
     scheduleArmed: z.number(),
     addonsRestored: z.number(),
+    stateRestored: z.number(),
     /** One entry per marker reached, in order, with the line that matched and its time. */
     timeline: z.array(
       z.object({
@@ -615,6 +659,7 @@ export const runMapTest = defineTool({
   handler: async (args, ctx) => {
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
+    const stateRestored = sweepInterruptedState(gameDir);
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
     if (!args.waitFor && (args.markers?.length ?? 0) === 0) {
@@ -877,6 +922,7 @@ export const runMapTest = defineTool({
       commandsRun: commands,
       scheduleArmed: args.schedule.length,
       addonsRestored,
+      stateRestored,
       timeline,
       missing,
       logTail: log

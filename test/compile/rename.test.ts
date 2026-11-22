@@ -53,20 +53,25 @@ describe("run_bsp_rename", () => {
     const bsp = join(dir, "hmcp_probe.bsp");
     copyFileSync(PROBE, bsp);
 
-    // The probe packs exactly one file, and its path carries the map's name.
-    expect(await packedIn(bsp)).toEqual(["materials/maps/hmcp_probe/cubemapdefault.vtf"]);
+    // The probe's packed content carries the map's name. The fixture has both the LDR and
+    // HDR cubemap; the assertion is about the path, not the count.
+    const before = await packedIn(bsp);
+    expect(before.length).toBeGreaterThan(0);
+    expect(before.every((name) => name.startsWith("materials/maps/hmcp_probe/"))).toBe(true);
 
     const r = await rename(bsp, "rp_probe_renamed");
     expect(r.ok).toBe(true);
     expect(r.renamed).toBe(join(dir, "rp_probe_renamed.bsp"));
 
     // The whole point, checked by a different reader: the packed path moved with the map.
-    expect(await packedIn(r.renamed as string)).toEqual([
-      "materials/maps/rp_probe_renamed/cubemapdefault.vtf",
-    ]);
+    const renamedPacked = await packedIn(r.renamed as string);
+    expect(renamedPacked).toHaveLength(before.length);
+    expect(renamedPacked.every((name) => name.startsWith("materials/maps/rp_probe_renamed/"))).toBe(
+      true,
+    );
 
     // And the source is untouched -- this creates, it does not rename in place.
     expect(existsSync(bsp)).toBe(true);
-    expect(await packedIn(bsp)).toEqual(["materials/maps/hmcp_probe/cubemapdefault.vtf"]);
+    expect(await packedIn(bsp)).toEqual(before);
   }, 120_000);
 });

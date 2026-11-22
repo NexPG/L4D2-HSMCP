@@ -5,7 +5,7 @@ import { ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 
-describe.skipIf(!has.gameContent)("read_hammerpp", () => {
+describe.skipIf(!has.gameContent || !has.hammerSettings)("read_hammerpp", () => {
   it("reads the settings and the game configuration", async () => {
     const r = (await readHammerPlusPlusTool.handler({}, ctx)) as {
       editorPresent: boolean;
