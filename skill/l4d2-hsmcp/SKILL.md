@@ -74,6 +74,7 @@ material; the instructions live in one place.
 | Build exactly what the editor's Run Map would | `workflows/editor-sequence.md` |
 | Campaign missing from the menu | `troubleshooting/campaign-not-in-menu.md` |
 | Chapter does not change | `troubleshooting/chapter-does-not-change.md` |
+| Loading bar never finishes | `troubleshooting/endless-loading.md` |
 | Bots wander instead of advancing | `troubleshooting/bots-wander.md` |
 | Nav may be stale | `troubleshooting/nav-stale.md` |
 | Script may not load | `troubleshooting/vscript-not-loaded.md` |
@@ -137,6 +138,7 @@ material; the instructions live in one place.
 | `troubleshooting/cubemaps-do-not-build.md` | `buildcubemaps` writes nothing, or says a path is not writable |
 | `troubleshooting/mapping-edits.md` | a prefab, texture skew, clip, overlay or moved brush is not where it should be |
 | `troubleshooting/hlmv-screenshot.md` | HLMV shows an error, a black viewport, or the screenshot is blank |
+| `troubleshooting/endless-loading.md` | the loading bar never fills, or the same map restarts instead of loading |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 

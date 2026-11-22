@@ -66,6 +66,9 @@ run_map_test
 `EntFire` did not execute, and a direct `-insecure` launch on the test campaign attached no
 local player (`Cannot execute "z_spawn ...", no player`). Steam launch did.
 
+A probe host with a live `info_changelevel` and checkpoint warp restarts forever on the
+loading screen, so strip the exit first (see "A loading bar that never finishes" below).
+
 This spawns manually, so it proves the probe/class identity, not that a mutation's
 `BoomerLimit` was honoured. A zero count with `no player` means the host map is not playable.
 
@@ -104,6 +107,30 @@ A renamed or modified stock map is a runtime experiment with the game's own cont
 fixture. Put the probe in a custom map you control (a VMF compiled under its own name), or
 use the test map built for the probe. If you need a stock map's geometry, copy its VMF when
 you have it; do not rename the BSP.
+
+## A loading bar that never finishes is a restart loop
+
+A probe host must have **no live chapter exit**. On the test chapters, `selftest_start`
+enables `selftest_warp`, which calls `Director.WarpAllSurvivorsToCheckpoint()`; the team lands
+in the `info_changelevel` brush, and when the next chapter (`hsmcp_test_m2`) is not installed
+the engine restarts the same map instead of loading it. Measured: **53 `Host_NewGame` lines
+for the same map and no `Loading:` line at all** in one run, with the client on the loading
+screen throughout.
+
+Diagnose from the log, not from patience:
+
+```
+console.log | Select-String 'Host_NewGame|Loading:|Map:'
+```
+
+One `Host_NewGame`, one `Loading: N seconds`, one `Map:` is a normal load. Repeated
+`Host_NewGame` for the same map with no `Loading:` is a loop. `hsmcp_test_m1` from the full
+campaign VPK loads in **23 s** (`Loading: 23.17 seconds`); the screen is the campaign poster
+at 15 s and gameplay at 35 s.
+
+A probe VMF is therefore built from the chapter with `edit_vmf` `remove` on `to_m2` (the
+`info_changelevel` brush), `selftest_start` and `selftest_warp`, then compiled under its own
+name. See `troubleshooting/endless-loading.md`.
 
 ## The trap: `commands` run before the map's entities exist
 
