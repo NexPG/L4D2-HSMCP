@@ -1,6 +1,14 @@
 import { KvSyntaxError, lex } from "./lex.js";
 import type { Token } from "./lex.js";
 
+/** One `[condition]` tag, kept with its source range so a writer can leave it untouched. */
+export interface KvCondition {
+  /** Including the brackets, e.g. `[$WIN32 && !$WIN32WIDE]`. */
+  text: string;
+  start: number;
+  end: number;
+}
+
 /**
  * A `"key" "value"` line.
  *
@@ -13,8 +21,16 @@ export interface KvPair {
   value: string;
   /** Offset of the key's opening quote. */
   start: number;
-  /** Offset one past the value's closing quote. */
+  /**
+   * Offset one past the node. With no conditions this is one past the value's closing
+   * quote; with conditions it is one past the last one.
+   */
   end: number;
+  /** The value token's own range, for a writer replacing only the value. */
+  valueStart?: number;
+  valueEnd?: number;
+  /** VGUI conditions attached after the value; absent in a VMF. */
+  conditions?: KvCondition[];
 }
 
 export interface KvBlock {
@@ -30,6 +46,8 @@ export interface KvBlock {
   bodyStart: number;
   /** Offset of the closing `}`. */
   bodyEnd: number;
+  /** VGUI conditions attached between the name and `{`; absent in a VMF. */
+  conditions?: KvCondition[];
 }
 
 export type KvNode = KvPair | KvBlock;
@@ -79,8 +97,13 @@ export function parse(source: string): KvNode[] {
       };
     }
 
+    if (first.kind === "condition") {
+      throw new KvSyntaxError("a condition must follow a name or a value", first.start, source);
+    }
+
     // Otherwise a string, which is either a block name or the key of a pair.
     i++;
+    const blockConditions = readConditions();
     const next = tokens[i];
 
     if (next?.kind === "lbrace") {
@@ -95,7 +118,16 @@ export function parse(source: string): KvNode[] {
         end: close.end,
         bodyStart: next.end,
         bodyEnd: close.start,
+        ...(blockConditions.length > 0 ? { conditions: blockConditions } : {}),
       };
+    }
+
+    if (blockConditions.length > 0) {
+      throw new KvSyntaxError(
+        `condition after ${JSON.stringify(first.value)} has no block`,
+        first.start,
+        source,
+      );
     }
 
     if (!next || next.kind !== "string") {
@@ -106,13 +138,28 @@ export function parse(source: string): KvNode[] {
       );
     }
     i++;
+    const pairConditions = readConditions();
+    const end = pairConditions.length > 0 ? pairConditions[pairConditions.length - 1]!.end : next.end;
     return {
       kind: "pair",
       key: first.value,
       value: next.value,
       start: first.start,
-      end: next.end,
+      end,
+      valueStart: next.start,
+      valueEnd: next.end,
+      ...(pairConditions.length > 0 ? { conditions: pairConditions } : {}),
     };
+  }
+
+  function readConditions(): KvCondition[] {
+    const conditions: KvCondition[] = [];
+    while (tokens[i]?.kind === "condition") {
+      const token = tokens[i]!;
+      conditions.push({ text: token.value, start: token.start, end: token.end });
+      i++;
+    }
+    return conditions;
   }
 
   function expectRbrace(openedAt: number): Token {

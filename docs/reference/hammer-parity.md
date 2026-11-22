@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **266 tools**.
+Last checked against the tool list on 22/11/2026: **268 tools**.
 
 ## The file itself
 
@@ -303,6 +303,8 @@ map and looking, or by not happening at all.
 | `write_logic` | a point logic entity and its connections, which the editor does not validate |
 | `write_addoninfo` | the manifest is hand-written; this writes it with the provenance line |
 | `write_loading_screen` | a poster/thumbnail needs a VTF and a VMT; this makes the pair |
+| `read_hud` | Hammer does not expose a `.res` control tree; its VGUI screens are edited by hand |
+| `write_hud` | no editor edits one `.res` value while preserving `[$WIN32]` tags, comments and indentation |
 | `write_cubemap_grid` | Hammer places one cubemap at a time; this lays out a grid |
 | `check_vmt` | no editor validates a material's shader, base texture or compile flags |
 | `check_sound` | no editor says whether a WAV is L4D2's shape or a soundscript wave is missing |

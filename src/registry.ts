@@ -137,6 +137,7 @@ import { vpkTools } from "./packages/typescript/tools/vpk.js";
 import { vpkVerifyTools } from "./packages/typescript/tools/vpkverify.js";
 import { vmtTools } from "./textures/typescript/tools/vmt.js";
 import { rectTools } from "./textures/typescript/tools/rect.js";
+import { hudTools } from "./textures/typescript/tools/hud.js";
 import { vmfTools } from "./maps/typescript/tools/vmf.js";
 import { vmfEditTools } from "./maps/typescript/tools/vmfedit.js";
 import { vscriptTools } from "./scripts/typescript/tools/vscript.js";
@@ -284,6 +285,7 @@ export const allTools: AnyToolDef[] = [
   ...skyboxCopyTools,
   ...skyboxBuildTools,
   ...rectTools,
+  ...hudTools,
   ...weatherTools,
   ...worldspawnTools,
   ...textTools,

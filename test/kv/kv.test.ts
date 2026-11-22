@@ -66,6 +66,35 @@ describe("parser", () => {
     expect(src.slice(block.start, block.end)).toBe('entity\n{\n\t"id" "7"\n}');
     expect(src.slice(block.bodyStart, block.bodyEnd)).toBe('\n\t"id" "7"\n');
   });
+
+  it("keeps VGUI conditions on pairs and blocks without moving their offsets", () => {
+    const src = [
+      '"Resource/UI/Hud.res"',
+      "{",
+      '\t"Visible" [$WIN32]',
+      "\t{",
+      '\t\t"xpos" "c-10"',
+      '\t\t"visible" "1" [!$OSX]',
+      "\t}",
+      "}",
+      "",
+    ].join("\n");
+    const [root] = parse(src) as [KvBlock];
+    const control = root.entries[0] as KvBlock;
+    expect(control.name).toBe("Visible");
+    expect(control.conditions).toEqual([
+      { text: "[$WIN32]", start: src.indexOf("[$WIN32]"), end: src.indexOf("[$WIN32]") + 8 },
+    ]);
+    const visible = control.entries[1];
+    expect(visible?.kind).toBe("pair");
+    if (visible?.kind !== "pair") throw new Error("expected a pair");
+    expect(visible.value).toBe("1");
+    expect(visible.conditions?.[0]?.text).toBe("[!$OSX]");
+    // The node covers the condition, so an untouched range copies through verbatim.
+    expect(src.slice(visible.start, visible.end)).toBe('"visible" "1" [!$OSX]');
+    expect(visible.valueStart).toBe(src.indexOf('"1"'));
+    expect(visible.valueEnd).toBe(src.indexOf('"1"') + 3);
+  });
 });
 
 describe("offset integrity -- the real round-trip oracle", () => {

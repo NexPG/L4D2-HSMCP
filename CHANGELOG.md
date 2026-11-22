@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.197-alpha - 2026-11-22
+
+- **`read_hud`**: a VGUI `.res` screen as a flat control tree — path, `ControlName`,
+  `fieldName`, `xpos`/`ypos`/`wide`/`tall`, visibility and every keyvalue. Conditions such
+  as `[$WIN32]` and `[!$OSX]` are reported, not evaluated, so a control that only applies
+  on another platform is still visible. `search` covers paths, names, values and conditions.
+- **`write_hud`**: replaces a value in place or adds a missing key inside a control, with a
+  `condition` selecting a conditional duplicate. Everything outside the changed value is
+  copied byte for byte, so comments, indentation and tags survive. `out` writes an add-on
+  copy; the result is parsed back before writing.
+- **Condition-aware KeyValues**: `kv/lex.ts` and `kv/parse.ts` now keep `[condition]` tokens
+  on pairs and blocks with their offsets. The VMF path is unchanged, and the offset-integrity
+  test covers both placements. `srctools.keyvalues` parses `.res`, but evaluates the tags and
+  drops them, which is why this read/write is intentionally TypeScript.
+- Verified against the stock `resource/ui/l4d360ui/audio.res`: 39 controls, two condition
+  placements, and a real value edit that left the file length unchanged.
+- **Tool count: 268.** Tests: 220 files, 1,858 passed, 33 skipped.
+
 ## 0.0.196-alpha - 2026-11-22
 
 - **`run_compile_sequence` no longer requires a game install for a file-only sequence.**

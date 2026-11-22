@@ -1,6 +1,6 @@
 # Tools by area
 
-266 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
+268 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
 rendering, the runtime harness, and so on — not a source directory and not a bucket for
 several jobs. A new kind of tool gets a new row and a new page.
 
@@ -19,7 +19,7 @@ not this file.
 | Textures (VTF) | reading, writing, converting and extracting VTF textures | 6 | [textures.md](textures.md) |
 | Materials (VMT and PBR) | VMT read/write, engine-read checks, PBR parameters and the game's surface properties | 6 | [materials.md](materials.md) |
 | Cubemaps and skyboxes | building and converting cubemaps, six-face skyboxes and the sky_camera | 6 | [cubemaps.md](cubemaps.md) |
-| Screens and UI | loading screens and Hammer++ .rect hotspot rectangles | 3 | [ui.md](ui.md) |
+| Screens and UI | loading screens, VGUI HUD .res screens and Hammer++ .rect hotspot rectangles | 5 | [ui.md](ui.md) |
 | Particles | particle systems, their materials and map effect references | 3 | [particles.md](particles.md) |
 | Game content | searching the game's VPKs, localization and asset previews | 6 | [content.md](content.md) |
 | Audio | soundscripts, soundscapes and WAV | 7 | [audio.md](audio.md) |
@@ -36,7 +36,7 @@ not this file.
 | Configuration and health | toolchain health and the stored add-on author | 3 | [configuration.md](configuration.md) |
 | Game discovery | how Left 4 Dead 2 was found on this machine | 1 | [games.md](games.md) |
 | File and text primitives | path resolution and raw UTF-8 text files | 2 | [text.md](text.md) |
-| **Total** | | **266** | |
+| **Total** | | **268** | |
 
 Each area page has logical tables inside it (for example, “Geometry”, “Faces, lighting,
 overlays and terrain” and “Instances and prefabs” inside VMF authoring).

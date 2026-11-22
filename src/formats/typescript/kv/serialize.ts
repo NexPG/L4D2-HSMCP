@@ -25,10 +25,13 @@ export function serialize(nodes: readonly KvNode[], indent = 0): string {
 
 export function serializeNode(node: KvNode, indent = 0): string {
   const pad = "\t".repeat(indent);
+  const conditions = node.conditions?.length
+    ? ` ${node.conditions.map((condition) => condition.text).join(" ")}`
+    : "";
   if (node.kind === "pair") {
-    return `${pad}"${node.key}" "${node.value}"\n`;
+    return `${pad}"${node.key}" "${node.value}"${conditions}\n`;
   }
-  const head = node.name ? `${pad}${node.name}\n` : "";
+  const head = node.name ? `${pad}${node.name}${conditions}\n` : "";
   return `${head}${pad}{\n${serialize(node.entries, indent + 1)}${pad}}\n`;
 }
 

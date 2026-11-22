@@ -118,8 +118,8 @@ const AREAS: Area[] = [
   {
     slug: "ui",
     title: "Screens and UI",
-    covers: "loading screens and Hammer++ .rect hotspot rectangles",
-    groups: { "Screens and UI": ["loadingscreen", "rect"] },
+    covers: "loading screens, VGUI HUD .res screens and Hammer++ .rect hotspot rectangles",
+    groups: { "Screens and UI": ["loadingscreen", "rect", "hud"] },
   },
   {
     slug: "particles",

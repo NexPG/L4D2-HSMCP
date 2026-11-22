@@ -4,15 +4,15 @@
  * of the original text rather than reserialising a parsed model.
  */
 
-export type TokenKind = "string" | "lbrace" | "rbrace";
+export type TokenKind = "string" | "lbrace" | "rbrace" | "condition";
 
 export interface Token {
   kind: TokenKind;
-  /** Unquoted text for a `string` token; `{` or `}` otherwise. */
+  /** Unquoted text for `string`; `{`/`}`; or the bracketed text including brackets. */
   value: string;
-  /** Offset of the token in the source, including its opening quote. */
+  /** Offset of the token in the source, including its opening quote/bracket. */
   start: number;
-  /** Offset one past the token, including its closing quote. */
+  /** Offset one past the token, including its closing quote/bracket. */
   end: number;
 }
 
@@ -75,6 +75,27 @@ export function lex(source: string): Token[] {
     if (c === "}") {
       tokens.push({ kind: "rbrace", value: "}", start: i, end: i + 1 });
       i++;
+      continue;
+    }
+
+    // VGUI resource files attach a condition to a pair or block: `"xpos" "1" [$WIN32]`,
+    // `"Child" [$X360] { ... }`. A bracket run is its own token so the parser can keep it
+    // instead of mistaking it for the next value. No other grammar this lexer serves uses a
+    // bare `[`, so this is unambiguous.
+    if (c === "[") {
+      const start = i;
+      i++;
+      while (i < source.length && source[i] !== "]") {
+        if (source[i] === "\n") {
+          throw new KvSyntaxError("unterminated condition", start, source);
+        }
+        i++;
+      }
+      if (i >= source.length) {
+        throw new KvSyntaxError("unterminated condition", start, source);
+      }
+      i++;
+      tokens.push({ kind: "condition", value: source.slice(start, i), start, end: i });
       continue;
     }
 

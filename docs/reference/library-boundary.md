@@ -65,6 +65,7 @@ shows up here as four concrete reasons:
 | VPK | `srctools.vpk`/`filesys`; sidecar `vpk_list`, `vpk_read` | TypeScript VPK index/read for hot model/texture lookups; `verify_vpk` checks v2 MD5/signature, which srctools does not expose | **intentional TS**; candidate for read-only tools if the subprocess cost is acceptable |
 | VTF | `srctools.vtf`; sidecar `vtf_extract`, `vtf_convert`, `material_preview`, `vtf_resources` | TypeScript header reader and decoder for in-process preview/software render; resource table, particle sheets and hotspots are sidecar-only | **intentional TS**, resources **delegated** |
 | VMT | `srctools.vmt`; sidecar `material_preview` | TypeScript VMT read/write for tools and previews | **intentional TS**; candidate |
+| VGUI `.res` | `srctools.keyvalues` parses it but evaluates `[$WIN32]`/`[!$OSX]` and drops the tags | condition-aware KeyValues parser and byte-offset value splice | **intentional TS** (the tags and offsets are the operation) |
 | Surface properties | `srctools.surfaceprop` (no verb yet) | TypeScript table parser with the prose-comment workaround | **candidate** — add a `surfaceprops` verb and delete the TS table parser |
 | MDL basic info | `srctools.mdl`; sidecar `model_info` | `read_model_info` calls the sidecar; raw readers for decompile, eyes, jiggle, LOD, procedural, VTA, PHY | **hybrid, intentional** |
 | DMX, SMD, glTF, FBX | `srctools.smd`, `srctools.dmx`, sidecar format verbs | TypeScript tools call the sidecar; no local parser copies | **delegated** |
