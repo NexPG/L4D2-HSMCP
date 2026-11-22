@@ -5,7 +5,6 @@
  */
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
-import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import {
   addBrushEntity,
@@ -32,8 +31,6 @@ const OUTPUT = z.object({
   delay: z.number().nonnegative().default(0),
   times: z.number().int().default(-1),
 });
-
-type OutputSpec = z.infer<typeof OUTPUT>;
 
 export const writePropTool = defineTool({
   name: "write_prop",

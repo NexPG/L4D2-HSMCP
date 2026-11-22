@@ -10,8 +10,6 @@ import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 
-const VEC3 = z.array(z.number()).length(3);
-
 interface SidecarEntity {
   classname: string;
   targetname: string | null;
@@ -142,7 +140,7 @@ export const checkFinaleTool = defineTool({
     const map = basename(path, extname(path));
 
     let entities: FinaleEntity[];
-    let finaleRegions: FinaleRegion[] = [];
+    const finaleRegions: FinaleRegion[] = [];
     if (kind === ".vmf") {
       const reply = await callSidecar<{ entities: SidecarEntity[] }>(
         "vmf_read",

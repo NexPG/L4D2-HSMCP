@@ -29,7 +29,7 @@
  * oracle for this file, and it is exact enough to catch a plane taken in the wrong sense:
  * the sum comes out doubled or zero, not slightly off.
  */
-import { children, get, parse } from "../../../formats/typescript/kv/parse.js";
+import { children, parse } from "../../../formats/typescript/kv/parse.js";
 import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
 import { textureAxesFor } from "./build.js";
 import { findSolids, isEmptySelector, lineRange, matchesSolid } from "./select.js";

@@ -60,7 +60,7 @@ function openEitherFormat(
     };
   }
   const source = readFileSync(path, "utf8");
-  const { entities } = readEntities(source);
+  readEntities(source);
   return {
     path,
     format: "vmf",

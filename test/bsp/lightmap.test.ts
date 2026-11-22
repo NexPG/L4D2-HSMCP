@@ -16,7 +16,6 @@ const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-lightmap-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const lumpDescAt = (i: number): number => 8 + i * 16;
 
 function withCompressedLump(index: number): string {
   const buf = Buffer.from(readFileSync(PROBE));

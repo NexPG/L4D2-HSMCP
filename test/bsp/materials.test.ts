@@ -17,7 +17,6 @@ const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-materials-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const lumpDescAt = (i: number): number => 8 + i * 16;
 
 /** Marks lump `index` of a copy of the probe as individually LZMA-compressed. */
 function withCompressedLump(index: number): string {

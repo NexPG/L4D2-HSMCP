@@ -31,7 +31,6 @@ import { maxId } from "./edit.js";
 import { findSolids } from "./select.js";
 import { checkVmfSolids } from "./solid.js";
 import type { SolidCheck, SolidSide, Vec3 } from "./solid.js";
-import { applySplices } from "./splice.js";
 
 export class VmfSealError extends Error {
   constructor(message: string) {

@@ -21,7 +21,6 @@ const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-report-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const lumpDescAt = (i: number): number => 8 + i * 16;
 const LUMP_VISIBILITY = 4;
 
 /** Erases the PVS the way a map shipped without vvis would have none. */

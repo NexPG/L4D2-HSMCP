@@ -173,11 +173,11 @@ describe("build_skybox", () => {
     ).toThrow(/scaled map origin falls inside copied brush/);
   });
 
-  it("refuses a map that already has a camera", () => {
+  it("refuses a map that already has a camera", async () => {
     const map = room();
     const file = join(scratch, "second.vmf");
     writeFileSync(file, map.text);
-    buildSkyboxTool.handler(
+    await buildSkyboxTool.handler(
       { path: file, solidIds: [map.blockId], backup: false, confirm: true } as never,
       ctx,
     );
@@ -198,11 +198,11 @@ describe("build_skybox", () => {
     ).toThrow(/name what belongs in the skybox/);
   });
 
-  it("does not write on a dry run", () => {
+  it("does not write on a dry run", async () => {
     const map = room();
     const file = join(scratch, "dry.vmf");
     writeFileSync(file, map.text);
-    buildSkyboxTool.handler(
+    await buildSkyboxTool.handler(
       { path: file, solidIds: [map.blockId], dryRun: true, backup: false, confirm: true } as never,
       ctx,
     );
@@ -217,7 +217,7 @@ describe.skipIf(!has.toolchain)("a built skybox, compiled", () => {
       const map = room();
       const file = join(scratch, "compile.vmf");
       writeFileSync(file, map.text);
-      buildSkyboxTool.handler(
+      await buildSkyboxTool.handler(
         { path: file, solidIds: [map.blockId], backup: false, confirm: true } as never,
         ctx,
       );

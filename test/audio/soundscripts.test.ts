@@ -68,7 +68,6 @@ describe.skipIf(!installed)("read_soundscript / write_soundscript", () => {
   it("appends instead of rewriting, and refuses a duplicate name", async () => {
     const path = join(scratch, "append.txt");
     writeFileSync(path, '// keep this comment\n"Existing" {\n\t"wave" "old.wav"\n}\n');
-    const before = '// keep this comment\n"Existing" {\n\t"wave" "old.wav"\n}\n';
 
     await callSidecar(
       "soundscript_write",

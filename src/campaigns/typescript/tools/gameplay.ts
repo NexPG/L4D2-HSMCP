@@ -5,7 +5,6 @@
  */
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
-import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import {
   addEntities,

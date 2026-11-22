@@ -175,7 +175,7 @@ describe.skipIf(!has.toolchain)("the tool chain, in one room", () => {
       const blockId = added.solidIds[0]!;
       expect(added.text).toContain(`"id" "${blockId}"`);
 
-      moveVerticesTool.handler(
+      await moveVerticesTool.handler(
         {
           path,
           solidId: blockId,
@@ -194,7 +194,7 @@ describe.skipIf(!has.toolchain)("the tool chain, in one room", () => {
       expect(moved.valid).toBe(true);
 
       // 2. Hollow the shaped block: six mitred walls, still one closed shell each.
-      hollowSolidsTool.handler(
+      await hollowSolidsTool.handler(
         {
           path,
           solidIds: [blockId],
@@ -227,7 +227,7 @@ describe.skipIf(!has.toolchain)("the tool chain, in one room", () => {
           Math.abs(side.plane.dist + 256) < 0.01,
       )!;
       expect(underside.id).not.toBeNull();
-      writeOverlay.handler(
+      await writeOverlay.handler(
         {
           path,
           sideId: underside.id!,
@@ -361,7 +361,7 @@ describe.skipIf(!has.toolchain)("geometry tools the compiler has to believe", ()
 
       // Rotate about the brush's centre, then stretch it. Two calls because the tool
       // refuses to combine transforms: a result must have one cause.
-      transformSolidsTool.handler(
+      await transformSolidsTool.handler(
         {
           path,
           solidIds: [blockId],
@@ -371,7 +371,7 @@ describe.skipIf(!has.toolchain)("geometry tools the compiler has to believe", ()
         } as never,
         ctx,
       );
-      transformSolidsTool.handler(
+      await transformSolidsTool.handler(
         {
           path,
           solidIds: [blockId],
@@ -389,7 +389,7 @@ describe.skipIf(!has.toolchain)("geometry tools the compiler has to believe", ()
 
       // A counter is several brushes that must join: the fitting tool checks the assembly,
       // vbsp checks that each part is a closed volume.
-      writeVmfFittingTool.handler(
+      await writeVmfFittingTool.handler(
         {
           path,
           fittings: [
@@ -423,7 +423,7 @@ describe.skipIf(!has.toolchain)("geometry tools the compiler has to believe", ()
 
       // Mirror one of the four pieces. The tool's own check is that the volume is preserved
       // by a reflection; the compile is the check that the planes still bound a brush.
-      transformSolidsTool.handler(
+      await transformSolidsTool.handler(
         {
           path,
           solidIds: [cutY.solids[0]!.id],
@@ -478,7 +478,7 @@ describe.skipIf(!has.toolchain)("visibility tools, compiled with vvis", () => {
       const path = join(scratch, "visibility_room.vmf");
       writeFileSync(path, insertSolids(SKELETON, shellWithDoor, { material: "DEV/DEV_MEASUREGENERIC01" }).text);
 
-      writeHintBrushTool.handler(
+      await writeHintBrushTool.handler(
         {
           path,
           mins: [-64, -200, 64],
@@ -489,7 +489,7 @@ describe.skipIf(!has.toolchain)("visibility tools, compiled with vvis", () => {
         ctx,
       );
 
-      writePortalTool.handler(
+      await writePortalTool.handler(
         {
           path,
           classname: "func_areaportal",
@@ -526,11 +526,11 @@ describe.skipIf(!has.toolchain)("faces, read back out of the BSP", () => {
       writeFileSync(path, added.text);
       const blockId = added.solidIds[0]!;
 
-      setSmoothingGroupsTool.handler(
+      await setSmoothingGroupsTool.handler(
         { path, groups: [13], solidIds: [blockId], backup: false, confirm: true } as never,
         ctx,
       );
-      setLightmapScaleTool.handler(
+      await setLightmapScaleTool.handler(
         { path, scale: 32, solidIds: [blockId], backup: false, confirm: true } as never,
         ctx,
       );
@@ -547,7 +547,7 @@ describe.skipIf(!has.toolchain)("faces, read back out of the BSP", () => {
             side.plane.normal[1] === 0 &&
             side.plane.normal[2] === 1,
         )!;
-      setFaceUvTool.handler(
+      await setFaceUvTool.handler(
         {
           path,
           sideIds: [top.id!],
@@ -638,16 +638,16 @@ describe.skipIf(!has.toolchain)("terrain through the whole displacement chain", 
       // The terrain tool seals every cell: 16 displaced brushes and 16 duplicates.
       expect(checkVmfSolids(path, readFileSync(path, "utf8")).solidCount).toBe(6 + 16 * 2);
 
-      subdivideDisplacementsTool.handler({ path, power: 3, all: true, confirm: true } as never, ctx);
-      sculptDisplacementTool.handler(
+      await subdivideDisplacementsTool.handler({ path, power: 3, all: true, confirm: true } as never, ctx);
+      await sculptDisplacementTool.handler(
         { path, shape: { kind: "noise", amplitude: 24, seed: 3 }, confirm: true } as never,
         ctx,
       );
-      paintDisplacementTool.handler(
+      await paintDisplacementTool.handler(
         { path, rule: { kind: "uniform", alpha: 200 }, confirm: true } as never,
         ctx,
       );
-      sewDisplacementsTool.handler({ path, confirm: true } as never, ctx);
+      await sewDisplacementsTool.handler({ path, confirm: true } as never, ctx);
 
       const after = readDisplacements(readFileSync(path, "utf8"));
       expect(after.displacements).toHaveLength(16);

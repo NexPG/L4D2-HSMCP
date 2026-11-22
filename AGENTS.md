@@ -33,6 +33,17 @@ Before writing a parser, converter, packer or editor for a format:
 The lasting audit table and current exceptions live in
 [`docs/reference/library-boundary.md`](docs/reference/library-boundary.md).
 
+## Repository facts
+
+- Windows only, GPL-3.0-only, Node 22+, pnpm. `packageManager` in `package.json` pins the
+  pnpm version and CI reads the same field, so use `pnpm`, not `npm`; the lockfile is
+  `pnpm-lock.yaml`.
+- The gates before calling work done are `pnpm build`, `pnpm typecheck`, `pnpm lint` and
+  `pnpm test`, in that order. TypeScript is strict, including `noUnusedLocals` and
+  `noUnusedParameters`; ESLint rejects unawaited promises.
+- Never commit `dist/`, `node_modules/`, `config.json`, `.mcp.json`, `.hammer-mcp/`,
+  `.develop-diary/`, `addons/`, `campaigns/` or `.3d-projects/`.
+
 ## The rest
 
 `CONTRIBUTING.md` is the full rulebook: licence compliance, tests that can fail, numbers

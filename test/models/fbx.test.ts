@@ -440,7 +440,6 @@ describe.skipIf(!has.sidecar)("FBX", () => {
   it("reads a binary file's inventory without converting it", async () => {
     const path = join(scratch, "static.fbx");
     writeFileSync(path, staticTriangle(2, [0, 0, 0]));
-    const probe = readFileSync(path);
     const read = (await readFbxTool.handler({ path }, ctx)) as {
       format: string;
       version: number;

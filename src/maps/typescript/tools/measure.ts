@@ -192,8 +192,6 @@ export const readPropSurvey = defineTool({
 
     // keyvalues is an ordered pair list, duplicates included -- the shape the splice
     // write path needs. Indexing it here is cheaper than changing that.
-    const keysOf = (e: (typeof props)[number]): Set<string> =>
-      new Set(e.keyvalues.map(([k]) => k.toLowerCase()));
     const valueOf = (e: (typeof props)[number], key: string): string | undefined =>
       e.keyvalues.find(([k]) => k.toLowerCase() === key)?.[1];
 

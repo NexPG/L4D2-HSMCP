@@ -5,7 +5,7 @@
  * that stores the delta instead of the deformed position, or a duplicate index. The tests
  * pin the shape, the round trip and the two warnings that catch a broken hand edit.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";

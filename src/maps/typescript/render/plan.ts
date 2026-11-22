@@ -20,7 +20,6 @@
  * is a picture: you can see that a doorway is narrower than a corridor and you cannot say by
  * how much, which is exactly the question. So every portal gets its width written on it.
  */
-import { classify } from "../space/classify.js";
 import { portalWidth } from "../space/measure.js";
 import { findRooms } from "../space/rooms.js";
 import type { RoomsResult } from "../space/rooms.js";

@@ -124,11 +124,11 @@ describe("read_rect / write_rect tools", () => {
     expect(again.unchanged).toBe(true);
   });
 
-  it("does not write on a dry run", () => {
+  it("does not write on a dry run", async () => {
     const path = join(scratch, "dry.rect");
     writeFileSync(path, SAMPLE);
     const before = readFileSync(path, "utf8");
-    writeRectTool.handler(
+    await writeRectTool.handler(
       {
         path,
         rectangles: [{ mins: [0, 0], maxs: [8, 8] }],

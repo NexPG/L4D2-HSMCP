@@ -10,7 +10,6 @@ import {
   COUNTER,
   DOOR,
   PLAYER,
-  SHELF,
   TRIM,
   UNITS_PER_INCH,
   fromInches,

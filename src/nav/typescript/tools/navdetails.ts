@@ -408,7 +408,6 @@ export const readNavEncountersTool = defineTool({
     const limit = args.limit ?? 200;
     const sortBy = args.sortBy ?? "from";
     const minSpots = args.minSpots ?? 0;
-    const indexById = new Map(nav.areas.map((area) => [area.id, area.index]));
     const byId = new Map(nav.areas.map((area) => [area.id, area]));
     const spotById = new Map<number, { area: NavArea; spot: NavArea["hidingSpotList"][number] }>();
     for (const area of nav.areas) {

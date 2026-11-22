@@ -27,7 +27,7 @@ import {
   vpkDirPath,
   writeVpk,
 } from "../../../formats/typescript/formats/vpk.js";
-import type { VpkArchive, VpkEntry } from "../../../formats/typescript/formats/vpk.js";
+import type { VpkArchive } from "../../../formats/typescript/formats/vpk.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 

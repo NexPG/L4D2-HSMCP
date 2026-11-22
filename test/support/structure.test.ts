@@ -34,6 +34,7 @@ const ROOT_FILES = new Set([
   "LICENSE",
   "README.md",
   "config.example.json",
+  "eslint.config.js",
   "opencode.json",
   "package.json",
   "pnpm-lock.yaml",

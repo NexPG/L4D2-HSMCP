@@ -4,7 +4,7 @@ import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { autoVisgroups, groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/organise.js";
 import { SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../vmf/select.js";
-import { assertGeometryUntouched, checkVmfSolids } from "../vmf/solid.js";
+import { assertGeometryUntouched } from "../vmf/solid.js";
 import type { Vec3 } from "../vmf/solid.js";
 import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 

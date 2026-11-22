@@ -5,6 +5,107 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.184-alpha - 2026-11-22
+
+- **`carve_solids`**: Hammer's Carve, with the boolean delegated to
+  `srctools.geometry.Geometry.carve`; pieces stay in the target's owner, the carver is removed
+  unless `keepCarver`, and created faces take a material.
+- **`hull_solids`**: one convex brush around selected vertices and/or explicit points, using
+  srctools' `quickhull` plus `Geometry.from_dup_planes`.
+- Selector schemas, the sidecar-VMF write scaffold and `assertGeometryUntouched` are single
+  definitions now, not nine, three and three copies.
+- Toolchain: pnpm pinned by `packageManager`, Node 22+, `os: ["win32"]`, Dependabot, and the
+  same three gates in CI; TypeScript now rejects unused locals and parameters.
+- **Tool count: 252.** Tests: 209 files, 1,776 passed, 33 skipped.
+
+## 0.0.183-alpha - 2026-11-22
+
+- `collapse_instances` delegates to the sidecar's `vmf_collapse`
+  (`srctools.instancing`); the ~500-line TypeScript expander was deleted.
+- **Tool count: 250.** Tests: 207 files, 1,760 passed, 33 skipped.
+
+## 0.0.182-alpha - 2026-11-22
+
+- **`collapse_instances`** expands every `func_instance` the way vbsp does, including nested
+  instances, full origin/angles transforms, name fixup, `replaceXX` and parms.
+- Fixed `fixup_style` in both instance writers: `0 = prefix`, `1 = postfix`, `2 = none`.
+- **Tool count: 250.** Tests: 1,763 passed, 33 skipped.
+
+## 0.0.181-alpha - 2026-11-22
+
+- Single-hull collision is reconstructed from the root's full Euler pose, not just yaw; a
+  model with no sequence is still refused because there is no pose to recover.
+- `cara_84sedan` now writes 634 collision triangles that reproduce the PHY vertex set.
+
+## 0.0.180-alpha - 2026-11-22
+
+- Test collection no longer touches a null game directory, so a bare runner can collect and
+  skip the toolchain suites instead of failing before they start.
+
+## 0.0.179-alpha - 2026-11-22
+
+- LOD options are read and written: `replacebone`, `replacematerial` (with the VTX negative
+  offsets), `facial`/`nofacial`, `removemodel` and `use_shadowlod_materials`.
+- `read_model_lods` reports the chains and the options rather than only their count.
+
+## 0.0.178-alpha - 2026-11-22
+
+- v15 tutorial navs: the per-area block is gated by the sub-version, and visibility stores
+  area ids in v10..15 and indexes in v16.
+- `read_nav_encounters` exposes spot encounters and their paths.
+
+## 0.0.177-alpha - 2026-11-22
+
+- `read_model_ani` reports the `.ani` container's blocks and clips.
+- Nav places, hiding spots and visibility are read, including inherited merges and v15/v16
+  storage differences; all 35 stock navs parse.
+
+## 0.0.176-alpha - 2026-11-22
+
+- `write_model_procedural` emits `.vrd` procedural bones (quat-interp and aim-at) and
+  `read_model_procedural` reads them back.
+- `read_model_lods` reads the chain distances, flags and replacements.
+
+## 0.0.175-alpha - 2026-11-22
+
+- `$jigglebone` is written from the compiled 140-byte procedure record and read back by
+  `read_model_jiggle`.
+
+## 0.0.174-alpha - 2026-11-22
+
+- `read_model_eyes` exposes eyes and eyelids; L4D2's QC has no writable eye commands, so the
+  decompiler says so instead of emitting invalid ones.
+- Fixed the `localvar` emission that stopped survivor QCs from compiling.
+
+## 0.0.173-alpha - 2026-11-22
+
+- **`read_surfaceprops`** and **`check_surfaceprop`** read the game's own
+  `scripts/surfaceproperties_*` table, including the `base` chain and the typo check.
+
+## 0.0.172-alpha - 2026-11-22
+
+- **`read_vta`** and **`write_vta`** read and author flex vertex animations directly.
+
+## 0.0.171-alpha - 2026-11-22
+
+- **`nav_path`**, **`nav_reachable`** and **`nav_los`** answer route, reachability and sight
+  questions, ladders included.
+
+## 0.0.170-alpha - 2026-11-21
+
+- `read_model_collision` parses the PHY text: solids, parents, constraints and edit params.
+- `read_model_skeleton` and `read_model_animation` expose bones, sequences, events, IK chains
+  and includes; the decompiler writes the rest of the QC surface.
+- `$includemodel`, `$contents`, `$cbox`/`$bbox`, `$definebone` and `$ikchain` are emitted.
+
+## 0.0.169-alpha - 2026-11-21
+
+- SMD triangles are written in the winding studiomdl expects (`0,2,1`), and animation SMDs
+  subtract 90 degrees from the root bone's Z.
+- VMF I/O normalises commas to ESC for L4D2, strips `$` outside quotes and reads UTF-8 with a
+  cp1251 fallback.
+- QC reading handles the BOM, `$lod` and blank bodies; PHY ragdolls emit `$collisionjoints`.
+
 ## 0.0.168-alpha - 2026-11-21
 
 - **Flexes are written as a VTA.** `decompile_model` now emits `<body>_flex.vta` next to the

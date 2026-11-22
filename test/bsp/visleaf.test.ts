@@ -16,7 +16,6 @@ const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hammer-visleaf-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const lumpDescAt = (i: number): number => 8 + i * 16;
 const LUMP_LEAFS = 10;
 const LUMP_VISIBILITY = 4;
 

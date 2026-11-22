@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # pnpm is the package manager, but Dependabot reads the npm ecosystem and updates
+  # pnpm-lock.yaml as well as package.json.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+      runtime-dependencies:
+        dependency-type: production
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

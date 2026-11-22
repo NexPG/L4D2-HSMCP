@@ -365,7 +365,7 @@ export function checkFinale(input: FinaleInput): FinaleReport {
   if (disabled) {
     const enabled = input.entities.some((e) =>
       [...e.connections, ...e.keyvalues].some(
-        ([name, value]) =>
+        ([, value]) =>
           /^(Enable|ForceFinaleStart)$/i.test(value.split(",")[1]?.trim() ?? "") &&
           value.split(",")[0]?.trim() === (trigger.targetname ?? ""),
       ),

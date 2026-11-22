@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readMapDependenciesTool } from "../../src/maps/typescript/tools/deps.js";
 import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
-import { config, ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
+import { ctx as sharedCtx, FIXTURES, has, paths } from "../support/env.js";
 
 const PROBE = join(FIXTURES, "hmcp_probe.bsp");
 const ctx = sharedCtx as unknown as ToolContext;

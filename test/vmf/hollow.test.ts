@@ -132,20 +132,20 @@ describe("hollow_solids", () => {
     expect(kept.reply.solidsAfter).toBe(12);
   });
 
-  it("puts the walls in the entity the brush belonged to, not in the world", () => {
+  it("puts the walls in the entity the brush belonged to, not in the world", async () => {
     // Hollowing a func_detail used to put every wall in worldspawn and then delete the
     // entity's only brush: what the map does at runtime changes, and the entity can be
     // left with no solids at all. The empty conditional that caused it was written here.
     const file = join(scratch, `ent${Math.round(performance.now() * 1000)}.vmf`);
     writeFileSync(file, probe());
-    setSolidClassTool.handler(
+    await setSolidClassTool.handler(
       { path: file, solidIds: [FLOOR], to: "func_detail", backup: false, confirm: true } as never,
       ctx,
     );
     const before = checkVmfSolids("x", readFileSync(file, "utf8")).solids;
     expect(before.find((s) => s.id === FLOOR)!.owner).toBe("func_detail");
 
-    hollowSolidsTool.handler(
+    await hollowSolidsTool.handler(
       {
         path: file,
         solidIds: [FLOOR],
@@ -240,13 +240,13 @@ describe("what the compiler says about a hollowed block", () => {
    * turned into six walls by the tool. It must seal, and it is only sealed if the mitres
    * meet exactly.
    */
-  const room = (thickness: number): string => {
+  const room = async (thickness: number): Promise<string> => {
     const file = join(scratch, `room${thickness}.vmf`);
     // One block spanning the probe's whole extent, with everything else removed.
     const source = probe();
     const shell = join(scratch, `shell${thickness}.vmf`);
     writeFileSync(shell, source);
-    hollowSolidsTool.handler(
+    await hollowSolidsTool.handler(
       {
         path: shell,
         solidIds: [7, 14, 21, 28, 35, 42],
@@ -264,7 +264,7 @@ describe("what the compiler says about a hollowed block", () => {
   it.skipIf(!canCompile)(
     "every brush of the probe hollowed still compiles, and the map still seals",
     async () => {
-      const file = room(8);
+      const file = await room(8);
       for (const s of read(readFileSync(file, "utf8"))) {
         expect(s.valid, `solid ${s.id}: ${s.findings.map((f) => f.message).join(" | ")}`).toBe(
           true,

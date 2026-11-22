@@ -104,13 +104,6 @@ export const readDmxTool = defineTool({
   },
 });
 
-const TYPE = z
-  .string()
-  .describe(
-    "DMX value type: element, int, float, bool, string, binary, time, color, vector2, " +
-      "vector3, vector4, qangle, quaternion or vmatrix.",
-  );
-
 export const writeDmxTool = defineTool({
   name: "write_dmx",
   description:

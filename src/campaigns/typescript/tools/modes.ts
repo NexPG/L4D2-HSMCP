@@ -49,10 +49,6 @@ function classnameOf(entity: { classname?: string; keyvalues: Array<[string, str
   return entity.classname ?? entity.keyvalues.find(([key]) => key === "classname")?.[1] ?? "";
 }
 
-function keyOf(entity: { keyvalues: Array<[string, string]> }, key: string): string | null {
-  return entity.keyvalues.find(([name]) => name === key)?.[1] ?? null;
-}
-
 function bspFor(map: string, mapsDirs: readonly string[]): string | null {
   for (const dir of mapsDirs) {
     const candidate = resolve(dir, `${map}.bsp`);

@@ -4,9 +4,8 @@ import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
-import { parse } from "../../../formats/typescript/kv/parse.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
-import { maxId, readEntities } from "../../../maps/typescript/vmf/edit.js";
+import { readEntities } from "../../../maps/typescript/vmf/edit.js";
 import { writeVmfSolidTool } from "../../../maps/typescript/tools/build.js";
 import { placeDoorTool } from "../../../maps/typescript/tools/door.js";
 import { editVmf } from "../../../maps/typescript/tools/vmfedit.js";
@@ -142,11 +141,6 @@ async function fgdWarnings(
   }
 }
 
-function nextName(path: string, prefix: string): string {
-  const nodes = parse(readFileSync(path, "utf8"));
-  return `${prefix}_${maxId(nodes) + 1}`;
-}
-
 // ---------------------------------------------------------------------------
 // Spawn points
 // ---------------------------------------------------------------------------
@@ -221,7 +215,6 @@ export const writeSpawnPointsTool = defineTool({
     const classes: string[] = [];
     const extra = args.keyvalues ?? {};
     const positions = args.positions ?? [];
-    const spawns = args.spawns ?? [];
     const angles = args.angles ?? [0, 0, 0];
 
     if (args.kind === "player") {

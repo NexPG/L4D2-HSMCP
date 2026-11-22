@@ -21,7 +21,7 @@
  * every `$command` that exists, because a wrong "unknown command" is worse than none.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 export type QcSeverity = "error" | "warning";
 

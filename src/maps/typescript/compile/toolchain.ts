@@ -208,19 +208,17 @@ export async function runCompiler(
             `unaffected, and run_compile falls back to it. See health`,
       );
     }
-    return launch(config, dir, alias, args, timeoutMs, chain);
+    return launch(dir, alias, args, timeoutMs);
   }
-  return launch(config, dir, exe, args, timeoutMs, chain);
+  return launch(dir, exe, args, timeoutMs);
 }
 
 /** Runs one resolved compiler binary; split out so the alias path is the same code. */
 async function launch(
-  config: Config,
   dir: string,
   exe: string,
   args: readonly string[],
   timeoutMs: number,
-  chain: Toolchain,
 ): Promise<CompilerRun> {
   const binary = join(dir, exe);
   const started = Date.now();

@@ -11,7 +11,6 @@
  * original map: recovery is a copy, and a copy can be compared before it replaces anything.
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { autosavesForMap, resolveAutosaveFolder } from "../game/autosave.js";

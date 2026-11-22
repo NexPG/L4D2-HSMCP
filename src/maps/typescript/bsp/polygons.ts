@@ -57,7 +57,6 @@ function guard(path: string, index: number, structBytes: number): BspLump {
 
 /** Reads every face loop; `hdr` selects the FACES_HDR table for an HDR-only map. */
 export function readBspPolygons(path: string, hdr = false): BspPolygons {
-  const header = readHeader(path);
   const facesLump = guard(path, hdr ? LUMP_FACES_HDR : LUMP_FACES, FACE_BYTES);
   const planesLump = guard(path, LUMP_PLANES, PLANE_BYTES);
   const verticesLump = guard(path, LUMP_VERTEXES, VERTEX_BYTES);

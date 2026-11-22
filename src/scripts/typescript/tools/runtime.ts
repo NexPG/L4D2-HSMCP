@@ -43,8 +43,6 @@ import { captureWindow } from "../../../maps/typescript/screenshot/window.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { SCHEDULE_FILE, scheduleScript } from "../vscript/schedule.js";
 
-const VEC3 = z.array(z.number()).length(3);
-
 /** The lump name the engine appends to a BSP that has a string-table dictionary. */
 const DICTIONARY_MARKER = Buffer.from("stringtable_dictionary");
 

@@ -12,7 +12,6 @@
  * the ids really are different, and the alternative -- matching by shape -- would pair two
  * brushes a mapper considers distinct.
  */
-import { children } from "../../../formats/typescript/kv/parse.js";
 import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
 import { readEntities } from "./edit.js";
 import { checkVmfSolids } from "./solid.js";

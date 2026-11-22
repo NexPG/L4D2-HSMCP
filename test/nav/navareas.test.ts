@@ -55,11 +55,6 @@ function buildNav(areas: FixtureArea[], places: string[] = ["spawn", "safe"]): B
     b.writeUInt32LE(v >>> 0);
     parts.push(b);
   };
-  const i32 = (v: number) => {
-    const b = Buffer.alloc(4);
-    b.writeInt32LE(v);
-    parts.push(b);
-  };
   const f32 = (v: number) => {
     const b = Buffer.alloc(4);
     b.writeFloatLE(v);

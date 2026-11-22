@@ -13,17 +13,6 @@ import { readModelHeaderInfo } from "../../../models/typescript/formats/mdlbones
 import { looseOrVpk, normalizeModelPath } from "../../../models/typescript/tools/source.js";
 import { readSurfaceProps, resolveSurfaceProp } from "../formats/surfaceprops.js";
 
-const FIELDS = [
-  "base",
-  "gamematerial",
-  "density",
-  "friction",
-  "elasticity",
-  "thickness",
-  "audioreflectivity",
-  "audiohardnessfactor",
-] as const;
-
 export const readSurfacePropsTool = defineTool({
   name: "read_surfaceprops",
   description:

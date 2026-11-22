@@ -191,7 +191,7 @@ export function insertPrefab(
       `refusing to write: ${broken.length} prefab brush(es) are not valid solids`,
     );
   }
-  if (entities.some((e) => /"classname"\s+"func_instance"/i.test(prefab))) {
+  if (entities.some(() => /"classname"\s+"func_instance"/i.test(prefab))) {
     warnings.push("the prefab contains a func_instance; its nested geometry is not expanded here");
   }
 

@@ -163,10 +163,10 @@ in a directory.
 | File | Job |
 |---|---|
 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` | package, locked dependencies, pnpm build approvals |
-| `tsconfig.json`, `tsconfig.test.json`, `vitest.config.ts` | build config, test typecheck, shared test setup |
+| `tsconfig.json`, `tsconfig.test.json`, `vitest.config.ts`, `eslint.config.js` | build config, test typecheck, shared test setup, lint rules |
 | `config.example.json` | template for the local `.hammer-mcp/config.json` |
 | `opencode.json` | registers the repository skill with OpenCode |
-| `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md` | front page, rules, version history |
+| `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CHANGELOG.md` | front page, rules, the agent's short rulebook, version history |
 | `LICENSE` | GPL-3.0-only, the licence of the combined work |
 | `.gitattributes`, `.gitignore` | line endings and local/generated files |
 
@@ -174,12 +174,36 @@ in a directory.
 `.hammer-mcp/` are local and gitignored. A new tracked file at the root fails
 `test/support/structure.test.ts` until it is added to that allowlist and this table.
 
+## Toolchain and quality gates
+
+One package manager, one Node range, and the same commands locally and in CI:
+
+- **pnpm only.** `packageManager` in `package.json` pins the version, and corepack installs
+  it. The repository ships `pnpm-lock.yaml`; `npm install` would write a second lockfile and
+  resolve a different tree. Do not commit a `package-lock.json`.
+- **Node 22+.** `engines.node` and CI agree; CI runs 22 and 24 on Windows. Node 20 is past
+  end-of-life and is not a supported target.
+- **Windows only.** The package declares `os: ["win32"]`; the compilers and the game it
+  drives are Windows software.
+- **Dependabot** updates npm packages and GitHub Actions weekly. Treat its pull requests like
+  any other: `pnpm install`, then build, typecheck, lint and test.
+
+`pnpm build`, `pnpm typecheck`, `pnpm lint` and `pnpm test` are the static and behavioural
+gates; CI runs all four plus a check that the bare Windows runner actually executed tests
+rather than skipping everything. TypeScript is configured with `strict`,
+`noUncheckedIndexedAccess`, `noUnusedLocals` and `noUnusedParameters`, so an unused import
+fails the build rather than sitting in a tool. ESLint adds the type-aware rules TypeScript
+cannot express: an unawaited promise, an async callback where a `void` one is expected, and
+`await` on a non-thenable.
+
 ## Before committing
 
 ```bash
-pnpm install
+corepack enable
+pnpm install --frozen-lockfile
 pnpm build
 pnpm typecheck
+pnpm lint
 pnpm test
 ```
 

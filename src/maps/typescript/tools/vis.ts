@@ -87,7 +87,7 @@ export const readBspVisTool = defineTool({
     const total = vectorBytes * clusterCount;
 
     const wanted = args.cluster;
-    let visibleClusters: number[] = [];
+    const visibleClusters: number[] = [];
     let truncated = false;
     if (wanted !== undefined) {
       if (wanted >= clusterCount) {

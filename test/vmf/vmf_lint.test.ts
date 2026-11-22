@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
-import { readFgdClass, readVmf, readVmfLint } from "../../src/maps/typescript/tools/vmf.js";
-import { FIXTURES, config, ctx as sharedCtx, has, paths } from "../support/env.js";
+import { readFgdClass, readVmfLint } from "../../src/maps/typescript/tools/vmf.js";
+import { FIXTURES, ctx as sharedCtx, has } from "../support/env.js";
 
 const PROBE_VMF = join(FIXTURES, "hmcp_probe.vmf");
 const ctx = sharedCtx as unknown as ToolContext;

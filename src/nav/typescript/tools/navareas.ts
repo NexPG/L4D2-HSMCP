@@ -10,7 +10,7 @@
  * fields it was asked to change, so the other ten megabytes stay byte-identical and a bad
  * edit is one `.bak` away from undone.
  */
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { z } from "zod";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";

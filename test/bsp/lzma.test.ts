@@ -12,7 +12,6 @@ const scratch = mkdtempSync(join(tmpdir(), "hammer-lzma-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Byte offset of lump `i`'s descriptor: ident[4] + version[4] + i * sizeof(lump_t). */
-const lumpDescAt = (i: number): number => 8 + i * 16;
 
 /**
  * The probe with one lump marked as individually LZMA-compressed.

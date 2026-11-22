@@ -52,13 +52,6 @@ const FACE_NORMALS: Rgb[] = [
   [0, 0, -1],
 ];
 
-/** Linear to sRGB, so an ambient cube can modulate an sRGB texture. */
-function linearToSrgb(value: number): number {
-  const v = Math.max(0, value);
-  const srgb = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
-  return Math.max(0, Math.min(1, srgb));
-}
-
 /**
  * One cube face as display RGB.
  *

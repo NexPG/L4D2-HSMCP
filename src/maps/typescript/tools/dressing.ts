@@ -5,7 +5,6 @@ import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import { maxId, readEntities } from "../vmf/edit.js";
 import { parse } from "../../../formats/typescript/kv/parse.js";
-import type { Vec3 } from "../vmf/solid.js";
 import { readFgdClass } from "./vmf.js";
 import { editVmf } from "./vmfedit.js";
 

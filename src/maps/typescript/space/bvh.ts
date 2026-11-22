@@ -118,8 +118,8 @@ export function buildBvh(items: readonly BvhInput[]): Bvh {
     // Split along the axis the centroids spread over most: splitting a flat axis moves
     // nothing and recurses forever.
     let axis = 0;
-    let cLo = [Infinity, Infinity, Infinity];
-    let cHi = [-Infinity, -Infinity, -Infinity];
+    const cLo = [Infinity, Infinity, Infinity];
+    const cHi = [-Infinity, -Infinity, -Infinity];
     for (let i = from; i < to; i++) {
       for (let a = 0; a < 3; a++) {
         const c = centroid[order[i]! * 3 + a]!;

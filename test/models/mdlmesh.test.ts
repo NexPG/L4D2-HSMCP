@@ -5,7 +5,6 @@
  * triangles. Its material is the bare name `hospital_bed`, so the directory table has to
  * supply `models/props_unique/hospital/`; without it every model texture lookup is a miss.
  */
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadGameModel, loadModelTextures, modelMaterialPath, modelSiblings } from "../../src/assets/typescript/game/models.js";
 import { openGameVpk } from "../../src/assets/typescript/game/vpkcontent.js";

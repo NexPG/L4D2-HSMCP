@@ -554,7 +554,7 @@ export function sewDisplacements(source: string, tolerance = 0.1): SewResult {
     };
   }
 
-  const text = rewriteDistances(source, before.displacements, wanted);
+  const text = rewriteDistances(source, wanted);
   const after = readDisplacements(text);
   const worstAfter = after.seams.reduce((m, s) => Math.max(m, s.worstGap), 0);
 
@@ -573,7 +573,6 @@ export function sewDisplacements(source: string, tolerance = 0.1): SewResult {
 /** Rewrites the `distances` rows of the named displacements, and nothing else. */
 function rewriteDistances(
   source: string,
-  displacements: readonly Displacement[],
   wanted: ReadonlyMap<Displacement, Map<string, number>>,
 ): string {
   const roots = parse(source).filter((n): n is KvBlock => n.kind === "block");
@@ -683,7 +682,7 @@ export function sculptDisplacements(
     if (per.size > 0) changes.set(disp, per);
   }
 
-  const text = rewriteDistances(source, before.displacements, changes);
+  const text = rewriteDistances(source, changes);
   const after = readDisplacements(text);
   const warnings: string[] = [];
   if (after.seams.length > 0) {

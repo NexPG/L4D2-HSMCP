@@ -1,7 +1,7 @@
 # L4D2-HSMCP
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.0.168--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.0.184--alpha-orange.svg)](CHANGELOG.md)
 [![CI](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/NexPG/L4D2-HSMCP/actions/workflows/ci.yml)
 
 **Build Left 4 Dead 2 content with an AI agent.** Maps, campaigns, nav meshes, VScripts and
@@ -37,7 +37,7 @@ anything that writes asks for confirmation.
 | **Left 4 Dead 2 Authoring Tools** (Steam app `563`) | the compilers (`vbsp`, `vvis`, `vrad`, `studiomdl`), Hammer and HLMV, and the FGD the tools validate against |
 | **Hammer++ for L4D2** | the editor this toolkit is modelled on; the live-editor channel (`hammer_live_edit`, `hammer_menu`, `open_in_hammer`) needs it |
 | **Tools++** | `vbsp++`/`vvis++`/`vrad++`/`bspzip++`; the compiler prefers this chain and falls back to the stock one, naming which ran |
-| **Node.js 20+** and **pnpm 10+** | build and run the MCP server (tested on Node 24) |
+| **Node.js 22+** and **pnpm 10+** | build and run the MCP server (tested on Node 22 and 24) |
 | **Python 3.10+** | the `srctools` sidecar behind FGD, VPK, particles and parts of the VMF reader |
 | **VTFEdit++ / VTFCmd** | texture conversion and the cubemap/skybox utilities |
 
@@ -45,6 +45,24 @@ Tools++ and VTFEdit++ unlock what they name rather than gate the project: withou
 compiler falls back to the stock chain and says so, and without VTFCmd texture conversion is
 simply unavailable. The Authoring Tools, Node.js, pnpm and Python are needed for the server to
 run at all.
+
+## Build from source
+
+`packageManager` in `package.json` pins the pnpm version, so corepack installs the same one
+CI uses:
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm test
+```
+
+Use `pnpm`, not `npm`: the repository ships `pnpm-lock.yaml`, and an `npm install` would
+write a second lockfile and resolve a different tree. Node 22 is the minimum; CI runs 22 and
+24 on Windows.
 
 ## Credits
 

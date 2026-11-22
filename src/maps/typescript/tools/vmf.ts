@@ -448,7 +448,7 @@ export const readVmfLint = defineTool({
         : [];
     const byRule = { ...reply.byRule };
     const bySeverity = { ...reply.bySeverity };
-    for (const f of sunk) {
+    for (const _ of sunk) {
       byRule["prop-below-floor"] = (byRule["prop-below-floor"] ?? 0) + 1;
       bySeverity["warning"] = (bySeverity["warning"] ?? 0) + 1;
     }

@@ -8,7 +8,7 @@ import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { writeVmfSolidTool } from "../../src/maps/typescript/tools/build.js";
 import { setSolidClassTool } from "../../src/maps/typescript/tools/optimise.js";
-import { reclassSolids, VmfReclassError } from "../../src/maps/typescript/vmf/reclass.js";
+import { reclassSolids } from "../../src/maps/typescript/vmf/reclass.js";
 import { checkVmfSolids } from "../../src/maps/typescript/vmf/solid.js";
 import { ctx as sharedCtx, FIXTURES, has } from "../support/env.js";
 
@@ -24,7 +24,6 @@ const owners = (text: string): Record<string, number> => {
   return out;
 };
 /** The probe's six world solids: floor, ceiling, then four walls. */
-const FLOOR = 7;
 const WALL = 21;
 
 describe("reclassSolids", () => {

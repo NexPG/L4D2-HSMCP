@@ -33,7 +33,6 @@ import type { SolidCheck, Vec3 } from "../../../maps/typescript/vmf/solid.js";
 
 const VEC3 = z.tuple([z.number(), z.number(), z.number()]);
 
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const mul = (a: Vec3, k: number): Vec3 => [a[0] * k, a[1] * k, a[2] * k];
@@ -345,7 +344,7 @@ export const brushToModelTool = defineTool({
         const vertices = loop.map((point): TriangleVertex => {
           const uaxis = side.uaxis ?? { axis: [1, 0, 0] as Vec3, offset: 0, scale: 1 };
           const vaxis = side.vaxis ?? { axis: [0, -1, 0] as Vec3, offset: 0, scale: 1 };
-          let u = (dot(point, uaxis.axis) / (uaxis.scale || 1) + uaxis.offset) / textureSize;
+          const u = (dot(point, uaxis.axis) / (uaxis.scale || 1) + uaxis.offset) / textureSize;
           let v = (dot(point, vaxis.axis) / (vaxis.scale || 1) + vaxis.offset) / textureSize;
           if (flipV) v = 1 - v;
           originalPoints.push(point);

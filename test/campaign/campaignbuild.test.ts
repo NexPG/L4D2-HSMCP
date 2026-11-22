@@ -309,7 +309,6 @@ describe("check_campaign_wiring", () => {
   it("passes a two-chapter chain that links both ways", async () => {
     const first = map("chain_a");
     const second = map("chain_b");
-    const firstName = basename(first, ".vmf");
     const secondName = basename(second, ".vmf");
 
     for (const path of [first, second]) {

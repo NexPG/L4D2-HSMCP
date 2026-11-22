@@ -14,7 +14,6 @@ import { dirname, join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { callSidecar } from "../../src/core/typescript/sidecar/client.js";
-import { loadQc } from "../../src/formats/typescript/formats/qc.js";
 import { readModelInfoTool } from "../../src/assets/typescript/tools/content.js";
 import { gltfToDmxTool } from "../../src/models/typescript/tools/gltfdmx.js";
 import { runStudiomdlTool } from "../../src/models/typescript/tools/studiomdl.js";

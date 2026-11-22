@@ -5,24 +5,35 @@ on:
     branches: [main]
   pull_request:
 
+# One run per branch/PR: a superseded push does not need to finish, and its result would be
+# read as the result of the newer tree.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# The default token is wider than a build needs. Read the repository and nothing else.
+permissions:
+  contents: read
+
 jobs:
   build:
     # The toolkit only targets Windows: it drives the Source SDK compilers, srcds and a
     # real L4D2 install. A Linux runner would test a machine this project cannot run on.
     runs-on: windows-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        # Node 20 is past end-of-life; the project declares node >=20, and these are the
-        # versions a contributor in 2026 actually has.
+        # The versions a contributor in 2026 actually has, and the range `engines.node`
+        # promises. Node 20 is past end-of-life and is no longer tested.
         node: ["22", "24"]
 
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` here on purpose: pnpm/action-setup reads `packageManager` from
+      # package.json, so the CI version and a contributor's corepack version are one number.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -32,10 +43,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
+      - run: pnpm lint
 
       # This runner has no L4D2 install, no Source SDK and no Python sidecar, so every
       # suite that needs them skips itself and prints why. What is left is the pure logic,
-      # and it has to hold on a bare Windows machine — the machine a new contributor has.
+      # and it has to hold on a bare Windows machine -- the machine a new contributor has.
       - run: pnpm test --reporter=json --outputFile=vitest-report.json
 
       # A green run with zero tests executed looks exactly like a green run that proved

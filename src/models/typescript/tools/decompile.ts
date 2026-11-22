@@ -19,7 +19,7 @@
  * when one is installed.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { assertWritable } from "../../../core/typescript/fs/guard.js";

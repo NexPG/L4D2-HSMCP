@@ -7,7 +7,7 @@
  * none. Second, "newer than the map" is decided by mtime, because a list of autosaves that
  * does not say which one wins is a list the caller has to sort by hand.
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";

@@ -10,7 +10,7 @@
  * editor blocks, so those are counted and reported as warnings rather than silently lost.
  */
 import { children, get, parse, pairs } from "../../../formats/typescript/kv/parse.js";
-import type { KvBlock, KvNode } from "../../../formats/typescript/kv/parse.js";
+import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
 
 export class MapExportError extends Error {
   constructor(message: string) {
