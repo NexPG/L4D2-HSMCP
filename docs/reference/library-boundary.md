@@ -29,6 +29,7 @@ shows up here as four concrete reasons:
 
 | Domain | Library / sidecar | What this repository does | Verdict |
 |---|---|---|---|
+| Live-edit approval queue | no library module: editor/session state is this server's | project journal (`hammer/live/journal.ts`) and the existing shell transport | **necessary** (there is no upstream queue) |
 | Engine console command | `srctools.run.send_engine_command` via sidecar `send_console_command` | wrapper only: argument checks and the error text | **delegated** |
 | `func_instance` expansion | `srctools.instancing` via sidecar `vmf_collapse` | wrapper only: paths, guarded write, temp file | **delegated** (a duplicate TS expander was deleted) |
 | Brush carve and convex hull | `srctools.geometry.Geometry.carve`, `srctools.math.quickhull` via sidecar `carve_solids`, `hull_solids` | wrapper only: selector resolution, ids, guarded write | **delegated** (see the `from_points` note below) |

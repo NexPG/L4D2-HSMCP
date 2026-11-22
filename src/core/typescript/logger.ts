@@ -14,6 +14,11 @@ export type AuditKind =
   | "compile_end"
   | "hammer_capture_failed"
   | "process_kill"
+  | "live_edit_staged"
+  | "live_edit_approved"
+  | "live_edit_rejected"
+  | "live_edit_applied"
+  | "live_edit_failed"
   | "error";
 
 /**

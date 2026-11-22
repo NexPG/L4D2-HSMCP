@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.188-alpha - 2026-11-22
+
+- **Human-in-the-loop live edits.** `stage_live_edit` records a proposed edit (ops, exact
+  shell commands and the before-state) without sending it; `review_live_edit` approves or
+  rejects it as a guarded human decision; `apply_live_edit` sends only an approved entry and
+  re-validates first; `read_edit_journal` is the queue and history.
+- **Cross-call class+origin addressing.** The journal replays applied edits that are not yet
+  in the saved VMF, so a second call can address an entity the first one created. Staged and
+  approved entries also reserve addresses, so two pending creates cannot collide. Once the
+  file is newer than an applied entry, the replay stops: the save (or a person's later edit)
+  wins.
+- `hammer_live_edit` now journals its own applied edits and refuses a pid whose title says a
+  different map is open, instead of sending to the wrong editor.
+- **Tool count: 259.** Tests: 213 files, 1,811 passed, 33 skipped.
+
 ## 0.0.187-alpha - 2026-11-22
 
 - **`send_console_command`**: runs a console command in a live Source game through the

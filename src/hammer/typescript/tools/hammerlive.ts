@@ -5,12 +5,24 @@
  * MIT License, Copyright (c) 2026 EpicMorg. The shell-channel command and menu ids are
  * adapted to this project's tool contracts. The full notice is in third_party/NOTICES.md.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+import { resolve } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { CONFIRM, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import { readEntities } from "../../../maps/typescript/vmf/edit.js";
+import {
+  appendJournal,
+  buildLiveState,
+  captureBefore,
+  liveAddressKey,
+  nextJournalId,
+  parseLiveOrigin,
+  readJournal,
+} from "../live/journal.js";
+import type { LiveEntity } from "../live/journal.js";
 
 const VEC3 = z.array(z.number()).length(3);
 
@@ -82,7 +94,7 @@ export const hammerStatusTool = defineTool({
   },
 });
 
-const OP = z.discriminatedUnion("op", [
+export const OP = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("create"),
     classname: z.string(),
@@ -163,14 +175,18 @@ export function shellCommandsFor(op: z.infer<typeof OP>): string[] {
 export function checkLiveAddresses(
   vmfText: string,
   ops: readonly z.infer<typeof OP>[],
+  overlay?: ReadonlyMap<string, LiveEntity>,
 ): string | null {
-  const saved = readEntities(vmfText).entities;
   const counts = new Map<string, number>();
-  for (const entity of saved) {
-    const origin = parseLiveOrigin(entity.keyvalues.origin);
-    if (!origin) continue;
-    const key = liveAddressKey(entity.classname, origin);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
+  if (overlay) {
+    for (const key of overlay.keys()) counts.set(key, 1);
+  } else {
+    for (const entity of readEntities(vmfText).entities) {
+      const origin = parseLiveOrigin(entity.keyvalues.origin);
+      if (!origin) continue;
+      const key = liveAddressKey(entity.classname, origin);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
   }
   for (const [index, op] of ops.entries()) {
     const key = liveAddressKey(op.classname, op.origin);
@@ -201,17 +217,87 @@ export function checkLiveAddresses(
   return null;
 }
 
-function parseLiveOrigin(value: string | undefined): [number, number, number] | null {
-  const parts = (value ?? "").trim().split(/\s+/).map(Number);
-  if (parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) return null;
-  return [parts[0]!, parts[1]!, parts[2]!];
+export interface LiveEditor {
+  pid: number;
+  hasShell: boolean;
+  openMap: string | null;
 }
 
-function liveAddressKey(classname: string, origin: readonly number[]): string {
-  return `${classname.toLowerCase()}|${origin
-    .slice(0, 3)
-    .map((value) => value.toFixed(2))
-    .join(" ")}`;
+/**
+ * The editor a live command is aimed at: an explicit pid, or the first shell-capable one.
+ * Shared by the direct edit and the approval queue, so both name the same window.
+ */
+export async function resolveLiveEditor(
+  ctx: Pick<ToolContext, "config">,
+  pid?: number,
+): Promise<LiveEditor> {
+  const status = (await callSidecar(
+    "hammer_live",
+    { action: "status" },
+    ctx.config,
+    30_000,
+  )) as { editors: LiveEditor[] };
+  const editor = pid
+    ? status.editors.find((e) => e.pid === pid)
+    : status.editors.find((e) => e.hasShell);
+  if (!editor) {
+    throw new Error(
+      pid
+        ? `no editor with pid ${pid}; run hammer_status`
+        : "no running Hammer with a shell channel; open a map in Hammer++ first",
+    );
+  }
+  if (!editor.hasShell) {
+    throw new Error(
+      `editor ${editor.pid} has no shell channel. Hammer++ 8867+ and stock Hammer have ` +
+        "one; this build does not. Writing the VMF is still available.",
+    );
+  }
+  return editor;
+}
+
+/** Refuses a pid whose title says it has a different map open. */
+export function assertEditorMap(editor: LiveEditor, vmf: string): void {
+  if (!editor.openMap) return;
+  const norm = (path: string): string => resolve(path).replace(/\//g, "\\").toLowerCase();
+  if (norm(editor.openMap) === norm(vmf)) return;
+  throw new Error(
+    `editor ${editor.pid} has ${editor.openMap} open, not ${vmf}; refusing to send the edit ` +
+      "to the wrong map",
+  );
+}
+
+export interface LiveBatchReply {
+  session: boolean;
+  acceptedVersion?: number;
+  accepted: number;
+  rejected: number;
+  results: Array<{ accepted: boolean; command: string }>;
+  reason?: string;
+}
+
+export async function sendLiveCommands(
+  ctx: Pick<ToolContext, "config">,
+  pid: number,
+  vmf: string,
+  commands: readonly string[],
+): Promise<LiveBatchReply> {
+  return (await callSidecar(
+    "hammer_live",
+    { action: "batch", pid, vmf, commands },
+    ctx.config,
+    120_000,
+  )) as LiveBatchReply;
+}
+
+export async function saveLiveEditor(ctx: Pick<ToolContext, "config">, pid: number): Promise<boolean> {
+  const reply = (await callSidecar(
+    "hammer_live",
+    { action: "menu", pid, commandId: MENU.save },
+    ctx.config,
+    30_000,
+  )) as { posted: boolean };
+  return reply.posted;
 }
 
 export const hammerLiveEditTool = defineTool({
@@ -254,55 +340,43 @@ export const hammerLiveEditTool = defineTool({
     note: z.string(),
   },
   handler: async (args, ctx) => {
-    const status = (await callSidecar("hammer_live", { action: "status" }, ctx.config, 30_000)) as {
-      editors: Array<{ pid: number; hasShell: boolean; openMap: string | null }>;
-    };
-    const editor = args.pid
-      ? status.editors.find((e) => e.pid === args.pid)
-      : status.editors.find((e) => e.hasShell);
-    if (!editor) {
-      throw new Error(
-        args.pid
-          ? `no editor with pid ${args.pid}; run hammer_status`
-          : "no running Hammer with a shell channel; open a map in Hammer++ first",
-      );
-    }
-    if (!editor.hasShell) {
-      throw new Error(
-        `editor ${editor.pid} has no shell channel. Hammer++ 8867+ and stock Hammer have ` +
-          "one; this build does not. Writing the VMF is still available.",
-      );
-    }
+    const editor = await resolveLiveEditor(ctx, args.pid);
     const vmf = resolveVmfInput(args.vmf, ctx.config);
-    const refusal = checkLiveAddresses(readFileSync(vmf, "utf8"), args.ops);
+    assertEditorMap(editor, vmf);
+    const beforeText = readFileSync(vmf, "utf8");
+    const journal = readJournal(ctx.config.stateDir).filter(
+      (entry) => entry.pid === editor.pid && entry.vmf === vmf,
+    );
+    const state = buildLiveState(beforeText, journal, statSync(vmf).mtimeMs);
+    const refusal = checkLiveAddresses(beforeText, args.ops, state);
     if (refusal) throw new Error(refusal);
     const commands = args.ops.flatMap(shellCommandsFor);
-    const reply = (await callSidecar(
-      "hammer_live",
-      { action: "batch", pid: editor.pid, vmf, commands },
-      ctx.config,
-      120_000,
-    )) as {
-      session: boolean;
-      acceptedVersion?: number;
-      accepted: number;
-      rejected: number;
-      results: Array<{ accepted: boolean; command: string }>;
-      reason?: string;
-    };
+    const reply = await sendLiveCommands(ctx, editor.pid, vmf, commands);
     if (!reply.session) {
       throw new Error(reply.reason ?? "Hammer refused the edit session");
     }
-    let saved = false;
-    if (args.save) {
-      const menuReply = (await callSidecar(
-        "hammer_live",
-        { action: "menu", pid: editor.pid, commandId: MENU.save },
-        ctx.config,
-        30_000,
-      )) as { posted: boolean };
-      saved = menuReply.posted;
-    }
+    const saved = args.save ? await saveLiveEditor(ctx, editor.pid) : false;
+    const now = new Date().toISOString();
+    appendJournal(ctx.config.stateDir, {
+      id: nextJournalId(readJournal(ctx.config.stateDir)),
+      pid: editor.pid,
+      vmf,
+      createdAt: now,
+      updatedAt: now,
+      state: reply.accepted === 0 && commands.length > 0 ? "failed" : "applied",
+      ops: args.ops,
+      save: args.save,
+      commands,
+      before: captureBefore(state, args.ops),
+      accepted: reply.accepted,
+      rejected: reply.rejected,
+      results: reply.results,
+      saved,
+      appliedAt: now,
+      ...(reply.accepted === 0 && commands.length > 0
+        ? { reason: "the editor rejected every command" }
+        : {}),
+    });
     return {
       pid: editor.pid,
       vmf,

@@ -1,6 +1,6 @@
 # Tool catalogue
 
-255 tools. This page groups them by the job you are doing; each tool's own description is the
+259 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -16,6 +16,10 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `open_in_hammer` | open the VMF in Hammer++ and capture the editor window; closes by default |
 | `hammer_status` | running editor, shell channel, main window and open map |
 | `hammer_live_edit` | create/set/delete/rotate entities in the open editor through the shell channel |
+| `stage_live_edit` | propose a live edit without sending it; records commands and before-state, validates class+origin |
+| `review_live_edit` | approve or reject a staged edit as a human decision |
+| `apply_live_edit` | send only an approved edit, re-validating the addresses first |
+| `read_edit_journal` | the approval queue and the history of what reached Hammer |
 | `hammer_menu` | save, undo, redo, Run Map, Check for Problems through the editor's menu |
 | `read_source_games` | how the install was discovered, if `health` looks wrong |
 | `read_autosaves` | Hammer autosaves of a map, and which is newer than the saved `.vmf` |

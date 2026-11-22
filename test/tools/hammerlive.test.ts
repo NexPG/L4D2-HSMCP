@@ -1,5 +1,7 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  assertEditorMap,
   checkLiveAddresses,
   shellCommandsFor,
 } from "../../src/hammer/typescript/tools/hammerlive.js";
@@ -28,6 +30,27 @@ const VMF = [
   '\t"origin" "64 0 0"',
   "}",
 ].join("\n");
+
+describe("the editor map guard", () => {
+  it("accepts the same path with different separators or case", () => {
+    const path = join(process.cwd(), "maps", "a.vmf");
+    expect(() =>
+      assertEditorMap(
+        { pid: 1, hasShell: true, openMap: path.replace(/\\/g, "/") },
+        path,
+      ),
+    ).not.toThrow();
+  });
+
+  it("refuses an editor showing a different map", () => {
+    expect(() =>
+      assertEditorMap(
+        { pid: 1, hasShell: true, openMap: join(process.cwd(), "maps", "b.vmf") },
+        join(process.cwd(), "maps", "a.vmf"),
+      ),
+    ).toThrow(/wrong map/);
+  });
+});
 
 describe("Hammer shell commands", () => {
   it("creates an entity and sets its keyvalues", () => {

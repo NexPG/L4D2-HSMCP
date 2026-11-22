@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **255 tools**.
+Last checked against the tool list on 22/11/2026: **259 tools**.
 
 ## The file itself
 
@@ -112,6 +112,10 @@ getting `ENOENT` on the first call.
 | Edit/delete/rotate an open-editor entity | `hammer_live_edit` | Addressed by class + origin, the shell channel's own limit |
 | Save / undo / redo / Run Map / Check for Problems | `hammer_menu` | The editor's own menu ids, not a reimplementation |
 | See which editor is attached | `hammer_status` | Process, shell window, main window, open map |
+| Propose a live edit for review | `stage_live_edit` | A queue entry with the exact shell commands and the before-state; nothing reaches Hammer. Validates against the saved VMF and the applied journal, so an entity created in an earlier call can be addressed before a save |
+| Approve or reject a queued edit | `review_live_edit` | A human decision, guarded and re-validated against the current map; refusing is as important as approving |
+| Send an approved edit | `apply_live_edit` | Only an `approved` entry; re-validates, refuses if the map changed, records accepted/rejected results |
+| Read the queue and history | `read_edit_journal` | Staged, approved, rejected, applied and failed entries with ops, commands and before-state |
 | Tie to entity / move to world | `set_solid_class` | |
 | Edit keyvalues | `edit_vmf` | |
 | Entity Report | `read_entity_report` | Filterable by classname, targetname or a key's presence. Takes a `.vmf` **or a compiled `.bsp`** |
