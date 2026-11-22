@@ -29,7 +29,7 @@ jobs:
         node: ["22", "24"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No `version:` here on purpose: pnpm/action-setup reads `packageManager` from
       # package.json, so the CI version and a contributor's corepack version are one number.
