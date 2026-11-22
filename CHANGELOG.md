@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.208-alpha - 2026-11-22
+
+- **`auto_visgroups` role mode**: `by: ["role"]` with a `roleFgd` reads that FGD's
+  `@AutoVisgroup` tree and writes it under `Auto/Roles/`, so the tree is
+  `Clips/Infected`, `Props/Doors` and the rest of the mapper's role grouping instead of one
+  group per class. The FGD is input data, never copied or shipped; without one the
+  class/material mode remains the default.
+- **Tool count: 270.** Tests: 221 files, 1,880 passed, 33 skipped.
+
 ## 0.0.207-alpha - 2026-11-22
 
 - **`read_vmf_lint` names dead keyvalues**: `prop_door_rotating.health` and `.axis` are

@@ -1,10 +1,11 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readFgdAutovisgroups, readFgdClass } from "../../src/maps/typescript/tools/vmf.js";
-import { ctx as sharedCtx, has } from "../support/env.js";
+import { autoVisgroupsTool } from "../../src/maps/typescript/tools/organise.js";
+import { FIXTURES, ctx as sharedCtx, has } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const made: string[] = [];
@@ -72,6 +73,37 @@ describe.skipIf(!has.sidecar || !has.fgd)("read_fgd_class with an extra FGD", ()
     )) as { classnames: string[] };
     expect(stock.classnames).toContain("trigger_finale");
   });
+
+  it("uses @AutoVisgroup roles to fill the map visgroups", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "hsmcp-roles-"));
+    made.push(dir);
+    const vmf = join(dir, "roles.vmf");
+    copyFileSync(join(FIXTURES, "hmcp_probe.vmf"), vmf);
+    const fgd = extraFgd([
+      '@AutoVisgroup = "Clips"',
+      "[",
+      '  "Infected"',
+      "  [",
+      '    "info_target"',
+      "  ]",
+      "]",
+      "",
+    ]);
+    const r = (await autoVisgroupsTool.handler(
+      {
+        path: vmf,
+        by: ["role"],
+        roleFgd: fgd,
+        rolePrefix: "Auto/Roles/",
+        confirm: true,
+      } as never,
+      ctx,
+    )) as { groups: Array<{ name: string; members: number }>; written: boolean };
+    expect(r.written).toBe(true);
+    expect(r.groups).toContainEqual(
+      expect.objectContaining({ name: "Auto/Roles/Clips/Infected", members: 1 }),
+    );
+  }, 60_000);
 
   it("lists @AutoVisgroup groups and their entities", async () => {
     const fgd = extraFgd([

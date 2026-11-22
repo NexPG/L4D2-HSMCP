@@ -53,6 +53,14 @@ entities the game does not have, and a lint that accepts them approves a broken 
 - If an FGD pack changes Hammer's default new entity, set it back: swapping a model entity
   for one that newly gained a helper model can crash the editor.
 
+### Role autovisgroups
+
+A helper FGD with `@AutoVisgroup` blocks describes roles ("Clips/Infected", "Props/Doors")
+rather than one group per class. `auto_visgroups` with `by: ["role"]` reads those groups
+from the `roleFgd` you pass and writes them under `Auto/Roles/`. The FGD is input data, not
+something the project ships or copies; if the mapper has no role FGD, the class/material
+mode is still the honest tree.
+
 ## When to drive the editor
 
 The live channel is a second way to change a map, and it is the wrong default. The rule:

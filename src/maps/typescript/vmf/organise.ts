@@ -453,6 +453,12 @@ export interface AutoVisgroupResult {
   unchanged: boolean;
 }
 
+/** One role group from an `@AutoVisgroup` block, already flattened to `Parent/Name`. */
+export interface AutoVisgroupRole {
+  name: string;
+  entities: readonly string[];
+}
+
 /**
  * Hammer++'s Auto Visgroups, as one pass over the file.
  *
@@ -467,14 +473,20 @@ export interface AutoVisgroupResult {
 export function autoVisgroups(
   source: string,
   options: {
-    by?: Array<"class" | "material">;
+    by?: Array<"class" | "material" | "role">;
     entityPrefix?: string;
     materialPrefix?: string;
+    roleGroups?: readonly AutoVisgroupRole[];
+    rolePrefix?: string;
   } = {},
 ): AutoVisgroupResult {
   const by = options.by ?? ["class", "material"];
   const entityPrefix = options.entityPrefix ?? "Auto/Entities/";
   const materialPrefix = options.materialPrefix ?? "Auto/Materials/";
+  const rolePrefix = options.rolePrefix ?? "Auto/Roles/";
+  if (by.includes("role") && (options.roleGroups ?? []).length === 0) {
+    throw new Error("role visgroups need roleGroups from an @AutoVisgroup FGD");
+  }
   const nodes = parse(source);
   const roots = nodes.filter(isBlock);
 
@@ -568,6 +580,39 @@ export function autoVisgroups(
       const id = groupFor(name);
       for (const entity of list) addMembership(entity, id);
       groups.push({ name, id, members: members.get(id) ?? 0 });
+    }
+  }
+
+  if (by.includes("role")) {
+    const classified = new Map<string, Set<string>>();
+    for (const group of options.roleGroups ?? []) {
+      for (const classname of group.entities) {
+        const key = classname.trim().toLowerCase();
+        if (!key) continue;
+        const set = classified.get(key) ?? new Set<string>();
+        set.add(group.name);
+        classified.set(key, set);
+      }
+    }
+    const roleIds = new Map<string, number>();
+    const roleMembers = new Map<string, number>();
+    for (const entity of entityBlocks) {
+      const classname = (get(entity, "classname") ?? "").trim().toLowerCase();
+      const roles = classified.get(classname);
+      if (!roles || roles.size === 0) continue;
+      for (const role of roles) {
+        const name = `${rolePrefix}${role}`;
+        let id = roleIds.get(name);
+        if (id === undefined) {
+          id = groupFor(name);
+          roleIds.set(name, id);
+        }
+        addMembership(entity, id);
+        roleMembers.set(name, (roleMembers.get(name) ?? 0) + 1);
+      }
+    }
+    for (const [name, id] of roleIds) {
+      groups.push({ name, id, members: roleMembers.get(name) ?? 0 });
     }
   }
 

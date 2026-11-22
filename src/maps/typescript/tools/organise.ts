@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { writeGuarded } from "../../../core/typescript/fs/write.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
+import { fgdContext } from "./vmf.js";
 import { autoVisgroups, groupSolids, readOrganisation, setCordon, setVisgroup } from "../vmf/organise.js";
 import { SOLID_SELECTOR_FIELDS, solidSelectorFrom } from "../vmf/select.js";
 import { assertGeometryUntouched } from "../vmf/solid.js";
 import type { Vec3 } from "../vmf/solid.js";
-import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
+import { BACKUP, BACKUP_PATH, CONFIRM, DRY_RUN, resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 const Vec = z.tuple([z.number(), z.number(), z.number()]);
 
@@ -140,19 +142,35 @@ export const autoVisgroupsTool = defineTool({
     "Fills a visgroup tree from what the map already contains, the way Hammer++'s Auto " +
     "Visgroups does: one visgroup per entity class and one per world-brush material, with " +
     "both halves written. A solid joins the group of its dominant material by face area, so " +
-    "one large wall beats four trim faces; tool textures are skipped. Existing groups with " +
-    "the same names are reused, so running it twice adds nothing. A visgroup changes nothing " +
-    "about the compiled map -- its value is that later calls can name a group instead of " +
-    "describing a box.",
+    "one large wall beats four trim faces; tool textures are skipped. With `by: ['role']` " +
+    "and a `roleFgd`, it uses that FGD's `@AutoVisgroup` roles instead, so the tree matches " +
+    "the Clips/Props/Tool Brushes grouping a mapper sees; the FGD is read, never shipped. " +
+    "Existing groups with the same names are reused, so running it twice adds nothing. A " +
+    "visgroup changes nothing about the compiled map -- its value is that later calls can " +
+    "name a group instead of describing a box.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
     by: z
-      .array(z.enum(["class", "material"]))
+      .array(z.enum(["class", "material", "role"]))
       .default(["class", "material"])
-      .describe("Which tree to build. Both by default."),
+      .describe(
+        "Which tree to build. `class` and `material` are built from the map. `role` uses " +
+          "the groups in `roleFgd`, so the tree matches Hammer++'s role groups.",
+      ),
+    roleFgd: z
+      .string()
+      .optional()
+      .describe(
+        "FGD with `@AutoVisgroup` role groups, e.g. a Visgroups.fgd from an FGD pack. " +
+          "Required when by includes `role`; the file is read, never copied or shipped.",
+      ),
+    rolePrefix: z
+      .string()
+      .default("Auto/Roles/")
+      .describe("Prefix for the role groups."),
     entityPrefix: z
       .string()
       .default("Auto/Entities/")
@@ -176,13 +194,39 @@ export const autoVisgroupsTool = defineTool({
     warnings: z.array(z.string()),
     nextStep: z.string(),
   },
-  handler: (args, ctx) => {
+  handler: async (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     const before = readFileSync(path, "utf8");
+    let roleGroups: Array<{ name: string; entities: string[] }> | undefined;
+    if (args.by.includes("role")) {
+      if (!args.roleFgd) throw new Error("by includes `role`, but roleFgd was not given");
+      const fgd = fgdContext(ctx.config);
+      if (!fgd.binDir) {
+        throw new Error(
+          "cannot read a role FGD without the game's bin directory; run health to see what " +
+            "discovery found",
+        );
+      }
+      const reply = (await callSidecar(
+        "fgd_autovisgroups",
+        {
+          binDir: fgd.binDir,
+          fgd: [...fgd.fgd, resolveInput(args.roleFgd, ctx.config)],
+          limit: 5000,
+        },
+        ctx.config,
+        180_000,
+      )) as { groups: Array<{ name: string; parent: string | null; entities: string[] }> };
+      roleGroups = reply.groups.map((group) => ({
+        name: group.parent ? `${group.parent}/${group.name}` : group.name,
+        entities: group.entities,
+      }));
+    }
     const result = autoVisgroups(before, {
       by: args.by,
       entityPrefix: args.entityPrefix,
       materialPrefix: args.materialPrefix,
+      ...(roleGroups ? { roleGroups, rolePrefix: args.rolePrefix } : {}),
     });
     assertGeometryUntouched(path, before, result.text, "an organisation edit");
 
