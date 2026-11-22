@@ -14,7 +14,7 @@ with a line here.
   offset sets a flat colour.
 - HDR RGBE is refused rather than edited as RGB, with the `-both`/`hdr: 'ldr'` path named.
   A dry run computes the patched bytes and writes nothing.
-- Verified on a stock map with an LDR lump: a 0.5 scale changed only the chosen face and the
+- Verified on an installed map with an LDR lump: a 0.5 scale changed only the chosen face and the
   file length stayed identical.
 - **Tool count: 270.** Tests: 220 files, 1,871 passed, 33 skipped.
 
