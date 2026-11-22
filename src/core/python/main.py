@@ -488,6 +488,34 @@ def _hull_solids(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("send_console_command")
+def _send_console_command(req: dict[str, Any]) -> dict[str, Any]:
+    """Types a console command into a running Source game.
+
+    The transport is `srctools.run.send_engine_command`, the same `WM_COPYDATA` to the
+    `Valve001` window that the engine's own `-hijack` path uses. It is not synthetic
+    keyboard input: the game need not be focused, and a command the console would reject is
+    rejected by the console.
+    """
+    from srctools.run import send_engine_command
+
+    command = req.get("command")
+    if not isinstance(command, str) or not command.strip():
+        raise ValueError("command must be a non-empty string")
+    classname = str(req.get("classname") or "Valve001")
+    try:
+        send_engine_command(command.encode("utf-8"), classname=classname)
+    except LookupError as exc:
+        raise ValueError(
+            f"no window with class {classname!r} was found; is the game running?"
+        ) from exc
+    except OSError as exc:
+        raise ValueError(f"the engine console transport is unavailable: {exc}") from exc
+    except ValueError as exc:
+        raise ValueError(f"the game did not accept the command: {exc}") from exc
+    return {"command": command, "classname": classname, "sent": True}
+
+
 @verb("check_assets")
 def _check_assets(req: dict[str, Any]) -> dict[str, Any]:
     """Checks a source .vmf's asset references against the game's mount chain.

@@ -111,6 +111,7 @@ import { renderBspTools } from "./maps/typescript/tools/renderbsp.js";
 import { reportTools } from "./maps/typescript/tools/report.js";
 import { rulesTools } from "./maps/typescript/tools/rules.js";
 import { runtimeTools } from "./scripts/typescript/tools/runtime.js";
+import { consoleTools } from "./scripts/typescript/tools/console.js";
 import { sceneTools } from "./scripts/typescript/tools/scene.js";
 import { skyboxTools } from "./textures/typescript/tools/skybox.js";
 import { skyboxCopyTools } from "./textures/typescript/tools/skyboxcopy.js";
@@ -266,6 +267,7 @@ export const allTools: AnyToolDef[] = [
   ...vpkVerifyTools,
   ...vmtTools,
   ...runtimeTools,
+  ...consoleTools,
   ...vscriptTools,
   ...overlayTools,
   ...overlayReadTools,

@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.187-alpha - 2026-11-22
+
+- **`send_console_command`**: runs a console command in a live Source game through the
+  engine's `WM_COPYDATA` channel to the `Valve001` window, the mechanism `-hijack` uses.
+  Delegates to `srctools.run.send_engine_command`; no ctypes copy and no synthetic keys.
+  The game does not need focus, and a missing window is reported by class instead of a silent
+  no-op. Guarded, because a command can quit the server or change a cvar.
+- Positive-path test requires a running game, so the suite covers the deterministic half:
+  empty input, a missing window class, and the refusal message. The transport itself is
+  srctools' tested function.
+- **Tool count: 255**, sidecar 47 verbs. Tests: 212 files, 1,797 passed, 33 skipped.
+
 ## 0.0.186-alpha - 2026-11-22
 
 - **`verify_vpk`**: structural verification of an archive, not just a listing. Checks duplicate

@@ -1,7 +1,7 @@
 # Library boundary: srctools, the sidecar and TypeScript
 
 This page is the standing answer to “are we writing something srctools already does?”. It is
-checked against **srctools 2.7.0** and the **46 verbs** registered in
+checked against **srctools 2.7.0** and the **47 verbs** registered in
 `src/core/python/main.py`.
 
 The rule itself is in [`AGENTS.md`](../../AGENTS.md): call the library first; a second copy of
@@ -29,6 +29,7 @@ shows up here as four concrete reasons:
 
 | Domain | Library / sidecar | What this repository does | Verdict |
 |---|---|---|---|
+| Engine console command | `srctools.run.send_engine_command` via sidecar `send_console_command` | wrapper only: argument checks and the error text | **delegated** |
 | `func_instance` expansion | `srctools.instancing` via sidecar `vmf_collapse` | wrapper only: paths, guarded write, temp file | **delegated** (a duplicate TS expander was deleted) |
 | Brush carve and convex hull | `srctools.geometry.Geometry.carve`, `srctools.math.quickhull` via sidecar `carve_solids`, `hull_solids` | wrapper only: selector resolution, ids, guarded write | **delegated** (see the `from_points` note below) |
 | VMF asset check | `srctools.game.Game` mount chain, `srctools.vmt.Material`, `srctools.mdl.Model`; the sidecar's `check_assets` reuses `Resolver`, `_walk_material` and `_walk_model` from `map_dependencies` | source-side collection only; resolution is shared | **delegated** |
