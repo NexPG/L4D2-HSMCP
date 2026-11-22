@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import { editVmf } from "../../../maps/typescript/tools/vmfedit.js";
@@ -245,6 +245,12 @@ const CONTRACT_FINDING = z.object({
   line: z.number().nullable(),
 });
 
+const CONTRACT_INCLUDE = z.object({
+  name: z.string(),
+  found: z.boolean(),
+  path: z.string().nullable(),
+});
+
 const CONTRACT_HOOK = z.object({
   name: z.string(),
   event: z.string(),
@@ -290,7 +296,7 @@ export const checkVscriptContractTool = defineTool({
     errors: z.number(),
     warnings: z.number(),
     functions: z.array(z.string()),
-    includes: z.array(z.string()),
+    includes: z.array(CONTRACT_INCLUDE),
     directorOptions: z.record(z.string()),
     mutationOptions: z.record(z.string()),
   },
@@ -316,6 +322,51 @@ export const checkVscriptContractTool = defineTool({
     const findings: Array<z.infer<typeof CONTRACT_FINDING>> = report.diagnostics.map(
       (diagnostic) => ({ ...diagnostic }),
     );
+
+    const localDir = dirname(path);
+    const unresolved = report.includes.filter(
+      (name) =>
+        !existsSync(join(localDir, `${name}.nut`)) &&
+        !existsSync(join(localDir, `${name}.nuc`)),
+    );
+    const gameFiles = unresolved.length
+      ? ((await callSidecar(
+          "game_files",
+          {
+            gameDir,
+            paths: unresolved.flatMap((name) => [
+              `scripts/vscripts/${name}.nut`,
+              `scripts/vscripts/${name}.nuc`,
+            ]),
+          },
+          ctx.config,
+          60_000,
+        )) as { results: Array<{ path: string; exists: boolean; found: string | null }> })
+      : { results: [] };
+    const includes = report.includes.map((name) => {
+      for (const extension of [".nut", ".nuc"]) {
+        const local = join(localDir, `${name}${extension}`);
+        if (existsSync(local)) return { name, found: true, path: local };
+      }
+      const fromGame = gameFiles.results.find(
+        (entry) => entry.exists && entry.path.endsWith(`/${name}.nut`),
+      ) ?? gameFiles.results.find(
+        (entry) => entry.exists && entry.path.endsWith(`/${name}.nuc`),
+      );
+      return { name, found: fromGame !== undefined, path: fromGame?.found ?? null };
+    });
+    for (const include of includes) {
+      if (!include.found) {
+        findings.push({
+          severity: "warning",
+          rule: "vscript-include-missing",
+          message:
+            `IncludeScript("${include.name}") was not found beside the script or under ` +
+            `scripts/vscripts in the game; the engine warns and continues`,
+          line: null,
+        });
+      }
+    }
     for (const key of NUMERIC_OPTION_KEYS) {
       if (new RegExp(`\\b${key}\\s*=\\s*["']`).test(source)) {
         findings.push({
@@ -373,7 +424,7 @@ export const checkVscriptContractTool = defineTool({
       errors,
       warnings,
       functions: report.functions,
-      includes: report.includes,
+      includes,
       directorOptions: report.directorOptions,
       mutationOptions: report.mutationOptions,
     };

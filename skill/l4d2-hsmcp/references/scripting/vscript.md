@@ -43,6 +43,8 @@ script:
 - every function named `OnGameEvent_<event>` must use an event that exists — a misspelling
   never runs and leaves no console error;
 - every `event_data.<field>` read inside such a hook must be a field that event declares;
+- every `IncludeScript("name")` target must exist beside the script or under
+  `scripts/vscripts` in the game mount chain;
 - the `read_vscript` diagnostics and the quoted-numeric-option warning are included.
 
 Unknown hooks are warnings, not errors, because an add-on may register its own event. A

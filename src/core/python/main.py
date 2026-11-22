@@ -530,6 +530,34 @@ def _check_assets(req: dict[str, Any]) -> dict[str, Any]:
     return check_assets(vmf, req, info)
 
 
+@verb("game_files")
+def _game_files(req: dict[str, Any]) -> dict[str, Any]:
+    """Checks whether paths exist through the game's mount chain.
+
+    Used by the VScript contract for `IncludeScript("name")`, which resolves from
+    `scripts/vscripts/` and can live in a VPK. The game filesystem is the same chain the
+    engine reads; a loose add-on file is checked beside the script before this verb is called.
+    """
+    from srctools.game import Game
+
+    game_dir = req.get("gameDir")
+    if not game_dir:
+        raise ValueError("game_files needs the game directory")
+    fsys = Game(game_dir).get_filesystem()
+    results = []
+    for path in req.get("paths", []):
+        found = None
+        for candidate in (path, f"{path}.nut", f"{path}.nuc"):
+            try:
+                with fsys.open_bin(candidate):
+                    found = candidate
+                    break
+            except Exception:  # noqa: BLE001 - a missing file is the answer
+                continue
+        results.append({"path": path, "exists": found is not None, "found": found})
+    return {"gameDir": game_dir, "results": results}
+
+
 @verb("game_events")
 def _game_events(req: dict[str, Any]) -> dict[str, Any]:
     """Reads `resource/modevents.res` from the game's mount chain.

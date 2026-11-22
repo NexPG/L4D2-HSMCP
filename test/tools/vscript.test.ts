@@ -122,6 +122,8 @@ describe.skipIf(!has.sidecar || !has.gameContent)("VScript API contract", () => 
       path,
       [
         'printl("contract")',
+        'IncludeScript("director_base")',
+        'IncludeScript("hsmcp_missing_include")',
         "function OnGameEvent_player_death(params)",
         "{",
         "  local id = event_data.userid;",
@@ -147,6 +149,7 @@ describe.skipIf(!has.sidecar || !has.gameContent)("VScript API contract", () => 
       hooks: Array<{ name: string; known: boolean; unknownFields: string[] }>;
       findings: Array<{ rule: string }>;
       warnings: number;
+      includes: Array<{ name: string; found: boolean; path: string | null }>;
     };
     const hooks = new Map(result.hooks.map((hook) => [hook.name, hook]));
     expect(hooks.get("OnGameEvent_player_death")!.known).toBe(true);
@@ -157,6 +160,10 @@ describe.skipIf(!has.sidecar || !has.gameContent)("VScript API contract", () => 
     expect(rules).toContain("vscript-event-unknown");
     expect(rules).toContain("vscript-event-field");
     expect(rules).toContain("vscript-option-quoted");
-    expect(result.warnings).toBeGreaterThanOrEqual(3);
+    const includes = new Map(result.includes.map((entry) => [entry.name, entry]));
+    expect(includes.get("director_base")!.found).toBe(true);
+    expect(includes.get("hsmcp_missing_include")!.found).toBe(false);
+    expect(rules).toContain("vscript-include-missing");
+    expect(result.warnings).toBeGreaterThanOrEqual(4);
   }, 120_000);
 });
