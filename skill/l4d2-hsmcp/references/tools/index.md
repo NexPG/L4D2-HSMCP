@@ -1,6 +1,6 @@
 # Tool catalogue
 
-284 tools. This page groups them by the job you are doing; each tool's own description is the
+285 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -273,6 +273,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `read_choreo` | text VCD timeline: events, actor channels, times, parameters, sounds |
 | `read_vscript_api` | game events and typed fields from `resource/modevents.res`, option catalogue and hooks |
 | `check_vscript_contract` | checks `OnGameEvent_*` hook names and `event_data` fields against the engine's event list |
+| `write_options_probe` | adds a `logic_script` that prints the Director's merged `SessionOptions` at round start |
 | `edit_choreo_events` | retime or re-parameterise existing VCD events, including a speak event's sound; re-serialised through `srctools.choreo.Scene` and read back |
 | `read_scenes_image` | scenes.image summary: CRC, duration, last speak, sounds; optional embedded scene details |
 | `read_model_ani` | external `.ani`: `IDAG` header, block byte ranges, clips and sequences per block, gap/overlap/orphan checks |

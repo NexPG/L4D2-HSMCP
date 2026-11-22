@@ -106,6 +106,10 @@ Measured on this client:
 `run_map_test` therefore takes `mode` and writes the map command into the run's
 `listenserver.cfg`; the generated command is listed in `commandsRun`.
 
+To prove the values reached the Director, not just the file, add `write_options_probe` to
+the test map and wait for `HSMCP_OPTIONS_DONE`; it prints the merged `SessionOptions` at
+`round_start`. The measured run is in `references/testing/harness.md`.
+
 Remove the test VPK from `addons/` afterwards. A mutation that stays installed changes the
 menu for every later run.
 

@@ -175,7 +175,7 @@ const AREAS: Area[] = [
     title: "Runtime harness",
     covers: "launching and probing the game: run_map_test, nav generation, console commands and class/nav probes",
     groups: {
-      "Game runs and probes": ["runtime", "classprobe", "navprobe"],
+      "Game runs and probes": ["runtime", "classprobe", "navprobe", "optionsprobe"],
       "Console channel": ["console"],
     },
   },

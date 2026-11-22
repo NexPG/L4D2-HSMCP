@@ -46,6 +46,28 @@ marker can match. The mode and its script must already be installed loose or in 
 VPK. `mode` is also returned in the result, and the generated command appears in
 `commandsRun`.
 
+## Effective DirectorOptions
+
+`write_options_probe` adds a `logic_script` to a VMF (or use its returned entity with
+`edit_bsp_entities` on a compiled map) and writes a `.nut` that prints the Director's merged
+`SessionOptions` on `round_start` / `player_spawn`. This is the runtime proof that a
+mutation's `MutationOptions` reached the Director; a top-level `printl` in the mutation
+script runs before `scriptedmode.nut` merges the tables.
+
+Measured on a copy of `c1m1_hotel.bsp` with a `logic_script` added to the entity lump and a
+mutation setting `BoomerLimit=0, SmokerLimit=2, MaxSpecials=3`:
+
+```
+[HSMCP_OPTIONS] ModeName=hsmcp_opt
+[HSMCP_OPTIONS] BoomerLimit=0
+[HSMCP_OPTIONS] SmokerLimit=2
+[HSMCP_OPTIONS] MaxSpecials=3
+HSMCP_OPTIONS_DONE
+```
+
+The event hook is the working shape. `AddThinkToEnt`, a delayed `EntFire(RunScriptCode)`
+from `script_execute`, and a `schedule` logic_timer did not print in the same runs.
+
 ## The trap: `commands` run before the map's entities exist
 
 `commands` are written to `cfg/listenserver.cfg`. The engine executes that file at **server
