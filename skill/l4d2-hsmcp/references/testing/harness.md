@@ -68,6 +68,20 @@ HSMCP_OPTIONS_DONE
 The event hook is the working shape. `AddThinkToEnt`, a delayed `EntFire(RunScriptCode)`
 from `script_execute`, and a `schedule` logic_timer did not print in the same runs.
 
+## Do not use a stock `.bsp` as a probe host
+
+A compiled map is not a neutral container for a `logic_script`. Two measured failures:
+
+- copying `c1m1_hotel.bsp` to a new name made the engine look under
+  `materials/maps/<new-name>/...`, and the load sat at the loading screen for 92 s;
+- an **edited** copy staged back under the original name also failed to reach the map in
+  one run, while the untouched copy loaded in 26 s.
+
+A renamed or modified stock map is a runtime experiment with the game's own content, not a
+fixture. Put the probe in a custom map you control (a VMF compiled under its own name), or
+use the test map built for the probe. If you need a stock map's geometry, copy its VMF when
+you have it; do not rename the BSP.
+
 ## The trap: `commands` run before the map's entities exist
 
 `commands` are written to `cfg/listenserver.cfg`. The engine executes that file at **server
