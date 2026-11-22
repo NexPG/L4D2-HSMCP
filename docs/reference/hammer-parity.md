@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **282 tools**.
+Last checked against the tool list on 22/11/2026: **284 tools**.
 
 ## The file itself
 
@@ -404,6 +404,8 @@ map and looking, or by not happening at all.
 | `check_mutation` | nothing: the mutation contract (base, MutationOptions, addoninfo) is never checked by Hammer |
 | `write_mutation` | nothing: a mutation is authored by hand or in an external tool |
 | `read_special_infected` | nothing: Hammer has no view of special-infected limits or their precedence |
+| `read_vscript_api` | nothing: the engine's game-event list and option types are not in Hammer |
+| `check_vscript_contract` | nothing: a misspelled event hook is invisible in Hammer and in the console |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
 | `check_campaign_wiring` | nothing: no editor follows a chapter's changelevel into the next map and compares the landmark pair |
 | `run_vpk_pack` | nothing: Hammer has no addon packaging |

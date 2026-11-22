@@ -530,6 +530,46 @@ def _check_assets(req: dict[str, Any]) -> dict[str, Any]:
     return check_assets(vmf, req, info)
 
 
+@verb("game_events")
+def _game_events(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads `resource/modevents.res` from the game's mount chain.
+
+    This is the engine's own list of game events and their typed fields. VScript hooks are
+    named `OnGameEvent_<event>`, so a misspelled hook is checkable against 274 stock events
+    instead of a hand-written list. The file is KeyValues and can live in a VPK; the Game
+    filesystem is the same chain the engine reads.
+    """
+    from srctools.game import Game
+    from srctools.keyvalues import Keyvalues
+
+    game_dir = req.get("gameDir")
+    if not game_dir:
+        raise ValueError("game_events needs the game directory")
+    fsys = Game(game_dir).get_filesystem()
+    with fsys.open_str("resource/modevents.res") as handle:
+        text = handle.read()
+
+    root = Keyvalues.parse(text, "resource/modevents.res")
+    block = root.find_block("cstrikeevents")
+    events = []
+    for event in block:
+        if not event.has_children():
+            continue
+        fields = [
+            {"name": field.name, "type": field.value}
+            for field in event
+            if not field.has_children()
+        ]
+        events.append({"name": event.name, "fields": fields})
+    events.sort(key=lambda item: item["name"])
+    return {
+        "gameDir": game_dir,
+        "path": "resource/modevents.res",
+        "count": len(events),
+        "events": events,
+    }
+
+
 @verb("mode_read")
 def _mode_read(req: dict[str, Any]) -> dict[str, Any]:
     """Reads a Left 4 Dead 2 `modes/<name>.txt` through `srctools.keyvalues`.

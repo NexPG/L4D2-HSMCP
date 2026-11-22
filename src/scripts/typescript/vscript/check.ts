@@ -12,6 +12,8 @@
  * the engine is still the final authority.
  */
 
+import { MUTATION_ONLY_OPTIONS } from "./api.js";
+
 export type NutSeverity = "error" | "warning" | "info";
 
 export interface NutDiagnostic {
@@ -398,6 +400,22 @@ export function checkNut(source: string, path = "<script>"): NutReport {
     const start = mutationAssignment.index + mutationAssignment[0].length - 1;
     const table = tableBody(code, start);
     if (table) mutationOptions = tableEntries(table.body);
+  }
+
+  const knownMutationKeys = new Set([
+    ...KNOWN_DIRECTOR_KEYS,
+    ...MUTATION_ONLY_OPTIONS.map((option) => option.key),
+  ]);
+  for (const key of Object.keys(mutationOptions)) {
+    if (!knownMutationKeys.has(key) && !/^A_CustomFinale(Value)?\d+$/.test(key)) {
+      diagnostics.push(
+        diag(
+          "info",
+          "mutation-unknown-key",
+          `${key} is not in this checker's MutationOptions catalogue; the engine may still accept it`,
+        ),
+      );
+    }
   }
 
   return {

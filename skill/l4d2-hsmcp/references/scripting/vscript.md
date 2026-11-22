@@ -23,12 +23,30 @@ before it writes:
   `A_CustomFinaleN` up to it must exist, a stage beyond it is a warning, and a stage value
   the file never defines is a warning. A missing `OnBeginCustomFinaleStage` is information:
   the stage list still runs, but no script logic runs with it.
-- **Unknown DirectorOptions keys are information, not errors.** The catalogue is not the
-  engine's full set, and a false error on a valid script is worse than a missed note.
+- **Unknown DirectorOptions/MutationOptions keys are information, not errors.** The
+  catalogue is not the engine's full set, and a false error on a valid script is worse than
+  a missed note.
+- **Quoted numeric options are warnings.** `TankLimit = "2"` is a string; the engine reads a
+  number there. `check_vscript_contract` reports it; `read_vscript` reports the syntax and
+  table shape.
 
 `local` is **valid Squirrel** (it declares a local variable); it is not a Lua mistake. The
 checker does not flag it. When given a `vmf`, `write_vscript` also adds the `logic_script`
 entity for you.
+
+## The event contract
+
+`read_vscript_api` reads the engine's own `resource/modevents.res` and lists all stock game
+events with their typed fields (338 in this install). `check_vscript_contract` then checks a
+script:
+
+- every function named `OnGameEvent_<event>` must use an event that exists — a misspelling
+  never runs and leaves no console error;
+- every `event_data.<field>` read inside such a hook must be a field that event declares;
+- the `read_vscript` diagnostics and the quoted-numeric-option warning are included.
+
+Unknown hooks are warnings, not errors, because an add-on may register its own event. A
+known hook still needs a runtime `printl` marker to prove the engine called it.
 
 ## How the map attaches it
 
@@ -118,8 +136,10 @@ Verified for this project:
   call. See `references/campaign/finale.md`.
 
 Not verified here and therefore not documented as working: scripted finale waves, spawning
-customs, Director script hooks. Do not invent API calls; if a script is needed for something
-outside the list above, say it is unverified and test with `-condebug`.
+customs, and the full function catalogue. `read_vscript_api` covers the game-event and
+DirectorOptions/MutationOptions part; it does not pretend to list every engine global. Do not
+invent API calls; if a script is needed for something outside the catalogue, say it is
+unverified and test with `-condebug`.
 
 ## Common failures
 
