@@ -50,6 +50,16 @@ is no third category called “but it is only a small helper”.
 The lasting audit table and current exceptions live in
 [`docs/reference/library-boundary.md`](docs/reference/library-boundary.md).
 
+## Findings become prevention
+
+A runtime finding is not finished when it is understood. It lands in the skill in the form the
+production agent needs: the tool default or guard that prevents the mistake, a row in
+`skill/l4d2-hsmcp/references/mechanics/coverage.md`, and a `troubleshooting/` page that opens
+with the prevention and then gives symptom → cause → check → fix. The "mistakes that waste a
+run" table in `SKILL.md` is the index of those pages. Research exists to transfer knowledge
+into the skill: an insight that lives only in a log or a chat message will be lost, and the
+next agent will pay for the same mistake again.
+
 ## Repository facts
 
 - Windows only, GPL-3.0-only, Node 22+, pnpm. `packageManager` in `package.json` pins the

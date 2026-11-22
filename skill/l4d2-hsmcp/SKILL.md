@@ -54,6 +54,24 @@ The version is read from the toolkit's `package.json`; do not hard-code an older
 it with `health` or from the package itself, and use the same value in files you write by
 hand. There is deliberately no fixed number in this skill: a number here would drift.
 
+## The mistakes that waste a run
+
+Every research result on this project is converted into **prevention**, not into a story.
+A page opens with what to do so the failure cannot happen, then the symptom, then the check,
+then the fix. If a mistake is not listed here or on the page it links to, it will be made
+again.
+
+| What you will see | Do this and it cannot happen | Read |
+|---|---|---|
+| Loading bar never finishes; `Host_NewGame` for the same map repeats | Never probe on a map with a live `info_changelevel` + checkpoint warp. Strip the exit (`edit_vmf` remove `to_m2`, `selftest_start`, `selftest_warp`) or ship the whole campaign in one VPK | `troubleshooting/endless-loading.md` |
+| A renamed or edited stock `.bsp` hangs at load | Probe only on a VMF you compiled under its own name | `troubleshooting/endless-loading.md` |
+| `Cannot execute "z_spawn ...", no player` | A direct `-insecure` launch attaches no local player. Use `run_map_test` `via: "steam"` for anything that needs a player | `references/testing/harness.md` |
+| `commands` / `ent_fire` in a run do nothing | `cfg/listenserver.cfg` runs before the map's entities exist. Use `scriptsDir` with `EntFire(..., delay)` or `schedule` | `references/testing/harness.md` |
+| `NAV ERRORS - Map is unplayable!` | Nav is made from the final `.bsp`; regenerate after the last compile and pass it to `run_map_test` | `references/nav/generation.md` |
+| VScript `expression expected` at line 1 | Write `.nut` files without a BOM | `references/scripting/vscript.md` |
+| Campaign vanished from the menu after a killed run | A run hid an addon as `*.vpk.off`. `check_game_state` restores it | `references/testing/game-environment-cleanup.md` |
+| Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
+
 ## Route the task first
 
 The same routes are MCP prompts: `l4d2_task` for a general request,
