@@ -48,6 +48,8 @@ script, `addoninfo.txt`) and validate the whole add-on with `check_mutation`.
 - `addoninfo.txt` sets `addonContent_Script 1` when a script ships.
 
 A convar-only mutation with no script is valid; the warning says so rather than failing.
+`check_mutation` also resolves the special-infected set and fails a negative limit or
+`MinSpecials > MaxSpecials`; `write_mutation` refuses to write such a set.
 
 ## Director settings
 

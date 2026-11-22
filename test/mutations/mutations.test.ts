@@ -153,23 +153,41 @@ describe.skipIf(!has.sidecar)("mutations", () => {
     expect(set.errors).toBe(0);
   }, 120_000);
 
-  it("flags an impossible special set", async () => {
+  it("flags an impossible special set and refuses to write one", async () => {
     const directory = join(scratch, "bad-specials");
-    await writeAddon(directory, {
-      convars: {},
-      directorOptions: { SmokerLimit: -1, MinSpecials: 5, MaxSpecials: 2 },
-    });
-    const set = (await readSpecialInfectedTool.handler(
-      { path: directory },
+    await expect(
+      writeAddon(directory, {
+        convars: {},
+        directorOptions: { SmokerLimit: -1, MinSpecials: 5, MaxSpecials: 2 },
+      }),
+    ).rejects.toThrow(/special-infected set cannot work/);
+    expect(existsSync(join(directory, "modes", "hsmcp_test.txt"))).toBe(false);
+
+    // The same values in an existing script are caught by check_mutation.
+    const good = join(scratch, "bad-specials-check");
+    await writeAddon(good);
+    const scriptPath = join(good, "scripts", "vscripts", "hsmcp_test.nut");
+    writeFileSync(
+      scriptPath,
+      [
+        'printl("bad specials")',
+        "MutationOptions <-",
+        "{",
+        "\tSmokerLimit = -1",
+        "\tMinSpecials = 5",
+        "\tMaxSpecials = 2",
+        "}",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const check = (await checkMutationTool.handler(
+      { path: good, limit: 200 },
       ctx,
-    )) as unknown as {
-      findings: Array<{ rule: string }>;
-      errors: number;
-      ok: boolean;
-    };
-    expect(set.ok).toBe(false);
-    expect(set.errors).toBeGreaterThanOrEqual(2);
-    const rules = set.findings.map((finding) => finding.rule);
+    )) as unknown as { findings: Array<{ rule: string }>; errors: number; ok: boolean };
+    expect(check.ok).toBe(false);
+    expect(check.errors).toBeGreaterThanOrEqual(2);
+    const rules = check.findings.map((finding) => finding.rule);
     expect(rules).toContain("special-limit-value");
     expect(rules).toContain("special-min-over-max");
   }, 120_000);

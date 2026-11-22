@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Left 4 Dead 2 game modes and mutations.
  *
  * The engine's definition of a mutation is small and entirely file-based:
@@ -255,6 +255,7 @@ function inspectFindings(mode: InspectedMode): Finding[] {
     );
   }
 
+  let scriptReport: ReturnType<typeof checkNut> | null = null;
   if (mode.script === null) {
     add(
       "info",
@@ -270,6 +271,7 @@ function inspectFindings(mode: InspectedMode): Finding[] {
     );
   } else {
     const report = checkNut(readFileSync(mode.script.path, "utf8"), mode.script.path);
+    scriptReport = report;
     for (const diagnostic of report.diagnostics) {
       if (diagnostic.rule === "nut-no-banner") continue;
       findings.push({
@@ -291,6 +293,18 @@ function inspectFindings(mode: InspectedMode): Finding[] {
       );
     }
   }
+
+  const convarMap = Object.fromEntries(
+    mode.convars.map((convar) => [convar.name.toLowerCase(), convar.value]),
+  );
+  const specialAnalysis = analyseSpecialInfected(
+    scriptReport?.mutationOptions ?? {},
+    scriptReport?.directorOptions ?? {},
+    convarMap,
+    mode.name,
+    mode.path,
+  );
+  findings.push(...specialAnalysis.findings);
 
   if (!mode.addonInfo.exists) {
     add(
@@ -319,9 +333,11 @@ export const checkMutationTool = defineTool({
     "filename, the base is built-in or a mode in this addon, maxplayers agrees with the " +
     "base, boolean fields are 0/1, menu title/description exist, the companion " +
     "scripts/vscripts/<name>.nut (or .nuc) is found, addoninfo.txt sets " +
-    "addonContent_Script when a script ships, and the .nut has a MutationOptions or " +
-    "DirectorOptions table. Squirrel syntax and DirectorOptions checks are the existing " +
-    "read_vscript rules, not a second parser. Accepts a mode file or an addon directory.",
+    "addonContent_Script when a script ships, the .nut has a MutationOptions or " +
+    "DirectorOptions table, and the special-infected limits are usable (non-negative, " +
+    "MinSpecials not above MaxSpecials). Squirrel syntax and DirectorOptions checks are the " +
+    "existing read_vscript rules, not a second parser. Accepts a mode file or an addon " +
+    "directory.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("An addon directory or one modes/<name>.txt file."),
@@ -489,8 +505,9 @@ export const writeMutationTool = defineTool({
     "MutationOptions table, and `addoninfo.txt` with addonContent_Script 1 when it is not " +
     "already there. The Squirrel source is checked by the existing VScript rules and the " +
     "mode file is read back through srctools.keyvalues, so `verified` means both files " +
-    "parse. Existing files are refused unless `overwrite: true`; a backup is written when " +
-    "an existing file is replaced.",
+    "parse. An impossible special-infected set (negative limit, MinSpecials above " +
+    "MaxSpecials) is refused before any file is written. Existing files are refused unless " +
+    "`overwrite: true`; a backup is written when an existing file is replaced.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -574,6 +591,26 @@ export const writeMutationTool = defineTool({
       throw new Error(
         `the generated script would not compile:\n${errors
           .map((entry) => `${entry.line === null ? "" : `line ${entry.line}: `}${entry.message}`)
+          .join("\n")}`,
+      );
+    }
+    const generatedConvars = Object.fromEntries(
+      Object.entries(args.convars ?? {}).map(([key, value]) => [key.toLowerCase(), String(value)]),
+    );
+    const specialAnalysis = analyseSpecialInfected(
+      report.mutationOptions,
+      report.directorOptions,
+      generatedConvars,
+      args.name,
+      modePath,
+    );
+    const specialErrors = specialAnalysis.findings.filter(
+      (finding) => finding.severity === "error",
+    );
+    if (specialErrors.length > 0) {
+      throw new Error(
+        `the special-infected set cannot work:\n${specialErrors
+          .map((finding) => `${finding.rule}: ${finding.message}`)
           .join("\n")}`,
       );
     }
@@ -664,6 +701,120 @@ function optionNumber(value: string | undefined): number | null {
   return /^-?\d+(?:\.\d+)?$/.test(text) ? Number(text) : null;
 }
 
+interface SpecialAnalysis {
+  specials: Array<{
+    name: string;
+    limit: number | null;
+    source: "MutationOptions" | "DirectorOptions" | "cvar" | null;
+    enabled: boolean;
+  }>;
+  totals: {
+    maxSpecials: number | null;
+    minSpecials: number | null;
+    maxConcurrentSpecials: number | null;
+    specialRespawnInterval: number | null;
+  };
+  findings: Finding[];
+  errors: number;
+  warnings: number;
+  ok: boolean;
+}
+
+function analyseSpecialInfected(
+  mutationOptions: Record<string, string>,
+  directorOptions: Record<string, string>,
+  convars: Record<string, string>,
+  modeName: string,
+  path: string,
+): SpecialAnalysis {
+  const options = { ...directorOptions, ...mutationOptions };
+  const findings: Finding[] = [];
+  const add = (severity: Finding["severity"], rule: string, message: string): void => {
+    findings.push({ severity, rule, message, mode: modeName, path });
+  };
+
+  const specials = SI_CLASSES.map((entry) => {
+    const fromMutation = optionNumber(mutationOptions[entry.limitKey]);
+    const fromDirector = optionNumber(directorOptions[entry.limitKey]);
+    const cvarValue = convars[entry.versus] ?? convars[entry.cvar];
+    const fromCvar = cvarValue === undefined ? null : Number(cvarValue);
+    let limit: number | null = null;
+    let source: "MutationOptions" | "DirectorOptions" | "cvar" | null = null;
+    if (mutationOptions[entry.limitKey] !== undefined) {
+      limit = fromMutation;
+      source = "MutationOptions";
+    } else if (directorOptions[entry.limitKey] !== undefined) {
+      limit = fromDirector;
+      source = "DirectorOptions";
+    } else if (cvarValue !== undefined && Number.isFinite(fromCvar)) {
+      limit = fromCvar;
+      source = "cvar";
+    }
+    if (limit === null && source !== null) {
+      add(
+        "error",
+        "special-limit-value",
+        `${entry.limitKey} is not a number; the engine ignores it`,
+      );
+    } else if (limit !== null && (!Number.isInteger(limit) || limit < 0)) {
+      add(
+        "error",
+        "special-limit-value",
+        `${entry.limitKey} is ${limit}; a special-infected limit must be a non-negative integer`,
+      );
+    }
+    return {
+      name: entry.name,
+      limit,
+      source,
+      enabled: limit === null || limit > 0,
+    };
+  });
+
+  const totals = {
+    maxSpecials: optionNumber(options["MaxSpecials"]),
+    minSpecials: optionNumber(options["MinSpecials"]),
+    maxConcurrentSpecials: optionNumber(options["MaxConcurrentSpecials"]),
+    specialRespawnInterval: optionNumber(options["SpecialRespawnInterval"]),
+  };
+  if (
+    totals.minSpecials !== null &&
+    totals.maxSpecials !== null &&
+    totals.minSpecials > totals.maxSpecials
+  ) {
+    add(
+      "error",
+      "special-min-over-max",
+      `MinSpecials ${totals.minSpecials} is above MaxSpecials ${totals.maxSpecials}`,
+    );
+  }
+  if (
+    totals.maxConcurrentSpecials !== null &&
+    totals.maxSpecials !== null &&
+    totals.maxConcurrentSpecials > totals.maxSpecials
+  ) {
+    add(
+      "warning",
+      "special-concurrent-over-max",
+      `MaxConcurrentSpecials ${totals.maxConcurrentSpecials} is above MaxSpecials ${totals.maxSpecials}`,
+    );
+  }
+  if (specials.every((special) => !special.enabled)) {
+    add("warning", "special-all-disabled", "every special-infected class has limit 0");
+  }
+  if (specials.every((special) => special.limit === null)) {
+    add(
+      "info",
+      "special-none-configured",
+      "no special-infected limit is set here; the base mode's defaults apply",
+    );
+  }
+
+  const errors = findings.filter((finding) => finding.severity === "error").length;
+  const warnings = findings.filter((finding) => finding.severity === "warning").length;
+  return { specials, totals, findings, errors, warnings, ok: errors === 0 };
+}
+
 export const readSpecialInfectedTool = defineTool({
   name: "read_special_infected",
   description:
@@ -739,108 +890,30 @@ export const readSpecialInfectedTool = defineTool({
       mutationOptions = { ...mutationOptions, ...report.mutationOptions };
       sources.push(script);
     }
-    const options = { ...directorOptions, ...mutationOptions };
     const convars: Record<string, string> = {};
     for (const mode of modes) {
       for (const convar of mode.convars) convars[convar.name.toLowerCase()] = convar.value;
     }
 
-    const findings: Finding[] = [];
-    const add = (severity: Finding["severity"], rule: string, message: string): void => {
-      findings.push({ severity, rule, message, mode: modes[0]?.name ?? "", path });
-    };
-
-    const specials = SI_CLASSES.map((entry) => {
-      const fromMutation = optionNumber(mutationOptions[entry.limitKey]);
-      const fromDirector = optionNumber(directorOptions[entry.limitKey]);
-      const cvarValue = convars[entry.versus] ?? convars[entry.cvar];
-      const fromCvar = cvarValue === undefined ? null : Number(cvarValue);
-      let limit: number | null = null;
-      let source: "MutationOptions" | "DirectorOptions" | "cvar" | null = null;
-      if (mutationOptions[entry.limitKey] !== undefined) {
-        limit = fromMutation;
-        source = "MutationOptions";
-      } else if (directorOptions[entry.limitKey] !== undefined) {
-        limit = fromDirector;
-        source = "DirectorOptions";
-      } else if (cvarValue !== undefined && Number.isFinite(fromCvar)) {
-        limit = fromCvar;
-        source = "cvar";
-      }
-      if (limit === null && source !== null) {
-        add(
-          "error",
-          "special-limit-value",
-          `${entry.limitKey} is not a number; the engine ignores it`,
-        );
-      } else if (limit !== null && (!Number.isInteger(limit) || limit < 0)) {
-        add(
-          "error",
-          "special-limit-value",
-          `${entry.limitKey} is ${limit}; a special-infected limit must be a non-negative integer`,
-        );
-      }
-      return {
-        name: entry.name,
-        limit,
-        source,
-        enabled: limit === null || limit > 0,
-      };
-    });
-
-    const totals = {
-      maxSpecials: optionNumber(options["MaxSpecials"]),
-      minSpecials: optionNumber(options["MinSpecials"]),
-      maxConcurrentSpecials: optionNumber(options["MaxConcurrentSpecials"]),
-      specialRespawnInterval: optionNumber(options["SpecialRespawnInterval"]),
-    };
-    if (
-      totals.minSpecials !== null &&
-      totals.maxSpecials !== null &&
-      totals.minSpecials > totals.maxSpecials
-    ) {
-      add(
-        "error",
-        "special-min-over-max",
-        `MinSpecials ${totals.minSpecials} is above MaxSpecials ${totals.maxSpecials}`,
-      );
-    }
-    if (
-      totals.maxConcurrentSpecials !== null &&
-      totals.maxSpecials !== null &&
-      totals.maxConcurrentSpecials > totals.maxSpecials
-    ) {
-      add(
-        "warning",
-        "special-concurrent-over-max",
-        `MaxConcurrentSpecials ${totals.maxConcurrentSpecials} is above MaxSpecials ${totals.maxSpecials}`,
-      );
-    }
-    if (specials.every((special) => !special.enabled)) {
-      add("warning", "special-all-disabled", "every special-infected class has limit 0");
-    }
-    if (specials.every((special) => special.limit === null)) {
-      add(
-        "info",
-        "special-none-configured",
-        "no special-infected limit is set here; the base mode's defaults apply",
-      );
-    }
-
-    const errors = findings.filter((finding) => finding.severity === "error").length;
-    const warnings = findings.filter((finding) => finding.severity === "warning").length;
+    const analysis = analyseSpecialInfected(
+      mutationOptions,
+      directorOptions,
+      convars,
+      modes[0]?.name ?? "",
+      path,
+    );
     return {
       path,
       modeCount: modes.length,
       scriptCount: scripts.length,
       sources,
-      specials,
-      totals,
+      specials: analysis.specials,
+      totals: analysis.totals,
       convars,
-      findings,
-      errors,
-      warnings,
-      ok: errors === 0,
+      findings: analysis.findings,
+      errors: analysis.errors,
+      warnings: analysis.warnings,
+      ok: analysis.ok,
     };
   },
 });
