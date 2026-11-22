@@ -43,7 +43,7 @@
     "prepack": "pnpm build"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@projectsociety/mcp-core": "^0.2.0",
     "zod": "^3.23.8"
   },
