@@ -8,6 +8,12 @@ description: Build and ship Left 4 Dead 2 campaigns, maps, nav meshes, chapter t
 Left 4 Dead 2 content, built through the MCP server. The server does the file work; this
 skill says what "correct" looks like in L4D2 and in what order to do it.
 
+**This skill is the product.** Every number, limit and pitfall here was measured on a real
+L4D2 install, not copied from a forum. The research exists so that an agent which has never
+seen the game can still do the right thing the first time: recognise an error by its symptom,
+know why it happens, avoid it, and say "not proven" instead of guessing. A page that does not
+let you do that is not finished; a finding that stayed in a log is lost.
+
 **A tool factory, not a parts catalogue.** We build instruments for making parts, not a fixed
 box of parts. The agent must be able to make something we never anticipated: a class with no
 named builder, a shape no preset covers, a script no template describes. Named builders are
