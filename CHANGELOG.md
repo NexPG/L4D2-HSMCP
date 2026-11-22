@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.194-alpha - 2026-11-22
+
+- **`read_compile_sequences` now reads real files.** It delegates the format to
+  `srctools.cmdseq` through the sidecar instead of a TypeScript copy. The copy had the
+  ensure-check flag and ensured path four bytes early (532/536, not 528/532) and expected
+  the KeyValues root to be a sequence rather than `"Command Sequences"`, so its own fixture
+  passed while both real editor files were misread.
+- Special steps are reported as `special` (the number) plus a named `kind` and `run`:
+  `change-directory`, `copy-file`, `delete-file`, `rename-file`, `copy-file-if-exists`.
+  The KeyValues reader also handles Strata's escaped backslashes and Hammer++'s `parms`.
+- **Tool count: 265.** Tests: 217 files, 1,834 passed, 33 skipped.
+
 ## 0.0.193-alpha - 2026-11-22
 
 - **`read_vtf` details**: `details: true` also reads the format 7.3+ resource table (ID,

@@ -294,7 +294,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `check_assets` | before compiling: resolve a `.vmf`'s materials, models, sounds, particles, scripts and skybox against the game's mount order |
 | `open_in_hammer` | launch Hammer++ on a VMF and capture the editor window (the visual viewport); closes by default and verifies `closed` |
 | `run_compile` | vbsp/vvis/vrad natively, per-stage findings |
-| `read_compile_sequences` | what the editor's own Run Map steps do: enabled flags, executables, parameters |
+| `read_compile_sequences` | what the editor's own Run Map steps do: enabled flags, executables, parameters, named special steps |
 | `read_compile_log` | structured findings from a compiler log |
 | `read_leak` | turn a leak into a location |
 | `run_pack` | bspzip assets into a compiled map |

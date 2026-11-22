@@ -71,7 +71,7 @@ shows up here as four concrete reasons:
 | Particles | `srctools.particles` via sidecar | TypeScript tools call the sidecar | **delegated** |
 | Soundscripts/soundscapes/WAV | `srctools.sndscript`, `sndscape`; sidecar verbs | TypeScript tools call the sidecar | **delegated** |
 | FGD | `srctools.fgd` via sidecar `fgd_class` | TypeScript tools call the sidecar | **delegated** |
-| Choreo, cmdseq | `srctools.choreo`, `srctools.cmdseq` | no local implementation; unused so far | no overlap |
+| Choreo, cmdseq | `srctools.choreo`, `srctools.cmdseq`; sidecar `read_choreo`, `cmdseq_read` | TypeScript only discovers the candidate sequence paths | **delegated** |
 | NAV, VTA, QC catalogue | no srctools module | TypeScript readers/writers | **necessary** |
 | Math/transform helpers | `srctools.math`; no JS dependency installed | small 3×4 affine/rotation helpers | **intentional TS** (no subprocess for arithmetic) |
 

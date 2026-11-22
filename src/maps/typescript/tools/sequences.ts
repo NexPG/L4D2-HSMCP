@@ -5,20 +5,34 @@
  * for a clean build and wrong for reproducing what a mapper sees when they press F9. Hammer,
  * Hammer++ and Strata each keep their Run Map steps in a file; this reads it and says which
  * steps are enabled, what each one runs, and with which parameters.
+ *
+ * The format is `srctools.cmdseq`'s through the sidecar. Discovery of the four possible
+ * locations stays here: it is a fact about Hammer's installation, not about the file.
  */
 import { existsSync } from "node:fs";
 import { z } from "zod";
-import { candidateSequenceFiles, findSequenceFile, loadCompileSequences } from "../compile/sequences.js";
+import { candidateSequenceFiles, findSequenceFile } from "../compile/sequences.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 
 const COMMAND = z.object({
   enabled: z.boolean(),
-  kind: z.enum(["run", "change-directory", "copy-file", "delete-file", "rename-file"]),
+  special: z.number(),
+  kind: z.enum([
+    "run",
+    "change-directory",
+    "copy-file",
+    "delete-file",
+    "rename-file",
+    "copy-file-if-exists",
+  ]),
+  executable: z.string().nullable(),
   run: z.string(),
   parameters: z.string(),
   ensureCheck: z.boolean(),
   ensureFile: z.string().nullable(),
+  useProcessWindow: z.boolean(),
   noWait: z.boolean(),
 });
 
@@ -32,15 +46,26 @@ function stageOf(run: string): "vbsp" | "vvis" | "vrad" | "bspzip" | "other" {
   return "other";
 }
 
+interface CmdSeqReply {
+  path: string;
+  format: "cmdseq-binary" | "keyvalues";
+  sequences: Array<{
+    name: string;
+    commands: Array<z.infer<typeof COMMAND>>;
+  }>;
+}
+
 export const readCompileSequencesTool = defineTool({
   name: "read_compile_sequences",
   description:
     "Reads the editor's Run Map sequences: which steps are enabled, what each runs and with " +
-    "which parameters. Understands the binary CmdSeq.wc (Worldcraft / Hammer 3.x / 4.x, " +
-    "804-byte records) and the KeyValues form Hammer++ and Strata write. Pass `file` to read " +
-    "one directly, or let it find the file next to the configured editor. This is how to tell " +
-    "whether run_compile builds what the mapper builds — a disabled Copy File step or an " +
-    "extra -StaticPropLighting is invisible otherwise.",
+    "which parameters. Understands the binary CmdSeq.wc (Worldcraft / Hammer 3.x / 4.x) and " +
+    "the KeyValues form Hammer++ and Strata write, through `srctools.cmdseq`; special steps " +
+    "are named (copy, delete, rename, change directory) rather than left as a magic number. " +
+    "Pass `file` to read one directly, or let it find the file next to the configured editor. " +
+    "This is how to tell whether run_compile builds what the mapper builds — a disabled Copy " +
+    "File step or an extra -StaticPropLighting is invisible otherwise. Needs the Python " +
+    "sidecar; discovery alone does not.",
   realm: "local",
   inputSchema: {
     file: z.string().optional().describe("Path to CmdSeq.wc or hammerplusplus_sequences.cfg."),
@@ -67,7 +92,7 @@ export const readCompileSequencesTool = defineTool({
       }),
     ),
   },
-  handler: (args, ctx) => {
+  handler: async (args, ctx) => {
     const candidates = args.exeDir
       ? candidateSequenceFiles(resolveInput(args.exeDir, ctx.config))
       : [
@@ -94,7 +119,7 @@ export const readCompileSequencesTool = defineTool({
       };
     }
 
-    const loaded = loadCompileSequences(file);
+    const loaded = await callSidecar<CmdSeqReply>("cmdseq_read", { path: file }, ctx.config, 60_000);
     return {
       found: true,
       path: loaded.path,
@@ -102,20 +127,14 @@ export const readCompileSequencesTool = defineTool({
       candidates,
       detail:
         loaded.format === "cmdseq-binary"
-          ? "binary CmdSeq.wc: 804-byte command records after a text header"
-          : "KeyValues: one block per sequence, one numbered block per command",
+          ? "binary CmdSeq.wc: read by srctools.cmdseq"
+          : "KeyValues (Hammer++ or Strata): read by srctools.cmdseq",
       sequences: loaded.sequences.map((sequence) => ({
         name: sequence.name,
         enabledCount: sequence.commands.filter((command) => command.enabled).length,
         commands: sequence.commands.map((command) => ({
-          enabled: command.enabled,
-          kind: command.kind,
-          run: command.run,
-          parameters: command.parameters,
-          ensureCheck: command.ensureCheck,
-          ensureFile: command.ensureFile,
-          noWait: command.noWait,
-          stage: stageOf(command.run),
+          ...command,
+          stage: stageOf(command.executable ?? command.run),
         })),
       })),
     };

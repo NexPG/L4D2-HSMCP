@@ -360,7 +360,7 @@ map and looking, or by not happening at all.
 | `write_vtf` | nothing: Hammer browses textures and cannot make one without VTFCmd |
 | `read_wav` | nothing: the editor never opens a sound |
 | `convert_wav` | nothing: sound conversion is a separate editor |
-| `read_compile_sequences` | the Run Map dialog, one sequence at a time, without saying which steps are disabled |
+| `read_compile_sequences` | the Run Map dialog, one sequence at a time, without saying which steps are disabled; the file also names special steps that are not compilers |
 | `write_qc` | writing model source by hand |
 | `read_sightlines` | the eye, standing in the map |
 | `read_vmf_rooms` | nothing: Hammer has no idea what a room is |

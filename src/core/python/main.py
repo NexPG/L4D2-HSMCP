@@ -728,6 +728,57 @@ def _vtf_resources(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("cmdseq_read")
+def _cmdseq_read(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads Hammer's Run Map sequences through `srctools.cmdseq`.
+
+    The library decides the format from the bytes: Valve's binary `CmdSeq.wc`, Hammer++'s
+    KeyValues and Strata's KeyValues. This verb only normalises the special commands and
+    flattens each record into JSON; the old TypeScript reader disagreed with both srctools
+    and SourcePP about the binary offsets and did not understand the KeyValues root.
+    """
+    from srctools import cmdseq
+
+    path = req["path"]
+    with open(path, "rb") as handle:
+        head = handle.read(len(cmdseq.SEQ_HEADER_KV))
+    with open(path, "rb") as handle:
+        parsed = cmdseq.parse(handle)
+
+    kinds = {
+        cmdseq.SpecialCommand.CHANGE_DIR: "change-directory",
+        cmdseq.SpecialCommand.COPY_FILE: "copy-file",
+        cmdseq.SpecialCommand.DELETE_FILE: "delete-file",
+        cmdseq.SpecialCommand.RENAME_FILE: "rename-file",
+        cmdseq.SpecialCommand.STRATA_COPY_FILE_IF_EXISTS: "copy-file-if-exists",
+    }
+    sequences = []
+    for name, commands in parsed.items():
+        items = []
+        for command in commands:
+            special = command.exe if isinstance(command.exe, cmdseq.SpecialCommand) else None
+            items.append(
+                {
+                    "enabled": command.enabled,
+                    "special": special.value if special is not None else 0,
+                    "kind": kinds[special] if special is not None else "run",
+                    "executable": None if special is not None else command.exe,
+                    "run": cmdseq.SPECIAL_NAMES[special] if special is not None else command.exe,
+                    "parameters": command.args,
+                    "ensureCheck": command.ensure_file is not None,
+                    "ensureFile": command.ensure_file,
+                    "useProcessWindow": command.use_proc_win,
+                    "noWait": command.no_wait,
+                }
+            )
+        sequences.append({"name": name, "commands": items})
+    return {
+        "path": path,
+        "format": "keyvalues" if head.lower() == cmdseq.SEQ_HEADER_KV else "cmdseq-binary",
+        "sequences": sequences,
+    }
+
+
 @verb("map_dependencies")
 def _map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     """Every asset a compiled map references, and where each one will come from."""
