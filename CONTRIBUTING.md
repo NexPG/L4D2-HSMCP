@@ -185,8 +185,10 @@ One package manager, one Node range, and the same commands locally and in CI:
   end-of-life and is not a supported target.
 - **Windows only.** The package declares `os: ["win32"]`; the compilers and the game it
   drives are Windows software.
-- **Dependabot** updates npm packages and GitHub Actions weekly. Treat its pull requests like
-  any other: `pnpm install`, then build, typecheck, lint and test.
+- **Dependabot** updates npm packages and GitHub Actions weekly. Minor and patch npm
+  updates arrive automatically; a major version is a deliberate migration (its own branch,
+  green gates, changelog entry), so Dependabot does not open one. Treat its pull requests
+  like any other: `pnpm install`, then build, typecheck, lint and test.
 
 `pnpm build`, `pnpm typecheck`, `pnpm lint` and `pnpm test` are the static and behavioural
 gates; CI runs all four plus a check that the bare Windows runner actually executed tests
