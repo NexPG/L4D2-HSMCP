@@ -13,8 +13,8 @@ actually works.
 >
 > **Licence compliance is mandatory.** Every borrowed code, FGD, model or data file must
 > have a compatible licence and keep its copyright/permission notice. All borrowed code,
-> licences and obligations live in [`third_party/`](third_party/README.md) — read
-> [`third_party/NOTICES.md`](third_party/NOTICES.md) before importing anything.
+> licences and obligations live in the [third-party tree](third_party/README.md) — read
+> the [third-party notices](third_party/NOTICES.md) before importing anything.
 
 <p align="center">
   <img src="docs/media/mascot-HSMCP.jpg" alt="1980s Japanese anime VHS-style mascot for L4D2-HSMCP" width="80%">
@@ -52,7 +52,7 @@ run at all.
 
 This project is built on work by others. The projects whose code or data it actually uses,
 what exactly was taken, and the verbatim licence of each are recorded in
-[`third_party/NOTICES.md`](third_party/NOTICES.md). Everything borrowed has been ported into
+[the third-party notices](third_party/NOTICES.md). Everything borrowed has been ported into
 this repository and tested here; no other project's source tree is kept alongside ours.
 
 ## License
