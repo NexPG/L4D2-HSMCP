@@ -488,6 +488,20 @@ def _hull_solids(req: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@verb("check_assets")
+def _check_assets(req: dict[str, Any]) -> dict[str, Any]:
+    """Checks a source .vmf's asset references against the game's mount chain.
+
+    The resolver, the material walker and the model walker are the ones
+    `map_dependencies` already uses on a compiled BSP; this verb only collects the
+    references from the source and reports what the game cannot supply.
+    """
+    from dependencies import check_assets
+
+    vmf, info = _load_vmf(req["path"], req)
+    return check_assets(vmf, req, info)
+
+
 @verb("map_dependencies")
 def _map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     """Every asset a compiled map references, and where each one will come from."""

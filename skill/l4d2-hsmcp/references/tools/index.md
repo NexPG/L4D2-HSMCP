@@ -1,6 +1,6 @@
 # Tool catalogue
 
-252 tools. This page groups them byy the job you are doing; each tool's own description is the
+253 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -281,6 +281,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 
 | Tool | Use |
 |---|---|
+| `check_assets` | before compiling: resolve a `.vmf`'s materials, models, sounds, particles, scripts and skybox against the game's mount order |
 | `open_in_hammer` | launch Hammer++ on a VMF and capture the editor window (the visual viewport); closes by default and verifies `closed` |
 | `run_compile` | vbsp/vvis/vrad natively, per-stage findings |
 | `read_compile_sequences` | what the editor's own Run Map steps do: enabled flags, executables, parameters |

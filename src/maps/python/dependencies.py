@@ -315,6 +315,156 @@ def _walk_model(
         missing.append({"path": mdl, "kind": "unread-model-materials", "referencedBy": name})
 
 
+def check_assets(vmf: Any, req: dict[str, Any], info: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Checks a .vmf's own material, model, sound, particle and script references.
+
+    This is the pre-compile half of `map_dependencies`: that one reads a compiled BSP's
+    pakfile and entity lump, this one reads the source and asks the game's mount chain.
+    Both use the same `Resolver`, the same material walker and the same model walker, so
+    the definition of "missing" cannot drift between the two.
+    """
+    from srctools.game import Game
+
+    info = info or {}
+    limit = max(1, min(int(req.get("limit", 200)), 2000))
+    game_dir = req.get("gameDir")
+    warnings: list[str] = []
+    game_fs = None
+    game_error = None
+    if game_dir:
+        try:
+            game_fs = Game(game_dir).get_filesystem()
+        except Exception as exc:  # noqa: BLE001
+            game_error = f"{type(exc).__name__}: {exc}"
+    else:
+        game_error = "no gameDir given, so no mounted content was searched"
+    if game_fs is None:
+        warnings.append(
+            "no game content is mounted, so references were collected but not checked"
+        )
+
+    resolver = Resolver(None, game_fs)
+    materials: set[str] = set()
+    models: set[str] = set()
+    sounds: set[str] = set()
+    particles: set[str] = set()
+    scripts: set[str] = set()
+    skies: set[str] = set()
+
+    def take_material(name: Any) -> None:
+        if isinstance(name, str) and name.strip():
+            materials.add(name.strip())
+
+    for solid in vmf.brushes:
+        for side in solid.sides:
+            take_material(side.mat)
+    for ent in vmf.entities:
+        for solid in ent.solids:
+            for side in solid.sides:
+                take_material(side.mat)
+
+    noise_keys = {"message", "noise1", "noise2", "sound"}
+    audio_exts = (".wav", ".mp3", ".ogg")
+    for ent in [vmf.spawn, *vmf.entities]:
+        for key, value in ent.items():
+            if not isinstance(value, str):
+                continue
+            text = value.strip()
+            if not text:
+                continue
+            low = text.casefold()
+            key_low = key.casefold()
+            if key_low == "model":
+                if low.endswith(".mdl") or low.startswith("models/"):
+                    models.add(text if low.startswith("models/") else f"models/{text}")
+                elif low.endswith((".vmt", ".spr")):
+                    take_material(text)
+            elif key_low in {"texture", "material"}:
+                take_material(text)
+            elif key_low in noise_keys and low.endswith(audio_exts):
+                sounds.add(text if low.startswith("sound/") else f"sound/{text}")
+            elif key_low == "effect_name":
+                name = text if low.startswith("particles/") else f"particles/{text}"
+                particles.add(name if name.casefold().endswith(".pcf") else f"{name}.pcf")
+            elif key_low.startswith("group") and low.endswith(".nut"):
+                scripts.add(
+                    text if low.startswith("scripts/") else f"scripts/vscripts/{text}"
+                )
+
+    sky = str(vmf.spawn["skyname", ""]).strip()
+    if sky:
+        for suffix in ("bk", "dn", "ft", "lf", "rt", "up"):
+            skies.add(f"{sky}{suffix}")
+    else:
+        warnings.append("worldspawn has no skyname, so no skybox materials were checked")
+
+    found: dict[str, str] = {}
+    missing: list[dict[str, str]] = []
+    optional_absent: list[str] = []
+    seen: set[str] = set()
+
+    if game_fs is not None:
+        for name in sorted(materials):
+            _walk_material(name, resolver, seen, found, missing)
+        for name in sorted(models):
+            _walk_model(name, resolver, seen, found, missing, optional_absent)
+        for kind, names, prefix, suffix in (
+            ("sound", sounds, "sound/", ""),
+            ("particle", particles, "particles/", ""),
+            ("script", scripts, "scripts/vscripts/", ""),
+        ):
+            for name in sorted(names):
+                rel = name.replace("\\", "/").lower()
+                if not rel.startswith(prefix):
+                    rel = prefix + rel
+                if suffix and not rel.endswith(suffix):
+                    rel += suffix
+                spot = resolver.where(rel)
+                if spot is None:
+                    missing.append({"path": rel, "kind": kind, "referencedBy": "vmf"})
+                else:
+                    found[rel] = spot
+
+        # L4D2 ships many skies as `_hdr` only; vbsp is happy with that pair, so a suffix
+        # is present when either the plain or the `_hdr` material exists. Requiring the
+        # plain one reported six false misses on `sky_l4d_c1_1`.
+        for stem in sorted(skies):
+            ldr = f"materials/skybox/{stem}.vmt"
+            hdr = f"materials/skybox/{sky}_hdr{stem[len(sky):]}.vmt"
+            spot = resolver.where(ldr) or resolver.where(hdr)
+            if spot is None:
+                missing.append({"path": ldr, "kind": "skybox", "referencedBy": "vmf"})
+            else:
+                found[ldr] = spot
+
+    by_source: dict[str, int] = {}
+    for spot in found.values():
+        by_source[spot] = by_source.get(spot, 0) + 1
+    missing.sort(key=lambda item: (item["kind"], item["path"]))
+    checked = len(materials) + len(models) + len(sounds) + len(particles) + len(scripts) + len(skies)
+    return {
+        "path": req["path"],
+        "gameDir": game_dir,
+        "gameMounted": game_fs is not None,
+        "gameError": game_error,
+        "collapsed": info.get("collapsed", 0),
+        "materialCount": len(materials),
+        "modelCount": len(models),
+        "soundCount": len(sounds),
+        "particleCount": len(particles),
+        "scriptCount": len(scripts),
+        "skyCount": len(skies),
+        "checked": checked,
+        "resolved": len(found),
+        "bySource": by_source,
+        "missing": missing[:limit],
+        "missingCount": len(missing),
+        "missingTruncated": len(missing) > limit,
+        "optionalAbsent": optional_absent[:limit],
+        "warnings": warnings,
+    }
+
+
 def map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     from srctools.bsp import BSP
 

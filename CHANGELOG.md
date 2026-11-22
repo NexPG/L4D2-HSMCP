@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.185-alpha - 2026-11-22
+
+- **`check_assets`**: the source-side half of `map_dependencies`. It reads a `.vmf` before
+  compiling and resolves solid materials (following `patch`/`include` and their textures),
+  `prop_*` model siblings and the model's own materials, decals and overlays, sounds with an
+  audio extension, `info_particle_system` effects, `logic_script` VScripts and the six skybox
+  materials against the game's mount chain.
+- Reuses the sidecar's `Resolver`, `_walk_material` and `_walk_model` from
+  `map_dependencies`, so "missing" means the same thing on both sides. HDR-only skies
+  (`sky_l4d_c1_1_hdr*.vmt`) count as present, which the first pass reported as six misses.
+- **Tool count: 253.** Tests: 210 files, 1,783 passed, 33 skipped.
+
 ## 0.0.184-alpha - 2026-11-22
 
 - **`carve_solids`**: Hammer's Carve, with the boolean delegated to
