@@ -270,9 +270,12 @@ export const readAssetCatalogTool = defineTool({
     "for a feature: `read_game_content` needs a name, and an agent that has to guess the name " +
     "will build a ramp instead of using the escalator that is already installed. Structural " +
     "categories (stairs, escalators, doors, vehicles) carry the hull bounds, because those " +
-    "numbers decide the opening or shaft they need. Also returns every skybox with its LDR " +
-    "and HDR completeness; `strictComplete` is the only one safe to compile in both modes. " +
-    "One walk of the same VPK-and-loose chain the engine reads. Needs the Python sidecar.",
+    "numbers decide the opening or shaft they need. Material categories omit the " +
+    "debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals roots the Hammer " +
+    "browser hides; `hiddenMaterialCount` says how many and `includeHidden` browses them. " +
+    "Also returns every skybox with its LDR and HDR completeness; `strictComplete` is the " +
+    "only one safe to compile in both modes. One walk of the same VPK-and-loose chain the " +
+    "engine reads. Needs the Python sidecar.",
   realm: "map",
   inputSchema: {
     perCategory: z
@@ -282,6 +285,13 @@ export const readAssetCatalogTool = defineTool({
       .max(200)
       .default(40)
       .describe("Sample size per category. `total` is always the real count."),
+    includeHidden: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Include the debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals " +
+          "materials the Hammer browser hides.",
+      ),
     game: GAME,
   },
   outputSchema: {
@@ -290,6 +300,9 @@ export const readAssetCatalogTool = defineTool({
     mounted: z.boolean(),
     mountError: z.string().nullable(),
     modelCount: z.number().optional(),
+    materialCount: z.number().optional(),
+    hiddenMaterialCount: z.number().optional(),
+    includeHidden: z.boolean().optional(),
     categories: z.array(
       z.object({
         name: z.string(),
@@ -332,7 +345,7 @@ export const readAssetCatalogTool = defineTool({
     const { game, from } = gameFor(ctx.config, args.game);
     const result = (await callSidecar(
       "asset_catalog",
-      { gameDir: game.gameDir, perCategory: args.perCategory },
+      { gameDir: game.gameDir, perCategory: args.perCategory, includeHidden: args.includeHidden },
       ctx.config,
       180_000,
     )) as Record<string, unknown>;

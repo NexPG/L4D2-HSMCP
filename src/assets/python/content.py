@@ -337,6 +337,27 @@ def _category_hit(stem: str, needles: tuple[str, ...]) -> bool:
     return False
 
 
+# The material browser hides these roots; they are editor/engine assets, not surfaces a
+# mapper paints. The list comes from the FGD material-exclusion data, not from guessing at
+# names.
+EXCLUDED_MATERIAL_ROOTS = (
+    "debug/",
+    "engine/",
+    "hud/",
+    "vgui/",
+    "voice/",
+    "console/",
+    "sblitz/",
+    "particle/",
+    "dons_decals/",
+)
+
+
+def _is_hidden_material(rel: str) -> bool:
+    rest = rel[len("materials/") :].lower() if rel.lower().startswith("materials/") else rel.lower()
+    return rest.startswith(EXCLUDED_MATERIAL_ROOTS)
+
+
 def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
     """Every category of stock model Hammer++ shows, in one walk.
 
@@ -364,7 +385,12 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
     all_materials = sorted(
         p for p in paths if p.lower().startswith("materials/") and p.lower().endswith(".vmt")
     )
-    materials = [p for p in all_materials if p.lower().startswith("materials/skybox/")]
+    include_hidden = bool(req.get("includeHidden", False))
+    visible_materials = (
+        all_materials if include_hidden else [p for p in all_materials if not _is_hidden_material(p)]
+    )
+    hidden_material_count = len(all_materials) - len(visible_materials)
+    materials = [p for p in visible_materials if p.lower().startswith("materials/skybox/")]
 
     details_for = {
         "escalator",
@@ -435,7 +461,7 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
     for name, needles in MATERIAL_CATEGORIES.items():
         hits = [
             p
-            for p in all_materials
+            for p in visible_materials
             if _category_hit(p.rsplit("/", 1)[-1].lower().removesuffix(".vmt"), needles)
         ]
         rows = [
@@ -458,6 +484,8 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
         "kind": kind,
         "modelCount": len(models),
         "materialCount": len(all_materials),
+        "hiddenMaterialCount": hidden_material_count,
+        "includeHidden": include_hidden,
         "categories": categories,
         "materialCategories": material_categories,
         "skyboxes": skies,
@@ -467,7 +495,9 @@ def asset_catalog(req: dict[str, Any]) -> dict[str, Any]:
             "hull Hammer's model viewer reports, so `mins.z` is how far below the origin the "
             "model reaches. `strictComplete` is the only sky value safe to compile in both "
             "LDR and HDR. Call preview_asset on a candidate before choosing it: a name is "
-            "not a look."
+            "not a look. `hiddenMaterialCount` lists the debug/engine/hud/vgui/voice/"
+            "console/sblitz/particle/dons_decals materials omitted from the browser; pass "
+            "includeHidden: true to browse them."
         ),
     }
 

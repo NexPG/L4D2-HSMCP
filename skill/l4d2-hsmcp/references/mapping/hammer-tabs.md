@@ -5,7 +5,7 @@ This page is the map from one to the other, and the recipes for browsing a city'
 
 | Hammer++ | Use |
 |---|---|
-| Texture Browser | `read_game_content(kind: "material", pattern: "...")`; `details: true` checks that every texture the material names exists |
+| Texture Browser | `read_game_content(kind: "material", pattern: "...")`; `details: true` checks that every texture the material names exists. `read_asset_catalog` groups materials by surface kind and hides the `debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals` roots the editor hides; `includeHidden: true` browses them. |
 | Model Browser | `read_game_content(kind: "model", pattern: "...", details: true)` for names **and hull sizes**; `read_model_info` for skins, sequences and materials of one model |
 | Particle Browser | `read_game_content(kind: "particle", pattern: "*")` for files; `read_particle` for the systems inside one |
 | Entity Report / Entity Tool | `read_entity_report` shows what the map has; `read_fgd_class` with no classname lists classes by prefix, and with a classname returns every keyvalue, input and output |

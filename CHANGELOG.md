@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.209-alpha - 2026-11-22
+
+- **`read_asset_catalog` honours the material browser's exclusions**: the
+  `debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals` roots are omitted from
+  the material categories, with `hiddenMaterialCount` saying how many were left out.
+  `includeHidden: true` browses them. The list is data from the FGD exclusion set, not a
+  guess.
+- **Tool count: 270.** Tests: 222 files, 1,881 passed, 33 skipped.
+
 ## 0.0.208-alpha - 2026-11-22
 
 - **`auto_visgroups` role mode**: `by: ["role"]` with a `roleFgd` reads that FGD's
