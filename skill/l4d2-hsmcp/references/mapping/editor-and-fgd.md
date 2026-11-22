@@ -90,6 +90,10 @@ The allowed list is in the finding, taken from the FGD's own `CHOICES` block.
 `obsolete-spawnflag` reports a set bit whose FGD label says `OBSOLETE`, such as
 `func_door` bit 1 ("Starts Open - OBSOLETE, use Spawn Position"); the replacement is in the
 label, not in a wiki.
+`aabb-region-nonaxis-aligned` reports a `func_detail_blocker`,
+`func_block_charge` or `func_nav_avoidance_obstacle` brush with a rotated face: those
+classes affect the brush's axis-aligned bounding box, so a diagonal brush covers a much
+larger region than it draws.
 
 The editor's convenience and the engine's truth are different things; this project checks the
 second one.

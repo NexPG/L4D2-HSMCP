@@ -141,6 +141,39 @@ def _spawnflag_options(kv: Any) -> list[Any]:
     return list(getattr(kv, "options", None) or getattr(kv, "val_list", None) or [])
 
 
+# These classes take the brush's axis-aligned bounding box, not the brush shape. A
+# diagonal or rotated brush therefore covers a much larger region than it draws.
+AABB_REGION_CLASSES = {
+    "func_block_charge",
+    "func_detail_blocker",
+    "func_nav_avoidance_obstacle",
+}
+
+
+def _axis_aligned(solid: Any) -> bool:
+    """Whether every side of this solid has an X/Y/Z normal.
+
+    The three plane points are enough: their cross product is the face normal. A rotated
+    face makes at least two components non-zero, which is exactly the case the AABB
+    classes cannot represent.
+    """
+    for side in solid.sides:
+        points = getattr(side, "planes", None)
+        if not points or len(points) < 3:
+            return False
+        try:
+            normal = (points[1] - points[0]).cross(points[2] - points[0])
+            comps = (abs(float(normal.x)), abs(float(normal.y)), abs(float(normal.z)))
+        except Exception:  # noqa: BLE001
+            return False
+        largest = max(comps)
+        if largest <= 1e-9:
+            return False
+        if sum(1 for value in comps if value > largest * 1e-4) != 1:
+            return False
+    return True
+
+
 def _point_in_solid(vmf: Any, point: Any) -> int | None:
     """The id of the first *solid* brush containing this point, world or entity-owned.
 
@@ -831,6 +864,25 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                         )
                     )
                     break
+
+    for ent in entities:
+        classname = str(ent["classname", ""])
+        if classname not in AABB_REGION_CLASSES:
+            continue
+        for solid in ent.solids:
+            if not _axis_aligned(solid):
+                findings.append(
+                    _finding(
+                        "warning",
+                        "aabb-region-nonaxis-aligned",
+                        f'"{classname}" uses the brush AABB, but brush {solid.id} has a '
+                        f"non-axis-aligned face; the region it affects is the bounding box, "
+                        f"which is larger than the brush",
+                        entity_id=int(ent.id),
+                        classname=classname,
+                        brush_id=int(solid.id),
+                    )
+                )
 
     for solid in vmf.brushes:
         for side in solid.sides:

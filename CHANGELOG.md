@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.206-alpha - 2026-11-22
+
+- **`read_vmf_lint` catches AABB-region traps**: `func_detail_blocker`,
+  `func_block_charge` and `func_nav_avoidance_obstacle` use the brush's axis-aligned
+  bounding box. A brush with a non-axis-aligned face now gets
+  `aabb-region-nonaxis-aligned`, naming the brush and class, because the region it affects
+  is larger than the shape the mapper drew.
+- **Tool count: 270.** Tests: 221 files, 1,878 passed, 33 skipped.
+
 ## 0.0.205-alpha - 2026-11-22
 
 - **`read_vmf_lint` reports FGD-obsolete spawnflags**: a set bit whose `SPAWNFLAGS` label

@@ -5,6 +5,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { readFgdClass, readVmfLint } from "../../src/maps/typescript/tools/vmf.js";
+import { writeBrushEntityTool } from "../../src/maps/typescript/tools/entityfamilies.js";
+import { writeVmfSolidTool } from "../../src/maps/typescript/tools/build.js";
 import { FIXTURES, ctx as sharedCtx, has } from "../support/env.js";
 
 const PROBE_VMF = join(FIXTURES, "hmcp_probe.vmf");
@@ -63,6 +65,7 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["unknown-keyvalue"]).toBeUndefined();
     expect(r.byRule["invalid-keyvalue-choice"]).toBeUndefined();
     expect(r.byRule["obsolete-spawnflag"]).toBeUndefined();
+    expect(r.byRule["aabb-region-nonaxis-aligned"]).toBeUndefined();
   }, 60_000);
 
   it.skipIf(!ready)("catches a mistyped classname", async () => {
@@ -121,6 +124,38 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(finding["classname"]).toBe("func_door");
     expect(finding["bit"]).toBe(1);
     expect(String(finding["flag"])).toMatch(/OBSOLETE/);
+  }, 60_000);
+
+  it.skipIf(!ready)("flags an AABB-region class on a non-axis-aligned brush", async () => {
+    // func_detail_blocker / func_block_charge / func_nav_avoidance_obstacle take the brush
+    // bounding box, not its shape. A four-sided cylinder is enough to make the box much
+    // larger than the drawn brush.
+    const path = broken("aabb-region", (s) => s);
+    const box = (await writeBrushEntityTool.handler(
+      {
+        path,
+        classname: "func_detail_blocker",
+        bounds: { mins: [0, 0, 0], maxs: [64, 64, 64] },
+        confirm: true,
+      } as never,
+      ctx,
+    )) as { entityId: number | null };
+    expect(box.entityId).not.toBeNull();
+    await writeVmfSolidTool.handler(
+      {
+        path,
+        entityId: box.entityId,
+        solids: [
+          { shape: "cylinder", mins: [128, 0, 0], maxs: [192, 64, 64], sides: 6, axis: "z" },
+        ],
+        confirm: true,
+      } as never,
+      ctx,
+    );
+    const r = await lint(path);
+    expect(r.byRule["aabb-region-nonaxis-aligned"]).toBe(1);
+    const finding = r.findings.find((f) => f["rule"] === "aabb-region-nonaxis-aligned")!;
+    expect(finding["classname"]).toBe("func_detail_blocker");
   }, 60_000);
 
   it.skipIf(!ready)("names the L4D2 transition faults instead of passing them", async () => {
