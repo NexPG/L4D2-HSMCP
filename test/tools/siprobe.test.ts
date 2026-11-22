@@ -4,12 +4,12 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { writeSpecialInfectedProbeTool } from "../../src/scripts/typescript/tools/siprobe.js";
-import { ctx as sharedCtx } from "../support/env.js";
+import { ctx as sharedCtx, FIXTURES } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const scratch = mkdtempSync(join(tmpdir(), "hsmcp-si-probe-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
-const source = join(process.cwd(), "campaigns", "001-hsmcp-test", "src", "hsmcp_test_m1.vmf");
+const source = join(FIXTURES, "hmcp_probe.vmf");
 
 describe("write_special_infected_probe", () => {
   it("adds a logic_script that spawns and counts SI through SendToConsole", async () => {
