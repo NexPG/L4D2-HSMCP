@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.196-alpha - 2026-11-22
+
+- **`run_compile_sequence` no longer requires a game install for a file-only sequence.**
+  The game directory was required before the sequence was even inspected, so a Copy File
+  step failed on a bare Windows runner. Variables the machine cannot answer are now omitted,
+  and a command that uses one fails the preflight by name instead of substituting an empty
+  path. Compiler steps and `$gamedir`/`$bspdir` still require the game.
+- The bare-runner failure was the useful oracle here: the file steps are plain `node:fs`,
+  and only the editor's variables are game-specific.
+- **Tool count: 266.** Tests: 219 files, 1,850 passed, 33 skipped.
+
 ## 0.0.195-alpha - 2026-11-22
 
 - **`run_compile_sequence`**: runs one of the editor's Run Map sequences with the editor's
@@ -18,7 +29,7 @@ with a line here.
   are substituted per token, so `$gamedir` containing spaces stays one argument. The
   alternative — substituting into the whole string and splitting afterwards — turned
   `D:\...\Left 4 Dead 2` into four arguments.
-- **Tool count: 266.** Tests: 219 files, 1,848 passed, 33 skipped.
+- **Tool count: 266.** Tests: 219 files, 1,850 passed, 33 skipped.
 
 ## 0.0.194-alpha - 2026-11-22
 

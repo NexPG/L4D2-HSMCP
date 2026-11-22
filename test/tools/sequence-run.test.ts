@@ -75,7 +75,9 @@ type RunReply = {
   }>;
 };
 
-describe("run_compile_sequence dry run", () => {
+describe.skipIf(
+  !has.sidecar || !has.gameContent || (!has.toolchain && !has.plusplus),
+)("run_compile_sequence dry run", () => {
   it("resolves the editor's variables and skips the game launch", async () => {
     const dir = scratchDir();
     const file = writeSequence(dir, "Dry", [
@@ -139,7 +141,7 @@ describe("run_compile_sequence dry run", () => {
   });
 });
 
-describe("run_compile_sequence file steps", () => {
+describe.skipIf(!has.sidecar)("run_compile_sequence file steps", () => {
   it("copies, renames and deletes, and reports a conditional copy that did nothing", async () => {
     const dir = scratchDir();
     const source = join(dir, "xx.txt");
@@ -221,7 +223,7 @@ describe("run_compile_sequence file steps", () => {
   });
 });
 
-describe.skipIf(!has.toolchain)("run_compile_sequence with the real vbsp", () => {
+describe.skipIf(!has.toolchain || !has.sidecar)("run_compile_sequence with the real vbsp", () => {
   it("compiles the sealed probe through $bsp_exe and $path\\$file", async () => {
     const dir = scratchDir();
     const vmf = join(dir, "seq_probe.vmf");

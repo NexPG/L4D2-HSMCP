@@ -11,6 +11,7 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { Config } from "../../../core/typescript/config.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
+import { splitWindowsArgs } from "./commandline.js";
 
 export type CmdSeqKind =
   | "run"
@@ -126,4 +127,32 @@ export function substituteSequenceVariables(
     return value;
   });
   return { text: result, unknown };
+}
+
+export interface SubstitutedArgs {
+  args: string[];
+  unknown: string[];
+}
+
+/**
+ * Splits the editor's parameter string and substitutes each token.
+ *
+ * The order is load-bearing. `-game $gamedir` must become two arguments even when
+ * `$gamedir` is `D:\...\Left 4 Dead 2\left4dead2`; substituting into the whole string first
+ * and splitting afterwards turns that path into four. Hammer behaves the same way, which is
+ * why the stock sequence needs no quotes around `$gamedir`.
+ */
+export function substituteSequenceArgs(
+  parameters: string,
+  variables: Readonly<Record<string, string>>,
+): SubstitutedArgs {
+  const unknown: string[] = [];
+  const args = splitWindowsArgs(parameters).map((token) => {
+    const result = substituteSequenceVariables(token, variables);
+    for (const name of result.unknown) {
+      if (!unknown.includes(name)) unknown.push(name);
+    }
+    return result.text;
+  });
+  return { args, unknown };
 }

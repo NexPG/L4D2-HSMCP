@@ -27,14 +27,13 @@ import {
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { z } from "zod";
-import { splitWindowsArgs } from "../compile/commandline.js";
 import { parseCompileLog, stageClean } from "../compile/log.js";
 import {
   type CmdSeqCommand,
-  type SequenceVariables,
   findConfiguredSequenceFile,
   readSequenceFile,
   sequenceCandidates,
+  substituteSequenceArgs,
   substituteSequenceVariables,
 } from "../compile/sequences.js";
 import {
@@ -361,13 +360,7 @@ export const runCompileSequenceTool = defineTool({
     assertWritable(bsp, ctx.config);
 
     const { game: profile, from } = gameFor(ctx.config, args.game);
-    if (profile.unusableForCompile) {
-      throw new ToolchainError(`cannot compile against ${profile.id}: ${profile.unusableForCompile}`);
-    }
     const gameDir = profile.gameDir ?? ctx.config.gameDir;
-    if (!gameDir) {
-      throw new ToolchainError(`cannot compile against ${profile.id}: no -game directory was resolved`);
-    }
 
     const exeDir = args.exeDir ? resolveInput(args.exeDir, ctx.config) : undefined;
     const file = args.file
@@ -399,6 +392,15 @@ export const runCompileSequenceTool = defineTool({
       const stage = compilerStage(command.executable);
       if (stage) stages.add(stage);
     }
+    const usesGameVars = sequence.commands.some(
+      (command) => command.enabled && /\$(gamedir|bspdir)\b/i.test(command.parameters),
+    );
+    if ((stages.size > 0 || usesGameVars) && profile.unusableForCompile) {
+      throw new ToolchainError(
+        `cannot compile against ${profile.id}: ${profile.unusableForCompile}`,
+      );
+    }
+    // A direct handler call (tests, scripts) does not pass input through zod, so a default
     // A direct handler call (tests, scripts) does not pass input through zod, so a default
     // declared in the schema is absent here. Apply the same default explicitly.
     const requestedToolchain: Toolchain = args.toolchain ?? "plusplus";
@@ -411,19 +413,23 @@ export const runCompileSequenceTool = defineTool({
       );
     }
 
-    const variables: SequenceVariables = {
+    // Only the variables the machine can answer are present. A sequence that uses one of
+    // the others gets an "unknown $name" preflight error, which is better than substituting
+    // an empty path and compiling something else.
+    const variableMap: Record<string, string> = {
       path: toWindowsPath(dirname(vmf)),
       file: basename(vmf, ".vmf"),
-      gamedir: toWindowsPath(gameDir),
-      bspdir: native(join(gameDir, "maps")),
-      bsp_exe: native(join(compilerDir ?? "", resolveCompiler(compilerDir ?? "", "vbsp", chosen.chain))),
-      vis_exe: native(join(compilerDir ?? "", resolveCompiler(compilerDir ?? "", "vvis", chosen.chain))),
-      light_exe: native(join(compilerDir ?? "", resolveCompiler(compilerDir ?? "", "vrad", chosen.chain))),
-      game_exe: native(join(profile.gameRoot ?? gameDir, "left4dead2.exe")),
+      game_exe: native(join(profile.gameRoot ?? gameDir ?? "", "left4dead2.exe")),
     };
-    // A plain record: `substituteSequenceVariables` looks names up case-insensitively and
-    // must not see the sequence's TypeScript-only fields.
-    const variableMap: Record<string, string> = { ...variables };
+    if (gameDir !== null) {
+      variableMap.gamedir = toWindowsPath(gameDir);
+      variableMap.bspdir = native(join(gameDir, "maps"));
+    }
+    if (compilerDir !== null) {
+      variableMap.bsp_exe = native(join(compilerDir, resolveCompiler(compilerDir, "vbsp", chosen.chain)));
+      variableMap.vis_exe = native(join(compilerDir, resolveCompiler(compilerDir, "vvis", chosen.chain)));
+      variableMap.light_exe = native(join(compilerDir, resolveCompiler(compilerDir, "vrad", chosen.chain)));
+    }
 
     const vmfText = readFileSync(vmf, "utf8");
     const hasInstances = /"classname"\s+"func_instance"/i.test(vmfText);
@@ -469,9 +475,11 @@ export const runCompileSequenceTool = defineTool({
           continue;
         }
         const stage = compilerStage(command.executable);
-        const argv = splitWindowsArgs(command.parameters).map((token) =>
-          substitute(token, `command ${index + 1}`),
-        );
+        const substituted = substituteSequenceArgs(command.parameters, variableMap);
+        for (const name of substituted.unknown) {
+          errors.push(`command ${index + 1}: unknown ${name}`);
+        }
+        const argv = substituted.args;
         plan.resolved.args = argv;
         plan.resolved.directory = compilerDir;
 
@@ -488,12 +496,13 @@ export const runCompileSequenceTool = defineTool({
             stage,
             exe: resolveCompiler(compilerDir as string, stage, chosen.chain),
           };
-          plan.resolved.executable = variables[
-            stage === "vbsp" ? "bsp_exe" : stage === "vvis" ? "vis_exe" : "light_exe"
-          ];
+          plan.resolved.executable =
+            variableMap[
+              stage === "vbsp" ? "bsp_exe" : stage === "vvis" ? "vis_exe" : "light_exe"
+            ] ?? command.executable;
           plan.status = "planned";
         } else if (command.executable.toLowerCase() === "$game_exe") {
-          plan.resolved.executable = variables.game_exe;
+          plan.resolved.executable = variableMap.game_exe ?? "left4dead2.exe";
           plan.status = "skipped";
           plan.note =
             "the server does not launch the game. The map is built; start Left 4 Dead 2 " +
@@ -506,9 +515,11 @@ export const runCompileSequenceTool = defineTool({
             "execute an arbitrary path named by a config file.";
         }
       } else {
-        const argv = splitWindowsArgs(command.parameters).map((token) =>
-          substitute(token, `command ${index + 1}`),
-        );
+        const substituted = substituteSequenceArgs(command.parameters, variableMap);
+        for (const name of substituted.unknown) {
+          errors.push(`command ${index + 1}: unknown ${name}`);
+        }
+        const argv = substituted.args;
         plan.resolved.args = argv;
         plan.resolved.directory = cwd;
 
