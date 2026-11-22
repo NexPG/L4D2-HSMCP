@@ -32,6 +32,25 @@ Before taking code, data or an asset from another repository:
 A component missing from `third_party/NOTICES.md` is a compliance defect even if the code is
 correct. A missing feature is recoverable; a licence violation is not.
 
+## 0.1 Library first; never a second implementation
+
+`srctools` already does a great deal of this work, and the sidecar already exposes it. Before
+writing a parser, converter, packer or editor:
+
+1. search `src/*/python/` and the verbs in `src/core/python/main.py`;
+2. search the installed `srctools` modules and the npm dependencies;
+3. if the library can do it, call it — for srctools that means the sidecar, not a TypeScript
+   copy. A thin wrapper for paths, guards and this project's result shape is fine;
+4. reimplement only when the library cannot express the operation: byte-offset-preserving
+   writes, records the library does not expose, or a hot/offline path where a subprocess is
+   not acceptable. Say which in the module comment;
+5. never add a second copy of a helper this repository already has — extend the existing one.
+
+[`AGENTS.md`](AGENTS.md) is the short version for agents;
+[`docs/reference/library-boundary.md`](docs/reference/library-boundary.md) is the audited
+table of what is delegated and what is intentionally TypeScript, including the known
+candidates for migration.
+
 ## 1. A passing test proves nothing until it has been shown it can fail
 
 This one outranks the others. A green test may be green because the code works, or because the test
