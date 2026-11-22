@@ -1,6 +1,6 @@
 # Tools by area
 
-281 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
+282 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
 rendering, the runtime harness, and so on — not a source directory and not a bucket for
 several jobs. A new kind of tool gets a new row and a new page.
 
@@ -25,7 +25,7 @@ not this file.
 | Audio | soundscripts, soundscapes and WAV | 7 | [audio.md](audio.md) |
 | Choreography and scenes | VCD timelines, actor channels, events and the scenes.image summary | 3 | [choreo.md](choreo.md) |
 | Campaigns | mission files, modes, finales, gates, posters and campaign scaffolding | 19 | [campaigns.md](campaigns.md) |
-| Game modes and mutations | modes/*.txt definitions, MutationOptions scripts, validation and add-on scaffolding | 3 | [mutations.md](mutations.md) |
+| Game modes and mutations | modes/*.txt definitions, MutationOptions scripts, validation and add-on scaffolding | 4 | [mutations.md](mutations.md) |
 | VScript authoring | Squirrel source: writing and checking .nut files, DirectorOptions and include paths | 2 | [vscript.md](vscript.md) |
 | Runtime harness | launching and probing the game: run_map_test, nav generation, console commands and class/nav probes | 5 | [runtime.md](runtime.md) |
 | Hammer editor | editor status, Hammer++ settings, launching, window capture and HLMV | 5 | [hammer.md](hammer.md) |
@@ -37,7 +37,7 @@ not this file.
 | Configuration and health | toolchain health and the stored add-on author | 3 | [configuration.md](configuration.md) |
 | Game discovery | how Left 4 Dead 2 was found on this machine | 1 | [games.md](games.md) |
 | File and text primitives | path resolution and raw UTF-8 text files | 2 | [text.md](text.md) |
-| **Total** | | **281** | |
+| **Total** | | **282** | |
 
 Each area page has logical tables inside it (for example, “Geometry”, “Faces, lighting,
 overlays and terrain” and “Instances and prefabs” inside VMF authoring).

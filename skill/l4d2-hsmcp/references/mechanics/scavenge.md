@@ -35,7 +35,7 @@ Spread them around the playable area. A spawn outside the sealed map makes vbsp 
 run_map_test({
   map: "my_map",
   waitFor: "Loading: [0-9]",
-  extraArgs: ["+mp_gamemode", "scavenge"]
+  mode: "scavenge"
 })
 ```
 

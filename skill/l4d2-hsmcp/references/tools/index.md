@@ -1,6 +1,6 @@
 # Tool catalogue
 
-281 tools. This page groups them by the job you are doing; each tool's own description is the
+282 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -37,6 +37,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_game_mode` | a `modes/<name>.txt` mutation definition: base, maxplayers, menu metadata, convars and the companion script |
 | `check_mutation` | validates a mutation add-on: mode name/base/flags, script presence, MutationOptions, addoninfo |
 | `write_mutation` | scaffolds `modes/<name>.txt`, `scripts/vscripts/<name>.nut` and `addoninfo.txt` for a new mutation |
+| `read_special_infected` | effective special-infected limits from MutationOptions, DirectorOptions or z_*_limit convars, with impossible-set checks |
 | `check_campaign` | verify chapters, maps, images against real files or VPKs |
 | `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |

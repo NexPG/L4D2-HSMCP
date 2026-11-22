@@ -86,9 +86,9 @@ accepts extra keyvalues.
 | Survival | `survival` | A defensible arena, a finale/panic trigger to start the wave, nav, item spawns |
 | Scavenge | `scavenge` | 16 `weapon_scavenge_item_spawn`, a generator/escape, nav; one map per round |
 | Holdout | `holdout` | An arena with a `trigger_standoff`, resupply, nav; used by `holdoutchallenge.txt` |
-| Mutation / ScriptedMode | `coop` entry + mutation VScript | The mode script owns the rules; the map still needs nav and a spawn |
+| Mutation / ScriptedMode | `modes/<name>.txt` + `MutationOptions` + `addoninfo.txt` | `write_mutation` scaffolds it, `read_game_mode` reads it, `check_mutation` validates it, and `read_special_infected` resolves the effective SI limits; `run_map_test` takes `mode` for the launch |
 
-Mode is chosen with `+mp_gamemode <mode>` before `+map`. A single-player listen server does
+Mode is chosen by `map <map> <mode>`; `run_map_test` takes `mode` and writes that command to `cfg/listenserver.cfg`. A single-player listen server does
 not populate both teams, so Versus/Scavenge tests can prove the mode script and map load,
 not a full round.
 
@@ -431,7 +431,7 @@ Commands a map/test author uses:
 | `ent_fire <name> <input>` | Fire an entity input |
 | `ent_create <class>` | Create an entity at the crosshair |
 | `script_execute <file>`, `script_reload` | VScript |
-| `mp_gamemode <mode>` | Select coop/versus/survival/scavenge/holdout |
+| `map <map> <mode>` | Select coop/versus/survival/scavenge/holdout; this is what `run_map_test` uses |
 | `status`, `find <prefix>` | Inspect the server and cvars |
 
 `director_report` prints the Director's state; `z_debug 1` / `nav_show_area_info` visualise

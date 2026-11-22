@@ -17,6 +17,7 @@ import { readVscriptTool } from "../../src/scripts/typescript/tools/vscript.js";
 import {
   checkMutationTool,
   readGameModeTool,
+  readSpecialInfectedTool,
   writeMutationTool,
 } from "../../src/mutations/typescript/tools/mutations.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
@@ -102,6 +103,75 @@ describe.skipIf(!has.sidecar)("mutations", () => {
     ) as unknown as { mutationOptions: Record<string, string>; ok: boolean };
     expect(script.ok).toBe(true);
     expect(script.mutationOptions).toEqual({ CommonLimit: "0", TankLimit: "2" });
+  }, 120_000);
+
+  it("reports the special-infected set from options and mode convars", async () => {
+    const directory = join(scratch, "specials");
+    await writeAddon(directory, {
+      convars: {},
+      directorOptions: { SmokerLimit: 0, ChargerLimit: 2, MaxSpecials: 4 },
+    });
+    const set = (await readSpecialInfectedTool.handler(
+      { path: directory },
+      ctx,
+    )) as unknown as {
+      specials: Array<{ name: string; limit: number | null; source: string | null; enabled: boolean }>;
+      totals: { maxSpecials: number | null };
+      errors: number;
+      ok: boolean;
+    };
+    const byName = new Map(set.specials.map((special) => [special.name, special]));
+    expect(byName.get("smoker")).toMatchObject({ limit: 0, source: "MutationOptions", enabled: false });
+    expect(byName.get("charger")).toMatchObject({ limit: 2, source: "MutationOptions", enabled: true });
+    expect(byName.get("boomer")!.limit).toBeNull();
+    expect(set.totals.maxSpecials).toBe(4);
+    expect(set.errors).toBe(0);
+    expect(set.ok).toBe(true);
+  }, 120_000);
+
+  it("reads a stock convar-only special set", async () => {
+    const vpk = join(ctx.config.gameDir ?? "", "pak01_dir.vpk");
+    if (!vpk || !existsSync(vpk)) return;
+    const addon = join(scratch, "l4d1vs");
+    const extracted = runVpkExtractTool.handler(
+      { path: vpk, into: addon, filter: "modes/l4d1vs.txt", limit: 5, confirm: true } as never,
+      ctx,
+    ) as { written: Array<{ file: string }> };
+    expect(extracted.written.length).toBe(1);
+    const set = (await readSpecialInfectedTool.handler(
+      { path: join(addon, "modes", "l4d1vs.txt") },
+      ctx,
+    )) as unknown as {
+      specials: Array<{ name: string; limit: number | null; source: string | null; enabled: boolean }>;
+      errors: number;
+    };
+    const byName = new Map(set.specials.map((special) => [special.name, special]));
+    expect(byName.get("charger")).toMatchObject({ limit: 0, source: "cvar", enabled: false });
+    expect(byName.get("jockey")).toMatchObject({ limit: 0, source: "cvar", enabled: false });
+    expect(byName.get("spitter")).toMatchObject({ limit: 0, source: "cvar", enabled: false });
+    expect(byName.get("boomer")!.limit).toBeNull();
+    expect(set.errors).toBe(0);
+  }, 120_000);
+
+  it("flags an impossible special set", async () => {
+    const directory = join(scratch, "bad-specials");
+    await writeAddon(directory, {
+      convars: {},
+      directorOptions: { SmokerLimit: -1, MinSpecials: 5, MaxSpecials: 2 },
+    });
+    const set = (await readSpecialInfectedTool.handler(
+      { path: directory },
+      ctx,
+    )) as unknown as {
+      findings: Array<{ rule: string }>;
+      errors: number;
+      ok: boolean;
+    };
+    expect(set.ok).toBe(false);
+    expect(set.errors).toBeGreaterThanOrEqual(2);
+    const rules = set.findings.map((finding) => finding.rule);
+    expect(rules).toContain("special-limit-value");
+    expect(rules).toContain("special-min-over-max");
   }, 120_000);
 
   it("refuses to overwrite and takes a backup when asked", async () => {

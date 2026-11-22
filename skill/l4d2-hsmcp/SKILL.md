@@ -126,9 +126,10 @@ material; the instructions live in one place.
 | `references/mechanics/weapons-and-items.md` | the spawn classes, how to place one, and the saferoom rules |
 | `references/mechanics/crescendo-and-panic.md` | triggered hordes, nav Battlefield/Battlestation, testing |
 | `references/mechanics/tanks-and-witches.md` | `z_spawn`, cheats, the log lines that prove a tank or witch exists |
-| `references/mechanics/survival.md` | mission mode, `+mp_gamemode survival`, HUD evidence |
-| `references/mechanics/scavenge.md` | gas-can spawns, `+mp_gamemode scavenge`, HUD evidence |
-| `references/mechanics/versus.md` | mission mode, `+mp_gamemode versus`, `anv_versus.nut` evidence |
+| `references/mechanics/survival.md` | mission mode, `run_map_test mode: "survival"`, HUD evidence |
+| `references/mechanics/scavenge.md` | gas-can spawns, `run_map_test mode: "scavenge"`, HUD evidence |
+| `references/mechanics/versus.md` | mission mode, `run_map_test mode: "versus"`, `anv_versus.nut` evidence |
+| `references/mechanics/mutations.md` | `modes/*.txt` + `MutationOptions`, validation, VPK, runtime proof |
 | `references/mechanics/weather.md` | `func_precipitation`, `env_fog_controller`, and what a static check can prove |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |

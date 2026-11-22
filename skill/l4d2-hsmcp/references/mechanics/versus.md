@@ -27,7 +27,7 @@ the infected spawn screen and the scoring.
 run_map_test({
   map: "my_map",
   waitFor: "Loading: [0-9]",
-  extraArgs: ["+mp_gamemode", "versus"]
+  mode: "versus"
 })
 ```
 
@@ -49,4 +49,4 @@ map defect.
   entities, not mode-gated. Remove them from a map that is not meant to be Scavenge.
 - One player is not a Versus round: test the mode script line and map load, then use a
   populated server for the round.
-- `+mp_gamemode` must come before `+map`; `run_map_test` places `extraArgs` there.
+- `mode` runs `map <map> versus` from `cfg/listenserver.cfg`; this client has no `mp_gamemode` command.

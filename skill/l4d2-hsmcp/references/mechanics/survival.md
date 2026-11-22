@@ -27,11 +27,11 @@ spawn, and a mission file that lists it under `survival`.
 run_map_test({
   map: "my_map",
   waitFor: "Loading: [0-9]",
-  extraArgs: ["+mp_gamemode", "survival"]
+  mode: "survival"
 })
 ```
 
-The `+mp_gamemode` must come before `+map`; `run_map_test` puts `extraArgs` there.
+`mode` runs `map <map> survival` from `cfg/listenserver.cfg`; this client answers `Unknown command "mp_gamemode"`, so do not use that command line switch.
 
 ## Starting the round
 
@@ -66,5 +66,5 @@ survival wave.
 
 - `Unknown command: survival_record` is a harmless client-side console line in this setup.
 - If the map name is in a mission without a `survival` mode, the game may fall back to the
-  menu; check the mission file and `mp_gamemode`.
+  menu; check the mission file and pass `mode: "survival"` to `run_map_test`.
 - No `.nav` means `NAV ERRORS — Map is unplayable!`, even in Survival.

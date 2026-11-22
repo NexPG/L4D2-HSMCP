@@ -611,13 +611,27 @@ export const writeMutationTool = defineTool({
     }
 
     const inspected = await inspectMode(modePath, ctx);
+    const expectedConvars = Object.fromEntries(
+      Object.entries(args.convars ?? {}).map(([key, value]) => [key.toLowerCase(), String(value)]),
+    );
+    const actualConvars = Object.fromEntries(
+      inspected.convars.map((convar) => [convar.name.toLowerCase(), convar.value]),
+    );
+    const expectedOptions = Object.fromEntries(
+      Object.entries(args.directorOptions ?? {}).map(([key, value]) => [key, String(value)]),
+    );
     const verified =
       inspected.name === args.name &&
       inspected.base === args.base &&
       inspected.maxPlayerCount === maxPlayers &&
       inspected.script !== null &&
       !inspected.script.compiled &&
-      Object.keys(report.mutationOptions).length === Object.keys(args.directorOptions).length;
+      Object.keys(expectedConvars).length === Object.keys(actualConvars).length &&
+      Object.entries(expectedConvars).every(([key, value]) => actualConvars[key] === value) &&
+      Object.keys(expectedOptions).length === Object.keys(report.mutationOptions).length &&
+      Object.entries(expectedOptions).every(
+        ([key, value]) => report.mutationOptions[key] === value,
+      );
     return {
       directory,
       name: args.name,
@@ -633,4 +647,207 @@ export const writeMutationTool = defineTool({
   },
 });
 
-export const mutationTools = [readGameModeTool, checkMutationTool, writeMutationTool];
+const SI_CLASSES = [
+  { name: "boomer", limitKey: "BoomerLimit", cvar: "z_boomer_limit", versus: "z_versus_boomer_limit" },
+  { name: "smoker", limitKey: "SmokerLimit", cvar: "z_smoker_limit", versus: "z_versus_smoker_limit" },
+  { name: "hunter", limitKey: "HunterLimit", cvar: "z_hunter_limit", versus: "z_versus_hunter_limit" },
+  { name: "spitter", limitKey: "SpitterLimit", cvar: "z_spitter_limit", versus: "z_versus_spitter_limit" },
+  { name: "jockey", limitKey: "JockeyLimit", cvar: "z_jockey_limit", versus: "z_versus_jockey_limit" },
+  { name: "charger", limitKey: "ChargerLimit", cvar: "z_charger_limit", versus: "z_versus_charger_limit" },
+  { name: "tank", limitKey: "TankLimit", cvar: "z_tank_limit", versus: "z_versus_tank_limit" },
+  { name: "witch", limitKey: "WitchLimit", cvar: "z_witch_limit", versus: "z_versus_witch_limit" },
+] as const;
+
+function optionNumber(value: string | undefined): number | null {
+  if (value === undefined) return null;
+  const text = value.trim().replace(/^"(.*)"$/, "$1");
+  return /^-?\d+(?:\.\d+)?$/.test(text) ? Number(text) : null;
+}
+
+export const readSpecialInfectedTool = defineTool({
+  name: "read_special_infected",
+  description:
+    "Reports the special-infected spawn set a mutation or map actually configures: each " +
+    "class's limit from MutationOptions (which overrides DirectorOptions), or from a " +
+    "z_<class>_limit / z_versus_<class>_limit convar in modes/<name>.txt when the script " +
+    "says nothing. A limit of 0 disables that class; absent means the base mode's default. " +
+    "Also reports MaxSpecials/MinSpecials/MaxConcurrentSpecials and flags impossible " +
+    "combinations, such as MinSpecials above MaxSpecials, a negative limit, or every class " +
+    "disabled. Accepts a .nut, a modes/<name>.txt, or an add-on directory. The Squirrel " +
+    "tables are read by the existing read_vscript rules.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("A .nut, a modes/<name>.txt, or an addon directory."),
+  },
+  outputSchema: {
+    path: z.string(),
+    modeCount: z.number(),
+    scriptCount: z.number(),
+    sources: z.array(z.string()),
+    specials: z.array(
+      z.object({
+        name: z.string(),
+        limit: z.number().nullable(),
+        source: z.enum(["MutationOptions", "DirectorOptions", "cvar"]).nullable(),
+        enabled: z.boolean(),
+      }),
+    ),
+    totals: z.object({
+      maxSpecials: z.number().nullable(),
+      minSpecials: z.number().nullable(),
+      maxConcurrentSpecials: z.number().nullable(),
+      specialRespawnInterval: z.number().nullable(),
+    }),
+    convars: z.record(z.string()),
+    findings: z.array(FINDING),
+    errors: z.number(),
+    warnings: z.number(),
+    ok: z.boolean(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} was not found`);
+    const isDir = statSync(path).isDirectory();
+    const modes: InspectedMode[] = [];
+    const directScripts: string[] = [];
+    if (isDir) {
+      const modesDir = join(path, "modes");
+      if (existsSync(modesDir)) {
+        for (const entry of readdirSync(modesDir, { withFileTypes: true })) {
+          if (entry.isFile() && entry.name.toLowerCase().endsWith(".txt")) {
+            modes.push(await inspectMode(join(modesDir, entry.name), ctx));
+          }
+        }
+      }
+    } else if (path.toLowerCase().endsWith(".nut")) {
+      directScripts.push(path);
+    } else {
+      modes.push(await inspectMode(path, ctx));
+    }
+
+    const scripts = [...directScripts];
+    for (const mode of modes) {
+      if (mode.script !== null && !mode.script.compiled) scripts.push(mode.script.path);
+    }
+
+    let directorOptions: Record<string, string> = {};
+    let mutationOptions: Record<string, string> = {};
+    const sources: string[] = [];
+    for (const script of scripts) {
+      const report = checkNut(readFileSync(script, "utf8"), script);
+      directorOptions = { ...directorOptions, ...report.directorOptions };
+      mutationOptions = { ...mutationOptions, ...report.mutationOptions };
+      sources.push(script);
+    }
+    const options = { ...directorOptions, ...mutationOptions };
+    const convars: Record<string, string> = {};
+    for (const mode of modes) {
+      for (const convar of mode.convars) convars[convar.name.toLowerCase()] = convar.value;
+    }
+
+    const findings: Finding[] = [];
+    const add = (severity: Finding["severity"], rule: string, message: string): void => {
+      findings.push({ severity, rule, message, mode: modes[0]?.name ?? "", path });
+    };
+
+    const specials = SI_CLASSES.map((entry) => {
+      const fromMutation = optionNumber(mutationOptions[entry.limitKey]);
+      const fromDirector = optionNumber(directorOptions[entry.limitKey]);
+      const cvarValue = convars[entry.versus] ?? convars[entry.cvar];
+      const fromCvar = cvarValue === undefined ? null : Number(cvarValue);
+      let limit: number | null = null;
+      let source: "MutationOptions" | "DirectorOptions" | "cvar" | null = null;
+      if (mutationOptions[entry.limitKey] !== undefined) {
+        limit = fromMutation;
+        source = "MutationOptions";
+      } else if (directorOptions[entry.limitKey] !== undefined) {
+        limit = fromDirector;
+        source = "DirectorOptions";
+      } else if (cvarValue !== undefined && Number.isFinite(fromCvar)) {
+        limit = fromCvar;
+        source = "cvar";
+      }
+      if (limit === null && source !== null) {
+        add(
+          "error",
+          "special-limit-value",
+          `${entry.limitKey} is not a number; the engine ignores it`,
+        );
+      } else if (limit !== null && (!Number.isInteger(limit) || limit < 0)) {
+        add(
+          "error",
+          "special-limit-value",
+          `${entry.limitKey} is ${limit}; a special-infected limit must be a non-negative integer`,
+        );
+      }
+      return {
+        name: entry.name,
+        limit,
+        source,
+        enabled: limit === null || limit > 0,
+      };
+    });
+
+    const totals = {
+      maxSpecials: optionNumber(options["MaxSpecials"]),
+      minSpecials: optionNumber(options["MinSpecials"]),
+      maxConcurrentSpecials: optionNumber(options["MaxConcurrentSpecials"]),
+      specialRespawnInterval: optionNumber(options["SpecialRespawnInterval"]),
+    };
+    if (
+      totals.minSpecials !== null &&
+      totals.maxSpecials !== null &&
+      totals.minSpecials > totals.maxSpecials
+    ) {
+      add(
+        "error",
+        "special-min-over-max",
+        `MinSpecials ${totals.minSpecials} is above MaxSpecials ${totals.maxSpecials}`,
+      );
+    }
+    if (
+      totals.maxConcurrentSpecials !== null &&
+      totals.maxSpecials !== null &&
+      totals.maxConcurrentSpecials > totals.maxSpecials
+    ) {
+      add(
+        "warning",
+        "special-concurrent-over-max",
+        `MaxConcurrentSpecials ${totals.maxConcurrentSpecials} is above MaxSpecials ${totals.maxSpecials}`,
+      );
+    }
+    if (specials.every((special) => !special.enabled)) {
+      add("warning", "special-all-disabled", "every special-infected class has limit 0");
+    }
+    if (specials.every((special) => special.limit === null)) {
+      add(
+        "info",
+        "special-none-configured",
+        "no special-infected limit is set here; the base mode's defaults apply",
+      );
+    }
+
+    const errors = findings.filter((finding) => finding.severity === "error").length;
+    const warnings = findings.filter((finding) => finding.severity === "warning").length;
+    return {
+      path,
+      modeCount: modes.length,
+      scriptCount: scripts.length,
+      sources,
+      specials,
+      totals,
+      convars,
+      findings,
+      errors,
+      warnings,
+      ok: errors === 0,
+    };
+  },
+});
+
+export const mutationTools = [
+  readGameModeTool,
+  checkMutationTool,
+  writeMutationTool,
+  readSpecialInfectedTool,
+];
