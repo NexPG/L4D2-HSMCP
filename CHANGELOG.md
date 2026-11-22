@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.191-alpha - 2026-11-22
+
+- **`read_choreo`**: reads a text VCD through `srctools.choreo.Scene`: map, FPS, duration,
+  every event with type/start/end/parameters/flags, the actor/channel tree, and the sounds.
+  A binary `scenes.image` is refused with a pointer to the other tool.
+- **`read_scenes_image`**: reads `scenes/scenes.image` through
+  `srctools.choreo.parse_scenes_image`: CRC, duration, last-speak time, sounds; `details`
+  parses the embedded scene for event/actor counts.
+- **Tool count: 264.** Tests: 217 files, 1,830 passed, 33 skipped.
+
 ## 0.0.190-alpha - 2026-11-22
 
 - **The add-on author is configured, not hard-coded.** `addonAuthor` lives in

@@ -530,6 +530,125 @@ def _check_assets(req: dict[str, Any]) -> dict[str, Any]:
     return check_assets(vmf, req, info)
 
 
+@verb("read_choreo")
+def _read_choreo(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads a text VCD choreography scene through `srctools.choreo.Scene`.
+
+    A `.vcd` is the timeline a scene uses: events on actor channels, their times, sounds and
+    parameters. The parser is srctools'; this verb only selects the fields a caller can act
+    on and builds one timeline sorted by start time.
+    """
+    from srctools.choreo import Scene
+    from srctools.tokenizer import Tokenizer
+
+    path = req["path"]
+    raw = Path(path).read_bytes()
+    if raw[:4] == b"VSIF":
+        raise ValueError(f"{path} is a scenes.image, not a VCD; use read_scenes_image")
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("cp1251", "replace")
+    scene = Scene.parse_text(Tokenizer(text, path))
+    limit = max(1, min(int(req.get("limit", 200)), 5000))
+
+    def event_json(event: Any, actor: str | None = None, channel: str | None = None) -> dict[str, Any]:
+        return {
+            "name": event.name,
+            "type": event.type.name.lower(),
+            "start": event.start_time,
+            "end": event.end_time if event.has_end_time else None,
+            "parameters": list(event.parameters),
+            "flags": event.flags.value,
+            **({"actor": actor} if actor else {}),
+            **({"channel": channel} if channel else {}),
+        }
+
+    timeline = [event_json(event) for event in scene.events]
+    for actor in scene.actors:
+        for channel in actor.channels:
+            for event in channel.events:
+                timeline.append(event_json(event, actor.name, channel.name))
+    timeline.sort(key=lambda event: (event["start"], event["name"]))
+    sounds = sorted(set(scene.used_sounds()))
+    return {
+        "path": path,
+        "mapName": scene.map_name,
+        "fps": scene.fps,
+        "duration": scene.duration(),
+        "eventCount": len(timeline),
+        "events": timeline[:limit],
+        "eventsTruncated": len(timeline) > limit,
+        "actorCount": len(scene.actors),
+        "actors": [
+            {
+                "name": actor.name,
+                "active": actor.active,
+                "faceposerModel": actor.faceposer_model,
+                "channels": [
+                    {
+                        "name": channel.name,
+                        "active": channel.active,
+                        "eventCount": len(channel.events),
+                    }
+                    for channel in actor.channels
+                ],
+            }
+            for actor in scene.actors
+        ],
+        "sounds": sounds[:limit],
+        "soundCount": len(sounds),
+        "ignorePhonemes": scene.ignore_phonemes,
+    }
+
+
+@verb("read_scenes_image")
+def _read_scenes_image(req: dict[str, Any]) -> dict[str, Any]:
+    """Reads `scenes/scenes.image` through `srctools.choreo.parse_scenes_image`.
+
+    The image is a CRC-keyed summary of every VCD: duration, the last spoken line and the
+    sounds. The filenames are not stored, so the checksum is the key; with `details` each
+    embedded scene is parsed for its event and actor counts.
+    """
+    from srctools.choreo import parse_scenes_image
+
+    path = req["path"]
+    limit = max(1, min(int(req.get("limit", 200)), 5000))
+    details = bool(req.get("details", False))
+    with open(path, "rb") as handle:
+        scenes = parse_scenes_image(handle)
+    entries = sorted(scenes.values(), key=lambda entry: entry.checksum)
+    result = []
+    for entry in entries[:limit]:
+        item: dict[str, Any] = {
+            "checksum": f"{entry.checksum:08x}",
+            "filename": entry.filename or None,
+            "durationMs": entry.duration_ms,
+            "lastSpeakMs": entry.last_speak_ms,
+            "sounds": entry.sounds,
+            "soundCount": len(entry.sounds),
+        }
+        if details:
+            try:
+                scene = entry.data
+                item["eventCount"] = len(scene.events) + sum(
+                    len(channel.events)
+                    for actor in scene.actors
+                    for channel in actor.channels
+                )
+                item["actorCount"] = len(scene.actors)
+            except Exception as exc:  # noqa: BLE001
+                item["detailError"] = f"{type(exc).__name__}: {exc}"
+        result.append(item)
+    return {
+        "path": path,
+        "count": len(entries),
+        "returned": len(result),
+        "truncated": len(entries) > limit,
+        "entries": result,
+    }
+
+
 @verb("map_dependencies")
 def _map_dependencies(req: dict[str, Any]) -> dict[str, Any]:
     """Every asset a compiled map references, and where each one will come from."""

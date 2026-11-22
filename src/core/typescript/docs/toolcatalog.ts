@@ -140,6 +140,12 @@ const AREAS: Area[] = [
     },
   },
   {
+    slug: "choreo",
+    title: "Choreography and scenes",
+    covers: "VCD timelines, actor channels, events and the scenes.image summary",
+    groups: { "Scenes and scene images": ["choreo"] },
+  },
+  {
     slug: "campaigns",
     title: "Campaigns",
     covers: "mission files, modes, finales, gates, posters and campaign scaffolding",

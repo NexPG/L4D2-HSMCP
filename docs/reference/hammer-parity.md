@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **262 tools**.
+Last checked against the tool list on 22/11/2026: **264 tools**.
 
 ## The file itself
 
@@ -265,6 +265,8 @@ map and looking, or by not happening at all.
 | `read_model_flexes` | nothing: Hammer cannot inspect a compiled model's flex descriptors, rules or vertex deltas |
 | `read_model_eyes` | nothing: the editor cannot show eyeballs or lids, and L4D2's compiler has no `$eyeball` command to recreate them |
 | `read_model_jiggle` | nothing: the editor cannot show a jigglebone's stiffness, constraints or boing parameters |
+| `read_choreo` | nothing: choreo scenes are authored in Faceposer, not Hammer |
+| `read_scenes_image` | nothing: the image is engine dialogue metadata |
 | `read_model_ani` | nothing: an external `.ani` block table is not exposed by the editor |
 | `read_model_procedural` | nothing: Hammer cannot show quat-interp helpers or aim rules, and has no `.vrd` view |
 | `read_model_lods` | nothing: switch distances, `facial`, material/bone replacements and removed bodygroup models are not in the editor |
