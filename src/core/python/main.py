@@ -923,13 +923,33 @@ def _fgd_class(req: dict[str, Any]) -> dict[str, Any]:
 
     if not name:
         prefix = (req.get("prefix") or "").lower()
-        names = sorted(c for c in fgd.entities if c.lower().startswith(prefix))
+        search = (req.get("search") or "").strip().lower()
+        names = [c for c in fgd.entities if c.lower().startswith(prefix)]
+        if search:
+            matched = []
+            for classname in names:
+                entity = fgd.entities[classname]
+                fields = [classname, entity.desc or "", str(entity.type)]
+                for key in entity.kv:
+                    kv = entity.kv[key]
+                    fields.append(getattr(kv, "name", None) or key)
+                    fields.append(getattr(kv, "disp_name", "") or "")
+                for key in entity.inp:
+                    fields.append(getattr(entity.inp[key], "name", None) or key)
+                for key in entity.out:
+                    fields.append(getattr(entity.out[key], "name", None) or key)
+                if any(search in field.lower() for field in fields):
+                    matched.append(classname)
+            names = matched
+        names.sort()
+        limit = int(req.get("limit", 200))
         return {
             "classCount": len(fgd.entities),
             "toleratedHelpers": tolerated,
-            "classnames": names[: int(req.get("limit", 200))],
-            "returned": min(len(names), int(req.get("limit", 200))),
+            "classnames": names[:limit],
+            "returned": min(len(names), limit),
             "matched": len(names),
+            **({"search": search} if search else {}),
         }
 
     entity = fgd.entities.get(name)
@@ -950,6 +970,31 @@ def _fgd_class(req: dict[str, Any]) -> dict[str, Any]:
         "classCount": len(fgd.entities),
         "toleratedHelpers": tolerated,
         **describe_class(entity),
+    }
+
+
+@verb("fgd_autovisgroups")
+def _fgd_autovisgroups(req: dict[str, Any]) -> dict[str, Any]:
+    """Lists the FGD's `@AutoVisgroup` tree and the entities each group contains."""
+    from fgd_support import load_fgds
+
+    fgd, tolerated = load_fgds(req["binDir"], _fgd_names(req))
+    groups = [
+        {
+            "name": group.name,
+            "parent": group.parent or None,
+            "entities": sorted(group.ents),
+        }
+        for group in fgd.auto_visgroups.values()
+    ]
+    groups.sort(key=lambda group: (group["parent"] or "", group["name"]))
+    limit = int(req.get("limit", 500))
+    return {
+        "groupCount": len(groups),
+        "toleratedHelpers": tolerated,
+        "groups": groups[:limit],
+        "returned": min(len(groups), limit),
+        "truncated": len(groups) > limit,
     }
 
 

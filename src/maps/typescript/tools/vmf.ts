@@ -113,6 +113,13 @@ export const readFgdClass = defineTool({
   inputSchema: {
     classname: z.string().optional().describe("Exact class, e.g. logic_relay."),
     prefix: z.string().optional().describe("When listing: keep classes starting with this."),
+    search: z
+      .string()
+      .optional()
+      .describe(
+        "When listing: case-insensitive substring in the classname, description, keyvalue, " +
+          "input or output name. Use it to find the class behind a word.",
+      ),
     fgd: z
       .string()
       .optional()
@@ -145,6 +152,7 @@ export const readFgdClass = defineTool({
     outputs: z.array(z.string()).optional(),
     classnames: z.array(z.string()).optional(),
     matched: z.number().optional(),
+    search: z.string().optional(),
     returned: z.number().optional(),
   },
   handler: async (args, ctx) => {
@@ -157,6 +165,53 @@ export const readFgdClass = defineTool({
         fgd: extra ? [...fgd.fgd, extra] : fgd.fgd,
         ...(args.classname ? { classname: args.classname } : {}),
         ...(args.prefix ? { prefix: args.prefix } : {}),
+        ...(args.search ? { search: args.search } : {}),
+        limit: args.limit,
+      },
+      ctx.config,
+      120_000,
+    );
+  },
+});
+
+export const readFgdAutovisgroups = defineTool({
+  name: "read_fgd_autovisgroups",
+  description:
+    "Lists the FGD's `@AutoVisgroup` tree and the entity classes each group contains. This " +
+    "is the grouping Hammer shows in its entity browser and its visgroup list; use it to " +
+    "find the classes behind a category instead of guessing names. Reads the game's own FGD " +
+    "through the sidecar, with the same optional community FGD merge as `read_fgd_class`. " +
+    "Read-only.",
+  realm: "map",
+  inputSchema: {
+    fgd: z
+      .string()
+      .optional()
+      .describe("Extra FGD to merge, absolute or repo-relative."),
+    game: GAME,
+    limit: z.number().int().min(1).max(5000).default(500),
+  },
+  outputSchema: {
+    groupCount: z.number(),
+    toleratedHelpers: z.record(z.number()),
+    groups: z.array(
+      z.object({
+        name: z.string(),
+        parent: z.string().nullable(),
+        entities: z.array(z.string()),
+      }),
+    ),
+    returned: z.number(),
+    truncated: z.boolean(),
+  },
+  handler: async (args, ctx) => {
+    const fgd = fgdContext(ctx.config, args.game);
+    const extra = args.fgd ? resolveInput(args.fgd, ctx.config) : null;
+    return callSidecar(
+      "fgd_autovisgroups",
+      {
+        binDir: fgd.binDir,
+        fgd: extra ? [...fgd.fgd, extra] : fgd.fgd,
         limit: args.limit,
       },
       ctx.config,
@@ -593,4 +648,4 @@ export const normalizeVmfIo = defineTool({
   },
 });
 
-export const vmfTools = [readFgdClass, readVmf, readVmfLint, normalizeVmfIo];
+export const vmfTools = [readFgdClass, readFgdAutovisgroups, readVmf, readVmfLint, normalizeVmfIo];

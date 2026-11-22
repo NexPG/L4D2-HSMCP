@@ -1,6 +1,6 @@
 # Tool catalogue
 
-264 tools. This page groups them by the job you are doing; each tool's own description is the
+265 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -152,6 +152,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_map_organisation` | visgroups, groups, cordon |
 | `read_entity_report` | Hammer's Entity Report, filterable |
 | `validate_io` | entity wiring against the FGD |
+| `read_fgd_autovisgroups` | the FGD `@AutoVisgroup` tree and the entity classes in each group |
 | `read_fgd_class` | keyvalues, inputs, outputs of one entity class from the game's FGD |
 | `read_particle` | systems, children, operators, materials and typed options inside a `.pcf`; `effectName` resolves a map's `effect_name` |
 | `write_particle` | build a binary `.pcf` from JSON systems, or rewrite/rename a stock file |

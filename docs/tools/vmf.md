@@ -1,6 +1,6 @@
 # VMF authoring
 
-83 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+84 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -17,6 +17,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_compile_sequences` | Reads the editor's Run Map sequences: which steps are enabled, what each runs and with which parameters. |
 | `read_detail_sprites` | Reads a `detail.vbsp`: every detail type, its density, and the groups/models inside it (sprite or model, amount, alpha). |
 | `read_entity_report` | Hammer's Entity Report: every entity with its keyvalues, filterable by classname, targetname or the presence of a key. |
+| `read_fgd_autovisgroups` | Lists the FGD's `@AutoVisgroup` tree and the entity classes each group contains. |
 | `read_fgd_class` | What the game's own FGD declares for an entity class: every keyvalue with its type and default, every input, every output. |
 | `read_vmf` | Entities, outputs and brush counts of a .vmf, reported without judgement. |
 | `read_vmf_lint` | Checks a .vmf against the game's FGD and against what the compilers accept, before a compile that can take forty minutes to fail. |

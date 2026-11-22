@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.192-alpha - 2026-11-22
+
+- **`read_fgd_class` search**: when listing, `search` matches a case-insensitive substring in
+  the classname, description, keyvalue names/displays, inputs or outputs, so “find the class
+  behind this word” no longer needs an exact name or prefix. Prefix and search combine.
+- **`read_fgd_autovisgroups`**: the FGD `@AutoVisgroup` tree with its parent and entity
+  classes, the grouping Hammer shows in its entity browser. The stock L4D2 FGD has none, so
+  the test supplies one and verifies a community FGD merge.
+- **Tool count: 265.** Tests: 217 files, 1,832 passed, 33 skipped.
+
 ## 0.0.191-alpha - 2026-11-22
 
 - **`read_choreo`**: reads a text VCD through `srctools.choreo.Scene`: map, FPS, duration,
