@@ -196,7 +196,6 @@ in a directory.
 | `config.example.json` | template for the local `.hammer-mcp/config.json` |
 | `opencode.json` | registers the repository skill with OpenCode |
 | `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CHANGELOG.md` | front page, rules, the agent's short rulebook, version history |
-| `TASKS.md` | the open work queue from the current research and build |
 | `LICENSE` | GPL-3.0-only, the licence of the combined work |
 | `.gitattributes`, `.gitignore` | line endings and local/generated files |
 

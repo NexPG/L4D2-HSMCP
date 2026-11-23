@@ -33,7 +33,6 @@ const ROOT_FILES = new Set([
   "CONTRIBUTING.md",
   "LICENSE",
   "README.md",
-  "TASKS.md",
   "config.example.json",
   "eslint.config.js",
   "opencode.json",
