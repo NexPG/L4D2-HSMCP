@@ -80,6 +80,26 @@ describe("compile log rules", () => {
     expect(r.clean).toBe(true);
   });
 
+  it("fails a compile that deleted a prop, and names the model", () => {
+    // Measured on Tools++ vbsp, 23.11.2026: a prop_static from a dynamic-only model prints
+    // this and exits 0. The first map shipped without the prop while every gate was green.
+    const r = parseCompileLog(
+      'Error! prop_static using model "models/props/cs_office/trash_can.mdl", which must be used on a dynamic entity (i.e. prop_physics). Deleted.',
+    );
+    expect(r.clean).toBe(false);
+    expect(r.byRule["vbsp-deleted-prop"]).toBe(1);
+    const finding = r.findings.find((x) => x.rule === "vbsp-deleted-prop")!;
+    expect(finding.severity).toBe("error");
+    expect(finding.message).toMatch(/trash_can/);
+    expect(finding.message).toMatch(/prop_dynamic/);
+  });
+
+  it("treats any other vbsp Error! as an error, not as a silent exit-0 pass", () => {
+    const r = parseCompileLog("Error! something the compiler did not like");
+    expect(r.clean).toBe(false);
+    expect(r.byRule["vbsp-error"]).toBe(1);
+  });
+
   it("names MAX_MAP_VERTS instead of leaving the prose unexplained", () => {
     // Reproduced on L4D2 stock vbsp, 16.11.2026: 8186 free-standing boxes in a sealed
     // room. Upstream issue #99 was this line reported as clean:true with no findings.

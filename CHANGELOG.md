@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.252-alpha - 2026-11-23
+
+- **A compile that deletes a prop is no longer `ok`.** vbsp refuses a `prop_static` from a
+  model that must be dynamic (`Error! ... Deleted.`) and exits 0; `run_compile` reported
+  `ok: true` and five Santa Monica props were silently absent. The compile-log parser now
+  treats `Deleted.` as `vbsp-deleted-prop` and any other `Error!` as `vbsp-error`, so the
+  stage and the compile fail. Tests cover both lines.
+- **Tool count: 293.** Tests: 238 files, 1,948 passed, 30 skipped (the two new compile-log
+  tests).
+
 ## 0.0.251-alpha - 2026-11-23
 
 - **`read_vmf_lint` accepts an add-on soundscape name.** `env_soundscape.soundscape` is a

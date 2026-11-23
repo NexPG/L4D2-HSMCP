@@ -34,6 +34,30 @@ const RULES: Rule[] = [
       "location and the entity nearest to it",
   },
   {
+    rule: "vbsp-deleted-prop",
+    severity: "error",
+    match: /^Error!.*\bDeleted\.?$/i,
+    explain: (m) => {
+      const model = /model "([^"]+)"/i.exec(m[0])?.[1];
+      return (
+        "vbsp refused this prop and deleted it from the map" +
+        (model ? ` (${model})` : "") +
+        ". The entity is gone in game even though vbsp exited 0. Use the class the " +
+        "model supports: prop_dynamic for a model that must be dynamic, or a model " +
+        "compiled with $staticprop for prop_static. write_prop now checks this before " +
+        "the compile"
+      );
+    },
+  },
+  {
+    rule: "vbsp-error",
+    severity: "error",
+    match: /^Error!\s*(.+)$/i,
+    explain: (m) =>
+      `vbsp reported an error: ${m[1]}. Exit 0 is not a pass; read the line and the ` +
+      `model/brush it names before shipping the map`,
+  },
+  {
     rule: "bad-surface-extents",
     severity: "error",
     match: /Bad surface extents/i,

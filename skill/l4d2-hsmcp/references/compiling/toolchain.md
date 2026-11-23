@@ -25,7 +25,11 @@ a bug; record which chain built the map.
 ## Reading results
 
 `run_compile` returns per-stage exit codes and findings, not raw output. A non-zero exit is a
-stop. `read_compile_log` turns a log into structured findings if a stage was run elsewhere.
+stop. **Exit 0 is not a pass.** vbsp deletes content it refuses and still exits 0:
+`Error! prop_static using model "...", which must be used on a dynamic entity ... Deleted.`
+is now an `vbsp-deleted-prop` error, and any other `Error!` is `vbsp-error`; the stage and
+the compile fail. Read the findings, not only the exit code. `read_compile_log` turns a log
+into structured findings if a stage was run elsewhere.
 
 Limits are per stage and per chain: `read_map_geometry` reports what a compiled map holds and
 how close it is to the ceiling. Trust the table in that result, not remembered numbers.
