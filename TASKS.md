@@ -9,6 +9,11 @@ problems the user found in the produced maps:
 - **U3 - terrain is flat.** Every outdoor surface is a box or a wedge; the agent never uses the
   displacement/terrain tools.
 
+The second source is the official-campaign audit:
+`.develop-diary/04-log/2026-11-23-official-campaigns-audit.md`. It read all 14 campaigns and
+all 57 co-op chapters and added T13-T22 below; two of its findings (T13 nav flow, T15
+checkpoint names) correct earlier assumptions and are P0.
+
 Order matters: the first five tasks remove errors that pass every gate but fail the player.
 Each task is one commit (code + test + skill page + CHANGELOG), and each is done only when the
 new test fails before the change and passes after it, and `pnpm build`, `typecheck`, `lint` and
@@ -80,10 +85,15 @@ Santa Monica are walk-through.
 **Why.** The user sees a map where objects are ghosts. A visual prop without collision is not
 a bug the compiler reports; the authoring layer has to.
 
-### T03 - a transition check across two maps (P1, F17)
+### T03 - a transition check across two maps (P0, corrected by the official audit)
 
-**Problem.** Map 2 had no `checkpoint_entrance`; all gates were green. Lint is per-map and
-cannot see the name pair; the transition stage does not exist.
+**Problem.** A transition is a pair of maps, and no per-map check sees the pair. The first
+version of this task required `checkpoint_entrance` by name; the official audit shows that is
+wrong: **20 of 57 official maps have an unnamed `prop_door_rotating_checkpoint`**, and names
+include `checkpoint_exit`, `checkpoint_entrance`, `door_checkpointentrance`, `saferoom_door`
+and `None`. The engine resolves the **class** near the landmark; the targetname is a
+convention for outputs. The real pair requirements are a checkpoint-door **class** in each
+safe room, a CHECKPOINT nav area, a matching landmark and a brush `info_changelevel`.
 
 **What to do.**
 1. Add `check_transition` (new tool, `src/campaigns/typescript/tools/` or `src/maps/`):
@@ -91,22 +101,25 @@ cannot see the name pair; the transition stage does not exist.
    Reads the entity lumps (existing `readEntityLump`) and returns:
    - `info_changelevel.map` in the first equals the next map name;
    - `info_landmark` targetnames match;
-   - `checkpoint_exit` exists in the first;
-   - `checkpoint_entrance` exists in the next;
+   - each map has at least one `prop_door_rotating_checkpoint` near its safe room/landmark;
    - both have a CHECKPOINT nav area (read the `.nav` if given);
    - each door origin is in a real opening (reuse the lint's doorway logic or a small
      point-in-solid / opening-width check).
-   A missing item is a named failure with the map and what to add.
+   A missing item is a named failure with the map and what to add. A door **name** is not a
+   requirement; report the name only as advice.
 2. Add a `transition` stage to `run_campaign_gate`, between `campaign` and `test`, running
    the check for every adjacent mission pair. It must fail the gate on any missing item.
-3. Tests: the Santa Monica pair passes; a fixture pair with the arrival door renamed fails
-   naming `checkpoint_entrance`; a pair with mismatched landmarks fails.
-4. Skill: `references/campaign/safe-room-and-transition.md` - add the two-name table and
-   "the arrival map needs its own door, area and landmark even if the player never uses it".
-5. Campaign: the current map 2 already has the door; verify with the new tool.
+3. Tests: the Santa Monica pair passes; an official pair with an unnamed arrival door
+   (`c1m4_atrium`/`c6m3_port`-style) passes; a pair with no checkpoint door in the next map
+   fails; a pair with mismatched landmarks fails.
+4. Skill: `references/campaign/safe-room-and-transition.md` - correct the name claim, add the
+   class/proximity rule, and note that the arrival map needs its own door **class**, area and
+   landmark even if the player never uses it.
+5. Campaign: the current map 2 has both a class and the added arrival door; verify with the
+   new tool.
 
-**Why.** This is the exact error that would have shipped; the tool sees the pair, which no
-per-map check can.
+**Why.** This is the exact pair of properties no per-map check can see; the first version of
+the check would have produced false failures on official maps.
 
 ### T04 - model facing is a contract, not a guess (U1)
 
@@ -280,6 +293,157 @@ is a bug with a repro, not an unknown.
 `pnpm docs:tools`; version bump + CHANGELOG; push; CI green. Update
 `2026-11-23-santa-monica-playtest.md` with what is now closed.
 
+## P0 findings from the official-campaign audit
+
+These come from `2026-11-23-official-campaigns-audit.md`; they change what a green check means.
+
+### T13 - the nav dump's "flow" is MOSTLY_FLAT (P0)
+
+**Problem.** `read_nav_dump` decodes base flag `0x20000000` as `escape-route` and calls a map
+`playable` when any area has it. The binary table says `MOSTLY_FLAT`; official navs have **0**
+`ESCAPE_ROUTE` spawn flags and 1,384/1,582 `MOSTLY_FLAT` on `c1m1_hotel`. The Santa Monica
+`playable` verdict is therefore a **goal-present** verdict, not a flow proof. The live
+`nav_trouble_report` passed, and that is the real evidence.
+
+**What to do.**
+1. In `src/nav/typescript/bsp/navdump.ts`, remove the base `0x20000000 -> escape-route`
+   mapping; decode it as `mostly-flat`. Do not derive `escapeRoute` from base flags.
+2. Change the verdict: `no-goal` when no CHECKPOINT/FINALE; otherwise `goal-present` / a new
+   verdict, not `playable`. The flow proof is the live `nav_trouble_report`/`nav_analyze`
+   (`GetGoalArea`, `Flow Warning`).
+3. Add a test using an official `.nav` (e.g. `c1m1_hotel`) and a dump: assert
+   `mostly-flat = 1,384`, escape-route = 0, and that a map with a goal is not called flow-
+   proven.
+4. Update `references/nav/attributes-and-flow.md` and `references/mechanics/coverage.md`.
+5. The gate's `trouble` stage is the authority; make that explicit.
+
+**Why.** A tool that says "flow present" because the floor is flat is worse than no check: it
+turns a missing goal into a green build.
+
+### T14 - finales are type 1, 2 and 4, with a rescue vehicle (P0)
+
+**Problem.** The skill/tooling only documents type 2. Official finales: `type 1` Gauntlet
+(`c5m5_bridge`, `c13m4_cutthroatcreek`), `type 4` Scavenge (`c1m4_atrium`, `c6m3_port`),
+`type 2` Custom (the rest); `IsSacrificeFinale` on `c7m3_port`; no type 0. A finale is started
+by a radio/button/relay (`ForceFinaleStart`), not only a touch trigger, and completed by a
+relay to `FinaleEscapeFinished`; `FinaleEscapeStarted`/`FinaleEscapeForceSurvivorPositions`
+exist. Finale maps carry 833-6,066 FINALE areas and 13/14 carry 1-74 RESCUE_VEHICLE areas.
+Santa Monica's 116/0 is far below.
+
+**What to do.**
+1. Skill: `references/campaign/finale.md` and `custom-finale.md` - add types 1 and 4, the
+   sacrifice flag, the start/escape contract, and the official radio/button/relay examples.
+2. Tooling: a `read_finale_contract` / validation that checks `trigger_finale.type` against
+   the required inputs (`GauntletStopPanic`, `FinaleEscapeFinished`, ...), and a gate rule for
+   a minimum FINALE/RESCUE_VEHICLE area count on a finale map.
+3. Campaign: expand `sm02_pier` FINALE over the whole outer pier/park and mark the helipad
+   with RESCUE_VEHICLE (32768); keep the `trigger_finale` type 2 with the radio/relay path.
+4. Tests: a fixture for each type; a gate test that a 100-area finale fails the scale rule.
+
+**Why.** Type 1/4 are stock mechanics we cannot currently build or verify; a 116-area finale
+is not the official shape.
+
+### T15 - checkpoint door names are optional (P0)
+
+**Problem.** The skill, `fgdresources.ts` notes and the first T03 required
+`checkpoint_exit`/`checkpoint_entrance` by name. Official data: 37 exit, 31 entrance, **25
+unnamed**, plus custom names; 20 maps have an unnamed checkpoint door and transition. The
+engine resolves the class near the landmark; the name is a convention for outputs.
+
+**What to do.**
+1. Correct `src/maps/typescript/tools/fgdresources.ts` `CLASS_NOTES` and
+   `references/campaign/safe-room-and-transition.md`.
+2. Make `check_transition` (T03) class-based, names advisory.
+3. Revert the "F17 critical" claim in the Santa Monica diary; the added arrival doorway is a
+   quality fix, not the transition bug.
+4. Test: an official map with an unnamed door passes `check_transition`.
+
+**Why.** A check that rejects official maps is a false gate; the name claim was inferred, not
+measured.
+
+## P1 findings from the official-campaign audit
+
+### T16 - 3D skybox, postprocess and per-place fog (P1)
+
+**Problem.** `sky_camera` is on 56/57 official maps, `env_tonemap_controller` on 57/57,
+`postprocess_controller` on 57/57 (2-5 each), and fog controllers number 1-9 (most 2-3).
+Santa Monica has no sky camera, no postprocess, one fog. The tools (`build_skybox`,
+`write_sky_camera`, postprocess) exist; the workflow does not.
+
+**What to do.** Add a "map atmosphere" step: 3D skybox (scale 16), a global fog + interior
+`fog_volume` where needed, 2-3 `postprocess_controller` volumes for interior/exterior, and
+`env_tonemap_controller`. Update `level-design.md`/`world-dressing.md`; apply to Santa Monica;
+screenshot evidence. `write_weather` should explain why one controller is the simple case.
+
+### T17 - spawn/nav scale and the Director (P1)
+
+**Problem.** Official PLAYER_START is 43-336 areas on first maps; CHECKPOINT 5-357; FINALE
+833-6,066; ladders 56/57 maps; hiding spots 57/57; `info_zombie_spawn` is present on only 13
+of 57 maps (44 have zero). The skill's "at least one `info_zombie_spawn`" is wrong; the
+Director uses nav spawn attributes. Santa Monica has 2 player-start, 7 checkpoint, 116 finale,
+0 ladders, 0 hiding spots.
+
+**What to do.** Correct the skill (`new-campaign.md`, `attributes-and-flow.md`): nav is the
+spawn system; `info_zombie_spawn` is optional/legacy. Add a nav-scale rule: first-map start
+region, large FINALE, RESCUE_VEHICLE, ladders/hiding spots/places where the design needs them.
+Use `write_nav_ladders`/`write_nav_hiding_spots`/`write_nav_places`; apply to Santa Monica.
+
+### T18 - official prefabs and scripts are a library (P1)
+
+**Problem.** Official prefabs in `sdk_content/scripting/maps/instance/entitygroups/`:
+`rescue_helicopter.vmf` (45 entities, tracktrain/path/template/maker/relays/viewcontrol/
+fade/miniguns/basket), `tank_manhole`, `radio`, `resupply_helicopter`, `gascan_helicopter`,
+`holdout`, `dash`. Official source scripts: `rescue_helicopter.nut` (humans within 250; bots
+do not board), `base_helicopter`, `gascan_helicopter`, `holdout`, `dash`, `tank_spawn_manager`,
+`reserved_wanderers`, `scriptedmode`. The toolkit has no prefab workflow and the skill does not
+mention them.
+
+**What to do.** Add `read_official_prefab` / a copy+parametrize helper; a skill page on the
+rescue-helicopter contract; a DirectorOptions/MutationOptions validator (the source shows
+`AlwaysAllowWanderers`, `NumReservedWanderers`, `SpawnSetRule`, `SpawnSetPosition`,
+`PreferredMobDirection`, `cm_*`); tests that copy the prefab into a test map and compile.
+
+### T19 - scenes, cutscenes and particles (P1)
+
+**Problem.** `info_particle_system` on 56/57 maps (up to 221), scenes on 18 maps (up to 23),
+`point_viewcontrol` on 6 maps. Santa Monica has none. The toolkit has the readers/writers
+(`read_scene`/`write_scene`? `read_particles`/`write_particle`?); the workflow is missing.
+
+**What to do.** Document `scripted_sequence`/`instanced_scripted_scene`/`logic_choreographed_scene`
+and `point_viewcontrol` (cutscene camera) with a working example; add particle placement
+patterns (`info_particle_system` + `info_particle_target`) and test with a capture. Apply one
+cutscene and a few particles to Santa Monica.
+
+### T20 - item density is `weapon_item_spawn` (P1)
+
+**Problem.** Official campaigns use 4,688 `weapon_item_spawn` (321 on each Milltown map, 288 on
+c8m4), 832 `weapon_spawn`, 970 melee, 653 first-aid, 551 molotov, 516 pipe bomb. Santa Monica
+uses a handful of specific spawns. The skill's weapons page covers the classes but not the
+density layer.
+
+**What to do.** Document the random item spawner and a per-chapter density budget; add a
+`read_item_density` or extend `read_prop_survey`/gate to report item spawns per map; compare a
+candidate with an official peer. This is a design rule, not a hard engine limit.
+
+### T21 - collision and facing, with the official distinction (P1)
+
+**Problem.** Official missing `.phy` is mostly decorative (checkpoint frame reinforcement 35,
+foliage, dead bodies, office ladders, clothing). The user's U2 is real for solid families
+(cars, benches, arcades, carts, helicopter), and U1 (yaw 90/180) is not inferable from the
+MDL. The audit confirms both.
+
+**What to do.** Apply T02/T04 with a **decorative vs solid** classification; use the official
+prefab collision practice (clip brushes around solid props, `prop_dynamic`/`prop_physics`
+where the model has physics); keep the facing table + screenshot check. Audit Santa Monica
+and record the corrected yaw values.
+
+### T22 - update the campaign and the gate (P2)
+
+**What to do.** After T13-T21: expand Santa Monica's finale/PLAYER_START/RESCUE_VEHICLE, add
+skybox/postprocess/fog, item density, a scene/particles, collision/facing; re-run
+compile/nav/live `nav_trouble_report`/gate; then a human transition and escape. Update the
+audit report with what closed.
+
 ## Acceptance for every task
 
 - A test that fails before the change and passes after it.
@@ -290,7 +454,7 @@ is a bug with a repro, not an unknown.
 
 ## Start here
 
-**T01**, then **T02**, **T03**, **T04**, **T05**. After T03 the next campaign build cannot ship
-a broken transition; after T01/T02 it cannot ship a missing or ghost prop; after T04/T05 the
-next maps have the two qualities the user asked for: models pointing the right way with
-collision, and ground that is not a flat box.
+**T01**, then **T13**, **T02**, **T03**, **T04**, **T05**. After T01/T13 the gates stop
+lying about missing content and missing flow; after T02/T03 they stop missing collision and
+the map pair; after T04/T05 the next maps have the two qualities the user asked for: models
+pointing the right way with collision, and ground that is not a flat box.
