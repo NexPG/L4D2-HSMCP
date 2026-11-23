@@ -17,6 +17,12 @@ at the skybox shell.
    Do not displace the map's sealing shell: vbsp takes a displaced brush out of the hull, so its
    volume is void and the map leaks through it. Pass `seal: true` to duplicate each displaced
    brush with a tool material, or run `seal_displacements` afterwards.
+   The face must also fit **one lightmap**: at scale 16 a side longer than ~2000 units
+   (125 luxels) makes vbsp exit with `Bad surface extents - surface is too big to have a
+   lightmap` and write no BSP, because a displacement is not split the way a brush face is.
+   `write_displacement` refuses that face and names the split length and the scale to use.
+   Measured: a 2048x4608 floor at scale 16 failed (`128 > 126`); a 1024x2048 floor at scale 32
+   compiled, generated 157 nav areas and loaded in game with no `NAV ERRORS`.
 3. **Shape it.**
    ```
    sculpt_displacement(path, solidIds: [...], shape: { kind: "noise", amplitude: 48, seed: 7 })

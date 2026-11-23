@@ -17,6 +17,7 @@ import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
 import { readDisplacements } from "./displacement.js";
 import type { Displacement, DispVertex } from "./displacement.js";
 import { resolveFaces } from "./face.js";
+import { faceLuxels, MAX_DISPLACEMENT_LUXELS_PER_AXIS } from "./lightmap.js";
 import type { FaceSelector } from "./select.js";
 import { orderedLoop } from "./solid.js";
 import type { Vec3 } from "./solid.js";
@@ -152,6 +153,24 @@ export function writeDisplacements(
           `displaced. Source only displaces quadrilaterals.`,
       );
       continue;
+    }
+
+    // A displacement cannot be split by vbsp the way a brush face can, so the lightmap
+    // ceiling is a compile failure, not a face-count warning. Catch it here, where the
+    // message can name the size and the two ways out.
+    const scale = face.side.lightmapScale ?? 16;
+    const extents = faceLuxels(face.side, scale);
+    if (extents.worstAxis > MAX_DISPLACEMENT_LUXELS_PER_AXIS) {
+      const units = Math.ceil(extents.worstAxis * scale);
+      const neededScale = 2 ** Math.ceil(Math.log2(units / MAX_DISPLACEMENT_LUXELS_PER_AXIS));
+      throw new VmfDispWriteError(
+        `solid ${face.solidId}: this face is ${extents.worstAxis} luxels across at lightmap ` +
+          `scale ${scale} (${units} units). A displacement cannot be split the way a brush ` +
+          `face is, and past ${MAX_DISPLACEMENT_LUXELS_PER_AXIS} luxels vbsp exits with ` +
+          `"Bad surface extents - surface is too big to have a lightmap" and writes no BSP. ` +
+          `Split the brush so no side is longer than ${MAX_DISPLACEMENT_LUXELS_PER_AXIS * scale} ` +
+          `units, or raise this face's lightmapscale to ${neededScale}.`,
+      );
     }
 
     const loop = orderedLoop(face.side.vertices, face.side.plane.normal);

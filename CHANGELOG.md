@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.237-alpha - 2026-11-23
+
+- **`write_displacement` refuses a face vbsp cannot split.** A displacement replaces one face
+  and is never subdivided, so it must fit one lightmap: past 125 luxels per axis
+  (`MAX_LIGHTMAP_DIM_WITHOUT_BORDER`) vbsp exits with `Bad surface extents - surface is too big
+  to have a lightmap` and writes no BSP. The writer now measures the face with the same
+  function `set_lightmap_scale` uses (`faceLuxels`) and refuses with the face size, the split
+  length and the lightmapscale that would fit. Measured: a 2048x4608 floor at scale 16 failed
+  (`128 > 126`); a 1024x2048 floor at scale 32 compiled.
+- **Displacements verified in game.** That smaller bench floor with `power 3` and `seal: true`
+  compiled, generated **157 nav areas**, loaded with no `NAV ERRORS`, and the screenshot shows
+  the sculpted surface. The coverage row moved from "not L4D2-tested" to verified.
+- **Tool count: 292.** Tests: 235 files, 1,937 passed, 30 skipped.
+
 ## 0.0.236-alpha - 2026-11-23
 
 - **`write_test_bench` starts its hall at y = -256, and that is load-bearing.** The same

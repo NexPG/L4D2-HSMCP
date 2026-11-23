@@ -47,6 +47,16 @@ export class VmfLightmapError extends Error {
  */
 export const MAX_BRUSH_LUXELS_PER_AXIS = 32;
 
+/**
+ * `MAX_LIGHTMAP_DIM_WITHOUT_BORDER`, from the same header: **125** luxels per axis.
+ *
+ * A displacement is not split the way a brush face is, so this is a hard ceiling rather than
+ * a face-count warning: past it vbsp prints `Bad surface extents - surface is too big to
+ * have a lightmap` and writes no BSP at all. Measured on a 2048x4608 floor at scale 16
+ * (`128 > 126`), while the same floor at 1024x2048 with scale 32 compiled.
+ */
+export const MAX_DISPLACEMENT_LUXELS_PER_AXIS = 125;
+
 export interface FaceChange {
   solidId: number;
   sideId: number | null;
@@ -83,7 +93,7 @@ function unit(v: Vec3): Vec3 | null {
  * Luxels a face costs at a given scale: its extent along each texture axis, divided by the
  * scale, plus Source's off-by-one in each direction.
  */
-function luxelsFor(side: SolidSide, scale: number): { total: number; worstAxis: number } {
+export function faceLuxels(side: SolidSide, scale: number): { total: number; worstAxis: number } {
   if (side.vertices.length < 3 || !side.uaxis || !side.vaxis) return { total: 0, worstAxis: 0 };
   const u = unit(side.uaxis.axis);
   const v = unit(side.vaxis.axis);
@@ -139,8 +149,8 @@ export function setLightmapScale(
     const side = face.block;
 
     const current = parsed.lightmapScale ?? 16;
-    const before = luxelsFor(parsed, current);
-    const after = luxelsFor(parsed, scale);
+    const before = faceLuxels(parsed, current);
+    const after = faceLuxels(parsed, scale);
     luxelsBefore += before.total;
     luxelsAfter += after.total;
 

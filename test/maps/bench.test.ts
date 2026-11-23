@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { writeTestBenchTool } from "../../src/maps/typescript/tools/bench.js";
+import { writeDisplacementTool } from "../../src/maps/typescript/tools/displacement.js";
+import { setLightmapScaleTool } from "../../src/maps/typescript/tools/optimise.js";
 import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
@@ -54,4 +56,36 @@ describe("write_test_bench", () => {
     expect(compiled.ok).toBe(true);
     expect(compiled.bsp.toLowerCase()).toContain("bench-compile");
   }, 180_000);
+
+  it("refuses a displacement that vbsp cannot split", async () => {
+    // A 2048 x 4608 floor at lightmap scale 16 is 288 luxels across; a displacement is not
+    // split the way a brush face is, so vbsp exits with "Bad surface extents" and writes no
+    // BSP. The writer must say that before the compile, with the two ways out.
+    const path = join(scratch, "bench-big.vmf");
+    await writeTestBenchTool.handler({ path, confirm: true } as never, ctx);
+    expect(() =>
+      writeDisplacementTool.handler(
+        { path, solidIds: [2], power: 3, confirm: true } as never,
+        ctx,
+      ),
+    ).toThrow(/Bad surface extents/);
+  }, 30_000);
+
+  it("writes a displacement that fits the lightmap budget", async () => {
+    const path = join(scratch, "bench-disp.vmf");
+    await writeTestBenchTool.handler(
+      { path, width: 1024, length: 2048, height: 256, bays: 2, archWidth: 256, confirm: true } as never,
+      ctx,
+    );
+    await setLightmapScaleTool.handler(
+      { path, scale: 32, solidIds: [2], confirm: true } as never,
+      ctx,
+    );
+    const written = (await writeDisplacementTool.handler(
+      { path, solidIds: [2], power: 3, seal: true, confirm: true } as never,
+      ctx,
+    )) as { created: Array<{ power: number }>; sealed: unknown[] };
+    expect(written.created.length).toBeGreaterThan(0);
+    expect(written.sealed.length).toBeGreaterThan(0);
+  }, 30_000);
 });
