@@ -223,6 +223,55 @@ describe("sculptDisplacements", () => {
     expect(row[row.length - 1]).toBe(128);
   });
 
+  it("lays one plane across grids and they meet without a seam", () => {
+    // `slope` is per grid; `plane` is per world. Two brushes sharing x=256 must both put
+    // that edge at the same height, or the patch is a sawtooth with a crack.
+    const r = sculptDisplacements(base, {}, {
+      kind: "plane",
+      from: 0,
+      to: 128,
+      along: "x",
+      fromPos: 0,
+      toPos: 512,
+    });
+    const back = readDisplacements(r.text);
+    expect(back.seams).toEqual([]);
+    expect(back.displacements.every((d) => d.minDistance >= 0 && d.maxDistance <= 128)).toBe(true);
+
+    const west = back.displacements.find((d) => d.solidId === PLAIN.west)!;
+    const east = back.displacements.find((d) => d.solidId === PLAIN.east)!;
+    // The shared edge is x=256, halfway along 0..512.
+    const westEdge = west.vertices.filter((v) => v.flat[0] === 256).map((v) => v.distance);
+    const eastEdge = east.vertices.filter((v) => v.flat[0] === 256).map((v) => v.distance);
+    expect(westEdge.length).toBeGreaterThan(0);
+    expect(eastEdge.length).toBeGreaterThan(0);
+    for (const value of [...westEdge, ...eastEdge]) expect(value).toBeCloseTo(64, 4);
+  });
+
+  it("follows a control-point profile with a crest", () => {
+    const r = sculptDisplacements(base, {}, {
+      kind: "profile",
+      along: "x",
+      points: [
+        { at: 0, height: 0 },
+        { at: 256, height: 96 },
+        { at: 512, height: 0 },
+      ],
+    });
+    const back = readDisplacements(r.text);
+    expect(back.seams).toEqual([]);
+    const west = back.displacements.find((d) => d.solidId === PLAIN.west)!;
+    const east = back.displacements.find((d) => d.solidId === PLAIN.east)!;
+    const crestWest = west.vertices.filter((v) => v.flat[0] === 256).map((v) => v.distance);
+    const crestEast = east.vertices.filter((v) => v.flat[0] === 256).map((v) => v.distance);
+    expect(crestWest.length).toBeGreaterThan(0);
+    expect(crestEast.length).toBeGreaterThan(0);
+    for (const value of [...crestWest, ...crestEast]) expect(value).toBeCloseTo(96, 4);
+    for (const value of [...west.vertices.filter((v) => v.flat[0] === 0), ...east.vertices.filter((v) => v.flat[0] === 512)].map((v) => v.distance)) {
+      expect(value).toBeCloseTo(0, 4);
+    }
+  });
+
   it("makes the same noise twice from the same seed", () => {
     // A terrain that cannot be regenerated from what produced it cannot be reviewed, and
     // cannot survive a merge. That is why noise takes a seed rather than reaching for

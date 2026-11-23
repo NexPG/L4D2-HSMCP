@@ -41,7 +41,7 @@ getting `ENOENT` on the first call.
 | Hammer | Here | Notes |
 |---|---|---|
 | Block tool - box | `write_vmf_solid` | |
-| Terrain patch | `write_vmf_terrain` | Grid -> displacement -> noise -> sew in one call |
+| Terrain patch | `write_vmf_terrain` | Grid -> displacement -> slope/profile -> noise -> sew in one call |
 | Block tool — wedge | `write_vmf_solid` | Five faces, not a box with a collapsed edge |
 | Block tool — cylinder | `write_vmf_solid` | Half-step offset, so an even prism faces an axis |
 | Block tool — arch | `write_vmf_solid` | Refuses a segment past a quarter turn: beyond it, four corners describe the complement of the sector |

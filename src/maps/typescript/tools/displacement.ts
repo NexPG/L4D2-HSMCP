@@ -328,12 +328,17 @@ export const sewDisplacementsTool = defineTool({
 export const sculptDisplacementTool = defineTool({
   name: "sculpt_displacement",
   description:
-    "Reshapes displacements: flatten, raise, slope between two heights, or add noise. " +
-    "Declarative shapes rather than a table of vertices, and noise takes a seed rather " +
-    "than reaching for a random number generator -- a terrain that cannot be regenerated " +
-    "from what produced it cannot be reviewed, cannot be tested and cannot survive a merge. " +
-    "Sculpting one displacement of a terrain moves the edge it shares with its neighbours, " +
-    "so the result says whether a seam opened and sew_displacements closes it.",
+    "Reshapes displacements: flatten, raise, slope between two heights, add noise, lay " +
+    "a plane across every selected grid, or follow a control-point profile. `slope` runs " +
+    "each grid from `from` to `to` on its own face, so a row of grids becomes a sawtooth; " +
+    "`plane` measures every vertex's flat world position against fromPos/toPos, which is " +
+    "the one to use for a beach or a hill made of several cells; `profile` is a plane with " +
+    "a crest, for a dune that must rise and fall again. Declarative shapes rather than a " +
+    "table of vertices, and noise takes a seed rather than reaching for a random number " +
+    "generator -- a terrain that cannot be regenerated from what produced it cannot be " +
+    "reviewed, cannot be tested and cannot survive a merge. Sculpting one displacement of " +
+    "a terrain moves the edge it shares with its neighbours, so the result says whether a " +
+    "seam opened and sew_displacements closes it.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -348,6 +353,22 @@ export const sculptDisplacementTool = defineTool({
         from: z.number(),
         to: z.number(),
         along: z.enum(["x", "y"]),
+      }),
+      z.object({
+        kind: z.literal("plane"),
+        from: z.number().describe("Height at fromPos."),
+        to: z.number().describe("Height at toPos."),
+        along: z.enum(["x", "y"]),
+        fromPos: z.number().describe("World coordinate of the low end."),
+        toPos: z.number().describe("World coordinate of the high end."),
+      }),
+      z.object({
+        kind: z.literal("profile"),
+        along: z.enum(["x", "y"]),
+        points: z
+          .array(z.object({ at: z.number(), height: z.number() }))
+          .min(2)
+          .describe("World coordinate and height, in any order. Clamped at both ends."),
       }),
       z.object({
         kind: z.literal("noise"),

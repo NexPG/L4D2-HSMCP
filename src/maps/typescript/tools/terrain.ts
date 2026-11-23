@@ -20,13 +20,13 @@ export const writeVmfTerrain = defineTool({
   name: "write_vmf_terrain",
   description:
     "Builds a terrain patch: a grid of floor brushes at floorZ, a power-2/3/4 displacement " +
-    "on every top face, then sculpt_displacement noise and sew_displacements. This is the " +
-    "native Source terrain path, not a heightmap importer. Each displaced cell is duplicated " +
-    "as a tool-textured solid, because a displaced brush contributes no volume to the hull " +
-    "and a bare patch leaks; pass seal:false only when the patch sits on a floor that already " +
-    "seals. It does NOT remove an existing flat floor: use it as the floor of the area, or " +
-    "pits will be hidden by the old brush. Keep the cabin, doors, boardwalk and stairs on " +
-    "flat floor. Guarded.",
+    "on every top face, then an optional continuous slope, sculpt_displacement noise and a " +
+    "sew. This is the native Source terrain path, not a heightmap importer. Each displaced " +
+    "cell is duplicated as a tool-textured solid, because a displaced brush contributes no " +
+    "volume to the hull and a bare patch leaks; pass seal:false only when the patch sits on " +
+    "a floor that already seals. It does NOT remove an existing flat floor: use it as the " +
+    "floor of the area, or pits will be hidden by the old brush. Keep the cabin, doors, " +
+    "boardwalk and stairs on flat floor. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -48,6 +48,37 @@ export const writeVmfTerrain = defineTool({
       .describe("Top and side material. A blend material can be painted by height later."),
     noise: z.number().min(0).default(48).describe("Noise amplitude in units. 0 skips sculpting."),
     seed: z.number().int().default(7).describe("Same seed, same terrain."),
+    slope: z
+      .object({
+        from: z.number().describe("Height at the low edge, relative to floorZ."),
+        to: z.number().describe("Height at the high edge, relative to floorZ."),
+        along: z.enum(["x", "y"]).describe("Axis the ramp runs along."),
+      })
+      .optional()
+      .describe(
+        "One continuous ramp across the whole patch, not per cell: from at the mins " +
+          "edge and to at the maxs edge. A 1:12 beach is about 4.8 degrees; a walkable " +
+          "slope is at most 45 degrees (46 units per 32-unit brush step).",
+      ),
+    profile: z
+      .object({
+        along: z.enum(["x", "y"]).describe("Axis the profile runs along."),
+        points: z
+          .array(
+            z.object({
+              at: z.number().describe("World coordinate along the axis."),
+              height: z.number().describe("Height relative to floorZ."),
+            }),
+          )
+          .min(2)
+          .describe("Control points, in any order; clamped beyond the first and last."),
+      })
+      .optional()
+      .describe(
+        "A control-point heightfield instead of a slope: a dune that rises and falls " +
+          "again. Use it when the beach has to meet the land at both edges. Give slope or " +
+          "profile, not both.",
+      ),
     seal: z
       .boolean()
       .optional()
@@ -123,6 +154,44 @@ export const writeVmfTerrain = defineTool({
     )) as { created?: unknown[]; warnings?: string[] };
 
     const warnings = [...(displaced.warnings ?? [])];
+    if (args.slope !== undefined && args.profile !== undefined) {
+      throw new Error("give slope or profile, not both: they shape the same surface");
+    }
+    // The ramp comes before the noise: `plane` and `profile` measure flat world positions,
+    // so the result is the same whether or not a grid was already sculpted; noise then
+    // rides on top of it.
+    if (args.slope !== undefined) {
+      const along = args.slope.along;
+      const sculpted = (await sculptDisplacementTool.handler(
+        {
+          path,
+          solidIds,
+          shape: {
+            kind: "plane",
+            from: args.slope.from,
+            to: args.slope.to,
+            along,
+            fromPos: along === "x" ? x0 : y0,
+            toPos: along === "x" ? x1 : y1,
+          },
+          confirm: true,
+        } as never,
+        ctx,
+      )) as { warnings?: string[] };
+      warnings.push(...(sculpted.warnings ?? []));
+    }
+    if (args.profile !== undefined) {
+      const sculpted = (await sculptDisplacementTool.handler(
+        {
+          path,
+          solidIds,
+          shape: { kind: "profile", along: args.profile.along, points: args.profile.points },
+          confirm: true,
+        } as never,
+        ctx,
+      )) as { warnings?: string[] };
+      warnings.push(...(sculpted.warnings ?? []));
+    }
     if (noise > 0) {
       const sculpted = (await sculptDisplacementTool.handler(
         {
@@ -153,7 +222,8 @@ export const writeVmfTerrain = defineTool({
       nextStep:
         "Paint the blend with paint_displacement(byHeight/bySlope) and keep props/doors on " +
         "flat floor. Each cell is sealed by default; compile and read_leak before trusting " +
-        "the patch as the map's floor.",
+        "the patch as the map's floor. Nav generation follows the displaced surface, so a " +
+        "grade beyond 45 degrees leaves a gap the player cannot cross.",
     };
   },
 });

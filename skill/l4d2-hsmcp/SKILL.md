@@ -83,6 +83,7 @@ again.
 | A prop faces the wall or is 90/180° off | Use `write_prop` `facing` + `modelForward` from the measured table; look at the model with `preview_model` (`view` for the other sides) | `references/mapping/model-facing.md` |
 | Official servers work, a friend's local/listen server does not | Check the game's `Network: IP` line; use a Steam lobby, not `connect` to a NAT'd host, and remove `-insecure` | `troubleshooting/local-server-connection.md` |
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
+| Nav generation finishes in 0.1 s and the dump has 0 areas | Put the spawn on a flat brush ring, keep the patch's rise ≤96 units from it, and block scenery tops with `func_nav_blocker`; a pure displacement floor or a 2048 patch at 1:12 gives empty nav | `troubleshooting/terrain-nav-empty.md` |
 
 ## Route the task first
 
@@ -175,6 +176,7 @@ material; the instructions live in one place.
 | `troubleshooting/prop-deleted.md` | a prop is in the VMF but missing in game, or vbsp logs `Error! ... Deleted.` |
 | `troubleshooting/props-no-collision.md` | every prop is a ghost; the compiled `solidity` is 0 |
 | `troubleshooting/local-server-connection.md` | official servers work but a friend's local/listen server does not |
+| `troubleshooting/terrain-nav-empty.md` | nav generation says complete but the dump has 0 areas, or a terrain patch has no nav |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 

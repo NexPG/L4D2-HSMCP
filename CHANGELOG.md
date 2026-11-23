@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.260-alpha - 2026-11-24
+
+- **`write_vmf_terrain` shapes a patch, not a row of sawteeth.** New `slope` and
+  `profile` options; `profile` is a control-point heightfield for a dune that rises and
+  falls again. Both measure the undisplaced world position, so neighbouring cells meet at
+  the same height.
+- **`sculpt_displacement` gains `plane` and `profile`.** `plane` is one ramp across every
+  selected grid (`slope` remains per grid); `profile` follows control points. `noise` is
+  documented as per-vertex, so its amplitude must stay under about a quarter of the vertex
+  spacing.
+- **Nav sampling of terrain has a measured height band.** A 2048x2048 patch at 1:12
+  (170 units of rise) with the spawn on the low ring produced 0 nav areas; 1:24 (85) and
+  96 units worked, 128 and 170 failed. A pure displacement floor with the spawn on it also
+  produced 0. Keep the spawn on a flat brush ring and the rise at or below 96 units, or
+  split the patch. New `troubleshooting/terrain-nav-empty.md`.
+- **Santa Monica's beach is a displacement surface.** Waterline, dune crest and house line
+  at 0/48/0 units, seeded noise 8, painted by height; the horizon pier and the beach are
+  kept out of nav with `func_nav_blocker`. The full gate passes: both chapters navved,
+  `nav_trouble_report` pass, transitions pass, no `NAV ERRORS`.
+- **Tool count: 295.** Tests: 243 files, 1,978 passed, 32 skipped.
+
 ## 0.0.259-alpha - 2026-11-24
 
 - **L4D2 BSP displacement lumps are corrected.** `DISPINFO` is lump **26** (176-byte

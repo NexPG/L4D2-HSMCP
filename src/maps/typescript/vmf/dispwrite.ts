@@ -652,6 +652,33 @@ export type SculptShape =
   | { kind: "flatten" }
   | { kind: "raise"; by: number }
   | { kind: "slope"; from: number; to: number; along: "x" | "y" }
+  /**
+   * One ramp across every selected displacement, measured in world coordinates.
+   *
+   * `slope` is local: each grid runs from `from` to `to` on its own face, so a row of
+   * grids sculpted with it is a sawtooth, not a hill. `plane` uses each vertex's flat world
+   * position, so neighbouring grids meet at the same height and a beach is one ramp.
+   */
+  | {
+      kind: "plane";
+      from: number;
+      to: number;
+      along: "x" | "y";
+      fromPos: number;
+      toPos: number;
+    }
+  /**
+   * A control-point heightfield along one world axis: a dune that rises and falls again.
+   *
+   * `slope` and `plane` are straight lines; a berm has a crest. Points are sorted by `at`
+   * and clamped at both ends, so a beach can start and end at the same height and still
+   * have a dune in between.
+   */
+  | {
+      kind: "profile";
+      along: "x" | "y";
+      points: Array<{ at: number; height: number }>;
+    }
   | { kind: "noise"; amplitude: number; seed: number };
 
 /**
@@ -732,6 +759,32 @@ function heightFor(shape: SculptShape, v: DispVertex, size: number): number {
     case "slope": {
       const t = (shape.along === "x" ? v.x : v.y) / (size - 1);
       return shape.from + (shape.to - shape.from) * t;
+    }
+    case "plane": {
+      // The undisplaced world position, not `position`: after noise the vertex is no
+      // longer on the plane it is being measured against.
+      const span = shape.toPos - shape.fromPos;
+      const raw = span === 0 ? 0 : ((shape.along === "x" ? v.flat[0] : v.flat[1]) - shape.fromPos) / span;
+      const t = Math.min(1, Math.max(0, raw));
+      return shape.from + (shape.to - shape.from) * t;
+    }
+    case "profile": {
+      if (shape.points.length === 0) return v.distance;
+      const at = shape.along === "x" ? v.flat[0] : v.flat[1];
+      const points = [...shape.points].sort((a, b) => a.at - b.at);
+      const first = points[0]!;
+      const last = points[points.length - 1]!;
+      if (at <= first.at) return first.height;
+      if (at >= last.at) return last.height;
+      for (let i = 1; i < points.length; i += 1) {
+        const right = points[i]!;
+        if (at > right.at) continue;
+        const left = points[i - 1]!;
+        const span = right.at - left.at;
+        const t = span === 0 ? 0 : (at - left.at) / span;
+        return left.height + (right.height - left.height) * t;
+      }
+      return last.height;
     }
     case "noise":
       return v.distance + shape.amplitude * (hash(v.x, v.y, shape.seed) * 2 - 1);

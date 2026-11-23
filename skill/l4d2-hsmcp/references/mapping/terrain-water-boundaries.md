@@ -10,33 +10,67 @@ at the skybox shell.
    power-4 grid is 17x17 vertices. One 2048-unit box gives one broad wave and no detail. Use
    `write_vmf_solid` with several boxes (a cell every 128-256 units) for the area that will
    be sculpted, and keep a separate flat floor under paths, doorways and props.
-2. **Displace the top faces.**
+2. **Displace the top faces.** The one-call path is `write_vmf_terrain`, which builds the
+   grid, displaces every top face, applies an optional slope or profile, adds seeded noise
+   and sews the seams:
    ```
-   write_displacement(path, power: 4, facing: "up", material: "<ground material>", confirm: true)
+   write_vmf_terrain(path, mins, maxs, floorZ: 0, cellSize: 256, power: 3,
+                     material: "LIGHTHOUSE/BLEND/BLEND_SAND03_CLIFF",
+                     profile: { along: "x", points: [{ at: -1180, height: 0 },
+                               { at: -1020, height: 48 }, { at: -860, height: 0 }] },
+                     noise: 8, seed: 11, seal: true, confirm: true)
    ```
-   Do not displace the map's sealing shell: vbsp takes a displaced brush out of the hull, so its
-   volume is void and the map leaks through it. Pass `seal: true` to duplicate each displaced
-   brush with a tool material, or run `seal_displacements` afterwards.
+   The lower-level path is `write_displacement(path, power: 4, facing: "up", material:
+   "<ground material>", confirm: true)`. Do not displace the map's sealing shell: vbsp takes
+   a displaced brush out of the hull, so its volume is void and the map leaks through it. Pass
+   `seal: true` to duplicate each displaced brush with a tool material, or run
+   `seal_displacements` afterwards. A lower brush whose top is below the terrain also seals;
+   the seal's flat face clips any terrain that dips below it, so keep the terrain's edge on
+   that plane.
    The face must also fit **one lightmap**: at scale 16 a side longer than ~2000 units
    (125 luxels) makes vbsp exit with `Bad surface extents - surface is too big to have a
    lightmap` and write no BSP, because a displacement is not split the way a brush face is.
    `write_displacement` refuses that face and names the split length and the scale to use.
    Measured: a 2048x4608 floor at scale 16 failed (`128 > 126`); a 1024x2048 floor at scale 32
    compiled, generated 157 nav areas and loaded in game with no `NAV ERRORS`.
-3. **Shape it.**
+3. **Shape it.** `slope` is one ramp per patch; `profile` is a control-point heightfield for
+   a dune that has to rise and fall again. Both measure the **undisplaced world position**, so
+   neighbouring cells meet at the same height and the patch is one surface, not a row of
+   sawteeth.
    ```
    sculpt_displacement(path, solidIds: [...], shape: { kind: "noise", amplitude: 48, seed: 7 })
-   sculpt_displacement(path, solidIds: [...], shape: { kind: "slope", from: 0, to: 96, along: "y" })
+   sculpt_displacement(path, solidIds: [...], shape: { kind: "plane", from: 0, to: 96,
+                       along: "y", fromPos: -2816, toPos: 3840 })
+   sculpt_displacement(path, solidIds: [...], shape: { kind: "profile", along: "x",
+                       points: [{ at: 0, height: 0 }, { at: 256, height: 48 },
+                                { at: 512, height: 0 }] })
    ```
-   `noise` takes a seed so the same map can be regenerated. `raise`, `flatten` and `slope`
-   are the other three shapes.
+   `noise` takes a seed so the same map can be regenerated. Its amplitude is **per vertex**:
+   16 units at a 16-unit grid spacing is a 45-degree zigzag, not a dune. Keep the amplitude
+   under about a quarter of the vertex spacing.
 4. **Sew the seams.** `sew_displacements` closes the crack between two grids that were
-   sculpted separately.
+   sculpted separately. A patch made in one `write_vmf_terrain` call still needs it: noise is
+   generated per local grid, so the shared edge is averaged.
 5. **Paint the blend.** `paint_displacement` with `byHeight` or `bySlope` on a blend material
-   (`NATURE/BLEND...`). A non-blend VMT ignores alpha, and nothing in vbsp says so.
+   (`NATURE/BLEND...`, `LIGHTHOUSE/BLEND/...`). A non-blend VMT ignores alpha, and nothing in
+   vbsp says so. On a beach, `byHeight` low near the water and high at the dune crest gives
+   wet-to-dry sand; keep the high value near the crest or the whole beach becomes the second
+   texture.
 6. **Keep the route gradeable.** A 45-degree slope is the walk limit; a 51-degree wedge is a
    wall. Stairs must be 18 units or less per step. `write_vmf_solid` refuses both unless
    `steep: true` is passed for scenery.
+7. **Nav does not sample an unbounded height range.** The engine marks a walkable position at
+   the player spawn and samples around it. A 2048x2048 patch at 1:12 (170 units of rise) with
+   the spawn on the low ring produced **0 nav areas**: `Generation complete! 0.1 seconds`, an
+   empty nav dump, and a `verdict: empty`. The same patch at 1:24 (85 units) produced nav
+   areas; 96 worked, 128 failed. Keep the spawn on a flat brush ring and the patch's total
+   rise inside the measured band (≤96 units), or split the terrain and generate nav in
+   bands. The Santa Monica beach is 48 units and navves normally. A pure displacement floor
+   with the spawn on it also produced 0 areas: the spawn must stand on an ordinary brush.
+8. **Decorations are not nav.** A flat silhouette top (the horizon pier) becomes a few
+   tiny no-merge areas and fails the engine's non-walkable-connections check. A
+   `func_nav_blocker` over the scenery volume fixes the check without making the scenery
+   solid; the same is true of a beach that is seen but not walked.
 
 ## Water
 

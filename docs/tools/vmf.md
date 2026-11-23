@@ -70,7 +70,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_bsp_overlays` | Lists compiled overlays from a .bsp: id, texinfo/material, face count and indices, render order, U/V ranges, four UV points, origin and basis normal. |
 | `read_displacements` | Reads the displacements of a .vmf: the grids of vertices that replace a brush face and make every piece of terrain in Source. |
 | `read_lightmap_budget` | Where a compiled map's lightmap resolution went. |
-| `sculpt_displacement` | Reshapes displacements: flatten, raise, slope between two heights, or add noise. |
+| `sculpt_displacement` | Reshapes displacements: flatten, raise, slope between two heights, add noise, lay a plane across every selected grid, or follow a control-point profile. |
 | `seal_displacements` | Adds the solid a displacement removed: duplicates every displaced world brush, drops its dispinfo and paints the copy with a tool material. |
 | `set_face_material` | Sets the material on selected faces of a .vmf. |
 | `set_face_uv` | Writes a face's texture axes directly: the U and V vectors, their offsets and scales, and the `rotation` key. |
@@ -87,7 +87,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_postprocess` | Places a postprocess entity: an `env_tonemap_controller` (with a `logic_auto` that sets the requested exposure, bloom and rate inputs at map spawn), an `env_fade`, an `env_shake`, or a `color_correction` volume. |
 | `write_rope` | Places a rope as the pair the engine expects: a `move_rope` at the start whose `NextKey` names a `keyframe_rope` at the end. |
 | `write_sprite` | Places a sprite, a beam or a laser with the targets those entities need. |
-| `write_vmf_terrain` | Builds a terrain patch: a grid of floor brushes at floorZ, a power-2/3/4 displacement on every top face, then sculpt_displacement noise and sew_displacements. |
+| `write_vmf_terrain` | Builds a terrain patch: a grid of floor brushes at floorZ, a power-2/3/4 displacement on every top face, then an optional continuous slope, sculpt_displacement noise and a sew. |
 | `write_vmf_water` | Creates a water volume: a `func_water_analog` brush with a Water-shader material and a `water_lod_control` entity if the map has none. |
 
 ## Instances and prefabs
