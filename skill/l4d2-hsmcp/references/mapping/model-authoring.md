@@ -186,12 +186,17 @@ decompiler writes the compiled `actweight` after the name (`activity ACT_VM_IDLE
 and comments out a zero weight, which studiomdl also refuses. Verified: `gascan001a` compiles
 with stock `studiomdl` after this, and both activities came back with weight 1.
 
-**Weight lists are the remaining stock-compiler limit.** With weights, stock `studiomdl` on
-`v_huntingrifle` stops at `unknown bone reference 'ValveBiped.Bip01_L_Finger4' in weightlist`
-even though all 63 names match the SMD's nodes exactly; `studiomdl++` compiles the same QC.
-`run_studiomdl` defaults to `auto` (plus-plus when installed), which is the right choice for a
-decompiled character or viewmodel; force the stock compiler only for a model without weight
-lists.
+**Weight lists are limited to bones that carry vertices.** Stock `studiomdl` treats a
+`$weightlist` entry naming a bone with no mesh vertices as an error (`unknown bone reference`,
+aborting the model), even though the name exists in the skeleton: measured on
+`v_huntingrifle`, where only 6 of 63 bones are weighted by the mesh, and on the finger bones
+Valve's own viewmodel animation uses. The decompiler therefore writes an entry only for a
+bone with at least one LOD-0 vertex (`survivor_gambler` has 69 such bones, the hunter mesh 53,
+`v_huntingrifle` 6), and drops a list that becomes all-default. After the change both
+`gascan001a` and `v_huntingrifle` compile with **stock** `studiomdl`. The trade-off is stated
+rather than hidden: a weight for a bone that drives no vertex is not written, so a model whose
+attachment rides an unweighted bone keeps the default weight there. `studiomdl++` still
+accepts the full list if you need it, with a warning.
 
 ## L4D2 specifics
 

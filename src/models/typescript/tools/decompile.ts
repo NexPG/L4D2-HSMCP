@@ -567,7 +567,7 @@ function qcText(
   bodyFile: string,
   targetModelName: string,
   collision: (CollisionModel & { smdName: string }) | null,
-  weightLists: Array<{ name: string; weights: number[] }>,
+  weightLists: Array<{ name: string; entries: Array<{ index: number; weight: number }> }>,
   sequences: Array<{
     name: string;
     fps: number;
@@ -758,9 +758,9 @@ function qcText(
   } else {
     for (const list of weightLists) {
       lines.push("", `$weightlist "${list.name}" {`);
-      list.weights.forEach((weight, index) => {
-        lines.push(`\t"${bones[index]?.name ?? `bone_${index}`}" ${fmt(weight)}`);
-      });
+      for (const entry of list.entries) {
+        lines.push(`\t"${bones[entry.index]?.name ?? `bone_${entry.index}`}" ${fmt(entry.weight)}`);
+      }
       lines.push("}");
     }
     for (const sequence of sequences) {
@@ -1247,8 +1247,23 @@ export const decompileModelTool = defineTool({
     const skippedSequences: Array<{ name: string; reason: string }> = [];
     const usedNames = new Set<string>();
     let resampled = 0;
+    // Bones that actually carry mesh vertices. studiomdl drops the rest from the compiled
+    // skeleton, and a `$weightlist` entry naming a dropped bone is an error in the stock
+    // compiler ("unknown bone reference") — measured on `v_huntingrifle`, where the finger
+    // bones exist in the source skeleton but not in the mesh.
+    const weightedBones = new Set<number>();
+    for (const vertex of geometry.lod0Vertices) {
+      for (let slot = 0; slot < (vertex.boneCount ?? 0); slot += 1) {
+        const bone = vertex.bones?.[slot];
+        if (bone !== undefined) weightedBones.add(bone);
+      }
+    }
     // Unique non-default bone-weight lists, named after the first sequence that uses them.
-    const weightLists: Array<{ name: string; signature: string; weights: number[] }> = [];
+    const weightLists: Array<{
+      name: string;
+      signature: string;
+      entries: Array<{ index: number; weight: number }>;
+    }> = [];
     for (const [index, sequence] of sequences.entries()) {
       const blendTotal = sequence.groupSizes[0] * sequence.groupSizes[1];
       if (blendTotal <= 0 || blendTotal > 64 || sequence.animIndexOffset <= 0) {
@@ -1325,11 +1340,16 @@ export const decompileModelTool = defineTool({
           for (let index = 0; index < bones.length; index += 1) {
             weights.push(mdlBytes.readFloatLE(at + index * 4));
           }
-          if (weights.some((weight) => Math.abs(weight - 1) > 1e-6)) {
-            const signature = weights.map((weight) => weight.toFixed(4)).join(",");
+          const entries = weights
+            .map((weight, index) => ({ index, weight }))
+            .filter((entry) => weightedBones.has(entry.index));
+          if (entries.some((entry) => Math.abs(entry.weight - 1) > 1e-6)) {
+            const signature = entries
+              .map((entry) => `${entry.index}:${entry.weight.toFixed(4)}`)
+              .join(",");
             let named = weightLists.find((entry) => entry.signature === signature);
             if (!named) {
-              named = { name: `weights_${name}`, signature, weights };
+              named = { name: `weights_${name}`, signature, entries };
               weightLists.push(named);
             }
             weightListName = named.name;

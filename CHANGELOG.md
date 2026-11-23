@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.248-alpha - 2026-11-23
+
+- **Weight lists are written only for bones the mesh uses, and stock `studiomdl` now
+  compiles.** Stock aborts on a `$weightlist` entry for a vertex-less bone
+  (`unknown bone reference`), which is what stopped `v_huntingrifle`: only 6 of its 63 bones
+  carry LOD-0 vertices, while the animation layer references the finger bones. The decompiler
+  filters entries to weighted bones and drops a list that becomes all-default. Measured
+  weighted-bone counts: `v_huntingrifle` 6, hunter mesh 53, `survivor_gambler` 69. After the
+  change `gascan001a` and `v_huntingrifle` both compile with the **stock** compiler (exit 0).
+- **Skill**: the trade-off is written down — a weight on a bone that drives no vertex is not
+  emitted, so an attachment riding such a bone keeps the default; `studiomdl++` still accepts
+  the full list with a warning.
+- **Tool count: 293.** Tests: 238 files, 1,944 passed, 30 skipped.
+
 ## 0.0.247-alpha - 2026-11-23
 
 - **`activity` is written with its weight, and that fixes stock studiomdl.** A `$sequence`
