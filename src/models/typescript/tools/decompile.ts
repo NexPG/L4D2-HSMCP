@@ -215,6 +215,26 @@ function referenceSmd(
   return `${lines.join("\n")}\n`;
 }
 
+/**
+ * Forces a blend clip to one frame count.
+ *
+ * The MDL lets the animations behind one sequence differ in length, and the game interpolates
+ * them. studiomdl does not: it expects every SMD listed by one `$sequence` to have the same
+ * number of `time` blocks, and stops with `Line N is incomplete` when one is longer. Measured
+ * on `gascan001a`: `gasCan_idle_2.smd` decoded to 61 frames while the other two clips had 28.
+ * Resampling keeps the clip's motion and its endpoints; the cost is a warning, not silence.
+ */
+function resampleFrames(frames: AnimationFrame[], count: number): AnimationFrame[] {
+  if (frames.length === count || frames.length === 0 || count <= 0) return frames;
+  if (count === 1) return [frames[0]!];
+  const out: AnimationFrame[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const at = Math.round((index * (frames.length - 1)) / (count - 1));
+    out.push(frames[Math.min(frames.length - 1, at)]!);
+  }
+  return out;
+}
+
 function animationSmd(bones: ModelBone[], frames: AnimationFrame[]): string {
   const lines: string[] = ["version 1", "nodes"];
   if (bones.length === 0) {
@@ -553,6 +573,7 @@ function qcText(
     fps: number;
     frameCount: number;
     activityName: string;
+    activityWeight: number;
     loop: boolean;
     files: string[];
     blendWidth?: number;
@@ -757,7 +778,9 @@ function qcText(
           `"${sequence.files[0] ?? sequence.name}"`,
           `fps ${fmt(sequence.fps)}`,
         ];
-        if (sequence.activityName) args.push(`activity ${sequence.activityName}`);
+        if (sequence.activityName && sequence.activityWeight > 0) {
+          args.push(`activity ${sequence.activityName} ${fmt(sequence.activityWeight)}`);
+        }
         if (sequence.loop) args.push("loop");
         lines.push(`$sequence ${args.join(" ")}`);
         continue;
@@ -771,7 +794,13 @@ function qcText(
         lines.push(`\t${sequence.files.map((file) => `"${file}"`).join(" ")}`);
       }
       lines.push(`\tfps ${fmt(sequence.fps)}`);
-      if (sequence.activityName) lines.push(`\tactivity ${sequence.activityName}`);
+      if (sequence.activityName && sequence.activityWeight > 0) {
+        lines.push(`\tactivity ${sequence.activityName} ${fmt(sequence.activityWeight)}`);
+      } else if (sequence.activityName) {
+        lines.push(
+          `\t// activity ${sequence.activityName} has weight 0; studiomdl refuses it`,
+        );
+      }
       if (sequence.loop) lines.push("\tloop");
       for (const option of sequence.options) lines.push(`\t${option}`);
       if (sequence.weightListName) lines.push(`\tweightlist "${sequence.weightListName}"`);
@@ -1191,6 +1220,7 @@ export const decompileModelTool = defineTool({
       fps: number;
       frameCount: number;
       activityName: string;
+      activityWeight: number;
       loop: boolean;
       blendWidth?: number;
       blends: Array<{ name: string; start: number; end: number }>;
@@ -1216,6 +1246,7 @@ export const decompileModelTool = defineTool({
     }> = [];
     const skippedSequences: Array<{ name: string; reason: string }> = [];
     const usedNames = new Set<string>();
+    let resampled = 0;
     // Unique non-default bone-weight lists, named after the first sequence that uses them.
     const weightLists: Array<{ name: string; signature: string; weights: number[] }> = [];
     for (const [index, sequence] of sequences.entries()) {
@@ -1305,11 +1336,18 @@ export const decompileModelTool = defineTool({
           }
         }
       }
+      const targetFrames = decoded[0]!.frames.length;
+      const resampledClips = decoded.map((entry, blend) => {
+        if (blend === 0 || entry.frames.length === targetFrames) return entry;
+        resampled += 1;
+        return { ...entry, frames: resampleFrames(entry.frames, targetFrames) };
+      });
       sequenceDefs.push({
         name,
         fps: decoded[0]!.animation.fps > 0 ? decoded[0]!.animation.fps : 30,
         frameCount: decoded[0]!.frames.length,
         activityName: sequence.activityName,
+        activityWeight: sequence.activityWeight,
         loop: (sequence.flags & 1) !== 0,
         ...(sequence.groupSizes[0] !== sequence.groupSizes[1]
           ? { blendWidth: sequence.groupSizes[0] }
@@ -1339,7 +1377,7 @@ export const decompileModelTool = defineTool({
             end: layer.end,
           }))
           .filter((layer) => layer.sequenceName.length > 0),
-        clips: decoded.map((entry, blend) => ({ smd: files[blend]!, frames: entry.frames })),
+        clips: resampledClips.map((entry, blend) => ({ smd: files[blend]!, frames: entry.frames })),
       });
     }
 
@@ -1357,6 +1395,13 @@ export const decompileModelTool = defineTool({
     }
     const bodyFiles = new Set<string>();
     const warnings: string[] = [];
+    if (resampled > 0) {
+      warnings.push(
+        `${resampled} blend clip(s) had a different frame count from their sequence's first ` +
+          "clip and were resampled to it; studiomdl requires one length per sequence and " +
+          "otherwise stops with `Line N is incomplete`.",
+      );
+    }
     if (droppedLayers > 0) {
       warnings.push(
         `${droppedLayers} autolayer(s) name a sequence this decompile did not write; they are ` +

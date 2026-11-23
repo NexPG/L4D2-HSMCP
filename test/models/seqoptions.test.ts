@@ -42,5 +42,7 @@ describe("sequence options", () => {
     // addlayer: gasCan_idle layers a_gasCan_vaims. Verified by a real compile: the sequence
     // came back with one autolayer.
     expect(qc).toContain('\taddlayer "a_gasCan_vaims"');
+    // `activity` without a weight makes stock studiomdl stop with "Line N is incomplete".
+    expect(qc).toContain("activity ACT_VM_IDLE_GASCAN 1");
   }, 60_000);
 });

@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.247-alpha - 2026-11-23
+
+- **`activity` is written with its weight, and that fixes stock studiomdl.** A `$sequence`
+  line ending in `activity ACT_...` with no number makes stock `studiomdl` stop with
+  `Line N is incomplete`; the message names the QC line, not the SMD. The decompiler now
+  writes the compiled `actweight` (`activity ACT_VM_IDLE_GASCAN 1`) and comments out a zero
+  weight, which studiomdl also refuses. A/B: `gascan001a` compiles with the stock compiler and
+  both activities read back with weight 1.
+- **Blend clips are resampled to one frame count.** `gasCan_idle`'s blends decoded to 28, 61
+  and 28 frames; studiomdl wants one length per sequence. The clip is resampled with a warning.
+- **What stock still rejects is documented precisely**: a weight list on `v_huntingrifle`
+  (`unknown bone reference 'ValveBiped.Bip01_L_Finger4'`), even though all 63 names match the
+  SMD nodes; `studiomdl++` compiles it. The skill now says to use ++ for a decompiled character
+  or viewmodel and stock only for models without weight lists.
+- **Tool count: 293.** Tests: 238 files, 1,944 passed, 30 skipped.
+
 ## 0.0.246-alpha - 2026-11-23
 
 - **`$weightlist` is written and verified by a recompile.** Non-default bone weights are

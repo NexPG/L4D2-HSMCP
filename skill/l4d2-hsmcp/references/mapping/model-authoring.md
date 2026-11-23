@@ -179,11 +179,19 @@ once per unique list and `weightlist "..."` inside each sequence. A/B on `v_hunt
 decompile -> compile -> read back gave **35 sequences, 17 with non-default weights** (the source
 has 36 sequences and 18; one is skipped by the decompile).
 
-**Compile with `studiomdl++` for decompiled models.** On `gascan001a` and `v_huntingrifle`,
-stock `studiomdl` stops on a multi-blend animation SMD with `Line N is incomplete`, while
-`studiomdl++` compiles the same QC. `run_studiomdl` defaults to `auto` (plus-plus when it is
-installed); forcing `compiler: "studiomdl"` on a decompiled multi-blend model is expected to
-fail until that SMD shape is understood.
+**`activity` needs a weight, or stock studiomdl stops.** A `$sequence` line that ends with
+`activity ACT_...` and no number makes stock `studiomdl` print `Line N is incomplete` and
+abort — the message names a QC line, not an SMD one, which is why it reads as a mystery. The
+decompiler writes the compiled `actweight` after the name (`activity ACT_VM_IDLE_GASCAN 1`)
+and comments out a zero weight, which studiomdl also refuses. Verified: `gascan001a` compiles
+with stock `studiomdl` after this, and both activities came back with weight 1.
+
+**Weight lists are the remaining stock-compiler limit.** With weights, stock `studiomdl` on
+`v_huntingrifle` stops at `unknown bone reference 'ValveBiped.Bip01_L_Finger4' in weightlist`
+even though all 63 names match the SMD's nodes exactly; `studiomdl++` compiles the same QC.
+`run_studiomdl` defaults to `auto` (plus-plus when installed), which is the right choice for a
+decompiled character or viewmodel; force the stock compiler only for a model without weight
+lists.
 
 ## L4D2 specifics
 

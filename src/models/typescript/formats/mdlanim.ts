@@ -22,6 +22,8 @@ export interface MdlSequence {
   activityName: string;
   flags: number;
   activity: number;
+  /** `actweight` at +20; stock studiomdl refuses a sequence with `activity` and no weight. */
+  activityWeight: number;
   frameCount: number;
   fps: number;
   firstAnimation: number;
@@ -279,6 +281,7 @@ export function readSequences(mdl: Buffer, animations: MdlAnimationDesc[]): MdlS
       activityName: readName(mdl, base + activityOffset),
       flags: mdl.readInt32LE(base + 12),
       activity: mdl.readInt32LE(base + 16),
+      activityWeight: mdl.readInt32LE(base + 20),
       frameCount: animation?.frameCount ?? 0,
       fps: animation?.fps ?? 30,
       firstAnimation,
