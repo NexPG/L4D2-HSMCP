@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.241-alpha - 2026-11-23
+
+- **The live approval queue is covered by tests.** `stage_live_edit`, `review_live_edit`,
+  `apply_live_edit` and `read_edit_journal` already implemented the human gate; what was
+  missing was proof. The new test runs the queue without Hammer open: staging records the
+  commands and before-state and leaves the map untouched, approval moves the entry to
+  `approved`, and a second approve, an address the saved map does not have, or a decision
+  after rejection are all refused. The page in `references/testing/live-debugging.md` shows
+  the four calls and what each one needs.
+- **Tool count: 293.** Tests: 237 files, 1,942 passed, 30 skipped.
+
 ## 0.0.240-alpha - 2026-11-23
 
 - **Non-campaign add-on measured end to end as far as the harness reaches.** A one-material

@@ -28,6 +28,24 @@ Why the two arguments:
 hand, truncate it yourself. A marker that exists at startup (`Mission credits …`) matches in
 five seconds and proves nothing.
 
+## A human gate for live edits
+
+A live edit can be proposed, reviewed and only then sent:
+
+```
+stage_live_edit(pid, vmf, ops, note)     // validates class+origin against the saved VMF
+review_live_edit(id, decision: "approve" | "reject", confirm: true)
+apply_live_edit(id, confirm: true)       // the only step that needs a running Hammer
+read_edit_journal()                      // the queue and what happened
+```
+
+Staging and review work with Hammer closed: they read the saved VMF and the journal.
+Approval re-validates every class+origin address against the current file, so an edit approved
+against a map that changed underneath it is refused instead of sent. Tested end to end without
+an editor: stage (`live-0001`, commands and before-state recorded, map untouched) → approve →
+journal shows `approved`; a second approve, an address the map does not have, and an edit
+after rejection are all refused.
+
 ## Moving survivors
 
 | Method | Use |
