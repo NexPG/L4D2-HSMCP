@@ -81,6 +81,7 @@ again.
 | Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
 | Every bench, car and cart is a ghost; `read_model_info` says `.phy` exists | Write `solid 6` explicitly on `prop_static`; an omitted key compiles to solidity 0. `write_prop` does it, the gate checks `read_static_props.solidity` | `troubleshooting/props-no-collision.md` |
 | A prop faces the wall or is 90/180° off | Use `write_prop` `facing` + `modelForward` from the measured table; look at the model with `preview_model` (`view` for the other sides) | `references/mapping/model-facing.md` |
+| Official servers work, a friend's local/listen server does not | Check the game's `Network: IP` line; use a Steam lobby, not `connect` to a NAT'd host, and remove `-insecure` | `troubleshooting/local-server-connection.md` |
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
 
 ## Route the task first
@@ -173,6 +174,7 @@ material; the instructions live in one place.
 | `troubleshooting/nav-unplayable.md` | the HUD says `NAV ERRORS — Map is unplayable!` although the map loads |
 | `troubleshooting/prop-deleted.md` | a prop is in the VMF but missing in game, or vbsp logs `Error! ... Deleted.` |
 | `troubleshooting/props-no-collision.md` | every prop is a ghost; the compiled `solidity` is 0 |
+| `troubleshooting/local-server-connection.md` | official servers work but a friend's local/listen server does not |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 
