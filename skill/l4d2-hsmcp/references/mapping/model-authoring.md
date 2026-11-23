@@ -159,7 +159,10 @@ expands them across the sequences that use the clip).
 
 Most L4D2 character rules live on the other side of the fence: 90 of the hunter's 164 and 990
 of the gambler's 2202 animation descriptors point at `animblockikruleindex`, the `.ani` payload,
-which this decompiler does not read for rules. Those are counted and named in a warning;
+which this decompiler does not read for rules. The reference decompiler does not either — it
+calls its rule reader only for v44 models or `animBlock == 0` — so there is no oracle for the
+block layout and the loss is reported rather than guessed. Those rules are counted and named in
+a warning;
 `read_model_animation` shows the per-sequence counts, so the loss is visible before a compile.
 For an aim-matrix-heavy character, treat the decompiled QC as a starting point.
 (`walkframe` is not in the sequence descriptor at all; it is a QC option baked into the clips

@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.250-alpha - 2026-11-23
+
+- **Block-stored IK rules are closed as unreadable with the current knowledge.** The reference
+  decompiler calls its IK-rule reader only for v44 models or `animBlock == 0`, so it does not
+  recover L4D2's block rules either (90 of the hunter's 164 descriptors, 990 of the gambler's
+  2202). There is no independent oracle for that layout, so the decompile reports the count and
+  does not invent lines. This completes the QC surface the study left open.
+- **Tool count: 293.** Tests: 238 files, 1,945 passed, 30 skipped.
+
 ## 0.0.249-alpha - 2026-11-23
 
 - **`ikrule` is written when the record is in the `.mdl`.** The 152-byte rule carries the chain,
