@@ -62,8 +62,17 @@ For a ramp climbing +Y, positive roll raises the +Y end: `angles "0 0 23"`. Nega
 sinks it into the floor. A model long on **X** uses pitch instead. Verify the sign in game:
 the old escalator used `-23`, which tilted it against the 23-degree ramp.
 
-## Props that look solid and are not
+## Map names: 30 characters, not 64
 
+The nav header stores the map name in 32 bytes, but the engine fails signon at 31 characters.
+A longer name leaves the client at the main menu with `String Table dictionary ... should be
+rebuilt` and `Netchannel: failed reading message net_SignonState`. Measured: a 37-character
+preview name failed; a 31-character one (`hsmcp_preview_checkpoi_mwteil6r`) failed; the same
+rooms at 30 characters (`hsmcp_preview_bench001_mwtehbv5`) and 11 (`prevcartest`) loaded.
+Keep a custom map name at 30 characters or fewer, and let `preview_model` generate its own
+(it caps the total).
+
+## Props that look solid and are not
 `prop_static` defaults to solidity 6, which asks vbsp for the model's `.phy`. A model without
 one is drawn solid in Hammer and has no collision in play. `read_model_info.hasPhysics` and
 `read_static_props` name the models; `read_vmf_lint` reports `prop-static-no-physics`. Mark

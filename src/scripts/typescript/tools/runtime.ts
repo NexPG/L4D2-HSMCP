@@ -125,13 +125,21 @@ async function bakeStringtableDictionary(
     name,
   ]);
   const started = Date.now();
+  // The marker appears before the dictionary is complete: the engine appends entries and
+  // closes the file later. Killing on the marker produced a BSP with 45 of 89 strings, and
+  // the client then failed signon with `net_SignonState` and stayed at the main menu.
+  let stableSize = -1;
+  let stableSince = 0;
   try {
     while (Date.now() - started < timeoutMs) {
       if (hasStringtableDictionary(loose)) {
-        // The engine writes the file and closes it; one more poll interval keeps the kill
-        // from landing between the last write and the close.
-        await sleep(700);
-        return true;
+        const size = statSync(loose).size;
+        if (size !== stableSize) {
+          stableSize = size;
+          stableSince = Date.now();
+        } else if (Date.now() - stableSince >= 2000) {
+          return true;
+        }
       }
       if (handle.child.exitCode !== null) return false;
       await sleep(750);

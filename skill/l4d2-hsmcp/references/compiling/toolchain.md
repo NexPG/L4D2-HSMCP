@@ -43,4 +43,15 @@ compile: plusplus true vbsp:0 vvis:0 vrad:0
 ```
 
 Both maps in a campaign must reach that state. A map that compiles with warnings can still be
-unplayable — nav and entities are separate checks.
+unplayable - nav and entities are separate checks.
+
+**Ship the nav-generated BSP, not the compile output.** `run_nav_generate` bakes the
+string-table dictionary into its own copy and returns it as `maps[0].bsp`; joining the compile
+BSP prints `String Table dictionary ... should be rebuilt` and fails signon at the main menu.
+`run_campaign_gate` uses the nav output as `shippingBsp`; do the same in any custom flow.
+
+The bake is finished only when the BSP **stops growing** after the dictionary marker appears.
+Killing on the marker alone produced a map with 45 of 89 strings, and the client failed signon
+with `Netchannel: failed reading message net_SignonState` and stayed at the main menu. The tool
+now waits for the file size to be stable for two seconds; do not shorten that to "the marker
+exists".

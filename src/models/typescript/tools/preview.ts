@@ -52,13 +52,18 @@ export function viewportIsBlank(stdDev: number): boolean {
   return stdDev < BLANK_STDDEV;
 }
 
-function safeMapName(model: string): string {
+export function safeMapName(model: string): string {
   const base =
     basename(model.replace(/\\/g, "/"), ".mdl")
       .replace(/[^A-Za-z0-9_]+/g, "_")
       .replace(/^_+|_+$/g, "")
       .slice(0, 40) || "model";
-  return `hsmcp_preview_${base}_${Date.now().toString(36)}`;
+  const unique = Date.now().toString(36);
+  // The nav header stores the map name in 32 bytes, but the engine fails signon at 31
+  // characters: measured `hsmcp_preview_checkpoi_mwteil6r` (31) stayed at the main menu
+  // while `hsmcp_preview_bench001_mwtehbv5` (30) loaded. Cap at 30, not at the header size.
+  const room = Math.max(1, 30 - "hsmcp_preview_".length - 1 - unique.length);
+  return `hsmcp_preview_${base.slice(0, room)}_${unique}`;
 }
 
 function box(mins: [number, number, number], maxs: [number, number, number]) {
@@ -447,8 +452,9 @@ export const previewModelTool = defineTool({
       Math.abs(maxs[2]! - mins[2]!),
     ];
     const scale = args.modelscale ?? 1;
-    const mapName =
-      args.mapName?.replace(/[^A-Za-z0-9_]+/g, "_") || safeMapName(info.model);
+    const mapName = (
+      args.mapName?.replace(/[^A-Za-z0-9_]+/g, "_") || safeMapName(info.model)
+    ).slice(0, 30);
 
     const room = buildPreviewRoom(info.model, mins, size, scale);
     warnings.push(...room.warnings);
@@ -494,7 +500,13 @@ export const previewModelTool = defineTool({
       ctx,
     )) as {
       ok: boolean;
-      maps: Array<{ generated: boolean; nav: string | null; consoleTail: string[] }>;
+      maps: Array<{
+        generated: boolean;
+        bsp: string | null;
+        nav: string | null;
+        stringtableDictionary: boolean;
+        consoleTail: string[];
+      }>;
     };
     const generated = nav.maps[0];
     if (!nav.ok || !generated?.generated || !generated.nav) {
@@ -504,11 +516,20 @@ export const previewModelTool = defineTool({
         }; the .bsp is at ${compile.bsp}`,
       );
     }
+    // The nav step bakes the string-table dictionary into its own copy. A client that joins
+    // the compile output instead fails signon with "String Table dictionary ... should be
+    // rebuilt" and never leaves the main menu. Ship the pair the generator produced.
+    const shippingBsp = generated.bsp ?? compile.bsp;
+    if (!generated.stringtableDictionary) {
+      warnings.push(
+        "the nav-generated BSP has no string-table dictionary; the map may fail signon",
+      );
+    }
 
     const run = (await runMapTest.handler(
       {
         map: mapName,
-        bsp: compile.bsp,
+        bsp: shippingBsp,
         nav: generated.nav,
         waitFor: "Loading: [0-9]",
         markers: [],
@@ -519,6 +540,7 @@ export const previewModelTool = defineTool({
         timeoutSeconds: Math.min(300, args.timeoutSeconds ?? 300),
         extraArgs: ["-console"],
         addonsToHide: [],
+        replaceRunningGame: true,
         screenshot: true,
         ...(args.output ? { out: resolveInput(args.output, ctx.config) } : {}),
         waitAfterMatchMs: 4000,
@@ -575,7 +597,7 @@ export const previewModelTool = defineTool({
       via: "map" as const,
       map: mapName,
       vmf: vmfPath,
-      bsp: compile.bsp,
+      bsp: shippingBsp,
       nav: generated.nav,
       compiled: true,
       navGenerated: true,

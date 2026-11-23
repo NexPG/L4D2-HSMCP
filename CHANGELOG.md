@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.256-alpha - 2026-11-23
+
+- **A map that never loads is now diagnosed as a tool bug, not a map bug.** Measured on this
+  machine: `preview_model` launched the compile BSP instead of the nav-generated one (no
+  string-table dictionary), generated a 31/37-character map name, and could kill the
+  dictionary bake while the engine was still writing it. Any of the three leaves the client
+  at the main menu with `Netchannel: failed reading message net_SignonState` and no
+  `Loading:` line. The preview now uses `run_nav_generate`'s `maps[0].bsp` + nav, caps the map
+  name at **30 characters** (31 failed, 30 loaded), waits for the BSP size to be stable for
+  two seconds after the dictionary marker, and passes `replaceRunningGame: true`.
+- **Interrupted runs are the other cause.** A killed run can leave `cfg/listenserver.cfg` with
+  content and test maps in `maps/`; the next listen-server start executes that config. Run
+  `check_game_state {restore: true}` and require `clean: true` before blaming the map. The
+  campaign VPK was verified separately: its BSPs are byte-identical to the nav output and
+  `check_campaign` passes; `sm01_beach` loaded in 16.87 s from the exact shipped pair.
+- **Skill:** `troubleshooting/endless-loading.md` now lists the four causes (live exit,
+  renamed stock BSP, >30-character name, compile BSP / incomplete dictionary) with the log
+  lines, and `references/compiling/toolchain.md` and `references/mapping/engine-limits.md`
+  state the two rules: ship the nav-generated BSP, and keep map names ≤30.
+- **Tool count: 294.** Tests: 242 files, 1,961 passed, 30 skipped.
+
 ## 0.0.255-alpha - 2026-11-23
 
 - **A chapter transition is checked by class, not by a door name.** The engine resolves
