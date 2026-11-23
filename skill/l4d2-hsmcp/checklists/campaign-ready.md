@@ -16,6 +16,9 @@ an opinion.
 - [ ] `read_vmf_leak` — `sealed: true` for every chapter.
 - [ ] `read_vmf_lint` — 0 findings against the installed `left4dead2.fgd`.
 - [ ] No entity exists only in the `.vmf` while the `.bsp` ships an older one.
+- [ ] Every prop family was **looked at** (`preview_model` or a play-test screenshot) and
+      placed with `write_prop` `facing`/`modelForward` from
+      `references/mapping/model-facing.md`. No model is placed sight-unseen.
 
 ## Compile
 

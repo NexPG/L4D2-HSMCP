@@ -98,6 +98,7 @@ export function buildPreviewRoom(
   mins: readonly number[],
   size: readonly number[],
   scale: number,
+  view: "front" | "back" | "left" | "right" = "front",
 ): PreviewRoom {
   const span = Math.max(size[0] ?? 64, size[1] ?? 64) * scale;
   const half = Math.max(160, Math.ceil((span * 1.5 + 64) / 16) * 16);
@@ -105,6 +106,15 @@ export function buildPreviewRoom(
   const pedestal = PREVIEW_PEDESTAL;
   const originZ = pedestal - (mins[2] ?? 0) * scale;
   const eyeZ = Math.min(ceiling - 32, Math.max(80, pedestal + (size[2] ?? 64) * scale * 0.5));
+  const near = half - 48;
+  const viewAt =
+    view === "back"
+      ? { origin: `${near} 0 16`, angles: "0 180 0" }
+      : view === "left"
+        ? { origin: `0 ${-near} 16`, angles: "0 90 0" }
+        : view === "right"
+          ? { origin: `0 ${near} 16`, angles: "0 270 0" }
+          : { origin: `${-near} 0 16`, angles: "0 0 0" };
 
   const source = emptyVmf({ skyname: DEFAULT_SKYNAME, gridSpacing: 16 });
   const solids = insertSolids(
@@ -146,8 +156,8 @@ export function buildPreviewRoom(
       keyvalues: {
         classname: "info_player_start",
         targetname: "preview_spawn",
-        origin: `${-half + 48} 0 16`,
-        angles: "0 0 0",
+        origin: viewAt.origin,
+        angles: viewAt.angles,
       },
     },
     {
@@ -316,6 +326,14 @@ export const previewModelTool = defineTool({
       ),
     output: z.string().optional().describe("Screenshot PNG path. Defaults to the state directory."),
     modelscale: z.number().positive().default(1).describe("prop_dynamic `modelscale` in the map path."),
+    view: z
+      .enum(["front", "back", "left", "right"])
+      .default("front")
+      .describe(
+        "Which side of the model the camera looks at. `front` is the -X side looking +X, " +
+          "the same view the facing table is measured from; `back`/`left`/`right` show the " +
+          "other sides when one view is ambiguous.",
+      ),
     mapName: z.string().optional().describe("Override the generated preview map name."),
     waitMs: z
       .number()
@@ -456,7 +474,7 @@ export const previewModelTool = defineTool({
       args.mapName?.replace(/[^A-Za-z0-9_]+/g, "_") || safeMapName(info.model)
     ).slice(0, 30);
 
-    const room = buildPreviewRoom(info.model, mins, size, scale);
+    const room = buildPreviewRoom(info.model, mins, size, scale, args.view);
     warnings.push(...room.warnings);
     const work = join(ctx.config.stateDir, "previews", mapName);
     mkdirSync(work, { recursive: true });

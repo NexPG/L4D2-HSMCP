@@ -9,20 +9,21 @@
 import {
   copyFileSync,
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export const BACKUP_SUFFIX = ".hsmcp-backup";
 
 /** The first line `run_map_test` writes into `cfg/listenserver.cfg`. */
 const HARNESS_CFG_HEADER = "sv_cheats 1";
 /** What a clean install has in that file; the game itself ships this comment. */
-const STOCK_CFG = "// PC listenserver cfg file - intentionally blank\n";
+export const STOCK_CFG = "// PC listenserver cfg file - intentionally blank\n";
 
 export type GameStateSeverity = "error" | "warning" | "info";
 
@@ -94,7 +95,14 @@ export function restoreGameState(gameDir: string): number {
   // copy, so a killed run leaves `sv_cheats 1` plus a map command behind and the next launch
   // would auto-load a test map. Only a file with the harness's own header is touched.
   const listenserver = join(gameDir, "cfg", "listenserver.cfg");
-  if (existsSync(listenserver) && !existsSync(`${listenserver}${BACKUP_SUFFIX}`)) {
+  if (!existsSync(listenserver)) {
+    // A killed run whose install had no file to copy leaves nothing to restore, and the
+    // next `run_map_test` fails on `copyFileSync(missing -> backup)`. Put the stock blank
+    // file back; the game ships it, so its absence is not a user configuration.
+    mkdirSync(dirname(listenserver), { recursive: true });
+    writeFileSync(listenserver, STOCK_CFG, "utf8");
+    restored += 1;
+  } else if (!existsSync(`${listenserver}${BACKUP_SUFFIX}`)) {
     const text = readFileSync(listenserver, "utf8");
     if (isHarnessCfg(text)) {
       writeFileSync(listenserver, STOCK_CFG, "utf8");
@@ -129,7 +137,18 @@ export function scanGameState(gameDir: string): GameStateReport {
 
   const listenserverPath = join(gameDir, "cfg", "listenserver.cfg");
   let listenserverBlank = true;
-  if (existsSync(listenserverPath)) {
+  if (!existsSync(listenserverPath)) {
+    // Missing is not blank: `run_map_test` cannot snapshot it, and a killed run leaves no
+    // backup. Restore creates the stock file.
+    listenserverBlank = false;
+    add(
+      "warning",
+      "listenserver-missing",
+      "cfg/listenserver.cfg is absent; run_map_test cannot snapshot it. " +
+        "check_game_state {restore: true} writes the stock blank file",
+      listenserverPath,
+    );
+  } else {
     const text = readFileSync(listenserverPath, "utf8");
     listenserverBlank = text
       .split(/\r?\n/)

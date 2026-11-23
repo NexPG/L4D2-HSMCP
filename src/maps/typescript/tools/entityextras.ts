@@ -18,6 +18,37 @@ import { writeVmfSolidTool } from "./build.js";
 
 const VEC3 = z.tuple([z.number(), z.number(), z.number()]);
 
+/**
+ * Which local axis is the front of a model.
+ *
+ * The MDL does not store a forward axis. These are the four axes a Source model can use,
+ * and the table in `references/mapping/model-facing.md` says which one each common family
+ * uses, measured by looking at the model and at stock placements.
+ */
+export type ModelForward = "x+" | "x-" | "y+" | "y-";
+
+export const MODEL_FORWARD_YAW: Record<ModelForward, number> = {
+  "x+": 0,
+  "y+": 90,
+  "x-": 180,
+  "y-": 270,
+};
+
+/**
+ * The VMF yaw that points a model's front at `facing`.
+ *
+ * Source yaw 0 is world +X and 90 is +Y. A model whose own front is local +Y needs -90
+ * degrees of entity yaw before it points at +X. `yawOffset` is the per-model correction
+ * measured on the model (a car whose nose is 5 degrees off its hull axis).
+ */
+export function modelYaw(
+  facing: number,
+  forward: ModelForward = "x+",
+  yawOffset = 0,
+): number {
+  return (((facing - MODEL_FORWARD_YAW[forward] + yawOffset) % 360) + 360) % 360;
+}
+
 type ModelCheck = {
   found?: boolean;
   readError?: string;
@@ -66,6 +97,28 @@ export const writePropTool = defineTool({
     origin: VEC3,
     model: z.string().min(1),
     angles: VEC3.default([0, 0, 0]),
+    facing: z
+      .number()
+      .optional()
+      .describe(
+        "World yaw the model's front should point at, in degrees (0 = +X east, 90 = +Y " +
+          "north). Given this, `angles`' yaw is computed from `modelForward` and " +
+          "`yawOffset`; leave it out to write `angles` literally.",
+      ),
+    modelForward: z
+      .enum(["x+", "x-", "y+", "y-"])
+      .default("x+")
+      .describe(
+        "The model's local axis that is its front. See references/mapping/model-facing.md " +
+          "for the measured family table; a wrong axis is a 90/180-degree prop.",
+      ),
+    yawOffset: z
+      .number()
+      .default(0)
+      .describe(
+        "Degrees added after the forward correction, for a model whose nose is off its " +
+          "hull axis or whose placement convention differs from the family default.",
+      ),
     skin: z.number().int().min(0).default(0),
     solid: z.number().int().min(0).max(6).optional().describe("prop_static solid mode."),
     collision: z
@@ -88,6 +141,7 @@ export const writePropTool = defineTool({
     entityId: z.number().nullable(),
     classname: z.string(),
     keyvalues: z.record(z.string()),
+    angles: VEC3,
     clipAdded: z.boolean(),
     clipBox: z.array(z.array(z.number()).length(3)).nullable(),
     warnings: z.array(z.string()),
@@ -114,10 +168,16 @@ export const writePropTool = defineTool({
             : kind === "physics_override"
               ? "prop_physics_override"
               : "prop_physics";
+    const written = args.angles ?? [0, 0, 0];
+    const yaw =
+      args.facing !== undefined
+        ? modelYaw(args.facing, args.modelForward, args.yawOffset ?? 0)
+        : (((written[1] + (args.yawOffset ?? 0)) % 360) + 360) % 360;
+    const angles: [number, number, number] = [written[0], yaw, written[2]];
     const keyvalues: Record<string, string> = {
       classname,
       origin: vec(args.origin),
-      angles: vec(args.angles ?? [0, 0, 0]),
+      angles: vec(angles),
       model: args.model,
       skin: String(args.skin ?? 0),
       ...(args.solid !== undefined ? { solid: String(args.solid) } : {}),
@@ -169,15 +229,15 @@ export const writePropTool = defineTool({
       const [x, y, z] = args.origin;
       const [minX, minY, minZ] = info.mins as [number, number, number];
       const [maxX, maxY, maxZ] = info.maxs as [number, number, number];
-      const yaw = ((args.angles?.[1] ?? 0) * Math.PI) / 180;
-      const c = Math.abs(Math.cos(yaw));
-      const s = Math.abs(Math.sin(yaw));
+      const yawRadians = (angles[1] * Math.PI) / 180;
+      const c = Math.abs(Math.cos(yawRadians));
+      const s = Math.abs(Math.sin(yawRadians));
       const halfX = (c * (maxX - minX) + s * (maxY - minY)) / 2;
       const halfY = (s * (maxX - minX) + c * (maxY - minY)) / 2;
       const cxLocal = (minX + maxX) / 2;
       const cyLocal = (minY + maxY) / 2;
-      const cx = x + cxLocal * Math.cos(yaw) - cyLocal * Math.sin(yaw);
-      const cy = y + cxLocal * Math.sin(yaw) + cyLocal * Math.cos(yaw);
+      const cx = x + cxLocal * Math.cos(yawRadians) - cyLocal * Math.sin(yawRadians);
+      const cy = y + cxLocal * Math.sin(yawRadians) + cyLocal * Math.cos(yawRadians);
       clipBox = [
         [cx - halfX, cy - halfY, z + minZ],
         [cx + halfX, cy + halfY, z + maxZ],
@@ -209,6 +269,7 @@ export const writePropTool = defineTool({
       entityId: id,
       classname,
       keyvalues,
+      angles,
       clipAdded,
       clipBox,
       warnings,

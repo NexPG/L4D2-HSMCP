@@ -104,6 +104,14 @@ units, shelves). A `prop_static` is not "the default prop"; it is for a model co
 Check the class, not only the model name: a model with a `.phy` can still be a ghost as
 `prop_static`, and a chair that should be physics is a wall if it is static.
 
+### Face the model, do not guess a yaw
+
+The MDL has no forward axis. `write_prop` takes `facing` (the world yaw the front should point
+at), `modelForward` (`x+`/`x-`/`y+`/`y-`) and `yawOffset`; it writes the yaw. The measured
+table is `references/mapping/model-facing.md`: a sedan is `x+`, `bench001` is `y+`, a food
+cart and the rescue helicopter are `x-`, and `arcadegame01` is `x+`. Doors are not props: use
+`write_door`, because the leaf is on local Y and the origin is the hinge.
+
 ## Runtime presence
 
 A compiled entity is not proof that the entity exists when the map runs. `write_entity_probe`

@@ -2,7 +2,7 @@ import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { writePropTool } from "../../src/maps/typescript/tools/entityextras.js";
+import { modelYaw, writePropTool } from "../../src/maps/typescript/tools/entityextras.js";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { FIXTURES, ctx as sharedCtx, has } from "../support/env.js";
 
@@ -12,6 +12,8 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 type PropReply = {
   classname: string;
+  keyvalues: Record<string, string>;
+  angles: [number, number, number];
   warnings: string[];
   clipAdded: boolean;
   clipBox: unknown;
@@ -30,6 +32,25 @@ async function writeProp(name: string, args: Record<string, unknown>): Promise<P
     ctx,
   )) as unknown as PropReply;
 }
+
+describe("modelYaw", () => {
+  it("turns a model whose front is +Y to face world +X, and back", () => {
+    expect(modelYaw(0, "y+")).toBe(270);
+    expect(modelYaw(90, "y+")).toBe(0);
+    expect(modelYaw(180, "y+")).toBe(90);
+  });
+
+  it("turns a model whose front is -X to face +X", () => {
+    expect(modelYaw(0, "x-")).toBe(180);
+    expect(modelYaw(180, "x-")).toBe(0);
+  });
+
+  it("applies the per-model correction and wraps the result", () => {
+    expect(modelYaw(0, "x+", 90)).toBe(90);
+    expect(modelYaw(0, "y+", -10)).toBe(260);
+    expect(modelYaw(350, "x+", 20)).toBe(10);
+  });
+});
 
 describe.skipIf(!has.gameContent)("write_prop model checks", () => {
   it("warns that a dynamic-only model cannot be prop_static and can add a clip", async () => {
@@ -52,6 +73,19 @@ describe.skipIf(!has.gameContent)("write_prop model checks", () => {
     });
     expect(r.classname).toBe("prop_static");
     expect(r.warnings.join(" ")).not.toMatch(/no \$staticprop/);
+  }, 60_000);
+
+  it("writes the yaw that points a +Y-forward model at world +X", async () => {
+    const r = await writeProp("facing", {
+      kind: "static",
+      model: "models/props_urban/bench001.mdl",
+      facing: 0,
+      modelForward: "y+",
+      collision: "none",
+      validateModel: false,
+    });
+    expect(r.keyvalues["angles"]).toBe("0 270 0");
+    expect(r.angles).toEqual([0, 270, 0]);
   }, 60_000);
 
   it("adds a clip hull for a model that ships no .phy, as the official maps do", async () => {

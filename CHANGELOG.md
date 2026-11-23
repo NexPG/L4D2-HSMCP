@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.257-alpha - 2026-11-23
+
+- **A model is placed by a measured facing, not by a guessed yaw.** `write_prop` takes
+  `facing`, `modelForward` (`x+`/`x-`/`y+`/`y-`) and `yawOffset`, and writes the entity yaw
+  from them; `modelYaw` is unit-tested. `preview_model` gained `view: front|back|left|right`
+  for the cases where one look is ambiguous, and `references/mapping/model-facing.md` records
+  the measurements: sedan `x+`, `bench001` `y+`, food cart `x-`, rescue helicopter `x-`,
+  arcade `x+`. Doors are not props: `write_door` owns the hinge and the leaf on local Y.
+- **Campaign 003 corrected after the audit.** West benches `90→270`; safe-room bench
+  `90→270`; shop benches `270/90`; food carts `0/180→180/0` (serving side toward the path);
+  the rescue helicopter `270→90` (nose toward the approach); shop sign, arcade and double
+  door `90/270→0/180` (the bay window keeps `90/270`, its width is local X). Rebuilt, navved,
+  packed and gated: `transition` pass, both `nav_trouble_report` pass, both map tests matched,
+  no `NAV ERRORS`.
+- **`check_game_state` restores a missing `cfg/listenserver.cfg`.** A killed run whose install
+  had no file to copy left the next `run_map_test` failing on `copyFileSync(missing →
+  backup)`. A missing file is now reported (`listenserver-missing`) and `restore: true` writes
+  the stock blank file; `run_map_test` also creates it if a sweep could not.
+- **Tool count: 294.** Tests: 242 files, 1,963 passed, 30 skipped.
+
 ## 0.0.256-alpha - 2026-11-23
 
 - **A map that never loads is now diagnosed as a tool bug, not a map bug.** Measured on this

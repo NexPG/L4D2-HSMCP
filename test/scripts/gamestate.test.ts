@@ -65,4 +65,18 @@ describe("game state", () => {
     expect(restoreGameState(scratch)).toBe(0);
     expect(readFileSync(join(cfg, "listenserver.cfg"), "utf8")).toBe("hostname my server\n");
   });
+
+  it("restores a missing listenserver.cfg instead of failing the next launch", () => {
+    const cfg = join(scratch, "cfg");
+    rmSync(join(cfg, "listenserver.cfg"), { force: true });
+    const before = scanGameState(scratch);
+    expect(before.clean).toBe(false);
+    expect(before.listenserverBlank).toBe(false);
+    expect(before.findings.some((f) => f.rule === "listenserver-missing")).toBe(true);
+    expect(restoreGameState(scratch)).toBe(1);
+    expect(readFileSync(join(cfg, "listenserver.cfg"), "utf8")).toBe(
+      "// PC listenserver cfg file - intentionally blank\n",
+    );
+    expect(scanGameState(scratch).clean).toBe(true);
+  });
 });

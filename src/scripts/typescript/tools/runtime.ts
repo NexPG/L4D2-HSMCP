@@ -46,7 +46,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { captureWindow } from "../../../maps/typescript/screenshot/window.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { SCHEDULE_FILE, scheduleScript } from "../vscript/schedule.js";
-import { sweepInterruptedState } from "../game/state.js";
+import { STOCK_CFG, sweepInterruptedState } from "../game/state.js";
 
 /** The lump name the engine appends to a BSP that has a string-table dictionary. */
 const DICTIONARY_MARKER = Buffer.from("stringtable_dictionary");
@@ -256,6 +256,7 @@ export const runNavGenerate = defineTool({
     const consoleLog = join(gameDir, "console.log");
     mkdirSync(mapsDir, { recursive: true });
 
+    if (!existsSync(cfgPath)) writeFileSync(cfgPath, STOCK_CFG, "utf8");
     if (!existsSync(backup)) copyFileSync(cfgPath, backup);
     writeFileSync(cfgPath, navGenerateConfig(args.navSlopeLimit), "utf8");
 

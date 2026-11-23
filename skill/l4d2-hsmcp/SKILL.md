@@ -79,6 +79,7 @@ again.
 | HUD says `NAV ERRORS — Map is unplayable!` while the map plays | The chapter has a CHECKPOINT nav attribute but no checkpoint door/changelevel, or a finale map with no `trigger_finale`. Give it a real end and regenerate nav | `troubleshooting/nav-unplayable.md` |
 | A player is dropped to the main menu when a test starts | Never launch while `left4dead2.exe` runs. The tools refuse unless you pass `replaceRunningGame: true`; they stop only the pid they started | `references/testing/harness.md` |
 | Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
+| A prop faces the wall or is 90/180° off | Use `write_prop` `facing` + `modelForward` from the measured table; look at the model with `preview_model` (`view` for the other sides) | `references/mapping/model-facing.md` |
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
 
 ## Route the task first
@@ -139,6 +140,7 @@ material; the instructions live in one place.
 | `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
+| `references/mapping/model-facing.md` | which way a model faces, `write_prop` `facing`/`modelForward`, and the measured table |
 | `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |
 | `references/mapping/fbx-import.md` | FBX (binary 7.x or ASCII) -> SMD: axes, units, bind pose from clusters, and what is not exported |
 | `references/mapping/brush-to-model.md` | a VMF brush → SMD/QC, with VMF UVs and a brush collision model |

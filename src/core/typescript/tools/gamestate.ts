@@ -21,7 +21,8 @@ export const checkGameStateTool = defineTool({
   name: "check_game_state",
   description:
     "Reports leftovers from a game run: `*.hsmcp-backup` in cfg/maps/scripts, a " +
-    "`listenserver.cfg` with content, hidden `*.vpk.off` add-ons, and test maps/scripts/add-ons " +
+    "`listenserver.cfg` with content (or one that is missing), hidden `*.vpk.off` add-ons, " +
+    "and test maps/scripts/add-ons " +
     "with the `hmcp_`/`hsmcp_` prefix. Read-only by default. `restore: true` restores the " +
     "backups and hidden archives (the same sweep `run_map_test` runs before a launch), but " +
     "does not delete test maps or a file it has no backup for. Use it after any interrupted " +
