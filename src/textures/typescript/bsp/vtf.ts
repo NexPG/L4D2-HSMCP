@@ -70,6 +70,8 @@ export interface VtfHeader {
   cubemap: boolean;
   format: string;
   frames: number;
+  /** Levels stored, including the smallest 1x1. 0 is an invalid file. */
+  mipmaps: number;
 }
 
 /** Reads the header, or null when the bytes are not a `.vtf` at all. */
@@ -90,5 +92,6 @@ export function readVtfHeader(bytes: Buffer): VtfHeader | null {
     cubemap: (flags & VTF_ENVMAP) !== 0,
     format: VTF_FORMATS[format] ?? String(format),
     frames,
+    mipmaps: bytes.readUInt8(56),
   };
 }

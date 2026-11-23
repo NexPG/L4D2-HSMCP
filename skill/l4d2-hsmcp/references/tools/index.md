@@ -1,6 +1,6 @@
 # Tool catalogue
 
-290 tools. This page groups them by the job you are doing; each tool's own description is the
+291 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -345,6 +345,7 @@ These answer "what exists in the running map", which a BSP or screenshot cannot.
 | `write_soundscript` | add one sound block, appending to the file |
 | `read_wav` | WAV format, duration, loop and whether it is L4D2-game-ready |
 | `convert_wav` | resample and mix a WAV to 16-bit PCM mono/stereo at 22050/44100 |
+| `check_vtf` | header rules a texture breaks silently: `NOMIP` with mips, one-bit alpha on the wrong format, non-power-of-two, oversize, animated or non-square cubemap |
 | `read_vtf` | a `.vtf` header: version, size, flags, frames, format, cubemap; `details` adds the resource table, particle-sheet sequences and hotspots |
 | `write_vtf_hotspot` | Strata hotspot rectangles in a `.vtf`, without re-encoding the image |
 | `write_vtf_particle_sheet` | particle-spritesheet sequences in a `.vtf`, without re-encoding the image |

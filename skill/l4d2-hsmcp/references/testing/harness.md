@@ -235,11 +235,16 @@ recorded, then closed by the guard, zero processes left.
 
 A direct `left4dead2.exe` launch reaches `Disconnect: No Steam logon` after about a minute.
 `via: "steam"` launches through `steam.exe -applaunch 550` without `-insecure`, which is the
-normal-client path. On this machine it still ends with
-`STEAMAUTH: Client ... received failure code 8` / `No Steam logon` at about two minutes, so
-the account, not the launcher, is the limit. A finale that needs 90 seconds cannot be proved
+normal-client path. On this machine a long bench run still ended at **157 s** with
+`Dropped <name> from server (No Steam logon)` / `Disconnect: No Steam logon`, and the account,
+not the launcher, is the limit. A finale that needs 90 seconds cannot be proved
 there; the harness reports the timeline up to the drop and the missing steps rather than a
 false pass. A machine with a logged-on Steam client removes the block without a tool change.
+
+This is also the reason **special infected cannot be seen spawning naturally** on this
+machine: the limits are fine (`z_*_limit = 1`, `z_special_spawn_interval = 45`,
+`director_no_specials = 0`), commons spawn (10-16 in the bench), but the session ends before the
+Director's second or third special attempt.
 
 Short proofs that finish before the drop (map load, HUD, a screenshot, the first mode
 script) are unaffected.

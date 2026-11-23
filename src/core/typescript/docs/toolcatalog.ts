@@ -103,7 +103,7 @@ const AREAS: Area[] = [
     slug: "textures",
     title: "Textures (VTF)",
     covers: "reading, writing, converting and extracting VTF textures",
-    groups: { "VTF": ["vtf", "vtfconvert", "vtfgen"] },
+    groups: { "VTF": ["vtf", "vtfcheck", "vtfconvert", "vtfgen"] },
   },
   {
     slug: "materials",

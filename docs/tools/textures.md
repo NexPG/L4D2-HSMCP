@@ -1,6 +1,6 @@
 # Textures (VTF)
 
-8 tools: reading, writing, converting and extracting VTF textures.
+9 tools: reading, writing, converting and extracting VTF textures.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -8,6 +8,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 
 | Tool | What it does |
 |---|---|
+| `check_vtf` | Checks a `.vtf` header against the rules the engine and L4D2 content follow: a `NOMIP` flag on a texture that still has mip levels, `NOLOD` with mips, a one-bit-alpha flag on a format that cannot store it, non-power-of-two dimensions, a cubemap that is not square or is animated, and a size over 4096. |
 | `convert_vtf` | Rebuilds an existing 2D .vtf in another format or size: decode, optional resize (power-of-two), re-encode as BGRA8888/RGBA8888/BGRX8888/DXT1/DXT5, regenerate the mip chain, save and read back. |
 | `extract_vtf` | Decodes a .vtf's first mip to a PNG the agent can look at, optionally downscaled and written to `out`. |
 | `read_vtf` | Reads a `.vtf` header: version, dimensions, flags, frames, format name and whether it is a cubemap. |

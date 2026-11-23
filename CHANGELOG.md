@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.234-alpha - 2026-11-23
+
+- **`check_vtf`**: header rules a texture can break without failing anything visible -- `NOMIP`
+  set on a file that still stores mip levels (Valve's own Borealis bug), `NOLOD` with mips,
+  one-bit alpha on a format that cannot hold it, non-power-of-two dimensions, a size over
+  4096, and an animated or non-square cubemap. It reads the header only; `read_vtf` decodes,
+  `check_vmt` checks the material that points at it.
+- **Skill**: the VTF row in `coverage.md` names the new checks; the tool index and parity page
+  carry the 291st tool.
+- **Tool count: 291.** Tests: 234 files, 1,932 passed, 30 skipped.
+
 ## 0.0.233-alpha - 2026-11-23
 
 - **`validate_addon` matches the content flags to the files.** L4D2's add-on browser groups by

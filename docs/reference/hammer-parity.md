@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **290 tools**.
+Last checked against the tool list on 22/11/2026: **291 tools**.
 
 ## The file itself
 
@@ -349,6 +349,7 @@ map and looking, or by not happening at all.
 | `read_soundscape` | nothing: the ambient bed is a text file the editor never shows |
 | `write_soundscape` | nothing: soundscapes are written by hand |
 | `write_soundscript` | nothing: sound scripts are edited by hand |
+| `check_vtf` | nothing: the texture browser shows the picture, not the flag/mip contradictions |
 | `read_vtf` | nothing: the texture browser shows the image and never says which format, how many frames, whether it is a cubemap, or which resources and particle sequences the file carries |
 | `close_windows` | nothing: Hammer leaves every HLMV it opens running |
 | `read_autosaves` | nothing: the editor knows where it put them and will not say |
