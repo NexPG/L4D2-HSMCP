@@ -15,7 +15,7 @@ with a line here.
   the stock `vbsp` and asserts no leak.
 - **Skill**: the bench recipe in `references/testing/harness.md` is now the tool, with the same
   measured numbers (45 nav areas, 12 brushes, FINALE goal).
-- **Tool count: 292.** Tests: 235 files, 1,934 passed, 30 skipped.
+- **Tool count: 292.** Tests: 235 files, 1,935 passed, 30 skipped.
 
 ## 0.0.234-alpha - 2026-11-23
 
