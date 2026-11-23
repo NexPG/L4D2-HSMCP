@@ -107,7 +107,7 @@ tour, a moved start or a test spawn must move or remove both.
 - `read_nav` returns `fresh`: `savedBspSize` equals the `.bsp` size. Any geometry change makes
   it stale.
 - `read_nav_dump` parses the `<map>_nav.txt` dump and returns a verdict: `playable`,
-  `no-goal`, `no-flow` or `empty`. See `references/nav/attributes-and-flow.md` for what the
+  `goal-present`, `no-goal` or `empty` (the dump cannot prove flow). See `references/nav/attributes-and-flow.md` for what the
   flags mean.
 - The console log has no `GetGoalArea`, `Flow Warning`, `Checkpoint failed` or `NAV ERRORS`
   lines.

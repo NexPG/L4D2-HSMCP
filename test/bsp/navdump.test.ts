@@ -47,22 +47,23 @@ Terror Spawn Attribute Flags: 0x00000100
 `;
 
 describe("parseNavDump", () => {
-  it("reads areas, attributes and the flow path", () => {
+  it("reads areas, attributes and the goal, not a flow claim", () => {
     const r = parseNavDump("hsmcp_test_m1_nav.txt", DUMP);
     expect(r.areaCount).toBe(3);
     expect(r.areas).toHaveLength(3);
     expect(r.areas[0]!.center).toEqual([-250, 187.5, 0.03125]);
     expect(r.areas[0]!.attributes).toContain("checkpoint");
-    expect(r.areas[0]!.attributes).toContain("escape-route");
-    expect(r.areas[1]!.attributes).toEqual(["escape-route", "finale"]);
+    expect(r.areas[0]!.attributes).toContain("mostly-flat");
+    expect(r.areas[1]!.attributes).toEqual(["mostly-flat", "finale"]);
     expect(r.areas[2]!.attributes).toEqual(["battlefield"]);
     expect(r.summary).toMatchObject({
       checkpoint: 1,
       finale: 1,
-      escapeRoute: 2,
+      mostlyFlat: 2,
       areasWithConnections: 2,
+      flowProven: false,
     });
-    expect(r.verdict).toBe("playable");
+    expect(r.verdict).toBe("goal-present");
   });
 
   it("reads a dump written with CRLF line endings", () => {
@@ -73,7 +74,7 @@ describe("parseNavDump", () => {
     const r = parseNavDump("x_nav.txt", crlf);
     expect(r.areaCount).toBe(3);
     expect(r.areas).toHaveLength(3);
-    expect(r.verdict).toBe("playable");
+    expect(r.verdict).toBe("goal-present");
   });
 
   it("says no-goal when neither CHECKPOINT nor FINALE exists", () => {
@@ -82,10 +83,14 @@ describe("parseNavDump", () => {
     expect(r.verdict).toBe("no-goal");
   });
 
-  it("says no-flow when a goal exists but nothing is on the escape route", () => {
-    const noFlow = DUMP.split("0x20000000").join("0x00000000");
-    const r = parseNavDump("x_nav.txt", noFlow);
-    expect(r.verdict).toBe("no-flow");
+  it("does not claim flow from a flag that is MOSTLY_FLAT", () => {
+    // 0x20000000 is NAV_MESH_MOSTLY_FLAT. The dump has no flow field, so a goal with no
+    // MOSTLY_FLAT area is still only "goal-present"; the live report is the flow oracle.
+    const noMostlyFlat = DUMP.split("0x20000000").join("0x00000000");
+    const r = parseNavDump("x_nav.txt", noMostlyFlat);
+    expect(r.verdict).toBe("goal-present");
+    expect(r.summary.mostlyFlat).toBe(0);
+    expect(r.summary.flowProven).toBe(false);
   });
 
   it("refuses a file that is not a dump", () => {

@@ -226,10 +226,11 @@ const readNavDump = defineTool({
       checkpoint: z.number(),
       playerStart: z.number(),
       finale: z.number(),
-      escapeRoute: z.number(),
+      mostlyFlat: z.number(),
       areasWithConnections: z.number(),
+      flowProven: z.literal(false),
     }),
-    verdict: z.enum(["playable", "no-goal", "no-flow", "empty"]),
+    verdict: z.enum(["goal-present", "no-goal", "empty"]),
   },
   handler: (args, ctx) => {
     const path = resolveInput(args.path, ctx.config);

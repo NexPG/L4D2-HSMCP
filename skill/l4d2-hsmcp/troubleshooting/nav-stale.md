@@ -33,7 +33,7 @@ Use `run_map_test({ map, bsp: "path/to/<map>.bsp", nav: "path/to/<map>.nav", ...
 installs both, launches, and restores the previous files in a `finally`. Copying only the
 BSP is the common mistake.
 
-A nav can exist and still be `no-flow` (no goal area). That is a different defect: the map
+A nav can exist and still have `no-goal` (no goal area). That is a different defect: the map
 needs a CHECKPOINT/FINALE nav attribute region and a goal, or the engine complains that the
 map is unplayable even though the file is fresh.
 

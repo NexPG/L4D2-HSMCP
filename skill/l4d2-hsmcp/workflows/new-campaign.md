@@ -58,7 +58,8 @@ Checkpoint: `sealed`, `lint 0`, `vbsp:0 vvis:0 vrad:0`.
 3. `read_nav` must say `fresh`.
 
 Checkpoint: `read_nav_dump` says `playable` for every map. The dump shows
-CHECKPOINT/PLAYER_START/FINALE on the right areas and `0x20000000` on the flow path. No flow
+CHECKPOINT/PLAYER_START/FINALE on the right areas, and the live `nav_trouble_report` proves the
+flow. The dump's `0x20000000` is `MOSTLY_FLAT`, not flow. No flow
 means no playable map, even with a valid file.
 
 ## 5. Mission and add-on

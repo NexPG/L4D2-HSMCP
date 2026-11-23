@@ -219,7 +219,7 @@ export const runNavGenerate = defineTool({
         bsp: z.string().nullable(),
         navBytes: z.number().nullable(),
         dump: z.string().nullable(),
-        verdict: z.enum(["playable", "no-goal", "no-flow", "empty"]).nullable(),
+        verdict: z.enum(["goal-present", "no-goal", "empty"]).nullable(),
         areas: z.number().nullable(),
         /** The BSP carries the engine's string-table dictionary. */
         stringtableDictionary: z.boolean(),
@@ -271,7 +271,7 @@ export const runNavGenerate = defineTool({
       bsp: string | null;
       navBytes: number | null;
       dump: string | null;
-      verdict: "playable" | "no-goal" | "no-flow" | "empty" | null;
+      verdict: "goal-present" | "no-goal" | "empty" | null;
       areas: number | null;
       stringtableDictionary: boolean;
       fresh: boolean;
@@ -367,7 +367,7 @@ export const runNavGenerate = defineTool({
         }
 
         const log = readLog(consoleLog);
-        let verdict: "playable" | "no-goal" | "no-flow" | "empty" | null = null;
+        let verdict: "goal-present" | "no-goal" | "empty" | null = null;
         let areas: number | null = null;
         if (existsSync(outDump)) {
           try {

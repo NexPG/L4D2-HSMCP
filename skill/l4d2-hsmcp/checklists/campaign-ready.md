@@ -29,7 +29,8 @@ an opinion.
 - [ ] `read_nav` — `fresh` against the shipped `.bsp`.
 - [ ] The dump shows CHECKPOINT at the safe rooms and PLAYER_START on the first map.
 - [ ] The finale map shows FINALE where the finale runs.
-- [ ] `0x20000000` appears on the flow path; no flow warnings in the console log.
+- [ ] The live `nav_trouble_report` passes and the console has no flow warnings. The dump's
+  `mostlyFlat` count is not flow (`0x20000000` is `MOSTLY_FLAT`).
 - [ ] The safe room has a real doorway and a `prop_door_rotating_checkpoint`.
 
 ## Campaign

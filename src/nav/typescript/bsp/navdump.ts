@@ -3,9 +3,10 @@
  *
  * The `.nav` itself is a binary format whose L4D2 layout is not documented here; the dump
  * is the readable view the engine produces, and it carries the two things that decide
- * whether a mesh is playable: the attribute flags on each area and the area-to-area
- * connections. Parsing the dump is how `read_nav_dump` answers "is this mesh a map the
- * Director can run?" without loading the game.
+ * which goals and spawn attributes a mesh carries, and its connections. The dump does
+ * NOT carry the Director's flow; a goal is not a playable flow. Parsing it answers
+ * "does this mesh have a goal and spawn areas", and the live `nav_trouble_report` answers
+ * whether the flow exists.
  */
 
 export interface NavDumpArea {
@@ -29,14 +30,21 @@ export interface NavDumpReport {
     checkpoint: number;
     playerStart: number;
     finale: number;
-    escapeRoute: number;
+    mostlyFlat: number;
     areasWithConnections: number;
+    /**
+     * Always false: the text dump has no flow distance/path field. Kept explicit so a
+     * caller cannot mistake "goal present" for "flow proven".
+     */
+    flowProven: false;
   };
-  verdict: "playable" | "no-goal" | "no-flow" | "empty";
+  verdict: "goal-present" | "no-goal" | "empty";
 }
 
 const BASE_ATTRIBUTES: Array<[number, string]> = [
-  [0x20000000, "escape-route"],
+  // 0x20000000 is NAV_MESH_MOSTLY_FLAT (navfile.ts NAV_FLAGS). It is not flow: the
+  // official maps have 0 ESCAPE_ROUTE spawn attributes and most areas carry this bit.
+  [0x20000000, "mostly-flat"],
 ];
 
 const TERROR_ATTRIBUTES: Array<[number, string]> = [
@@ -111,19 +119,17 @@ export function parseNavDump(path: string, text: string): NavDumpReport {
     checkpoint: areas.filter((a) => a.attributes.includes("checkpoint")).length,
     playerStart: areas.filter((a) => a.attributes.includes("player-start")).length,
     finale: areas.filter((a) => a.attributes.includes("finale")).length,
-    escapeRoute: areas.filter((a) => a.attributes.includes("escape-route")).length,
+    mostlyFlat: areas.filter((a) => a.attributes.includes("mostly-flat")).length,
     areasWithConnections: areas.filter((a) => a.connections > 0).length,
+    flowProven: false as const,
   };
 
   const hasGoal = summary.checkpoint > 0 || summary.finale > 0;
+  // The dump can prove a goal and spawn areas. It cannot prove flow: the engine's flow
+  // distances are not in this text, and 0x20000000 is MOSTLY_FLAT. The live
+  // `nav_trouble_report`/`nav_analyze` is the flow oracle.
   const verdict: NavDumpReport["verdict"] =
-    areas.length === 0
-      ? "empty"
-      : !hasGoal
-        ? "no-goal"
-        : summary.escapeRoute === 0
-          ? "no-flow"
-          : "playable";
+    areas.length === 0 ? "empty" : !hasGoal ? "no-goal" : "goal-present";
 
   return {
     path,

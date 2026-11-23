@@ -33,7 +33,7 @@ it. An entity without a model has no volume and cannot be entered.
 
 `read_nav` says whether the mesh belongs to this `.bsp`. Then read `<map>_nav.txt`: the safe
 room areas must show `0x800` under "Terror Spawn Attribute Flags", and there must be an escape
-route (`0x20000000`) reaching them.
+route (proved by the live `nav_trouble_report`/`nav_analyze`; `0x20000000` is `MOSTLY_FLAT`, not flow) reaching them.
 
 ## If it still fails
 

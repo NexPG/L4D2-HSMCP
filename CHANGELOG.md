@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.253-alpha - 2026-11-23
+
+- **The nav dump no longer claims flow.** `0x20000000` is `MOSTLY_FLAT`, not the escape route:
+  the official maps have 0 `ESCAPE_ROUTE` spawn attributes and 1,384/1,582 `MOSTLY_FLAT` on
+  `c1m1_hotel`. `read_nav_dump` now reports `goal-present`, `no-goal` or `empty`, a
+  `mostlyFlat` count and `flowProven: false`; the live `nav_trouble_report`/`nav_analyze` is
+  the flow oracle. The old `playable`/`no-flow` verdict was a false proof and made a goal look
+  like a flow. Tests cover the constant, the goal and the "no flow field" case.
+- **Tool count: 293.** Tests: 238 files, 1,948 passed, 30 skipped.
+
 ## 0.0.252-alpha - 2026-11-23
 
 - **A compile that deletes a prop is no longer `ok`.** vbsp refuses a `prop_static` from a

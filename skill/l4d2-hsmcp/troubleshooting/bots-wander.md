@@ -10,7 +10,8 @@ goal, or the goal is unreachable.
 
 1. **A goal attribute exists.** CHECKPOINT (`0x800`) or FINALE (`0x40`) under "Terror Spawn
    Attribute Flags". No goal attribute → the Director has no destination.
-2. **Flow was computed.** Areas on the path carry `0x20000000` in "Base Attribute Flags".
+2. **Flow was computed.** The live `nav_trouble_report`/`nav_analyze` says the goal is reachable;
+   `0x20000000` in "Base Attribute Flags" is `MOSTLY_FLAT`, not flow.
    None → no flow, and bots have nowhere to go.
 3. **The goal is reachable.** Every area along the path must be connected; a gap in the mesh
    splits it.

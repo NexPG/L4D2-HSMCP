@@ -263,15 +263,6 @@ export function offlineNavTrouble(
       finding.centers = orphans.slice(0, MAX_CENTERS).map((a) => a.center);
     }
 
-    if ((hasCheckpoint || hasFinale) && report.summary.escapeRoute === 0) {
-      add(
-        "error",
-        "nav-no-escape-route",
-        "a goal exists but no area carries the computed escape route; the flow never reaches " +
-          "the goal, which in game reads as bots that stand still",
-      );
-    }
-
     if (report.summary.playerStart === 0 && expected !== "none") {
       add(
         "warning",

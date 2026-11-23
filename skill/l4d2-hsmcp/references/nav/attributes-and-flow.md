@@ -96,13 +96,15 @@ region.
 
 ## Flow
 
-With a start area and a goal area the Director computes flow. In the dump, areas on the flow
-path carry `0x20000000` in **Base Attribute Flags**. If no area carries it, there is no flow:
-the Director found no goal, and bots have nowhere to go.
+The text dump does **not** carry the Director's flow. `0x20000000` is `MOSTLY_FLAT`, not a
+flow path: the official maps have 0 `ESCAPE_ROUTE` spawn attributes and most areas carry the
+bit. A goal area is not proof of flow, and the old `read_nav_dump` verdict `playable` /
+`no-flow` was a false proof.
 
-`read_nav_dump` does this reading for you: it returns the decoded attributes per area, the
-counts of CHECKPOINT/PLAYER_START/FINALE areas, how many areas are on the escape route, and a
-verdict — `playable`, `no-goal`, `no-flow` or `empty`.
+The flow oracle is the live engine: `nav_trouble_report` / `nav_analyze` ("GetGoalArea:
+Cannot find end area", "Flow Warning", "NAV ERRORS - Map is unplayable"). `read_nav_dump`
+now reports `goal-present`, `no-goal` or `empty`, its `mostlyFlat` count and
+`flowProven: false`; use it for attributes/areas, not for flow.
 
 The console is the other oracle: `nav_analyze` prints complaints such as
 `GetGoalArea: Cannot find end area`, `Checkpoint failed to locate nearby info_change_level` or
@@ -118,7 +120,7 @@ chapter; `Missing Checkpoint` or `Missing Finale` failing is the panel above.
 1. Geometry and entities first: safe room, checkpoint door, `info_changelevel`.
 2. Add the `func_nav_attribute_region` brushes.
 3. Generate nav.
-4. Read `read_nav` (freshness) and the dump (attributes, flow).
+4. Read `read_nav` (freshness) and the dump (attributes); run the live `nav_trouble_report` for flow.
 5. Only then claim the chapter is playable.
 
 Changing geometry invalidates the mesh: regenerate rather than reuse.

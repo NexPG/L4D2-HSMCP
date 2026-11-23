@@ -205,12 +205,12 @@ describe("offlineNavTrouble", () => {
     );
   });
 
-  it("fails when a goal has no escape route", () => {
-    const noFlow = DUMP.split("0x20000000").join("0x00000000");
-    const r = offlineNavTrouble(parseNavDump("x_nav.txt", noFlow), "checkpoint");
-    expect(r.verdict).toBe("fail");
-    expect(r.findings).toEqual(
-      expect.arrayContaining([expect.objectContaining({ rule: "nav-no-escape-route" })]),
-    );
+  it("does not invent a flow check from a MOSTLY_FLAT flag", () => {
+    // 0x20000000 is MOSTLY_FLAT, not flow. The offline report cannot judge flow; it must
+    // not fail a goal-only mesh. The live nav_trouble_report is the flow oracle.
+    const noMostlyFlat = connected.split("0x20000000").join("0x00000000");
+    const r = offlineNavTrouble(parseNavDump("x_nav.txt", noMostlyFlat), "checkpoint");
+    expect(r.verdict).toBe("pass");
+    expect(r.findings.some((f) => f.rule === "nav-no-escape-route")).toBe(false);
   });
 });

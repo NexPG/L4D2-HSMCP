@@ -164,9 +164,9 @@ export const navTroubleReport = defineTool({
         consoleTail: [],
         note:
           `Read ${report.areaCount} area(s): ${report.summary.checkpoint} checkpoint, ` +
-          `${report.summary.finale} finale, ${report.summary.escapeRoute} on the escape route. ` +
-          `The dump has connection counts, not endpoints, so overlap and corner-to-corner ` +
-          `are not judged here; run the live report for those.`,
+          `${report.summary.finale} finale, ${report.summary.mostlyFlat} mostly-flat. ` +
+          `The dump has connection counts, not endpoints or flow distances, so overlap, ` +
+          `corner-to-corner and flow are not judged here; run the live report for those.`,
       };
     }
 
