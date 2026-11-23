@@ -389,7 +389,9 @@ export const readVmfLint = defineTool({
     "Knows the entities the installed FGD declares, so a class the game has is not reported " +
     "as unknown; `logic_script`, which the stock FGD omits, is tolerated for VScript maps. " +
     "L4D2 campaign rules are included: a non-L4D2 changelevel, a missing " +
-    "landmark or checkpoint door, and a Standard finale are reported. " +
+    "landmark or checkpoint door, and a Standard finale are reported. Worldspawn values the " +
+    "engine treats as behaviour are checked too: `timeofday` outside 0/2/3, and a " +
+    "`skyname`, `musicpostfix` or `detailmaterial` L4D2 does not ship. " +
     "Needs the Python sidecar and the Left 4 Dead 2 install; see health.",
   realm: "map",
   inputSchema: {

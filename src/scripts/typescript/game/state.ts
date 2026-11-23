@@ -13,10 +13,16 @@ import {
   readdirSync,
   renameSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 
 export const BACKUP_SUFFIX = ".hsmcp-backup";
+
+/** The first line `run_map_test` writes into `cfg/listenserver.cfg`. */
+const HARNESS_CFG_HEADER = "sv_cheats 1";
+/** What a clean install has in that file; the game itself ships this comment. */
+const STOCK_CFG = "// PC listenserver cfg file - intentionally blank\n";
 
 export type GameStateSeverity = "error" | "warning" | "info";
 
@@ -71,11 +77,28 @@ function entries(gameDir: string, relative: string[]): string[] {
   return existsSync(dir) ? readdirSync(dir) : [];
 }
 
+/** True when `cfg/listenserver.cfg` is the file `run_map_test` wrote, not the user's. */
+function isHarnessCfg(text: string): boolean {
+  const first = text.split(/\r?\n/, 1)[0]?.trim() ?? "";
+  return first === HARNESS_CFG_HEADER;
+}
+
 /** Restores every interrupted-run backup and hidden archive. */
 export function restoreGameState(gameDir: string): number {
   let restored = 0;
   for (const backup of backupFiles(gameDir)) {
     if (restoreBackup(backup)) restored += 1;
+  }
+  // The cfg may be left with no backup at all: the install had no file the harness could
+  // copy, so a killed run leaves `sv_cheats 1` plus a map command behind and the next launch
+  // would auto-load a test map. Only a file with the harness's own header is touched.
+  const listenserver = join(gameDir, "cfg", "listenserver.cfg");
+  if (existsSync(listenserver) && !existsSync(`${listenserver}${BACKUP_SUFFIX}`)) {
+    const text = readFileSync(listenserver, "utf8");
+    if (isHarnessCfg(text)) {
+      writeFileSync(listenserver, STOCK_CFG, "utf8");
+      restored += 1;
+    }
   }
   const addons = join(gameDir, "addons");
   if (existsSync(addons)) {
@@ -192,6 +215,13 @@ export function scanGameState(gameDir: string): GameStateReport {
     testScripts,
     testAddons,
     findings,
-    restorable: backups.length + hiddenArchives.length,
+    restorable:
+      backups.length +
+      hiddenArchives.length +
+      (existsSync(listenserverPath) &&
+      !existsSync(`${listenserverPath}${BACKUP_SUFFIX}`) &&
+      isHarnessCfg(readFileSync(listenserverPath, "utf8"))
+        ? 1
+        : 0),
   };
 }

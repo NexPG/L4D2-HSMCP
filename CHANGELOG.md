@@ -5,6 +5,28 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.230-alpha - 2026-11-23
+
+- **`read_vmf_lint` checks the worldspawn values the engine reads as behaviour.** It reports
+  `l4d2-timeofday-unused` for anything outside 0/2/3 (the message names midnight/morning/
+  afternoon), and `l4d2-worldspawn-choice` for a `skyname`, `musicpostfix` or
+  `detailmaterial` L4D2 does not ship. The tables, the 13 useful damage types and the
+  `info_game_event_proxy` event list are in `references/mapping/worldspawn-and-damage.md`.
+  The lists are in the linter because srctools flattens quoted `(choices)` into free text and
+  turns a numeric list into a min..max range, which would have accepted `timeofday 1`.
+- **`NAV ERRORS - Map is unplayable!` is now diagnosed and prevented.** Measured: a 45-area
+  hall with a CHECKPOINT region but no checkpoint door/changelevel fails the engine's
+  "Missing Checkpoint" on 43 areas and shows the panel while the map plays; the same hall
+  with FINALE + `trigger_finale` passes and the panel is gone. New
+  `troubleshooting/nav-unplayable.md`, and `references/nav/attributes-and-flow.md` states
+  that a goal needs an end, not just an attribute.
+- **`check_game_state` repairs a killed run's `listenserver.cfg`.** A run whose process was
+  killed leaves `sv_cheats 1` and a `map ...` line behind, and the next launch would execute
+  it. `restore: true` now recognises the harness's own first line: it restores
+  `listenserver.cfg.hsmcp-backup` if there is one, otherwise writes the stock blank comment.
+  A file the user wrote is never touched.
+- **Tool count: 288.** Tests: 230 files, 1,920 passed, 30 skipped.
+
 ## 0.0.229-alpha - 2026-11-23
 
 - **`write_special_infected_probe` refuses an endless-loading host.** A VMF that carries an

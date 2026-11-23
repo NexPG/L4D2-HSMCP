@@ -80,6 +80,28 @@ exit-stripped test chapter, with all four survivors teleported to the far end an
 flow chapter before "it spawned on its own" can be asserted; do not read that silence as a
 failed limit or a failed probe.
 
+### A bench map that can host the Director
+
+A hall of four bays tests spawns, hordes and a finale without shipping a chapter:
+
+- **geometry**: one sealed hall about 2048 × 4608 × 320, split by three walls at
+  `y = 1024`, `2048`, `3072`, each with a 256-wide, full-height arch. 12 brushes, sealed,
+  no leaks.
+- **entities**: `info_player_start` at one end, `info_director` (targetname `director`),
+  `info_zombie_spawn` in the middle, one `light` per bay.
+- **goal**: the far end is **FINALE** (`func_nav_attribute_region` spawnflags 64) plus a
+  `trigger_finale` (`type 0`). Never a bare CHECKPOINT region: that scatters
+  `NAV ERRORS — Map is unplayable!` over the screen (`troubleshooting/nav-unplayable.md`).
+- **nav**: 45 areas, `playable` after `run_nav_generate`.
+
+With the survivors teleported to the goal (`player.SetOrigin` works on players), the Director
+spawns commons on its own: **8 common infected** inside ~100 s. Specials were not seen in a
+140 s window — treat "the Director spawns commons" as proven and "it spawns specials" as still
+open.
+
+Teleporting is the scripted substitute for walking. A client that stands at the spawn never
+leaves the start area as far as the Director is concerned, and then it spawns nothing at all.
+
 ## Effective DirectorOptions
 
 `write_options_probe` adds a `logic_script` to a VMF (or use its returned entity with

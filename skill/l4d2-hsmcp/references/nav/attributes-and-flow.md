@@ -75,6 +75,25 @@ check of what was asked for.
 Bots path to the goal area (CHECKPOINT or FINALE). That is why bots run ahead and wait: they
 are going to the goal, not following the player. A map with no goal area is why they wander.
 
+### A goal needs an end, not just an attribute (measured)
+
+A CHECKPOINT or FINALE region alone is not a goal. The chapter must also contain the thing
+the attribute points at:
+
+- CHECKPOINT → `prop_door_rotating_checkpoint` and an `info_changelevel` with its landmark;
+- FINALE → a `trigger_finale`.
+
+Measured on a 45-area hall whose far end carried a CHECKPOINT region but no checkpoint door
+and no changelevel: `nav_trouble_report` reported **"Missing Checkpoint" on 43 areas** (45
+minus the two that carried the attribute), and the game showed
+**`NAV ERRORS — Map is unplayable!`** in the middle of the screen while the map itself played
+normally. Swapping the same hall to FINALE + `trigger_finale` made "Missing Finale" pass and
+the panel disappeared. "Missing Battlefield" still reported 45 areas and did **not** raise the
+panel: in coop that check is informational.
+
+A bench or probe map that must not leave itself uses a FINALE end, never a bare CHECKPOINT
+region.
+
 ## Flow
 
 With a start area and a goal area the Director computes flow. In the dump, areas on the flow
@@ -88,6 +107,11 @@ verdict — `playable`, `no-goal`, `no-flow` or `empty`.
 The console is the other oracle: `nav_analyze` prints complaints such as
 `GetGoalArea: Cannot find end area`, `Checkpoint failed to locate nearby info_change_level` or
 `NAV ERRORS - Map is unplayable`. Capture them with `-condebug`.
+
+`nav_trouble_report` is the structured form of that: it runs the engine's own checks
+(`orphan`, `checkpoint`, `finale`, `battlefield`, `overlap`, `corner`, …), returns each as
+`passed`/`areas`, and dumps the centres of the offending areas. Run it before shipping a
+chapter; `Missing Checkpoint` or `Missing Finale` failing is the panel above.
 
 ## Order of operations
 

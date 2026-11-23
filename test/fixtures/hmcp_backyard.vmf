@@ -25,7 +25,7 @@ world
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
 	"maxpropscreenwidth" "-1"
-	"skyname" "sky_day01_01"
+	"skyname" "sky_l4d_c1_1"
 	solid
 	{
 		"id" "2"

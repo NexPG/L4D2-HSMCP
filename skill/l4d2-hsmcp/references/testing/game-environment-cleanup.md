@@ -9,6 +9,14 @@ or a tool that has one, not by hand afterwards.
 `check_game_state` reports the leftovers (and `restore: true` restores the backups and
 hidden archives). `run_map_test` and `run_nav_generate` run the same sweep before a launch.
 
+A killed run can leave `cfg/listenserver.cfg` holding `sv_cheats 1` and a `map <test map>`
+line. The next launch would execute it and auto-load the test map, so the sweep treats a file
+whose **first line is the harness's `sv_cheats 1`** as its own: it restores
+`listenserver.cfg.hsmcp-backup` when that exists, and otherwise rewrites the stock blank
+comment. A file the user wrote (`hostname ...`) is never touched. Measured: a killed run left
+53 `Host_NewGame` lines behind and `clean: false`; `restore: true` put the install back to
+`clean: true` in one call.
+
 `run_map_test` and `run_nav_generate` sweep `<file>.hsmcp-backup` in `cfg/`, `maps/` and
 `scripts/vscripts/` before launching. That restores a previous `listenserver.cfg`, map or
 script even when the earlier process was killed before its `finally` could run. `.vpk.off`

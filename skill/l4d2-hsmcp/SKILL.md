@@ -76,6 +76,7 @@ again.
 | `NAV ERRORS - Map is unplayable!` | Nav is made from the final `.bsp`; regenerate after the last compile and pass it to `run_map_test` | `references/nav/generation.md` |
 | VScript `expression expected` at line 1 | Write `.nut` files without a BOM | `references/scripting/vscript.md` |
 | Campaign vanished from the menu after a killed run | A run hid an addon as `*.vpk.off`. `check_game_state` restores it | `references/testing/game-environment-cleanup.md` |
+| HUD says `NAV ERRORS — Map is unplayable!` while the map plays | The chapter has a CHECKPOINT nav attribute but no checkpoint door/changelevel, or a finale map with no `trigger_finale`. Give it a real end and regenerate nav | `troubleshooting/nav-unplayable.md` |
 | Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
 
 ## Route the task first
@@ -133,6 +134,7 @@ material; the instructions live in one place.
 | `references/mapping/world-dressing.md` | light, postprocess, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
 | `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
+| `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
 | `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |
@@ -163,6 +165,7 @@ material; the instructions live in one place.
 | `troubleshooting/mapping-edits.md` | a prefab, texture skew, clip, overlay or moved brush is not where it should be |
 | `troubleshooting/hlmv-screenshot.md` | HLMV shows an error, a black viewport, or the screenshot is blank |
 | `troubleshooting/endless-loading.md` | the loading bar never fills, or the same map restarts instead of loading |
+| `troubleshooting/nav-unplayable.md` | the HUD says `NAV ERRORS — Map is unplayable!` although the map loads |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 

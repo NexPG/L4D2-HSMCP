@@ -538,6 +538,108 @@ def _lint_finale(vmf: Any, entities: list[Any]) -> list[dict[str, Any]]:
     return findings
 
 
+# Worldspawn's choices are not decoration. The table below is read from L4D2's own FGD
+# (L4D2-FGD-Edits, `worldspawn`): srctools flattens `(choices)` with quoted values into a
+# free-text STRING and turns a numeric CHOICES list into a min..max range, so neither the
+# FGD object nor `_choice_values` can answer these. The counts are fixed for the game, not
+# for a map, which is why copying them here cannot drift.
+L4D2_TIME_OF_DAY = {
+    "0": "Sitting Witch & common infected (Midnight)",
+    "2": "Sitting Witch (Morning)",
+    "3": "Walking Witch (Afternoon)",
+}
+L4D2_SKY_NAMES = {
+    "docks_hdr", "highrise_hdr", "river_hdr", "sky_coldstream_1_hdr",
+    "sky_coldstream_2_hdr", "sky_day01_09_hdr", "sky_l4d_c1_1_hdr",
+    "sky_l4d_c1_2_hdr", "sky_l4d_c2m1_hdr", "sky_l4d_c4m1_hdr",
+    "sky_l4d_c4m4_hdr", "sky_l4d_c5_1_hdr", "sky_l4d_c6m1_hdr",
+    "sky_l4d_night02_hdr", "sky_l4d_predawn02_hdr", "sky_l4d_rural02_hdr",
+    "sky_l4d_urban01_hdr", "urbannightburning_hdr",
+}
+L4D2_MUSIC_POSTFIX = {
+    "Waterfront", "BigEasy", "Mall", "Fairgrounds", "Plankcountry", "Milltown",
+    "DeadLight", "ThePassing", "Sacrifice", "NoMercy", "Garage", "SmallTown",
+    "Airport", "Farm", "ColdStream", "Lighthouse",
+}
+L4D2_DETAIL_MATERIALS = {
+    "detail/ruraldetailsprites",
+    "detail/detailsprites_overgrown",
+    "detail/detailsprites",
+}
+
+
+def _lint_worldspawn(vmf: Any, _fgd: Any) -> list[dict[str, Any]]:
+    """Checks the worldspawn keys whose value changes gameplay, not just the picture.
+
+    `timeofday` decides whether a witch sits or walks and how far common infected aggro;
+    `skyname` must name a shipped HDR sky or the map renders the last sky the engine loaded;
+    `detailmaterial` must pair with `detail.vbsp` and names one of three files.
+    """
+    findings: list[dict[str, Any]] = []
+    spawn = vmf.spawn
+
+    value = str(spawn["timeofday", ""]).strip()
+    if value and value not in L4D2_TIME_OF_DAY:
+        findings.append(
+            _finding(
+                "warning",
+                "l4d2-timeofday-unused",
+                f'worldspawn "timeofday" is "{value}", which L4D2 does not use: the list is '
+                + ", ".join(f"{bit} ({label})" for bit, label in L4D2_TIME_OF_DAY.items())
+                + ". Every other value leaves the witch sitting and common infected at the "
+                "default aggro range",
+                classname="worldspawn",
+                key="timeofday",
+                value=value,
+                allowed=sorted(L4D2_TIME_OF_DAY),
+            )
+        )
+
+    for key, allowed, detail in (
+        (
+            "skyname",
+            L4D2_SKY_NAMES,
+            "a sky name must be one of the 18 skies the game ships; a typo renders the "
+            "last sky the engine loaded",
+        ),
+        (
+            "musicpostfix",
+            L4D2_MUSIC_POSTFIX,
+            "the 16 shipped music sets; a custom name plays no campaign music",
+        ),
+        (
+            "detailmaterial",
+            L4D2_DETAIL_MATERIALS,
+            "the three detail sprite files the game ships; it must also match `detailvbsp`",
+        ),
+    ):
+        value = str(spawn[key, ""]).strip()
+        if not value:
+            continue
+        # A VMF names the sky without its variant suffix (`sky_l4d_c1_1`); vbsp appends
+        # `_hdr`/`_ldr`. The FGD picker lists material names (`..._hdr`), so compare bases.
+        def base(name: str) -> str:
+            return name.casefold().removesuffix("_hdr").removesuffix("_ldr")
+
+        if base(value) in {base(candidate) for candidate in allowed}:
+            continue
+        sample = ", ".join(sorted(allowed)[:8])
+        findings.append(
+            _finding(
+                "warning",
+                "l4d2-worldspawn-choice",
+                f'worldspawn "{key}" is "{value}", which is not one of L4D2\'s values '
+                f"({sample}, ...): {detail}",
+                classname="worldspawn",
+                key=key,
+                value=value,
+                allowed=sorted(allowed),
+            )
+        )
+
+    return findings
+
+
 def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, Any]]:
     """Left 4 Dead 2's FGD is the whole truth about entity classes.
 
@@ -955,6 +1057,7 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
     findings.extend(_lint_landmarks_and_doors(vmf, entities, game_dir))
     findings.extend(_lint_prop_physics(vmf, entities, game_dir))
     findings.extend(_lint_finale(vmf, entities))
+    findings.extend(_lint_worldspawn(vmf, fgd))
 
     return findings
 
