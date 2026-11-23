@@ -48,7 +48,8 @@ licence to interrupt runs.
 - [ ] Restore every modified original from its backup.
 - [ ] Confirm the original entity lump has no test entities (`read_bsp_entities` or
       `readEntityLump`).
-- [ ] Confirm no `hsmcp_*` test names remain in `maps/`, `materials/maps/`, or `addons/`.
+- [ ] Confirm no `hsmcp_*` test names remain in `maps/`, `materials/maps/`, `models/` or
+      `addons/`. `check_game_state` lists `testModels` for the `models/` case.
 - [ ] Remove scratch directories outside the game (`%TEMP%` extracts, VPK dumps).
 
 ## What is normal and can stay

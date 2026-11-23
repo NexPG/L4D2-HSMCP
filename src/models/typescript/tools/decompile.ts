@@ -547,6 +547,7 @@ function qcText(
   bodyFile: string,
   targetModelName: string,
   collision: (CollisionModel & { smdName: string }) | null,
+  weightLists: Array<{ name: string; weights: number[] }>,
   sequences: Array<{
     name: string;
     fps: number;
@@ -560,6 +561,7 @@ function qcText(
     fadeOut: number;
     events: Array<{ name: string; frame: number; options: string }>;
     options: string[];
+    weightListName?: string;
     autoLayers: Array<{
       sequenceName: string;
       poseName: string | null;
@@ -733,12 +735,20 @@ function qcText(
   if (sequences.length === 0) {
     lines.push(`$sequence "idle" "${bodyFile}" fps 1`);
   } else {
+    for (const list of weightLists) {
+      lines.push("", `$weightlist "${list.name}" {`);
+      list.weights.forEach((weight, index) => {
+        lines.push(`\t"${bones[index]?.name ?? `bone_${index}`}" ${fmt(weight)}`);
+      });
+      lines.push("}");
+    }
     for (const sequence of sequences) {
       const name = sequence.name.replace(/"/g, "");
       const needsBlock =
         sequence.events.length > 0 ||
         sequence.options.length > 0 ||
         sequence.autoLayers.length > 0 ||
+        sequence.weightListName !== undefined ||
         Math.abs(sequence.fadeIn - 0.2) > 1e-6 ||
         Math.abs(sequence.fadeOut - 0.2) > 1e-6;
       if (sequence.files.length <= 1 && sequence.blends.length === 0 && !needsBlock) {
@@ -764,6 +774,7 @@ function qcText(
       if (sequence.activityName) lines.push(`\tactivity ${sequence.activityName}`);
       if (sequence.loop) lines.push("\tloop");
       for (const option of sequence.options) lines.push(`\t${option}`);
+      if (sequence.weightListName) lines.push(`\tweightlist "${sequence.weightListName}"`);
       for (const layer of sequence.autoLayers) {
         if (layer.flags === 0 && layer.start === layer.end) {
           lines.push(`\taddlayer "${layer.sequenceName}"`);
@@ -1189,6 +1200,8 @@ export const decompileModelTool = defineTool({
       events: Array<{ name: string; frame: number; options: string }>;
       /** QC option words from the compiled sequence flags (`snap`, `delta`, `hidden`, ...). */
       options: string[];
+      /** `$weightlist` name this sequence uses, when its weights are not all 1. */
+      weightListName?: string;
       /** `addlayer`/`blendlayer` entries, with the target sequence and pose parameter named. */
       autoLayers: Array<{
         sequenceName: string;
@@ -1203,6 +1216,8 @@ export const decompileModelTool = defineTool({
     }> = [];
     const skippedSequences: Array<{ name: string; reason: string }> = [];
     const usedNames = new Set<string>();
+    // Unique non-default bone-weight lists, named after the first sequence that uses them.
+    const weightLists: Array<{ name: string; signature: string; weights: number[] }> = [];
     for (const [index, sequence] of sequences.entries()) {
       const blendTotal = sequence.groupSizes[0] * sequence.groupSizes[1];
       if (blendTotal <= 0 || blendTotal > 64 || sequence.animIndexOffset <= 0) {
@@ -1271,6 +1286,25 @@ export const decompileModelTool = defineTool({
           end: sequence.paramEnd[axis]!,
         });
       }
+      let weightListName: string | undefined;
+      if (sequence.weightlist > 0 && bones.length > 0) {
+        const at = sequence.baseOffset + sequence.weightlist;
+        if (at + bones.length * 4 <= mdlBytes.length) {
+          const weights: number[] = [];
+          for (let index = 0; index < bones.length; index += 1) {
+            weights.push(mdlBytes.readFloatLE(at + index * 4));
+          }
+          if (weights.some((weight) => Math.abs(weight - 1) > 1e-6)) {
+            const signature = weights.map((weight) => weight.toFixed(4)).join(",");
+            let named = weightLists.find((entry) => entry.signature === signature);
+            if (!named) {
+              named = { name: `weights_${name}`, signature, weights };
+              weightLists.push(named);
+            }
+            weightListName = named.name;
+          }
+        }
+      }
       sequenceDefs.push({
         name,
         fps: decoded[0]!.animation.fps > 0 ? decoded[0]!.animation.fps : 30,
@@ -1293,6 +1327,7 @@ export const decompileModelTool = defineTool({
           options: event.options,
         })),
         options: sequenceQcOptions(sequence, poseParamNames),
+        ...(weightListName ? { weightListName } : {}),
         autoLayers: sequence.autoLayers
           .map((layer) => ({
             sequenceName: sequences[layer.sequence]?.name ?? "",
@@ -1308,8 +1343,26 @@ export const decompileModelTool = defineTool({
       });
     }
 
+    // An `addlayer` may name a sequence this decompile could not write (too many blends, a
+    // missing animation). studiomdl aborts the whole model on a dangling name, so those
+    // layers are dropped and counted instead.
+    const emittedSequences = new Set(sequenceDefs.map((sequence) => sequence.name));
+    let droppedLayers = 0;
+    for (const sequence of sequenceDefs) {
+      sequence.autoLayers = sequence.autoLayers.filter((layer) => {
+        if (emittedSequences.has(layer.sequenceName)) return true;
+        droppedLayers += 1;
+        return false;
+      });
+    }
     const bodyFiles = new Set<string>();
     const warnings: string[] = [];
+    if (droppedLayers > 0) {
+      warnings.push(
+        `${droppedLayers} autolayer(s) name a sequence this decompile did not write; they are ` +
+          "dropped, because studiomdl refuses the whole model on a dangling layer name.",
+      );
+    }
     const eyeData = readEyeData(mdlBytes);
     if (eyeData.eyeballs.length > 0 || eyeData.mouths.length > 0) {
       warnings.push(
@@ -1591,6 +1644,7 @@ export const decompileModelTool = defineTool({
       bodyFile,
       targetModelName,
       collision,
+      weightLists,
       sequenceDefs,
       attachments,
       hitboxSets,

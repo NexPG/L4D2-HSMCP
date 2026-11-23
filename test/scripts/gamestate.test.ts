@@ -16,7 +16,9 @@ describe("game state", () => {
     const maps = join(scratch, "maps");
     const vscripts = join(scratch, "scripts", "vscripts");
     const addons = join(scratch, "addons");
-    for (const dir of [cfg, maps, vscripts, addons]) mkdirSync(dir, { recursive: true });
+    const models = join(scratch, "models", "hsmcp_ct");
+    for (const dir of [cfg, maps, vscripts, addons, models]) mkdirSync(dir, { recursive: true });
+    writeFileSync(join(models, "car.mdl"), "mdl", "utf8");
     writeFileSync(join(cfg, "listenserver.cfg"), "sv_cheats 1\nmap hmcp_test\n", "utf8");
     writeFileSync(join(cfg, "listenserver.cfg.hsmcp-backup"), "// blank\n", "utf8");
     writeFileSync(join(maps, "hmcp_probe.bsp"), "test", "utf8");
@@ -30,11 +32,13 @@ describe("game state", () => {
     expect(before.restorable).toBe(3);
     expect(before.testMaps).toContain("hmcp_probe.bsp");
     expect(before.testScripts).toContain("hsmcp_probe.nut");
+    expect(before.testModels).toContain("hsmcp_ct");
     const rules = before.findings.map((finding) => finding.rule);
     expect(rules).toContain("listenserver-not-blank");
     expect(rules).toContain("state-backup-left");
     expect(rules).toContain("addon-left-hidden");
     expect(rules).toContain("test-map-present");
+    expect(rules).toContain("test-model-present");
 
     expect(restoreGameState(scratch)).toBe(3);
     expect(readFileSync(join(cfg, "listenserver.cfg"), "utf8")).toBe("// blank\n");

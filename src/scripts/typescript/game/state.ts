@@ -43,6 +43,7 @@ export interface GameStateReport {
   testMaps: string[];
   testScripts: string[];
   testAddons: string[];
+  testModels: string[];
   findings: GameStateFinding[];
   restorable: number;
 }
@@ -192,6 +193,18 @@ export function scanGameState(gameDir: string): GameStateReport {
     );
   }
 
+  const testModels = entries(gameDir, ["models"]).filter((entry) =>
+    /^(hmcp_|hsmcp_)/i.test(entry),
+  );
+  for (const entry of testModels) {
+    add(
+      "info",
+      "test-model-present",
+      `test model ${entry} is in models/; it is not stock content`,
+      join(gameDir, "models", entry),
+    );
+  }
+
   const testAddons = entries(gameDir, ["addons"]).filter((entry) =>
     /^(hmcp_|hsmcp_)/i.test(entry),
   );
@@ -214,6 +227,7 @@ export function scanGameState(gameDir: string): GameStateReport {
     testMaps,
     testScripts,
     testAddons,
+    testModels,
     findings,
     restorable:
       backups.length +

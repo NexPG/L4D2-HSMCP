@@ -165,8 +165,25 @@ into the `$sequence` block. Verified by a real compile of `gascan001a`: `pullpin
 `melee` came back with `STUDIO_SNAP` (0x2) and `a_gasCan_vaims` with `STUDIO_HIDDEN` (0x400).
 `delta` is **not** written: the decompiled SMDs are baked frames, while `delta` tells studiomdl
 to read them as differences from the reference pose. That model's `gasCan_idle` loses the
-`delta` bit on a recompile, and the tool does not pretend otherwise. `addlayer`/`blendlayer`
-are read as counts but not written yet.
+`delta` bit on a recompile, and the tool does not pretend otherwise. Autolayers are written: `addlayer`
+when the window is empty, otherwise `blendlayer "<sequence>" <start> <peak> <tail> <end>` with
+`xfade`/`spline`/`noblend`/`poseparameter`/`local`, converted from the stored 0..1 phase to
+frames. A layer that names a sequence the decompile did not write is dropped with a warning —
+studiomdl++ aborts the whole model on a dangling layer name. Verified on `gascan001a`
+(`gasCan_idle` returned with one autolayer).
+
+**Weight lists are written and verified.** Non-default bone weights are common (measured:
+35 of the hunter's 89 sequences, 355 of the gambler's 814, 18 of the 36 in
+`v_huntingrifle`). The decompiler writes `$weightlist "weights_<sequence>" { "bone" weight ... }`
+once per unique list and `weightlist "..."` inside each sequence. A/B on `v_huntingrifle`:
+decompile -> compile -> read back gave **35 sequences, 17 with non-default weights** (the source
+has 36 sequences and 18; one is skipped by the decompile).
+
+**Compile with `studiomdl++` for decompiled models.** On `gascan001a` and `v_huntingrifle`,
+stock `studiomdl` stops on a multi-blend animation SMD with `Line N is incomplete`, while
+`studiomdl++` compiles the same QC. `run_studiomdl` defaults to `auto` (plus-plus when it is
+installed); forcing `compiler: "studiomdl"` on a decompiled multi-blend model is expected to
+fail until that SMD shape is understood.
 
 ## L4D2 specifics
 

@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.246-alpha - 2026-11-23
+
+- **`$weightlist` is written and verified by a recompile.** Non-default bone weights are
+  common (35 of the hunter's 89 sequences, 355 of the gambler's 814, 18 of `v_huntingrifle`'s
+  36). The decompiler writes one `$weightlist "weights_<sequence>" { "bone" weight ... }` per
+  unique list and a `weightlist` line inside each sequence. A/B on `v_huntingrifle`: decompile,
+  compile, read back -- **35 sequences, 17 with non-default weights** (the source has 36 and
+  18; one sequence is skipped).
+- **A dangling `addlayer` no longer aborts a compile.** studiomdl++ refuses the whole model when
+  a layer names a sequence that was not written; those layers are dropped with a warning.
+- **`check_game_state` now lists `testModels`.** A compiled test model left in the game's
+  `models/` tree is reported like a test map (`test-model-present`), and the cleanup page says
+  to remove it. Two such leftovers were found and removed during this work.
+- **Stock `studiomdl` vs decompiled multi-blend SMDs documented.** On `gascan001a` and
+  `v_huntingrifle` stock stops with `Line N is incomplete`, while `studiomdl++` compiles the
+  same QC; the skill says to use the ++ compiler for decompiled models.
+- **Tool count: 293.** Tests: 238 files, 1,944 passed, 30 skipped.
+
 ## 0.0.245-alpha - 2026-11-23
 
 - **`addlayer`/`blendlayer` are written and verified by a recompile.** The autolayer records
