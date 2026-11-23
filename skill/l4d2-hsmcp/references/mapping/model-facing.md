@@ -40,6 +40,11 @@ measure the exact `.mdl` you place. `read_model_info` names the model, and `prev
 the look. If one view is ambiguous, use `preview_model` `view: "back"|"left"|"right"`; the
 table was measured from `view: "front"` (the camera on world -X, looking +X).
 
+**A full catalogue is future work** (workstream G in the diary): bounds, `.phy`,
+`$staticprop`, forward axis and confidence for every model. Until it exists, an unlisted model
+is measured on the spot with the four views and its row is appended here; never default to
+`x+` without looking.
+
 ## Doors are not props
 
 A `prop_door_rotating*` origin is the **hinge**, and the leaf runs along the model's local
@@ -60,8 +65,9 @@ Measured in Santa Monica 003 and corrected in `build.mjs`:
 - `bench001` (`y+`): the three west-side benches at `-1160, y` were `yaw 90` (facing the
   houses, west); `yaw 270` faces the street (east). The safe-room bench at `-820, 2500` and
   the shop benches at `x = -460/+460` were the same 90-degree error; `270/90` faces the room
-  and the path. The pier benches at `x = ±420` face outward to the water and are correct as
-  placed (`90` west side, `270` east side).
+  and the path. The four pairs at `x = ±420, y = 4800..5700` were removed from the finale
+  approach: on that narrow strip a solid bench left 15 nav areas that could not reach the
+  finale. They keep collision at the midway, where the walkway is wide enough.
 - `foodcart` (`x-`): the shop carts at `x = -380/+380` and the two at `±380, 5200` were
   `0/180` (serving sides outward); `180/0` turns the counters toward the centre path.
 - `helicopter_rescue` (`x-`): the finale helicopter was `yaw 270` (nose north, away from the

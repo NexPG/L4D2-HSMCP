@@ -65,6 +65,33 @@ describe.skipIf(!has.gameContent)("write_prop model checks", () => {
     expect(r.clipBox).not.toBeNull();
   }, 60_000);
 
+  it("writes solid 6 explicitly, because vbsp treats an absent solid as 0", async () => {
+    // Measured on Santa Monica: 382 prop_static instances, every one solidity 0, because
+    // the key was absent. The FGD says 6; vbsp does not apply it.
+    const r = await writeProp("solid-default", {
+      kind: "static",
+      model: "models/props_street/electrical_box02.mdl",
+      collision: "auto",
+    });
+    expect(r.keyvalues["solid"]).toBe("6");
+  }, 60_000);
+
+  it("writes solid 0 for collision none and decoration", async () => {
+    const none = await writeProp("solid-none", {
+      kind: "static",
+      model: "models/props_street/electrical_box02.mdl",
+      collision: "none",
+    });
+    expect(none.keyvalues["solid"]).toBe("0");
+    const foliage = await writeProp("solid-foliage", {
+      kind: "static",
+      model: "models/props_street/electrical_box02.mdl",
+      collision: "auto",
+      keyvalues: { spawnflags: "2" },
+    });
+    expect(foliage.keyvalues["solid"]).toBe("0");
+  }, 60_000);
+
   it("keeps a model that ships $staticprop quiet", async () => {
     const r = await writeProp("good-static", {
       kind: "static",

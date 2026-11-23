@@ -73,11 +73,13 @@ Keep a custom map name at 30 characters or fewer, and let `preview_model` genera
 (it caps the total).
 
 ## Props that look solid and are not
-`prop_static` defaults to solidity 6, which asks vbsp for the model's `.phy`. A model without
-one is drawn solid in Hammer and has no collision in play. `read_model_info.hasPhysics` and
-`read_static_props` name the models; `read_vmf_lint` reports `prop-static-no-physics`. Mark
-deliberate decoration (grass, tree canopies, an escalator overlay) with `spawnflags 2`; for
-anything the player should bump into, use a model that ships `.phy` or add a clip brush.
+`prop_static` has a `solid` key with the FGD default **6** (Use VPhysics), but vbsp does not
+apply that default: an omitted key compiles to `solidity 0`. Measured on Santa Monica: 382
+`prop_static` instances with `.phy` models and no `solid` key all came out solidity 0, and
+every bench, car and cart was a ghost. **Write `solid 6` explicitly** for a solid prop;
+`solid 0` for decoration, `solid 2` for a bounding box. `read_static_props` reports the
+compiled `solidity` histogram and `nonSolidInstances`; the campaign gate fails a non-decorative
+solidity-0 instance. A model without a `.phy` needs a clip brush or `solid 2` even with 6.
 
 A model also needs the MDL `$staticprop` header flag to be a `prop_static`. Without it vbsp
 prints `Error! prop_static using model ..., which must be used on a dynamic entity ... Deleted.`

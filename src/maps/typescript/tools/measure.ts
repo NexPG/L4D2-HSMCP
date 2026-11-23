@@ -10,6 +10,7 @@ import {
 } from "../bsp/trace.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { callSidecar } from "../../../core/typescript/sidecar/client.js";
+import { readStaticProps as readStaticPropsLump } from "../bsp/staticprops.js";
 import { resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 
 const VEC3 = z.array(z.number()).length(3);
@@ -600,6 +601,24 @@ export const readStaticProps = defineTool({
         }),
       )
       .optional(),
+    /**
+     * Per-instance solidity from the compiled `sprp` lump. A `prop_static` with the `solid`
+     * key absent compiles to solidity 0 even though the FGD says 6, so a map full of
+     * `.phy`-carrying models can still be a map of ghosts.
+     */
+    solidity: z.record(z.number()).optional(),
+    nonSolidInstances: z.number().optional(),
+    nonSolidNonDecorativeInstances: z.number().optional(),
+    nonSolidModels: z
+      .array(
+        z.object({
+          model: z.string(),
+          instances: z.number(),
+          decorative: z.boolean(),
+        }),
+      )
+      .optional(),
+    solidityError: z.string().optional(),
     models: z
       .array(
         z.object({
@@ -625,7 +644,12 @@ export const readStaticProps = defineTool({
       ctx.config,
       180_000,
     )) as {
-      models?: Array<{ model: string; hasPhysics: boolean | null; instances: number }>;
+      models?: Array<{
+        model: string;
+        hasPhysics: boolean | null;
+        instances: number;
+        decorative?: boolean;
+      }>;
       missingPhysics?: Array<{ model: string; hasPhysics: boolean | null; instances: number }>;
       [key: string]: unknown;
     };
@@ -667,6 +691,43 @@ export const readStaticProps = defineTool({
       r.models = models;
       r.missingPhysics = missing;
       r.missingPhysicsSolidCount = missing.filter((row) => row.decorative !== true).length;
+    }
+
+    // The model dictionary says whether a `.phy` exists; the compiled sprp lump says what
+    // each instance actually got. They disagree when `solid` was omitted: the FGD default is
+    // 6 but vbsp writes 0, and every bench/car/cart is a ghost. Report the trumped value.
+    const name = (model: string): string => {
+      const normal = model.replace(/\\/g, "/").toLowerCase();
+      return normal.startsWith("models/") ? normal : `models/${normal}`;
+    };
+    const decorativeModels = new Set(
+      (r.models ?? []).filter((row) => row.decorative === true).map((row) => name(row.model)),
+    );
+    const solidity: Record<string, number> = {};
+    const nonSolid = new Map<string, number>();
+    let nonSolidInstances = 0;
+    let nonSolidNonDecorative = 0;
+    try {
+      for (const prop of readStaticPropsLump(path).props) {
+        solidity[String(prop.solidity)] = (solidity[String(prop.solidity)] ?? 0) + 1;
+        if (prop.solidity !== 0) continue;
+        const model = name(prop.model);
+        nonSolid.set(model, (nonSolid.get(model) ?? 0) + 1);
+        nonSolidInstances += 1;
+        if (!decorativeModels.has(model)) nonSolidNonDecorative += 1;
+      }
+      r.solidity = solidity;
+      r.nonSolidInstances = nonSolidInstances;
+      r.nonSolidNonDecorativeInstances = nonSolidNonDecorative;
+      r.nonSolidModels = [...nonSolid.entries()]
+        .map(([model, instances]) => ({
+          model,
+          instances,
+          decorative: decorativeModels.has(model),
+        }))
+        .sort((a, b) => b.instances - a.instances);
+    } catch (error) {
+      r.solidityError = (error as Error).message;
     }
 
     return r as Record<string, unknown>;

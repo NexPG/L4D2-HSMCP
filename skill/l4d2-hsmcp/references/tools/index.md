@@ -130,7 +130,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_map_dependencies` | every asset the map references and where it will come from |
 | `read_prop_survey` | props by model and class, including unnamed `prop_dynamic` |
 | `edit_static_props` | change or remove a baked prop's skin, solidity, tint, fade, flags |
-| `read_static_props` | static-prop collision audit: missing `.phy`, models the player walks through |
+| `read_static_props` | static-prop audit: missing `.phy`, per-instance compiled `solidity`, `nonSolidInstances`, models the player walks through |
 | `read_model_collision` | what a `.phy` contains: solids, convex pieces, triangles, `$concave` requirement and `prop_data` |
 | `read_pakfile` | files embedded in the map (lump 40 is a ZIP) |
 | `read_materials` | material table and reuse |

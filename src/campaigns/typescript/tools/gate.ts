@@ -105,6 +105,8 @@ const PROPS = z.object({
   missingPhysics: z.array(z.object({ model: z.string(), instances: z.number() })),
   /** Instances that are decoration (spawnflags 2) and are not a failure. */
   decorativePhysicsCount: z.number(),
+  /** `prop_static` instances the compiler gave solidity 0 despite a model check. */
+  nonSolidInstances: z.number(),
 });
 
 export type PropsStage = z.infer<typeof PROPS>;
@@ -119,15 +121,18 @@ export type PropsStage = z.infer<typeof PROPS>;
 export function summarizeProps(reply: {
   read?: boolean;
   missingPhysics?: Array<{ model: string; instances: number; decorative?: boolean }>;
+  nonSolidNonDecorativeInstances?: number;
 }): PropsStage {
   const missing = reply.missingPhysics ?? [];
   const solidMissing = missing.filter((m) => m.decorative !== true);
+  const nonSolidInstances = reply.nonSolidNonDecorativeInstances ?? 0;
   return {
     read: reply.read === true,
-    ok: solidMissing.length === 0,
+    ok: solidMissing.length === 0 && nonSolidInstances === 0,
     missingPhysicsCount: solidMissing.length,
     missingPhysics: solidMissing.map((m) => ({ model: m.model, instances: m.instances })),
     decorativePhysicsCount: missing.length - solidMissing.length,
+    nonSolidInstances,
   };
 }
 
@@ -500,6 +505,7 @@ export const runCampaignGate = defineTool({
           read?: boolean;
           missingPhysicsCount?: number;
           missingPhysicsSolidCount?: number;
+          nonSolidNonDecorativeInstances?: number;
           missingPhysics?: Array<{ model: string; instances: number; decorative?: boolean }>;
         };
         result.props = summarizeProps(props);

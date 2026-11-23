@@ -217,6 +217,20 @@ export const writePropTool = defineTool({
       }
     }
 
+    // `solid` is the key vbsp actually reads. The FGD says the default is 6, but a static
+    // prop with the key absent compiles to `solidity 0`: measured on this map, all 382
+    // `prop_static` instances came out solidity 0 and every bench, car and cart was a ghost.
+    // Write the decision explicitly, do not rely on the FGD default.
+    const decorative = (Number(args.keyvalues?.spawnflags ?? "0") & 2) !== 0;
+    if (keyvalues.solid === undefined) {
+      keyvalues.solid =
+        args.collision === "none" || decorative
+          ? "0"
+          : info?.hasPhysics === false
+            ? "0"
+            : "6";
+    }
+
     // A clip hull from the model's own bounds. Yaw is applied as a conservative AABB; it
     // does not need to be exact, only to cover the prop for a player.
     let clipAdded = false;
@@ -224,6 +238,8 @@ export const writePropTool = defineTool({
     if (
       info?.mins &&
       info.maxs &&
+      !decorative &&
+      args.collision !== "none" &&
       (args.collision === "clip" || (args.collision === "auto" && info.hasPhysics === false))
     ) {
       const [x, y, z] = args.origin;

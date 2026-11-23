@@ -74,12 +74,12 @@ def static_props(req: dict[str, Any]) -> dict[str, Any]:
         "models": rows[:limit],
         "truncated": len(rows) > limit,
         "note": (
-            "A prop_static is solidity 6 by default and needs the model's .phy. A model "
-            "without one is non-solid in play even though Hammer draws it solid. Use a "
-            "clip brush for a model whose physics is missing, or set `solid 2` for a "
-            "bounding box. Per-instance solidity is in the VMF (`solid` key); this reader "
-            "starts from the compiled model dictionary because srctools' full prop reader "
-            "fails on culled maps."
+            "A prop_static with the `solid` key absent compiles to solidity 0 even when the "
+            "model ships a .phy: the FGD default 6 is not applied by vbsp. Write solid 6 "
+            "explicitly, or 2 for a bounding box. A model without a .phy is non-solid even "
+            "with solid 6; add a clip brush. Per-instance solidity is in the compiled sprp "
+            "lump and is reported by the TypeScript reader (solidity, nonSolidInstances); "
+            "this sidecar path starts from the model dictionary for the .phy question."
         ),
     }
 

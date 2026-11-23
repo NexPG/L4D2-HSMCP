@@ -38,6 +38,14 @@ describe("the gate's props stage", () => {
     expect(r.missingPhysics).toEqual([]);
     expect(r.decorativePhysicsCount).toBe(2);
   });
+
+  it("fails a map whose compiled props are solidity 0", () => {
+    // The bug measured on Santa Monica: the VMF model check says every bench/car has a
+    // `.phy`, but vbsp wrote solidity 0 because the `solid` key was absent.
+    const r = summarizeProps({ read: true, nonSolidNonDecorativeInstances: 12 });
+    expect(r.ok).toBe(false);
+    expect(r.nonSolidInstances).toBe(12);
+  });
 });
 
 describe.skipIf(!has.gameContent)("the gate's transition stage", () => {

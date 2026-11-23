@@ -79,6 +79,7 @@ again.
 | HUD says `NAV ERRORS — Map is unplayable!` while the map plays | The chapter has a CHECKPOINT nav attribute but no checkpoint door/changelevel, or a finale map with no `trigger_finale`. Give it a real end and regenerate nav | `troubleshooting/nav-unplayable.md` |
 | A player is dropped to the main menu when a test starts | Never launch while `left4dead2.exe` runs. The tools refuse unless you pass `replaceRunningGame: true`; they stop only the pid they started | `references/testing/harness.md` |
 | Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
+| Every bench, car and cart is a ghost; `read_model_info` says `.phy` exists | Write `solid 6` explicitly on `prop_static`; an omitted key compiles to solidity 0. `write_prop` does it, the gate checks `read_static_props.solidity` | `troubleshooting/props-no-collision.md` |
 | A prop faces the wall or is 90/180° off | Use `write_prop` `facing` + `modelForward` from the measured table; look at the model with `preview_model` (`view` for the other sides) | `references/mapping/model-facing.md` |
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
 
@@ -171,6 +172,7 @@ material; the instructions live in one place.
 | `troubleshooting/endless-loading.md` | the loading bar never fills, or the same map restarts instead of loading |
 | `troubleshooting/nav-unplayable.md` | the HUD says `NAV ERRORS — Map is unplayable!` although the map loads |
 | `troubleshooting/prop-deleted.md` | a prop is in the VMF but missing in game, or vbsp logs `Error! ... Deleted.` |
+| `troubleshooting/props-no-collision.md` | every prop is a ghost; the compiled `solidity` is 0 |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 

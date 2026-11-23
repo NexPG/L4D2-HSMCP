@@ -19,6 +19,8 @@ an opinion.
 - [ ] Every prop family was **looked at** (`preview_model` or a play-test screenshot) and
       placed with `write_prop` `facing`/`modelForward` from
       `references/mapping/model-facing.md`. No model is placed sight-unseen.
+- [ ] `read_static_props.solidity`: solid props are `solid 6`; `nonSolidInstances` is 0
+      except `spawnflags 2` decoration. An omitted `solid` key compiles to 0 even with `.phy`.
 
 ## Compile
 

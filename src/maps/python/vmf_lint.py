@@ -466,7 +466,7 @@ def _lint_prop_physics(vmf: Any, entities: list[Any], game_dir: str | None) -> l
             flags = int(str(ent["spawnflags", "0"]).strip() or "0")
         except (TypeError, ValueError):
             solid, flags = 6, 0
-        if solid == 0:
+        if solid == 0 and (flags & 2) == 0:
             findings.append(
                 _finding(
                     "warning",

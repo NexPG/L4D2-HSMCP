@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.258-alpha - 2026-11-23
+
+- **Prop collision was a missing `solid` key, not a missing `.phy`.** The FGD says
+  `prop_static` `solid` defaults to 6, but vbsp does not apply it: an omitted key compiles to
+  `solidity 0`. Santa Monica's 382 `prop_static` instances all had `.phy` models and none of
+  them collided. `write_prop` now writes the key (`6` for VPhysics, `2` for a bounding box,
+  `0` only for decoration), `read_static_props` reports the compiled per-instance `solidity`
+  and `nonSolidInstances`, and the campaign gate fails a non-decorative solidity-0 instance.
+  The lint no longer reports `prop-static-not-solid` for `spawnflags 2` decoration.
+- **Collision and nav are a pair.** A solid static car/bench on a narrow strip creates
+  isolated nav areas; the official pattern is `prop_physics` for movable clutter (runtime
+  collision, ignored for the nav island problem) and `prop_static solid 2` for wall-flush
+  architecture. Santa Monica 003 was rebuilt: m1 336 wall boxes (`solid 2`), 27 open props
+  (`solid 6`), 2 decorative (`solid 0`); m2 15/3; clutter is `prop_physics`; the finale
+  approach strip was cleared of solid props that isolated 15 nav areas. Gate: `props`,
+  `transition`, `nav_trouble_report` and both map tests pass.
+- Skill: `troubleshooting/props-no-collision.md` (prevention, check, nav rebuild), the
+  `solid` rule in `engine-limits.md`/`campaign-ready.md`, and the measured numbers in
+  `coverage.md`.
+- **Tool count: 294.** Tests: 242 files, 1,966 passed, 30 skipped.
+
 ## 0.0.257-alpha - 2026-11-23
 
 - **A model is placed by a measured facing, not by a guessed yaw.** `write_prop` takes
