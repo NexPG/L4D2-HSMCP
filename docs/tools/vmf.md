@@ -1,6 +1,6 @@
 # VMF authoring
 
-85 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+86 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -36,6 +36,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_portal` | Places an areaportal, an areaportal window or an occluder: the two brush entities read_map_geometry has counted since the beginning and nothing has ever placed. |
 | `write_prop` | Places a `prop_static`, `prop_dynamic` or `prop_physics` with its model, origin, angles, skin and solid mode, and checks the model with read_model_info when the game is available (a missing model is a warning, not a refusal). |
 | `write_scene` | Writes a `logic_choreographed_scene` with a required `SceneFile`, optional targets 1-8 and outputs. |
+| `write_test_bench` | Builds a sealed, playable bench map from one call: a hall of N bays divided by walled arches, `info_player_start`, `info_director`, `info_zombie_spawn`, a light per bay, and a FINALE nav region with a `trigger_finale` so the Director has a goal and the engine does not paint `NAV ERRORS` over the map. |
 | `write_trigger` | Writes a trigger as the brush entity it actually is: a sealed box tied to the class, with the keys that class needs (a teleport's or look trigger's `target`, a hurt trigger's damage and type, a push trigger's speed and direction, gravity's scale). |
 | `write_vmf` | Creates an empty .vmf: Hammer's File > New. |
 

@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.235-alpha - 2026-11-23
+
+- **`write_test_bench` builds a runtime host in one call.** A sealed hall of N bays divided by
+  256-wide arches, `info_player_start`, `info_director`, `info_zombie_spawn`, a light per bay,
+  and a **FINALE** nav region with a `trigger_finale` -- never a bare CHECKPOINT region, which
+  is what paints `NAV ERRORS — Map is unplayable!` over a working map. It reuses
+  `write_vmf`, `write_vmf_solid`, `addEntities` and `addBrushEntity`; the test compiles it with
+  the stock `vbsp` and asserts no leak.
+- **Skill**: the bench recipe in `references/testing/harness.md` is now the tool, with the same
+  measured numbers (45 nav areas, 12 brushes, FINALE goal).
+- **Tool count: 292.** Tests: 235 files, 1,934 passed, 30 skipped.
+
 ## 0.0.234-alpha - 2026-11-23
 
 - **`check_vtf`**: header rules a texture can break without failing anything visible -- `NOMIP`

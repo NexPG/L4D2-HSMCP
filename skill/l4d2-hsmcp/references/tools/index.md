@@ -1,6 +1,6 @@
 # Tool catalogue
 
-291 tools. This page groups them by the job you are doing; each tool's own description is the
+292 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -183,6 +183,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 
 | Tool | Use |
 |---|---|
+| `write_test_bench` | a sealed multi-bay hall with a spawn, Director, spawn points, lights and a FINALE end -- the runtime host a probe needs |
 | `write_vmf` | empty `.vmf`, Hammer's File > New |
 | `edit_vmf` | add/update/remove entities and outputs by splicing |
 | `write_vmf_solid` | brushes from box, wedge, cylinder, convex; also into a brush entity by id |

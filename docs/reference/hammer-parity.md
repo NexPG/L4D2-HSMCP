@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **291 tools**.
+Last checked against the tool list on 22/11/2026: **292 tools**.
 
 ## The file itself
 
@@ -30,7 +30,8 @@ getting `ENOENT` on the first call.
 
 | Hammer | Here | Notes |
 |---|---|---|
-| File > New | `write_vmf` | worldspawn with a `skyname`, and the five blocks Hammer writes. Refuses to overwrite |
+| File > New | `write_test_bench` | nothing: Hammer has no "build a test host" command; a mapper assembles it by hand |
+| `write_vmf` | worldspawn with a `skyname`, and the five blocks Hammer writes. Refuses to overwrite |
 | File > Open | `read_vmf` | |
 | File > Save | *every writer* | Each tool writes its own change by splicing. There is no document held open to save |
 | File > Export to .map | `export_vmf_map` | Valve 220 text: planes, materials, uaxis/vaxis; VMF-only constructs are reported, not silently lost |

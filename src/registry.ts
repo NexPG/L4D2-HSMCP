@@ -8,6 +8,7 @@ import { bspLumpTools } from "./maps/typescript/tools/bsplump.js";
 import { staticPropTools } from "./maps/typescript/tools/staticprops.js";
 import { buildCubemapTools } from "./textures/typescript/tools/buildcubemaps.js";
 import { buildTools } from "./maps/typescript/tools/build.js";
+import { testBenchTools } from "./maps/typescript/tools/bench.js";
 import { captureTools } from "./hammer/typescript/tools/capture.js";
 import { campaignTools } from "./campaigns/typescript/tools/campaign.js";
 import { campaignBuildTools } from "./campaigns/typescript/tools/campaignbuild.js";
@@ -254,6 +255,7 @@ export const allTools: AnyToolDef[] = [
   ...navWriteTools,
   ...navConnectionTools,
   ...buildTools,
+  ...testBenchTools,
   ...modifyTools,
   ...mergeTools,
   ...snapTools,
