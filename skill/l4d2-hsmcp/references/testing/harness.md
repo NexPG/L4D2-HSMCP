@@ -124,6 +124,11 @@ HSMCP_OPTIONS_DONE
 The event hook is the working shape. `AddThinkToEnt`, a delayed `EntFire(RunScriptCode)`
 from `script_execute`, and a `schedule` logic_timer did not print in the same runs.
 
+`SessionOptions` is installed by a **scripted mode**. On a plain `+map` run without one the
+global does not exist, and the probe now prints `SessionOptions=absent` instead of throwing
+`the index 'SessionOptions' does not exist`; run a mutation (or another scripted mode) when
+you need the merged Director options.
+
 ## Do not use a stock `.bsp` as a probe host
 
 A compiled map is not a neutral container for a `logic_script`. Two measured failures:
@@ -211,6 +216,15 @@ A marker can then match `HSMCP_TICK_240` four minutes in, and the screenshot fol
 comma, a double quote or a newline; the generator refuses those instead of writing a broken
 timer.
 
+
+## Do not launch while someone is playing
+
+`run_map_test`, `run_nav_generate`, `run_build_cubemaps` and `nav_trouble_report` refuse to
+start when `left4dead2.exe` is already running. Steam allows one instance per account: a test
+launch takes the session over and drops the player to the main menu (measured on the owner's
+own server). Pass `replaceRunningGame: true` only when that game is yours and may be closed;
+the harness then stops that pid first. It never kills every `left4dead2.exe` on the machine,
+and it stops only the pid it launched.
 
 ## The environment limit
 

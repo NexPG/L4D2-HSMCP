@@ -77,6 +77,7 @@ again.
 | VScript `expression expected` at line 1 | Write `.nut` files without a BOM | `references/scripting/vscript.md` |
 | Campaign vanished from the menu after a killed run | A run hid an addon as `*.vpk.off`. `check_game_state` restores it | `references/testing/game-environment-cleanup.md` |
 | HUD says `NAV ERRORS — Map is unplayable!` while the map plays | The chapter has a CHECKPOINT nav attribute but no checkpoint door/changelevel, or a finale map with no `trigger_finale`. Give it a real end and regenerate nav | `troubleshooting/nav-unplayable.md` |
+| A player is dropped to the main menu when a test starts | Never launch while `left4dead2.exe` runs. The tools refuse unless you pass `replaceRunningGame: true`; they stop only the pid they started | `references/testing/harness.md` |
 | Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
 
 ## Route the task first

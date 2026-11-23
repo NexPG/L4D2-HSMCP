@@ -41,6 +41,10 @@ describe("write_options_probe", () => {
     expect(script).toContain("function OnGameEvent_round_start");
     expect(script).toContain("function OnGameEvent_player_spawn");
     expect(script).toContain('printl( "[HSMCP_OPTIONS] " + key + "=" + SessionOptions[key] )');
+    // A plain `+map` run has no SessionOptions global; touching it throws. The probe must
+    // test for the name before reading it.
+    expect(script).toContain('"SessionOptions" in getroottable()');
+    expect(script).toContain("SessionOptions=absent");
     expect(script).toContain("HSMCP_OPTIONS_DONE");
 
     const text = readFileSync(vmf, "utf8");

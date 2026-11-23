@@ -64,6 +64,10 @@ A tool that opens an editor or the game closes it by default and **verifies** th
 `run_map_test` returns `gameClosed`. `closed` is true only after the process list was
 re-read and the pid is gone, not because a `taskkill` was spawned.
 
+A game-launching tool refuses to start while `left4dead2.exe` is already running, unless
+`replaceRunningGame: true` is passed. It kills the pid it launched, never the image name, so a
+run cannot take down a game someone else started.
+
 - Only pids that appeared **after** the tool's own launch snapshot are touched. A person's
   HLMV or Hammer is never a target.
 - `<stateDir>/windows.json` records a window before its launch and removes it after a

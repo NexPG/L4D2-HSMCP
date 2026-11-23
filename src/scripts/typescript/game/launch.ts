@@ -61,16 +61,41 @@ export async function waitForGamePid(
   return null;
 }
 
-/** Terminates the game by image name, including a process Steam started for us. */
-export function stopGameProcess(): void {
+/** Terminates one game process by pid, never every `left4dead2.exe` on the machine. */
+export function stopGamePid(pid: number): void {
   try {
-    execFileSync("taskkill", ["/IM", "left4dead2.exe", "/T", "/F"], {
+    execFileSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
       stdio: "ignore",
       windowsHide: true,
+      timeout: 15_000,
     });
   } catch {
     // Not running is the desired state.
   }
+}
+
+/**
+ * Refuses to launch a test while someone is already playing.
+ *
+ * A test run starts the game through Steam, which allows one instance per account: it takes
+ * the session over and the player is dropped to the main menu. The harness learned this the
+ * hard way -- a run started while the owner was on their own server disconnected them.
+ *
+ * `replaceRunningGame: true` is the explicit permission to close that game first; without it
+ * the call stops before touching any file.
+ */
+export function guardRunningGame(allowReplace: boolean, what: string): number | null {
+  const pid = findGamePid();
+  if (pid === null) return null;
+  if (allowReplace) {
+    stopGamePid(pid);
+    return pid;
+  }
+  throw new Error(
+    `left4dead2.exe is already running (pid ${pid}). ${what} starts its own instance through ` +
+      "Steam, which takes over the session and drops whoever is playing to the main menu. " +
+      "Close the game first, or pass replaceRunningGame: true if that game is yours and may be closed.",
+  );
 }
 
 export interface LaunchHandle {

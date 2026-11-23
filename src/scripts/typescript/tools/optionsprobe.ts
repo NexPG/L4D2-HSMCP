@@ -40,13 +40,17 @@ function HSMCP_OptionsReport()
 {
 \tif ( HSMCP_OPTIONS_PRINTED ) return;
 \tHSMCP_OPTIONS_PRINTED = true;
-\tif ( SessionOptions == null )
+\t// SessionOptions is a global a scripted mode installs. On a plain +map run it does
+\t// not exist at all, and touching an undefined global throws instead of returning null.
+\tlocal hasOptions = ( "SessionOptions" in getroottable() ) && ( SessionOptions != null );
+\tlocal hasState = ( "SessionState" in getroottable() ) && ( SessionState != null );
+\tif ( !hasOptions )
 \t{
-\t\tprintl( "[HSMCP_OPTIONS] no SessionOptions" );
+\t\tprintl( "[HSMCP_OPTIONS] SessionOptions=absent; a plain map has no scripted mode" );
 \t}
 \telse
 \t{
-\t\tif ( SessionState != null )
+\t\tif ( hasState )
 \t\t{
 \t\t\tprintl( "[HSMCP_OPTIONS] ModeName=" + SessionState.ModeName );
 \t\t}
@@ -70,7 +74,9 @@ export const writeOptionsProbeTool = defineTool({
     "Writes a `logic_script` and a `.nut` that print the Director's effective merged " +
     "`SessionOptions` on `round_start` / `player_spawn`, then `HSMCP_OPTIONS_DONE`. This is " +
     "the runtime proof that `MutationOptions` reached the Director: the mutation script " +
-    "itself runs before `scriptedmode.nut` merges the tables. The event hooks are the shape " +
+    "itself runs before `scriptedmode.nut` merges the tables. On a plain `+map` run with no " +
+    "mode script the global does not exist at all, and the probe prints " +
+    "`SessionOptions=absent` instead of throwing. The event hooks are the shape " +
     "that worked on a real map; a think/EntFire delay in `script_execute` did not. For a " +
     "compiled map, copy the `.bsp` and add the returned entity with `edit_bsp_entities`; " +
     "`run_map_test` installs the script with `scriptsDir` and launches with `mode`. Guarded.",

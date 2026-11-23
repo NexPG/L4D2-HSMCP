@@ -23,7 +23,8 @@ import {
   sleep,
   findGamePid,
   steamExecutable,
-  stopGameProcess,
+  guardRunningGame,
+  stopGamePid,
   waitForFile,
   waitForGamePid,
   waitForLog,
@@ -195,6 +196,13 @@ export const runNavGenerate = defineTool({
           "must be greater than this; the default rejects steep ramps and escalators. 0.5 " +
           "allows a 60-degree slope. Absent leaves the game default.",
       ),
+    replaceRunningGame: z
+      .boolean()
+      .optional()
+      .describe(
+        "Close a game that is already running before this test. Without it the call refuses: " +
+          "a Steam launch takes over the single instance and drops the player to the main menu.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -225,6 +233,7 @@ export const runNavGenerate = defineTool({
   handler: async (args, ctx) => {
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
+    guardRunningGame(args.replaceRunningGame ?? false, "run_nav_generate");
     sweepInterruptedState(gameDir);
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
@@ -579,6 +588,13 @@ export const runMapTest = defineTool({
           "captures a 3D game canvas; 'window' uses PrintWindow and is usually black for " +
           "the game renderer.",
       ),
+    replaceRunningGame: z
+      .boolean()
+      .optional()
+      .describe(
+        "Close a game that is already running before this test. Without it the call refuses: " +
+          "a Steam launch takes over the single instance and drops the player to the main menu.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -618,6 +634,7 @@ export const runMapTest = defineTool({
   handler: async (args, ctx) => {
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
+    guardRunningGame(args.replaceRunningGame ?? false, "run_map_test");
     const stateRestored = sweepInterruptedState(gameDir);
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
@@ -837,7 +854,7 @@ export const runMapTest = defineTool({
         }
       }
     } finally {
-      if (direct) direct.stop(); else stopGameProcess();
+      if (direct) direct.stop(); else stopGamePid(runPid);
       await sleep(1000);
       staged.restore();
       restoreFiles(hidden);
@@ -855,7 +872,7 @@ export const runMapTest = defineTool({
       // result can say the game is gone instead of assuming it.
       gameClosed = findGamePid() === null;
       for (let attempt = 0; attempt < 3 && !gameClosed; attempt += 1) {
-        stopGameProcess();
+        stopGamePid(runPid);
         await sleep(500);
         gameClosed = findGamePid() === null;
       }

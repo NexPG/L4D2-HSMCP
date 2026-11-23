@@ -13,7 +13,7 @@ import {
 import { join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
-import { gameExecutable, launchGame, sleep } from "../../../scripts/typescript/game/launch.js";
+import { gameExecutable, guardRunningGame, launchGame, sleep } from "../../../scripts/typescript/game/launch.js";
 import { runPack } from "../../../maps/typescript/tools/compile.js";
 import { CONFIRM, resolveInput } from "../../../core/typescript/tools/paths.js";
 
@@ -139,6 +139,13 @@ export const runBuildCubemapsTool = defineTool({
           "cannot shadow it. Restored even if the build fails.",
       ),
     timeoutSeconds: z.number().int().min(30).max(900).default(240).describe("Per mode."),
+    replaceRunningGame: z
+      .boolean()
+      .optional()
+      .describe(
+        "Close a game that is already running. Without it the call refuses: a Steam launch takes " +
+          "over the session and drops the player to the main menu.",
+      ),
     confirm: CONFIRM,
   },
   outputSchema: {
@@ -164,6 +171,7 @@ export const runBuildCubemapsTool = defineTool({
     consoleTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
+    guardRunningGame(args.replaceRunningGame === true, "run_build_cubemaps");
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
     const exe = gameExecutable(gameDir);

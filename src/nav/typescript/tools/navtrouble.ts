@@ -17,7 +17,7 @@ import {
   parseSavedSelection,
   parseSelectedPositions,
 } from "../bsp/navtrouble.js";
-import { gameExecutable, launchGame, readLog, sleep, waitForLog } from "../../../scripts/typescript/game/launch.js";
+import { gameExecutable, guardRunningGame, launchGame, readLog, sleep, waitForLog } from "../../../scripts/typescript/game/launch.js";
 import {
   findShadowingVpks,
   hideFiles,
@@ -103,6 +103,13 @@ export const navTroubleReport = defineTool({
           "true). A mounted archive wins over the loose map.",
       ),
     timeoutSeconds: z.number().int().min(20).max(300).default(90),
+    replaceRunningGame: z
+      .boolean()
+      .optional()
+      .describe(
+        "Close a game that is already running. Without it the call refuses: starting a second " +
+          "instance takes over the Steam session and drops the player to the main menu.",
+      ),
     confirm: z.boolean().default(false),
   },
   outputSchema: {
@@ -128,6 +135,7 @@ export const navTroubleReport = defineTool({
     note: z.string(),
   },
   handler: async (args, ctx) => {
+    guardRunningGame(args.replaceRunningGame === true, "nav_trouble_report");
     const live = args.map !== undefined;
     const offline = args.dump !== undefined;
     if (live === offline) {

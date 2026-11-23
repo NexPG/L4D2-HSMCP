@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.232-alpha - 2026-11-23
+
+- **A test run no longer takes a player's session.** `run_map_test`, `run_nav_generate`,
+  `run_build_cubemaps` and `nav_trouble_report` refuse to launch while `left4dead2.exe` is
+  running: Steam allows one instance per account, so a test launch dropped the owner from
+  their own server to the main menu. `replaceRunningGame: true` is the explicit permission to
+  close that game first, and the harness now stops only the pid it launched instead of every
+  `left4dead2.exe` by image name.
+- **`write_options_probe` survives a plain map.** `SessionOptions` is a global a scripted mode
+  installs; on a `+map` run it does not exist and reading it threw `the index 'SessionOptions'
+  does not exist`. The probe now tests `getroottable()` and prints `SessionOptions=absent`.
+- **Special-infected limits measured on a plain coop run**: `z_boomer_limit` through
+  `z_charger_limit` read 1, `z_special_spawn_interval` 45 s, `director_no_specials` 0, and a
+  2048x4608 bench hall produced 16 commons after a teleport but no specials inside the
+  ~2-minute Steam session. Recorded in `coverage.md`.
+- **Tool count: 290.** Tests: 232 files, 1,924 passed, 30 skipped.
+
 ## 0.0.231-alpha - 2026-11-23
 
 - **`read_vrd`**: reads a hand-authored `.vrd` procedural-bones file (quat-interp helpers,
