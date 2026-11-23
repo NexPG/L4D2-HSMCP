@@ -554,6 +554,7 @@ function qcText(
     fadeIn: number;
     fadeOut: number;
     events: Array<{ name: string; frame: number; options: string }>;
+    options: string[];
   }>,
   attachments: MdlAttachment[],
   hitboxSets: MdlHitboxSet[],
@@ -722,6 +723,7 @@ function qcText(
       const name = sequence.name.replace(/"/g, "");
       const needsBlock =
         sequence.events.length > 0 ||
+        sequence.options.length > 0 ||
         Math.abs(sequence.fadeIn - 0.2) > 1e-6 ||
         Math.abs(sequence.fadeOut - 0.2) > 1e-6;
       if (sequence.files.length <= 1 && sequence.blends.length === 0 && !needsBlock) {
@@ -746,6 +748,7 @@ function qcText(
       lines.push(`\tfps ${fmt(sequence.fps)}`);
       if (sequence.activityName) lines.push(`\tactivity ${sequence.activityName}`);
       if (sequence.loop) lines.push("\tloop");
+      for (const option of sequence.options) lines.push(`\t${option}`);
       if (sequence.blendWidth !== undefined) lines.push(`\tblendwidth ${sequence.blendWidth}`);
       for (const blend of sequence.blends) {
         lines.push(`\tblend "${blend.name}" ${fmt(blend.start)} ${fmt(blend.end)}`);
@@ -922,6 +925,31 @@ function qcText(
   }
   lines.push("");
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * QC option words implied by a compiled sequence's flags.
+ *
+ * `loop` is handled separately because the one-line `$sequence` form can carry it. These do
+ * not fit that form, so a sequence with any of them becomes a block. `delta` is deliberately
+ * **not** emitted: the decompiled SMDs are baked frames, and a `delta` line tells studiomdl to
+ * read them as differences from the reference pose, which is a different animation. Crowbar
+ * writes it because it also writes the unbaked clip; this decompiler does not.
+ */
+function sequenceQcOptions(
+  sequence: { flags: number; name: string },
+  poseParamNames: readonly string[],
+): string[] {
+  const options: string[] = [];
+  if ((sequence.flags & 0x0002) !== 0) options.push("snap");
+  if ((sequence.flags & 0x0008) !== 0) options.push("autoplay");
+  if ((sequence.flags & 0x0100) !== 0) options.push("realtime");
+  if ((sequence.flags & 0x0400) !== 0) options.push("hidden");
+  if ((sequence.flags & 0x0080) !== 0) {
+    const name = poseParamNames[0];
+    if (name) options.push(`posecycle ${name}`);
+  }
+  return options;
 }
 
 function keyValueNumber(text: string | null, key: string, fallback: number): number {
@@ -1124,6 +1152,8 @@ export const decompileModelTool = defineTool({
       fadeIn: number;
       fadeOut: number;
       events: Array<{ name: string; frame: number; options: string }>;
+      /** QC option words from the compiled sequence flags (`snap`, `delta`, `hidden`, ...). */
+      options: string[];
       clips: Array<{ smd: string; frames: AnimationFrame[] }>;
     }> = [];
     const skippedSequences: Array<{ name: string; reason: string }> = [];
@@ -1217,6 +1247,7 @@ export const decompileModelTool = defineTool({
               : Math.round(event.cycle * (decoded[0]!.frames.length - 1)),
           options: event.options,
         })),
+        options: sequenceQcOptions(sequence, poseParamNames),
         clips: decoded.map((entry, blend) => ({ smd: files[blend]!, frames: entry.frames })),
       });
     }

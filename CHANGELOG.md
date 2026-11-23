@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.244-alpha - 2026-11-23
+
+- **Sequence options are written from the flags, and verified by a compile.** `snap`,
+  `hidden`, `autoplay`, `realtime` and `posecycle` now go into the `$sequence` block. A/B on
+  `gascan001a.mdl`: decompile, compile with the real `studiomdl`, read the flags back --
+  `pullpin`/`throw`/`melee` returned `STUDIO_SNAP` (0x2) and `a_gasCan_vaims` returned
+  `STUDIO_HIDDEN` (0x400). `delta` is deliberately **not** written: the SMDs are baked frames
+  and a `delta` line would make studiomdl read them as differences from the reference pose, so
+  `gasCan_idle` loses that bit on a recompile and the skill says so.
+- **Skill**: `model-authoring.md` carries the measured result and the exception;
+  `coverage.md` and the study remainder record what is still open (`addlayer`, `weightlist`,
+  `activitymodifier`, sequence `$keyvalues`).
+- **Tool count: 293.** Tests: 238 files, 1,944 passed, 30 skipped.
+
 ## 0.0.243-alpha - 2026-11-23
 
 - **Sequence IK rules, autolayers and weight lists are read and reported.** Stock L4D2 uses

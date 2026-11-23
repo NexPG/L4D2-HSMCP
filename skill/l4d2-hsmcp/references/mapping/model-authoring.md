@@ -153,6 +153,15 @@ shows `ikrules`, `autolayers` and `weightlist` per sequence, so the loss is visi
 compile, not after it. For an aim-matrix-heavy character, treat the decompiled QC as a
 starting point, not a faithful source.
 
+**Sequence options are written from the flags, with one deliberate exception.** `snap`,
+`hidden`, `autoplay`, `realtime` and `posecycle` come from the compiled sequence flags and go
+into the `$sequence` block. Verified by a real compile of `gascan001a`: `pullpin`/`throw`/
+`melee` came back with `STUDIO_SNAP` (0x2) and `a_gasCan_vaims` with `STUDIO_HIDDEN` (0x400).
+`delta` is **not** written: the decompiled SMDs are baked frames, while `delta` tells studiomdl
+to read them as differences from the reference pose. That model's `gasCan_idle` loses the
+`delta` bit on a recompile, and the tool does not pretend otherwise. `addlayer`/`blendlayer`
+are read as counts but not written yet.
+
 ## L4D2 specifics
 
 - **Viewmodels** need `$attachment "primary"` / `"melee"`, the right `$weaponmodel`/hands
