@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.238-alpha - 2026-11-23
+
+- **Instances verified through the compile.** A `write_instance` pillar fragment collapses
+  into the map vbsp compiles: the collapsed VMF carries the brush at
+  `[-64,736,0]..[64,864,240]`, `run_compile` reports `collapsed: 1`, and the map loads with
+  **28 nav areas**. The spawn-view screenshot did not frame the pillar, so the coverage row
+  says "verified in game (geometry)" rather than claiming a visual that was not seen.
+- **Tool count: 292.** Tests: 235 files, 1,937 passed, 30 skipped.
+
 ## 0.0.237-alpha - 2026-11-23
 
 - **`write_displacement` refuses a face vbsp cannot split.** A displacement replaces one face
