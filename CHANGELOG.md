@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.236-alpha - 2026-11-23
+
+- **`write_test_bench` starts its hall at y = -256, and that is load-bearing.** The same
+  2048 x 4608 hall built with its floor edge exactly on `y = 0` produced **0 nav areas**:
+  `nav_generate` saved a 42-byte nav and reported `NavMesh Visibility List Lengths: min =
+  999999999`. Shifted to `y = -256`, the same geometry generated **99 areas** and a `playable`
+  mesh, and `nav_trouble_report expected: "finale"` passes 17/18 checks (only the informational
+  "Missing Battlefield" reports). The builder's comment and the skill say not to "tidy" it back
+  to the origin.
+- **Skill**: the bench recipe in `references/testing/harness.md` carries the measured numbers
+  and the 0-vs-99 finding.
+- **Tool count: 292.** Tests: 235 files, 1,935 passed, 30 skipped.
+
 ## 0.0.235-alpha - 2026-11-23
 
 - **`write_test_bench` builds a runtime host in one call.** A sealed hall of N bays divided by

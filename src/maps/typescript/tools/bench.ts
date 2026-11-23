@@ -108,8 +108,11 @@ export const writeTestBenchTool = defineTool({
     const halfWidth = width / 2;
     const x0 = -halfWidth;
     const x1 = halfWidth;
-    const y0 = 0;
-    const y1 = length;
+    // The hall starts at -256, not at 0: a floor whose south edge lies exactly on y = 0
+    // generated 0 nav areas on this engine build, while the same hall shifted to -256
+    // generated 61. The offset costs nothing and keeps nav_generate happy.
+    const y0 = -256;
+    const y1 = length - 256;
     const h = height;
     const thickness = 32;
     const arch = archWidth / 2;
