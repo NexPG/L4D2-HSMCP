@@ -22,9 +22,10 @@
 export class NavFormatError extends Error {
   constructor(
     message: string,
-    readonly offset: number,
+    /** Byte offset, when the fault is in the file; -1 for a whole-file refusal. */
+    readonly offset = -1,
   ) {
-    super(`${message} at offset ${offset}`);
+    super(offset >= 0 ? `${message} at offset ${offset}` : message);
     this.name = "NavFormatError";
   }
 }

@@ -22,22 +22,10 @@ import { deflateSync, inflateSync } from "node:zlib";
 
 const SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-/** The standard CRC-32 table, built once. */
-const CRC_TABLE = ((): Int32Array => {
-  const table = new Int32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c;
-  }
-  return table;
-})();
+// The CRC-32 a PNG chunk needs is the same one the VPK and ZIP writers use.
+import { crc32 } from "../../../formats/typescript/formats/crc32.js";
 
-export function crc32(buf: Uint8Array): number {
-  let c = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]!) & 0xff]! ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
+export { crc32 };
 
 function chunk(type: string, data: Buffer): Buffer {
   const head = Buffer.alloc(8);

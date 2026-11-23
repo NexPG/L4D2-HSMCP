@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.242-alpha - 2026-11-23
+
+- **Duplicate-name audit, and the copies it found are gone.** A scan of every exported name
+  across `src/` found eight collisions, four of them real copies:
+  - `crc32` lived in the VPK writer and again in the PNG encoder; both now import
+    `formats/typescript/formats/crc32.ts`;
+  - `NavFormatError` existed twice, so `instanceof` could disagree by import path; the binary
+    reader owns it and `nav/bsp/nav.ts` re-exports it (its `offset` is optional now);
+  - two modules exported a different array as `overlayTools`; the VMF writer's is
+    `vmfOverlayTools`;
+  - `BUILTIN_PROFILES` in the report module is `BUDGET_PROFILES`, so it cannot be confused
+    with the game profiles.
+  What is left is sanctioned and written down in `docs/reference/library-boundary.md`: a
+  function and a tool sharing a name, and the two deliberate ray tracers (BSP-as-built versus
+  VMF-as-read, with the import rule recorded in `space/scene.ts`).
+- **Tool count: 293.** Tests: 237 files, 1,942 passed, 30 skipped.
+
 ## 0.0.241-alpha - 2026-11-23
 
 - **The live approval queue is covered by tests.** `stage_live_edit`, `review_live_edit`,

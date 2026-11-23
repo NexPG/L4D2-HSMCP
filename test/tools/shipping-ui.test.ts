@@ -10,6 +10,7 @@ import { writeLoadingScreenTool } from "../../src/textures/typescript/tools/load
 import { checkVmtTool } from "../../src/textures/typescript/tools/vmtcheck.js";
 import { checkSoundTool } from "../../src/audio/typescript/tools/soundcheck.js";
 import { readEntities } from "../../src/maps/typescript/vmf/edit.js";
+import { crc32 } from "../../src/formats/typescript/formats/crc32.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
@@ -45,15 +46,6 @@ function wav(bits: number, rate: number, channels: number, frames: number): Buff
   header.write("data", 36);
   header.writeUInt32LE(data.length, 40);
   return Buffer.concat([header, data]);
-}
-
-function crc32(buffer: Buffer): number {
-  let crc = 0xffffffff;
-  for (const byte of buffer) {
-    crc ^= byte;
-    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-  }
-  return (crc ^ 0xffffffff) >>> 0;
 }
 
 function chunk(type: string, data: Buffer): Buffer {

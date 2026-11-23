@@ -146,10 +146,10 @@ export const SOURCE_STOCK: BudgetProfile = {
   requireCubemaps: false,
 };
 
-export const BUILTIN_PROFILES: readonly BudgetProfile[] = [SOURCE_STOCK];
+export const BUDGET_PROFILES: readonly BudgetProfile[] = [SOURCE_STOCK];
 
 export function findProfile(id: string): BudgetProfile | undefined {
-  return BUILTIN_PROFILES.find((p) => p.id === id);
+  return BUDGET_PROFILES.find((p) => p.id === id);
 }
 
 /** Applies a threshold in the direction where crossing it is the fault. */

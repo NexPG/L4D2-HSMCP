@@ -1,9 +1,12 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
+import { NavFormatError } from "../formats/navfile.js";
 
 /** `0xFEEDFACE`, first four bytes of every .nav. */
 export const NAV_MAGIC = 0xfeedface;
 
-export class NavFormatError extends Error {}
+// The binary reader owns the error type: two classes with one name meant `instanceof` could
+// disagree depending on which module a caller imported.
+export { NavFormatError };
 
 export interface NavHeader {
   path: string;

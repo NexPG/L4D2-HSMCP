@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BUILTIN_PROFILES, findProfile, reportMap } from "../report/budget.js";
+import { BUDGET_PROFILES, findProfile, reportMap } from "../report/budget.js";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 
@@ -65,7 +65,7 @@ export const readMapReportTool = defineTool({
       // asked for a different profile looks exactly like a correct one.
       throw new Error(
         `unknown budget profile ${JSON.stringify(id)}; known: ` +
-          BUILTIN_PROFILES.map((p) => p.id).join(", "),
+          BUDGET_PROFILES.map((p) => p.id).join(", "),
       );
     }
 

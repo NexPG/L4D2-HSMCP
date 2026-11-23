@@ -82,24 +82,11 @@ export interface VpkArchive {
   bytes: Buffer;
 }
 
-/** CRC-32 (IEEE 802.3), the checksum the format and every Source tool use. */
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let i = 0; i < 256; i += 1) {
-    let c = i;
-    for (let bit = 0; bit < 8; bit += 1) c = (c & 1) !== 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[i] = c >>> 0;
-  }
-  return table;
-})();
+// One CRC-32 for the whole repository: the VPK tree, the BSP pakfile ZIP and PNG chunks
+// share it. Re-exported so the VPK reader's callers keep their import.
+import { crc32 } from "./crc32.js";
 
-export function crc32(bytes: Buffer): number {
-  let c = 0xffffffff;
-  for (let i = 0; i < bytes.length; i += 1) {
-    c = (CRC_TABLE[(c ^ bytes[i]!) & 0xff]! ^ (c >>> 8)) >>> 0;
-  }
-  return (c ^ 0xffffffff) >>> 0;
-}
+export { crc32 };
 
 /** Reads a NUL-terminated string. Returns the text and the offset after the NUL. */
 function readCString(bytes: Buffer, offset: number, limit: number): { text: string; next: number } {

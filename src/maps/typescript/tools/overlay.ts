@@ -81,4 +81,4 @@ export const writeOverlay = defineTool({
   },
 });
 
-export const overlayTools = [writeOverlay];
+export const vmfOverlayTools = [writeOverlay];

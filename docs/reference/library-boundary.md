@@ -95,6 +95,22 @@ The same search found `assertGeometryUntouched` copied into `face`, `displacemen
 `organise`; it now lives in `vmf/solid.ts`. The rule is not only about srctools: **if the
 project already has the helper, import it.**
 
+A later duplicate-name audit (11/2026) found three more copies and removed them:
+
+- `crc32` existed in the VPK writer and again in the PNG encoder -- same polynomial, two
+  tables. Both now import `formats/typescript/formats/crc32.ts`.
+- `NavFormatError` existed in `nav/formats/navfile.ts` and again in `nav/bsp/nav.ts`, so
+  `instanceof` could disagree depending on the import path. The binary reader owns the class;
+  `nav.ts` re-exports it, and its `offset` is optional for whole-file refusals.
+- Two modules exported a different array under the name `overlayTools`. The VMF writer's is
+  now `vmfOverlayTools`; the compiled-map one keeps `overlayTools`.
+
+Name-only collisions that are not copies, and stay: `readPakfile`/`readStaticProps` are a
+function and a tool with the same name, `BUILTIN_PROFILES` was renamed to `BUDGET_PROFILES` in
+the report module, and there are deliberately **two ray tracers**: `bsp/trace.ts` answers "as
+vbsp built it" and `space/trace.ts` answers "as the VMF reads", and `space/scene.ts` records
+why nothing under `space/` may import `bsp/`.
+
 ## Upstream defect: `Geometry.from_points` returns nothing
 
 In srctools 2.7.0, `Geometry.from_points(cube_corners)` returns an empty `Geometry`.
