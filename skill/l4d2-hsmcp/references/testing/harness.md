@@ -221,10 +221,15 @@ timer.
 
 `run_map_test`, `run_nav_generate`, `run_build_cubemaps` and `nav_trouble_report` refuse to
 start when `left4dead2.exe` is already running. Steam allows one instance per account: a test
-launch takes the session over and drops the player to the main menu (measured on the owner's
-own server). Pass `replaceRunningGame: true` only when that game is yours and may be closed;
-the harness then stops that pid first. It never kills every `left4dead2.exe` on the machine,
-and it stops only the pid it launched.
+launch takes the session over and both windows show `Disconnect: No Steam logon`. Pass
+`replaceRunningGame: true` only when that game is yours and may be closed; the harness then
+stops it first. It never kills every `left4dead2.exe` on the machine, and it stops only the pid
+it launched.
+
+A run records its pid in `<stateDir>/running-game.json`. If the process is killed before it can
+clean up, the **next run closes that game** instead of launching a second one on top of it —
+that stale window is what keeps producing `No Steam logon`. Measured: a game started directly,
+recorded, then closed by the guard, zero processes left.
 
 ## The environment limit
 

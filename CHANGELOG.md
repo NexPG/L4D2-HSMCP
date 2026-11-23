@@ -7,12 +7,15 @@ with a line here.
 
 ## 0.0.232-alpha - 2026-11-23
 
-- **A test run no longer takes a player's session.** `run_map_test`, `run_nav_generate`,
-  `run_build_cubemaps` and `nav_trouble_report` refuse to launch while `left4dead2.exe` is
-  running: Steam allows one instance per account, so a test launch dropped the owner from
-  their own server to the main menu. `replaceRunningGame: true` is the explicit permission to
-  close that game first, and the harness now stops only the pid it launched instead of every
-  `left4dead2.exe` by image name.
+- **A test run no longer takes a player's session, and no longer stacks windows.** The four
+  launching tools refuse to start when `left4dead2.exe` is running and this harness did not
+  start it: Steam allows one instance per account, and two instances produce
+  `Disconnect: No Steam logon`. A run records the pid it launched in
+  `<stateDir>/running-game.json`; if the process is killed before it can clean up, the next run
+  closes that game instead of adding a second one, and stops only the pid it launched rather
+  than every `left4dead2.exe` by image name. `replaceRunningGame: true` is the explicit
+  permission to close a game the harness did not start. Measured: a game started directly,
+  recorded, then closed by the guard — zero processes left.
 - **`write_options_probe` survives a plain map.** `SessionOptions` is a global a scripted mode
   installs; on a `+map` run it does not exist and reading it threw `the index 'SessionOptions'
   does not exist`. The probe now tests `getroottable()` and prints `SessionOptions=absent`.

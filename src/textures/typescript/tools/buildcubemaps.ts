@@ -171,7 +171,11 @@ export const runBuildCubemapsTool = defineTool({
     consoleTail: z.array(z.string()),
   },
   handler: async (args, ctx) => {
-    guardRunningGame(args.replaceRunningGame === true, "run_build_cubemaps");
+    guardRunningGame(
+      args.replaceRunningGame === true,
+      "run_build_cubemaps",
+      join(ctx.config.stateDir, "running-game.json"),
+    );
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
     const exe = gameExecutable(gameDir);

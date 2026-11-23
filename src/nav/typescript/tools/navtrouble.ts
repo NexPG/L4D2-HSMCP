@@ -135,7 +135,11 @@ export const navTroubleReport = defineTool({
     note: z.string(),
   },
   handler: async (args, ctx) => {
-    guardRunningGame(args.replaceRunningGame === true, "nav_trouble_report");
+    guardRunningGame(
+      args.replaceRunningGame === true,
+      "nav_trouble_report",
+      join(ctx.config.stateDir, "running-game.json"),
+    );
     const live = args.map !== undefined;
     const offline = args.dump !== undefined;
     if (live === offline) {

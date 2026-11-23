@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 /** The game executable sits next to `left4dead2/`, not inside it. */
@@ -28,8 +28,9 @@ export function steamExecutable(): string | null {
   return null;
 }
 
-/** The pid of a running `left4dead2.exe`, or null. */
-export function findGamePid(): number | null {
+/** Every running `left4dead2.exe`, oldest first as tasklist reports them. */
+export function listGamePids(): number[] {
+  const pids: number[] = [];
   try {
     const out = execFileSync(
       "tasklist",
@@ -39,10 +40,30 @@ export function findGamePid(): number | null {
     for (const line of out.split(/\r?\n/)) {
       const parts = line.split('","').map((part) => part.replace(/^"|"$/g, ""));
       const pid = Number(parts[1]);
-      if (Number.isInteger(pid) && pid > 0) return pid;
+      if (Number.isInteger(pid) && pid > 0) pids.push(pid);
     }
   } catch {
     // tasklist missing or refused; the caller reports that the game never appeared.
+  }
+  return pids;
+}
+
+/** The pid of a running `left4dead2.exe`, or null. */
+export function findGamePid(): number | null {
+  return listGamePids()[0] ?? null;
+}
+
+/** Waits for a game process that was **not** running before the launch. */
+export async function waitForNewGamePid(
+  timeoutMs: number,
+  exclude: readonly number[],
+  intervalMs = 500,
+): Promise<number | null> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const fresh = listGamePids().filter((pid) => !exclude.includes(pid));
+    if (fresh.length > 0) return fresh[fresh.length - 1]!;
+    await sleep(intervalMs);
   }
   return null;
 }
@@ -59,6 +80,37 @@ export async function waitForGamePid(
     await sleep(intervalMs);
   }
   return null;
+}
+
+/**
+ * The pid file a run leaves behind, so the next run can close the game a killed process left
+ * open instead of stacking a second instance on top of it.
+ */
+export function recordGamePid(stateFile: string, pid: number): void {
+  try {
+    mkdirSync(dirname(stateFile), { recursive: true });
+    writeFileSync(stateFile, JSON.stringify({ pid, at: new Date().toISOString() }), "utf8");
+  } catch {
+    // A missing record only costs the next run its automatic cleanup, not the run itself.
+  }
+}
+
+export function readRecordedGamePid(stateFile: string): number | null {
+  try {
+    if (!existsSync(stateFile)) return null;
+    const parsed = JSON.parse(readFileSync(stateFile, "utf8")) as { pid?: unknown };
+    return typeof parsed.pid === "number" && Number.isInteger(parsed.pid) ? parsed.pid : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearRecordedGamePid(stateFile: string): void {
+  try {
+    rmSync(stateFile, { force: true });
+  } catch {
+    // Nothing to clear.
+  }
 }
 
 /** Terminates one game process by pid, never every `left4dead2.exe` on the machine. */
@@ -81,20 +133,36 @@ export function stopGamePid(pid: number): void {
  * the session over and the player is dropped to the main menu. The harness learned this the
  * hard way -- a run started while the owner was on their own server disconnected them.
  *
- * `replaceRunningGame: true` is the explicit permission to close that game first; without it
+ * The exception is a game this harness started and a killed process left behind: its pid is in
+ * `stateFile`, so the next run closes it instead of stacking a second instance on top (two
+ * instances and a stale one are what produces `No Steam logon`).
+ *
+ * `replaceRunningGame: true` is the explicit permission to close any game first; without it
  * the call stops before touching any file.
  */
-export function guardRunningGame(allowReplace: boolean, what: string): number | null {
-  const pid = findGamePid();
-  if (pid === null) return null;
+export function guardRunningGame(
+  allowReplace: boolean,
+  what: string,
+  stateFile?: string,
+): void {
+  const pids = listGamePids();
+  if (pids.length === 0) return;
+  const recorded = stateFile ? readRecordedGamePid(stateFile) : null;
+  if (recorded !== null && pids.includes(recorded)) {
+    for (const pid of pids) stopGamePid(pid);
+    if (stateFile) clearRecordedGamePid(stateFile);
+    return;
+  }
   if (allowReplace) {
-    stopGamePid(pid);
-    return pid;
+    for (const pid of pids) stopGamePid(pid);
+    if (stateFile) clearRecordedGamePid(stateFile);
+    return;
   }
   throw new Error(
-    `left4dead2.exe is already running (pid ${pid}). ${what} starts its own instance through ` +
-      "Steam, which takes over the session and drops whoever is playing to the main menu. " +
-      "Close the game first, or pass replaceRunningGame: true if that game is yours and may be closed.",
+    `left4dead2.exe is already running (pid ${pids.join(", ")}) and this harness did not ` +
+      `start it. ${what} launches its own instance through Steam, which takes over the session ` +
+      "and produces `Disconnect: No Steam logon` in both windows. Close the game first, or pass " +
+      "replaceRunningGame: true if that game is yours and may be closed.",
   );
 }
 

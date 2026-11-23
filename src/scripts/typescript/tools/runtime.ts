@@ -25,8 +25,11 @@ import {
   steamExecutable,
   guardRunningGame,
   stopGamePid,
+  listGamePids,
+  recordGamePid,
+  clearRecordedGamePid,
   waitForFile,
-  waitForGamePid,
+  waitForNewGamePid,
   waitForLog,
   waitForMarkers,
   waitForMarkersAny,
@@ -233,7 +236,8 @@ export const runNavGenerate = defineTool({
   handler: async (args, ctx) => {
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
-    guardRunningGame(args.replaceRunningGame ?? false, "run_nav_generate");
+    const gameStateFile = join(ctx.config.stateDir, "running-game.json");
+    guardRunningGame(args.replaceRunningGame ?? false, "run_nav_generate", gameStateFile);
     sweepInterruptedState(gameDir);
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
@@ -634,7 +638,8 @@ export const runMapTest = defineTool({
   handler: async (args, ctx) => {
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
-    guardRunningGame(args.replaceRunningGame ?? false, "run_map_test");
+    const gameStateFile = join(ctx.config.stateDir, "running-game.json");
+    guardRunningGame(args.replaceRunningGame ?? false, "run_map_test", gameStateFile);
     const stateRestored = sweepInterruptedState(gameDir);
     const exe = gameExecutable(gameDir);
     if (!existsSync(exe)) throw new Error(`the game executable is not at ${exe}`);
@@ -770,7 +775,8 @@ export const runMapTest = defineTool({
         stdio: "ignore",
         windowsHide: false,
       });
-      const pid = await waitForGamePid(45_000);
+      const before = listGamePids();
+      const pid = await waitForNewGamePid(45_000, before);
       if (pid === null) {
         throw new Error(
           "Steam did not start left4dead2.exe within 45 s; check that Steam is running and " +
@@ -778,9 +784,11 @@ export const runMapTest = defineTool({
         );
       }
       gamePid = pid;
+      if (pid !== null) recordGamePid(gameStateFile, pid);
     } else {
       direct = launchGame(exe, gameArgs);
       gamePid = direct.child.pid ?? null;
+      if (gamePid !== null) recordGamePid(gameStateFile, gamePid);
     }
     const runPid = gamePid;
     if (runPid === null) throw new Error("the game process has no pid");
@@ -855,6 +863,7 @@ export const runMapTest = defineTool({
       }
     } finally {
       if (direct) direct.stop(); else stopGamePid(runPid);
+      clearRecordedGamePid(gameStateFile);
       await sleep(1000);
       staged.restore();
       restoreFiles(hidden);
