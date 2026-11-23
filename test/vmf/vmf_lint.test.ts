@@ -69,6 +69,21 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["dead-keyvalue"]).toBeUndefined();
   }, 60_000);
 
+  it.skipIf(!ready)("accepts an add-on soundscape name, which the FGD list cannot know", async () => {
+    // `env_soundscape.soundscape` is a CHOICES key in the FGD, but the values are five
+    // conveniences; any scape in scripts/soundscapes_*.txt is valid. Lint flagged the
+    // campaign's own "SantaMonica.Rain" as a value the engine would ignore.
+    const path = broken("custom-soundscape", (s) =>
+      s.replace(
+        "cameras\n{",
+        'entity\n{\n\t"id" "900"\n\t"classname" "env_soundscape"\n\t"radius" "-1"\n' +
+          '\t"soundscape" "CustomAddon.Rain"\n\t"origin" "0 0 64"\n}\ncameras\n{',
+      ),
+    );
+    const r = await lint(path);
+    expect(r.byRule["invalid-keyvalue-choice"]).toBeUndefined();
+  }, 60_000);
+
   it.skipIf(!ready)("catches a mistyped classname", async () => {
     const path = broken("typo-class", (s) =>
       s.replace('"classname" "info_player_start"', '"classname" "info_player_strat"'),

@@ -70,6 +70,38 @@ The manual procedure, when the tool cannot run:
 7. Restore the original config, delete the loose map and nav, and remove the engine's
    `*.navNN` backups and `*_nav.txt` dumps from the game tree.
 
+## Keeping a surface out of the mesh
+
+`func_nav_blocker` is a **runtime** blocker: it stops bots using an area after the map loads,
+but the generator still writes the area. Measured on a 3,000-unit-wide outdoor map: adding
+blockers over the sea and every roof left the nav **byte-identical** (668 areas before and
+after). Do not use it to keep a surface out of the generated file.
+
+The generator samples collision and keeps cells a player hull fits in (72 units). Two
+generation-time fixes cover almost every case:
+
+- **No walkable slope.** A flat sea bed or a parapet top is a floor. A `wedge` steeper than
+  45 degrees (pass `steep: true`; it is scenery, not a route) has no walkable cell. This is how
+  a decorative sea bed under a `func_water_analog` stops producing areas: the water is not
+  solid, so before the wedge the generator walked the bed.
+- **No headroom.** A solid `TOOLS/TOOLSCLIP` slab just above a roof, a counter top, a shop
+  awning or a decorative deck leaves less than a player's height; the area is discarded. The
+  slab is invisible and does not change what the player sees.
+
+Both fixes were needed on Santa Monica: the sea bed and the two house roofs produced orphan
+areas (`nav_trouble_report` named the centres), and a waist-high kitchen counter produced two
+more. After the slabs and wedges both chapters' live `nav_trouble_report` passed with no
+findings.
+
+## The spawn is the nav area, not `info_player_start`
+
+A `func_nav_attribute_region` with PLAYER_START (2176 on the first map) is where the engine
+puts survivors. Moving `info_player_start` alone does nothing: measured on a test copy, the
+player still spawned at the old house (`-700 -2362 8`) while the BSP's `info_player_start` was
+at `-300 1700 16`. Removing the nav region made the next run spawn at the moved entity. A
+normal chapter has both in the same place, which is why the two are easy to conflate; a camera
+tour, a moved start or a test spawn must move or remove both.
+
 ## What to verify
 
 - `read_nav` returns `fresh`: `savedBspSize` equals the `.bsp` size. Any geometry change makes

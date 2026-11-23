@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.251-alpha - 2026-11-23
+
+- **`read_vmf_lint` accepts an add-on soundscape name.** `env_soundscape.soundscape` is a
+  CHOICES key in the FGD, but its five values are conveniences; the engine resolves any name
+  defined in `scripts/soundscapes_*.txt`. The lint treated it as a closed enum and flagged
+  every custom scape (measured: `SantaMonica.Rain`), which made a correct map fail the lint
+  gate. The key is now open-ended for `env_soundscape*`, with a regression test.
+- **Skill: how to keep a surface out of generated nav.** `func_nav_blocker` is a runtime
+  blocker; a 3,000-unit outdoor map kept a byte-identical mesh after blockers were added over
+  the sea and roofs. Use a steep wedge (`steep: true`) or a solid clip slab with less than the
+  72-unit player headroom. The PLAYER_START nav region, not `info_player_start`, is where the
+  engine spawns survivors; a moved start must move or remove both.
+- **Tested on a two-chapter Santa Monica campaign:** both maps lint 0, compile 0/0/0, nav
+  `playable` and fresh, live `nav_trouble_report` pass, `run_campaign_gate`
+  campaign/props/finale/trouble/test ok. The findings that were not fixed here are listed in
+  `.develop-diary/04-log/2026-11-23-santa-monica-playtest.md` (not committed).
+- **Tool count: 293.** Tests: 238 files, 1,946 passed, 30 skipped.
+
 ## 0.0.250-alpha - 2026-11-23
 
 - **Block-stored IK rules are closed as unreadable with the current knowledge.** The reference

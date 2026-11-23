@@ -68,6 +68,12 @@ A soundscape is the ambient mix an `env_soundscape` entity selects: a looping be
 one-shots, child scapes and a DSP preset. It lives in `scripts/soundscapes_<name>.txt` and
 uses raw wave paths, not soundscript names.
 
+The FGD lists five values for `env_soundscape.soundscape` (`Nothing`, `Automatic`,
+`Automatic_Dialog`, `GenericIndoor`, `GenericOutdoor`). That list is convenience, not a closed
+enum: any name defined in `scripts/soundscapes_*.txt` is valid, including an add-on's own
+`MyCampaign.Rain`. `read_vmf_lint` treats the key as open-ended for `env_soundscape` classes;
+before that it flagged every custom scape as a value the engine would ignore.
+
 `write_soundscape` appends one definition, refuses a duplicate name, and checks every wave
 when the game directory is resolved. `read_soundscape` reads one file or all
 `soundscapes_*.txt` in the game, follows child names, and reports waves this install does

@@ -723,6 +723,12 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
                     kv = cls.kv[declared_key]
                     break
             allowed = _choice_values(kv) if kv is not None else None
+            # The FGD's list for `soundscape` is a set of conveniences, not a closed enum:
+            # the engine resolves any name defined in scripts/soundscapes_*.txt. Treating it
+            # as closed flagged every add-on scape (measured: "SantaMonica.Rain" on
+            # env_soundscape, campaign 003).
+            if key.lower() == "soundscape" and classname.lower().startswith("env_soundscape"):
+                allowed = None
             value = str(ent[key, ""]).strip()
             if allowed is not None and value and value.casefold() not in {
                 candidate.casefold() for candidate in allowed
