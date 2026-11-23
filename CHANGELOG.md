@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.249-alpha - 2026-11-23
+
+- **`ikrule` is written when the record is in the `.mdl`.** The 152-byte rule carries the chain,
+  the type (`touch "<bone>"`, `footstep`, `release`, `attachment "<name>"`, `unlatch`), contact,
+  fake origin/rotation, floor, height, radius, the influence window in frames (wrapped modulo
+  the last frame with `usesequence`) and the target slot. A/B on `v_rifle`: **44 rules
+  written, stock `studiomdl` compiles, 60 rules present in the recompiled model** (studiomdl
+  expands them over the sequences that use the clip).
+- **Block-stored rules are counted, not invented.** Most character rules live in the `.ani`
+  payload (`animblockikruleindex`: 90 of the hunter's 164, 990 of the gambler's 2202); the
+  decompile warns with the number and `read_model_animation` shows the per-sequence counts.
+- **Tool count: 293.** Tests: 238 files, 1,944 passed, 30 skipped.
+
 ## 0.0.248-alpha - 2026-11-23
 
 - **Weight lists are written only for bones the mesh uses, and stock `studiomdl` now

@@ -46,3 +46,25 @@ describe("sequence options", () => {
     expect(qc).toContain("activity ACT_VM_IDLE_GASCAN 1");
   }, 60_000);
 });
+
+
+describe("IK rules", () => {
+  it.skipIf(!has.gameContent)("writes the rules stored in the mdl", async () => {
+    const out = mkdtempSync(join(tmpdir(), "hsmcp-ikrule-"));
+    const result = (await decompileModelTool.handler(
+      {
+        model: "models/v_models/v_rifle.mdl",
+        outDir: out,
+        collision: false,
+        overwrite: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as { qc: string };
+    const qc = readFileSync(result.qc, "utf8");
+    // v_rifle stores 44 rules in the .mdl; a compile of this QC kept 60 (studiomdl expands).
+    expect((qc.match(/^\tikrule /gm) ?? []).length).toBeGreaterThanOrEqual(40);
+    expect(qc).toMatch(/\tikrule "[^"]+" (touch "[^"]+"|footstep|release|unlatch|attachment "[^"]*")/);
+    rmSync(out, { recursive: true, force: true });
+  }, 60_000);
+});

@@ -134,6 +134,12 @@ export interface MdlAnimationDesc {
   sectionFrameCount: number;
   /** Absolute file offset of the descriptor, which all its data offsets are relative to. */
   baseOffset: number;
+  /** `numikrules` at +60: `mstudioikrule_t` records this clip carries. */
+  ikruleCount: number;
+  /** `ikruleindex` at +64: offset of the rule array from the descriptor; 0 when in a block. */
+  ikruleOffset: number;
+  /** `animblockikruleindex` at +68: rule array inside the `.ani` block; not read here. */
+  ikruleBlockOffset: number;
 }
 
 export interface MdlAnimBlock {
@@ -472,6 +478,9 @@ export function readAnimations(mdl: Buffer): MdlAnimationDesc[] {
       animOffset: mdl.readInt32LE(base + 56),
       sectionOffset: mdl.readInt32LE(base + 80),
       sectionFrameCount: mdl.readInt32LE(base + 84),
+      ikruleCount: mdl.readInt32LE(base + 60),
+      ikruleOffset: mdl.readInt32LE(base + 64),
+      ikruleBlockOffset: mdl.readInt32LE(base + 68),
       baseOffset: base,
     });
   }

@@ -163,6 +163,85 @@ function writeVertexLine(vertex: ModelVertex, boneCount: number, staticProp: boo
   ].join("");
 }
 
+/**
+ * The `ikrule` lines a clip carries, in the compiler's order.
+ *
+ * The records live in the `.mdl` at `ikruleindex` (152 bytes each) or in the animation block
+ * at `animblockikruleindex`. This reads the in-file half only: L4D2 stores most rules in the
+ * block (90 of the hunter's 164 animation descriptors, 990 of the gambler's 2202), which needs
+ * the `.ani` payload, and `v_rifle` stores all 44 of its rules in the file. The caller counts
+ * the block ones so the loss is reported.
+ *
+ * Influence values are 0..1 phases in the file; QC wants frames, and a value past the last
+ * frame is wrapped by subtracting the frame count, exactly as the compiler's own decompiler
+ * documents (the rule then needs `usesequence`).
+ */
+function ikRuleLines(
+  mdl: Buffer,
+  animation: { baseOffset: number; ikruleCount: number; ikruleOffset: number },
+  chains: readonly MdlIkChain[],
+  bones: readonly ModelBone[],
+  frames: number,
+): string[] {
+  if (animation.ikruleCount <= 0 || animation.ikruleOffset <= 0) return [];
+  const lines: string[] = [];
+  const last = Math.max(1, frames - 1);
+  const at = (value: number): { text: string; wrapped: boolean } => {
+    let frame = Math.round(value * last);
+    let wrapped = false;
+    while (frame > last) {
+      frame -= last;
+      wrapped = true;
+    }
+    return { text: String(frame), wrapped };
+  };
+  for (let index = 0; index < animation.ikruleCount; index += 1) {
+    const record = animation.baseOffset + animation.ikruleOffset + index * 152;
+    if (record + 152 > mdl.length) break;
+    const type = mdl.readInt32LE(record + 4);
+    const chain = chains[mdl.readInt32LE(record + 8)]?.name ?? "";
+    if (!chain) continue;
+    let line = `\tikrule "${chain.replace(/"/g, "")}"`;
+    if (type === 0) {
+      const bone = bones[mdl.readInt32LE(record + 12)]?.name ?? "";
+      line += ` touch "${bone.replace(/"/g, "")}"`;
+    } else if (type === 1) line += " footstep";
+    else if (type === 2) line += " release";
+    else if (type === 3) {
+      const nameAt = mdl.readInt32LE(record + 120);
+      const end = nameAt > 0 ? mdl.indexOf(0, record + nameAt) : -1;
+      const name = end > 0 ? mdl.toString("latin1", record + nameAt, end) : "";
+      line += ` attachment "${name.replace(/"/g, "")}"`;
+    } else if (type === 4) line += " unlatch";
+    else continue;
+
+    const start = at(mdl.readFloatLE(record + 76));
+    const peak = at(mdl.readFloatLE(record + 80));
+    const tail = at(mdl.readFloatLE(record + 84));
+    const end = at(mdl.readFloatLE(record + 88));
+    const wrapped = start.wrapped || peak.wrapped || tail.wrapped || end.wrapped;
+    const quat: [number, number, number, number] = [
+      mdl.readFloatLE(record + 44),
+      mdl.readFloatLE(record + 48),
+      mdl.readFloatLE(record + 52),
+      mdl.readFloatLE(record + 56),
+    ];
+    const euler = quaternionToEuler(quat).map((angle) => fmt((angle * 180) / Math.PI));
+    const contactFrame = at(mdl.readFloatLE(record + 96));
+    line += ` contact ${contactFrame.text}`;
+    line += ` fakeorigin ${fmt(mdl.readFloatLE(record + 32))} ${fmt(mdl.readFloatLE(record + 36))} ${fmt(mdl.readFloatLE(record + 40))}`;
+    line += ` fakerotate ${euler.join(" ")}`;
+    line += ` floor ${fmt(mdl.readFloatLE(record + 28))}`;
+    line += ` height ${fmt(mdl.readFloatLE(record + 20))}`;
+    line += ` radius ${fmt(mdl.readFloatLE(record + 24))}`;
+    line += ` range ${start.text} ${peak.text} ${tail.text} ${end.text}`;
+    line += ` target ${mdl.readInt32LE(record + 16)}`;
+    if (wrapped) line += " usesequence";
+    lines.push(line);
+  }
+  return lines;
+}
+
 function referenceSmd(
   meshes: ModelMesh[],
   materials: string[],
@@ -582,6 +661,7 @@ function qcText(
     fadeOut: number;
     events: Array<{ name: string; frame: number; options: string }>;
     options: string[];
+    ikrules: string[];
     weightListName?: string;
     autoLayers: Array<{
       sequenceName: string;
@@ -768,6 +848,7 @@ function qcText(
       const needsBlock =
         sequence.events.length > 0 ||
         sequence.options.length > 0 ||
+        sequence.ikrules.length > 0 ||
         sequence.autoLayers.length > 0 ||
         sequence.weightListName !== undefined ||
         Math.abs(sequence.fadeIn - 0.2) > 1e-6 ||
@@ -793,6 +874,7 @@ function qcText(
       if (sequence.files.length > 0) {
         lines.push(`\t${sequence.files.map((file) => `"${file}"`).join(" ")}`);
       }
+      for (const rule of sequence.ikrules) lines.push(rule);
       lines.push(`\tfps ${fmt(sequence.fps)}`);
       if (sequence.activityName && sequence.activityWeight > 0) {
         lines.push(`\tactivity ${sequence.activityName} ${fmt(sequence.activityWeight)}`);
@@ -1230,6 +1312,8 @@ export const decompileModelTool = defineTool({
       events: Array<{ name: string; frame: number; options: string }>;
       /** QC option words from the compiled sequence flags (`snap`, `delta`, `hidden`, ...). */
       options: string[];
+      /** Preformatted `ikrule` lines decoded from this sequence's animations. */
+      ikrules: string[];
       /** `$weightlist` name this sequence uses, when its weights are not all 1. */
       weightListName?: string;
       /** `addlayer`/`blendlayer` entries, with the target sequence and pose parameter named. */
@@ -1246,6 +1330,8 @@ export const decompileModelTool = defineTool({
     }> = [];
     const skippedSequences: Array<{ name: string; reason: string }> = [];
     const usedNames = new Set<string>();
+    const ikChains = readIkChains(mdlBytes);
+    let blockIkRules = 0;
     let resampled = 0;
     // Bones that actually carry mesh vertices. studiomdl drops the rest from the compiled
     // skeleton, and a `$weightlist` entry naming a dropped bone is an error in the stock
@@ -1385,6 +1471,22 @@ export const decompileModelTool = defineTool({
           options: event.options,
         })),
         options: sequenceQcOptions(sequence, poseParamNames),
+        ikrules: [
+          ...new Set(
+            decoded.flatMap((entry) => {
+              if (entry.animation.ikruleCount > 0 && entry.animation.ikruleOffset <= 0) {
+                blockIkRules += entry.animation.ikruleCount;
+              }
+              return ikRuleLines(
+                mdlBytes,
+                entry.animation,
+                ikChains,
+                bones,
+                entry.frames.length,
+              );
+            }),
+          ),
+        ],
         ...(weightListName ? { weightListName } : {}),
         autoLayers: sequence.autoLayers
           .map((layer) => ({
@@ -1415,6 +1517,12 @@ export const decompileModelTool = defineTool({
     }
     const bodyFiles = new Set<string>();
     const warnings: string[] = [];
+    if (blockIkRules > 0) {
+      warnings.push(
+        `${blockIkRules} IK rule(s) are stored in the animation block, not the .mdl; they are ` +
+          "not written. `read_model_animation` shows the per-sequence counts.",
+      );
+    }
     if (resampled > 0) {
       warnings.push(
         `${resampled} blend clip(s) had a different frame count from their sequence's first ` +

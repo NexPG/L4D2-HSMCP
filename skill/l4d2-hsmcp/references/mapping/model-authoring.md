@@ -149,15 +149,21 @@ gambler's 814 sequences, 36 of the hunter's 89) and the decompiler writes them a
 `xfade`/`spline`/`noblend`/`poseparameter`/`local`, using frames rather than the stored 0..1
 phase. Verified by a real compile of `gascan001a`: `gasCan_idle` came back with one autolayer.
 
-IK rules are a different case. The count is in the sequence descriptor, but the records are in
-the animation block, not the `.mdl`: measured on stock L4D2, 90 of the hunter's 164 animation
-descriptors and 990 of the gambler's 2202 store `animblockikruleindex`, and **none** store the
-in-file `ikruleindex`. This decompiler reads the frame data from `.ani` but not that rule
-block, so `decompile_model` reports the totals and does not invent `ikrule` lines.
+IK rules are written **when they are stored in the `.mdl`**, and only then. The record is 152
+bytes at `ikruleindex`, relative to the animation descriptor; the QC line carries the chain,
+the type (`touch "<bone>"`, `footstep`, `release`, `attachment "<name>"`, `unlatch`), contact,
+fake origin/rotation, floor, height, radius, the influence window in frames (wrapped modulo
+the last frame with `usesequence`) and the target slot. Verified on `v_rifle`: **44 rules
+written, stock `studiomdl` compiles, 60 rules present in the recompiled model** (studiomdl
+expands them across the sequences that use the clip).
+
+Most L4D2 character rules live on the other side of the fence: 90 of the hunter's 164 and 990
+of the gambler's 2202 animation descriptors point at `animblockikruleindex`, the `.ani` payload,
+which this decompiler does not read for rules. Those are counted and named in a warning;
 `read_model_animation` shows the per-sequence counts, so the loss is visible before a compile.
-For an aim-matrix-heavy character, treat the decompiled QC as a starting point, not a faithful
-source. (`walkframe` is not in the sequence descriptor at all; it is a QC option baked into the
-clips during compile.)
+For an aim-matrix-heavy character, treat the decompiled QC as a starting point.
+(`walkframe` is not in the sequence descriptor at all; it is a QC option baked into the clips
+during compile.)
 
 **Sequence options are written from the flags, with one deliberate exception.** `snap`,
 `hidden`, `autoplay`, `realtime` and `posecycle` come from the compiled sequence flags and go
