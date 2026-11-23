@@ -45,6 +45,26 @@ function keyvalues(file: string): Record<string, string> {
   );
 }
 
+/**
+ * Which `addonContent_*` flag a file implies.
+ *
+ * The keys are lower-case because `addoninfo.txt` keys are case-insensitive once parsed, and
+ * these are the flags L4D2's add-on browser actually groups by.
+ */
+const CONTENT_CATEGORIES: Array<{ flag: string; what: string; test: RegExp }> = [
+  { flag: "addoncontent_campaign", what: "a mission file", test: /^missions\/.+\.txt$/ },
+  { flag: "addoncontent_map", what: "a map", test: /^maps\/.+\.bsp$/ },
+  { flag: "addoncontent_model", what: "a model", test: /^models\/.+\.mdl$/ },
+  {
+    flag: "addoncontent_material",
+    what: "a material or texture",
+    test: /^materials\/.+\.(vmt|vtf)$/,
+  },
+  { flag: "addoncontent_sound", what: "a sound", test: /^sound\/.+\.(wav|mp3|ogg)$/ },
+  { flag: "addoncontent_particle", what: "a particle system", test: /^particles\/.+\.pcf$/ },
+  { flag: "addoncontent_script", what: "a VScript", test: /^scripts\/vscripts\/.+\.nut$/ },
+];
+
 export const validateAddonTool = defineTool({
   name: "validate_addon",
   description:
@@ -80,6 +100,7 @@ export const validateAddonTool = defineTool({
     let scripts = 0;
     let manifests = 0;
     let addoninfo = false;
+    let info: Record<string, string> | null = null;
 
     const infoPath = join(dir, "addoninfo.txt");
     if (!existsSync(infoPath)) {
@@ -92,7 +113,7 @@ export const validateAddonTool = defineTool({
     } else {
       addoninfo = true;
       try {
-        const info = keyvalues(infoPath);
+        info = keyvalues(infoPath);
         if (!info["addontitle"]) {
           findings.push({
             severity: "error",
@@ -204,8 +225,7 @@ export const validateAddonTool = defineTool({
       }
     }
 
-    const caption = join(dir, "resource/closecaption_english.txt");
-    if (existsSync(caption)) {
+    const caption = join(dir, "resource/closecaption_english.txt");    if (existsSync(caption)) {
       const bytes = readFileSync(caption);
       if (!(bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe)) {
         findings.push({
@@ -217,6 +237,38 @@ export const validateAddonTool = defineTool({
           file: "resource/closecaption_english.txt",
         });
       }
+    }
+
+    // The add-on browser groups an add-on by its `addonContent_*` flags, not by what is inside
+    // it. A model pack with no `addonContent_Model` installs and works, and is still listed as
+    // an add-on with no category -- a support question, not a crash a mapper can see.
+    const relativeFiles = files.map((file) => relative(dir, file).replace(/\\/g, "/").toLowerCase());
+    const categories = CONTENT_CATEGORIES.filter((category) =>
+      relativeFiles.some((file) => category.test.test(file)),
+    );
+    for (const category of categories) {
+      if (info === null || !info[category.flag] || info[category.flag] === "0") {
+        findings.push({
+          severity: "warning",
+          rule: "addon-content-flag",
+          message:
+            `this add-on ships ${category.what} but \`${category.flag}\` is not set; the ` +
+            "add-on browser lists it without that category",
+          file: "addoninfo.txt",
+        });
+      }
+    }
+    const mapsPresent = relativeFiles.filter((file) => /^maps\/.+\.bsp$/.test(file));
+    const missionPresent = relativeFiles.some((file) => /^missions\/.+\.txt$/.test(file));
+    if (mapsPresent.length > 0 && !missionPresent) {
+      findings.push({
+        severity: "info",
+        rule: "addon-single-map",
+        message:
+          `${mapsPresent.length} map(s) and no missions/ file: this is a single-map add-on, ` +
+          "not a campaign. That is supported; use addonContent_Map so the browser groups it",
+        file: "addoninfo.txt",
+      });
     }
 
     const counts = {

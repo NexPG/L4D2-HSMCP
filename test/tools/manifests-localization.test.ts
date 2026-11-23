@@ -183,4 +183,31 @@ describe("validate_addon", () => {
     expect(result.counts.error).toBeGreaterThan(0);
     expect(result.overall).toBe("fail");
   });
+
+  it("warns when the content flags do not match what the addon ships", async () => {
+    const dir = join(scratch, "check-flags");
+    for (const rel of ["models/props_test", "materials/models/props_test", "maps"]) {
+      mkdirSync(join(dir, rel), { recursive: true });
+    }
+    writeFileSync(
+      join(dir, "addoninfo.txt"),
+      '"addoninfo"\n{\n\t"addonTitle"\t"Flags"\n\t"addonSteamAppID"\t"550"\n' +
+        '\t"addonContent_Model"\t"1"\n}\n',
+    );
+    writeFileSync(join(dir, "models", "props_test", "crate.mdl"), "mdl");
+    writeFileSync(join(dir, "materials", "models", "props_test", "crate.vmt"), '"VertexLitGeneric"{}');
+    writeFileSync(join(dir, "maps", "lone_map.bsp"), "bsp");
+
+    const result = (await validateAddonTool.handler({ dir } as never, ctx)) as unknown as {
+      findings: Array<{ rule: string; message: string }>;
+    };
+    const flagged = result.findings.filter((finding) => finding.rule === "addon-content-flag");
+    // The model flag is set; the material and the map flags are not.
+    expect(flagged.map((finding) => finding.message).join("\n")).toContain("addoncontent_material");
+    expect(flagged.map((finding) => finding.message).join("\n")).toContain("addoncontent_map");
+    expect(flagged.map((finding) => finding.message).join("\n")).not.toContain("addoncontent_model");
+    // A map with no mission file is a single-map add-on, and the report says so instead of
+    // pretending it is a broken campaign.
+    expect(result.findings.some((finding) => finding.rule === "addon-single-map")).toBe(true);
+  });
 });

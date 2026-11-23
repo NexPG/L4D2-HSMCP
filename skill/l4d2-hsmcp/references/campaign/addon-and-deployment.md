@@ -39,6 +39,27 @@ a BSP from another pipeline, the engine logs `missing stringtable dictionary, do
 way` and a client may spend a long time rebuilding it. `read_map_dependencies` reports the
 dictionary as a packed entry; `read_nav` being `fresh` is the pair check.
 
+## Content flags: the add-on browser groups by these
+
+`addoninfo.txt` declares **what the add-on is** with `addonContent_*` keys; the browser groups
+by them, and a pack without the matching key installs and works but is listed uncategorised.
+`validate_addon` compares the flags with the files present:
+
+| Files | Flag |
+|---|---|
+| `missions/*.txt` | `addonContent_Campaign` |
+| `maps/*.bsp` | `addonContent_Map` |
+| `models/**/*.mdl` | `addonContent_Model` |
+| `materials/**/*.vmt` / `*.vtf` | `addonContent_Material` |
+| `sound/**/*.wav` (and mp3/ogg) | `addonContent_Sound` |
+| `particles/*.pcf` | `addonContent_Particle` |
+| `scripts/vscripts/*.nut` | `addonContent_Script` |
+
+A **single map with no `missions/` file is a map add-on, not a broken campaign**: the
+validator reports it as `addon-single-map` and asks for `addonContent_Map`. Soundtrack and
+voice packs use `addonContent_Music` and `addonContent_Sound`; a model or texture pack needs no
+map at all.
+
 ## Large add-ons: numbered archives
 
 A VPK is a directory file plus numbered data archives of about 200 MB each (`pak01_000.vpk`,

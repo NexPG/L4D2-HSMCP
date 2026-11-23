@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.233-alpha - 2026-11-23
+
+- **`validate_addon` matches the content flags to the files.** L4D2's add-on browser groups by
+  `addonContent_*`, so a model or texture pack without its flag installs and is listed
+  uncategorised. The validator now maps missions/maps/models/materials/sounds/particles/
+  vscripts to their flags and warns about each missing one, and it reports a map with no
+  `missions/` file as a supported **single-map add-on** instead of an incomplete campaign.
+- **Skill**: the flag table and the single-map rule are in
+  `references/campaign/addon-and-deployment.md`; the coverage row for non-campaign add-ons
+  moved from "not yet" to a verified static contract.
+- **Tool count: 290.** Tests: 233 files, 1,927 passed, 30 skipped.
+
 ## 0.0.232-alpha - 2026-11-23
 
 - **A test run no longer takes a player's session, and no longer stacks windows.** The four
