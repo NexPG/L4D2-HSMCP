@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **292 tools**.
+Last checked against the tool list on 22/11/2026: **293 tools**.
 
 ## The file itself
 
@@ -395,6 +395,7 @@ map and looking, or by not happening at all.
 | `read_lightmap_budget` | nothing: where a map's luxels went |
 | `read_visleaf_stats` | `mat_leafvis` in the running game |
 | `read_fgd_autovisgroups` | nothing: Hammer's entity browser groups are not exposed as data |
+| `read_fgd_resources` | nothing: the entity report shows every key, not which ones name a file the add-on must ship |
 | `read_fgd_class` | the entity dialog, one class at a time |
 | `read_vmf_solids` | the red "invalid solid" outline, and no reason |
 | `read_vmf_lint` | nothing |

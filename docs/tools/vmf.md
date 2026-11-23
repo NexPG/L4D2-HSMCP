@@ -1,6 +1,6 @@
 # VMF authoring
 
-86 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+87 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -18,6 +18,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_entity_report` | Hammer's Entity Report: every entity with its keyvalues, filterable by classname, targetname or the presence of a key. |
 | `read_fgd_autovisgroups` | Lists the FGD's `@AutoVisgroup` tree and the entity classes each group contains. |
 | `read_fgd_class` | What the game's own FGD declares for an entity class: every keyvalue with its type and default, every input, every output. |
+| `read_fgd_resources` | Lists the keyvalues of one entity class that name an asset: models, sprites, sounds, decals, materials, particles, scenes, VScripts, soundscapes and instance files, with the FGD default and what the type means for packaging. |
 | `read_vmf` | Entities, outputs and brush counts of a .vmf, reported without judgement. |
 | `read_vmf_lint` | Checks a .vmf against the game's FGD and against what the compilers accept, before a compile that can take forty minutes to fail. |
 | `restore_autosave` | Writes one autosave out as a normal .vmf, so it can be opened in Hammer or compared with the map it came from. |

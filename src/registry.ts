@@ -147,6 +147,7 @@ import { vmtTools } from "./textures/typescript/tools/vmt.js";
 import { rectTools } from "./textures/typescript/tools/rect.js";
 import { hudTools } from "./textures/typescript/tools/hud.js";
 import { vmfTools } from "./maps/typescript/tools/vmf.js";
+import { fgdResourceTools } from "./maps/typescript/tools/fgdresources.js";
 import { vmfEditTools } from "./maps/typescript/tools/vmfedit.js";
 import { vscriptTools } from "./scripts/typescript/tools/vscript.js";
 import { wiringTools } from "./maps/typescript/tools/wiring.js";
@@ -190,6 +191,7 @@ export const allTools: AnyToolDef[] = [
   ...visTools,
   ...reportTools,
   ...vmfTools,
+  ...fgdResourceTools,
   ...contentTools,
   ...surfacePropsTools,
   ...particleTools,

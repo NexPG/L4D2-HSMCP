@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.239-alpha - 2026-11-23
+
+- **`read_fgd_resources`**: the asset-bearing keyvalues of one class -- model, sprite, sound,
+  decal, material, particle, scene, soundscape, instance file -- with the FGD default and what
+  the type means for packaging. `vscripts` is filtered out because every class inherits it; it
+  is noted where it matters instead. The tool also returns the L4D2 traps the schema cannot
+  express: broken door sound overrides (the model's `door_options` is the real source),
+  checkpoint door names, sprites not being VMTs, obsolete `point_viewcontrol`.
+- **Skill**: tool index and parity carry the 293rd tool.
+- **Tool count: 293.** Tests: 236 files, 1,939 passed, 30 skipped.
+
 ## 0.0.238-alpha - 2026-11-23
 
 - **Instances verified through the compile.** A `write_instance` pillar fragment collapses
