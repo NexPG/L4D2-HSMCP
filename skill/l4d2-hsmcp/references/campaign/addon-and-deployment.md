@@ -39,6 +39,23 @@ a BSP from another pipeline, the engine logs `missing stringtable dictionary, do
 way` and a client may spend a long time rebuilding it. `read_map_dependencies` reports the
 dictionary as a packed entry; `read_nav` being `fresh` is the pair check.
 
+## Large add-ons: numbered archives
+
+A VPK is a directory file plus numbered data archives of about 200 MB each (`pak01_000.vpk`,
+`pak01_001.vpk`, …). The game reads all of them; you do not ship them individually.
+
+`run_vpk_pack` writes the single-archive form. For a campaign over the chunk size, use the
+game's own tool with the multi-chunk switch, from the add-on's staging directory:
+
+```
+"<game>/bin/vpk.exe" -M a my_campaign @files.txt
+```
+
+`-M` splits into numbered archives, `a` adds/creates, `@files.txt` is one root-relative path
+per line. Verify the result with `verify_vpk` (entry count, total size, archive chain) rather
+than assuming the chunking worked. L4D2's `vpk.exe` writes v1; do not use another game's
+`vpk.exe` for an L4D2 add-on.
+
 `run_vpk_pack` calls the game's own `vpk.exe`, then reads the archive back and compares its
 entry list with the staging tree. A file the packer dropped is reported, not assumed away.
 

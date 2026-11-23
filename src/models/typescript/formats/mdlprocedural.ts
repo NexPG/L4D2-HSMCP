@@ -153,8 +153,7 @@ function eulerDegrees(quat: Quat): string {
  * is exactly the number written; the alternative (Crowbar's 100) adds the control bone's
  * position on every compile and the VRD drifts away from the model.
  */
-export function buildVrd(
-  entries: readonly MdlProcedural[],
+export function buildVrd(  entries: readonly MdlProcedural[],
   bones: readonly ModelBone[],
 ): string {
   const lines: string[] = [];
@@ -189,4 +188,162 @@ export function buildVrd(
     lines.push("");
   }
   return lines.join("\n");
+}
+
+export interface VrdTrigger {
+  /** Angular tolerance in degrees; 0 means the compiler's default. */
+  tolerance: number;
+  /** Trigger angle, degrees (the compiler's Euler order). */
+  trigger: Vec3Tuple;
+  /** The pose the bone takes while the trigger is active, degrees. */
+  pose: Vec3Tuple;
+  /** Trigger position, in the control bone's space. */
+  position: Vec3Tuple;
+}
+
+type Vec3Tuple = [number, number, number];
+type Vec4Tuple = [number, number, number, number];
+
+export interface VrdEntry {
+  kind: "quatinterp" | "aim";
+  bone: string;
+  parent: string;
+  /** Quat-interp only: the parent of the controlling bone. */
+  controlParent?: string;
+  /** Quat-interp only: the bone whose position drives the blend. */
+  control?: string;
+  /** Aim only: the bone or attachment to follow. */
+  aimBone?: string;
+  aimVector?: Vec3Tuple;
+  upVector?: Vec3Tuple;
+  display: Vec4Tuple | null;
+  basePos: Vec3Tuple | null;
+  triggers: VrdTrigger[];
+}
+
+/**
+ * Parses the `.vrd` text `$proceduralbones` names.
+ *
+ * The file is a flat list of `<tag> numbers...` lines, grouped by `<helper>` and
+ * `<aimconstraint>`. The reader exists so a hand-authored file can be checked before a
+ * compile: a missing `<basepos>` silently keeps the previous value, and a `<trigger>` with
+ * nine numbers instead of ten shifts every field by one.
+ */
+export function parseVrd(text: string): {
+  entries: VrdEntry[];
+  warnings: string[];
+  lineCount: number;
+} {
+  const entries: VrdEntry[] = [];
+  const warnings: string[] = [];
+  const lines = text.split(/\r?\n/);
+  let current: VrdEntry | null = null;
+
+  const numbers = (parts: readonly string[], count: number, at: number, tag: string): number[] | null => {
+    const values = parts.slice(0, count).map(Number);
+    if (parts.length !== count || values.some((value) => !Number.isFinite(value))) {
+      warnings.push(`line ${at}: <${tag}> needs ${count} number(s), got "${parts.join(" ")}"`);
+      return null;
+    }
+    return values;
+  };
+
+  lines.forEach((raw, index) => {
+    const line = raw.trim();
+    if (line === "" || line.startsWith("//")) return;
+    const match = /^<([a-z]+)>\s*(.*)$/i.exec(line);
+    if (!match) {
+      warnings.push(`line ${index + 1}: not a <tag> line: ${line}`);
+      return;
+    }
+    const tag = match[1]!.toLowerCase();
+    const parts = match[2]!.split(/\s+/).filter(Boolean);
+    const at = index + 1;
+
+    switch (tag) {
+      case "helper": {
+        if (parts.length !== 4) {
+          warnings.push(`line ${at}: <helper> needs bone, parent, control parent and control`);
+        }
+        current = {
+          kind: "quatinterp",
+          bone: parts[0] ?? "",
+          parent: parts[1] ?? "",
+          controlParent: parts[2] ?? "",
+          control: parts[3] ?? "",
+          display: null,
+          basePos: null,
+          triggers: [],
+        };
+        entries.push(current);
+        break;
+      }
+      case "aimconstraint": {
+        if (parts.length !== 3) {
+          warnings.push(`line ${at}: <aimconstraint> needs bone, parent and aim bone`);
+        }
+        current = {
+          kind: "aim",
+          bone: parts[0] ?? "",
+          parent: parts[1] ?? "",
+          aimBone: parts[2] ?? "",
+          display: null,
+          basePos: null,
+          triggers: [],
+        };
+        entries.push(current);
+        break;
+      }
+      case "trigger": {
+        if (!current || current.kind !== "quatinterp") {
+          warnings.push(`line ${at}: <trigger> outside a <helper>`);
+          break;
+        }
+        const values = numbers(parts, 10, at, "trigger");
+        if (!values) break;
+        current.triggers.push({
+          tolerance: values[0]!,
+          trigger: [values[1]!, values[2]!, values[3]!],
+          pose: [values[4]!, values[5]!, values[6]!],
+          position: [values[7]!, values[8]!, values[9]!],
+        });
+        break;
+      }
+      case "display": {
+        const values = numbers(parts, 4, at, "display");
+        if (values && current) current.display = [values[0]!, values[1]!, values[2]!, values[3]!];
+        break;
+      }
+      case "basepos":
+      case "aimvector":
+      case "upvector": {
+        const values = numbers(parts, 3, at, tag);
+        if (!values || !current) break;
+        const tuple: Vec3Tuple = [values[0]!, values[1]!, values[2]!];
+        if (tag === "basepos") current.basePos = tuple;
+        else if (tag === "aimvector") current.aimVector = tuple;
+        else current.upVector = tuple;
+        break;
+      }
+      default:
+        warnings.push(`line ${at}: unknown tag <${tag}>`);
+    }
+  });
+
+  for (const entry of entries) {
+    const name = entry.bone || "(unnamed)";
+    if (!entry.bone) warnings.push("an entry has no bone name");
+    if (!entry.parent) warnings.push(`${name}: no parent bone; the compiler needs the second field`);
+    if (entry.basePos === null) {
+      warnings.push(`${name}: no <basepos>; a compile keeps whatever value was there before`);
+    }
+    if (entry.kind === "quatinterp" && entry.triggers.length === 0) {
+      warnings.push(`${name}: a helper with no <trigger> does nothing`);
+    }
+    if (entry.kind === "aim" && (!entry.aimVector || !entry.upVector)) {
+      warnings.push(`${name}: an aim constraint needs <aimvector> and <upvector>`);
+    }
+  }
+
+  return { entries, warnings, lineCount: lines.length };
 }

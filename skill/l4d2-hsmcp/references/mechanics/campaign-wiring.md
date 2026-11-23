@@ -162,6 +162,12 @@ questions.
   its own type 4.
 - Finale escape is not a `trigger_escape` volume.
 - `info_map_parameters` is where item density lives, not the mission file.
+- A closed door's sounds come from the **model**, not the entity: `read_model_keyvalues` on a
+  door model returns its `door_options` (`open`, `close`, `move`, `pound`, `locked`,
+  `unlocked`). L4D2's `prop_door_rotating` sound-override keys are broken, so the documented
+  workaround is `logic_auto` → door → `AddOutput "SoundMoveOverride Doors.Move14"`. A door
+  recompiled without `door_options` still swings but loses the sound infected make when they
+  pound on it.
 
 ## Evidence
 

@@ -147,6 +147,21 @@ direct recompile cannot overwrite the source.
 
 - **Viewmodels** need `$attachment "primary"` / `"melee"`, the right `$weaponmodel`/hands
   setup, and the `CharacterViewmodelAddon` block in the weapon script.
+
+### A viewmodel skeleton without copying numbers
+
+A viewmodel is compiled against the player skeleton, so its QC needs `$definebone` lines for
+every bone it references. Do not paste numbers from a tutorial:
+
+1. `read_model_skeleton` on a stock viewmodel (`models/v_models/v_rifle.mdl`) returns the
+   `$definebone` set generated from the bind pose (the QC order is `(y, z, x)` degrees).
+2. Put `$UnlockDefineBones` before that set in the QC; the compiler then accepts its own
+   skeleton position instead of refusing a mismatch.
+3. Keep `$attachment "primary"`/`"melee"` and the `$weaponmodel` naming the weapon script
+   expects; the add-on's `CharacterViewmodelAddon` block points at the model.
+
+`read_qc` checks the result: a `$definebone` parent declared later, a cycle, or a sequence
+`activity` weight of zero is reported before a compile rather than by studiomdl.
 - **Player models** use `declaresequence` files and `includemodels`; a proportion/anim-swap
   setup is a set of QCI includes, not one QC.
 - **Attachments** are positioned with `.smd`/`.dmx` helper meshes and `$attachment`; the

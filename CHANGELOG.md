@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.231-alpha - 2026-11-23
+
+- **`read_vrd`**: reads a hand-authored `.vrd` procedural-bones file (quat-interp helpers,
+  triggers, aim constraints) and reports what a compile would swallow -- a missing
+  `<basepos>`, a `<trigger>` with nine numbers instead of ten, an aim rule without vectors, a
+  tag outside a block. `read_model_procedural` remains the compiled side.
+- **`read_model_keyvalues`**: a model's `$keyvalues` block and its parsed `door_options`.
+  L4D2 takes a door's open/close/pound sounds from the model, so a recompile without that
+  block loses the sound infected make when they pound on it. Measured on
+  `checkpoint_door_02.mdl`: `open Doors.Checkpoint.FullOpen1`, `move Doors.Checkpoint.Move1`.
+- **Skill recipes from the reference study**: viewmodel skeleton via `$UnlockDefineBones` +
+  generated `$definebone`, survival nav with `BATTLEFIELD` + `NOT_CLEARABLE`, multi-chunk VPK
+  (`vpk.exe -M`) and what to verify with `verify_vpk`.
+- **Tool count: 290.** Tests: 232 files, 1,924 passed, 30 skipped.
+
 ## 0.0.230-alpha - 2026-11-23
 
 - **`read_vmf_lint` checks the worldspawn values the engine reads as behaviour.** It reports

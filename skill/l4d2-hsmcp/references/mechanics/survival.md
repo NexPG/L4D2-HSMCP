@@ -62,6 +62,21 @@ survival wave.
 - no `trigger_finale` requirement in this test: the mode started from the map alone. A map
   that only finales can start may need a `trigger_finale`; verify per map.
 
+## A survival arena's nav
+
+Survival is a round in one arena, so the nav says "this is the arena, do not stop spawning".
+Two `func_nav_attribute_region` brushes carry it:
+
+- **BATTLEFIELD (256)** over the play space: infected keep spawning while survivors are
+  inside, which is the opposite of the coop rule.
+- **NOT_CLEARABLE (1024)** over the same space: the Director will not mark it cleared when it
+  empties, so a wave never stalls waiting for a clean area.
+
+Mark the arena with both, then generate nav. The ROUND starts from `trigger_finale` (see
+above); the attributes decide where the waves come from, not whether the mode is Survival.
+
+A map that also has a CHECKPOINT region for coop gets both ends; the mode picks the goal.
+
 ## Pitfalls
 
 - `Unknown command: survival_record` is a harmless client-side console line in this setup.

@@ -12,7 +12,7 @@ import { gameBlock, gameFor } from "../../../core/typescript/games/resolve.js";
 import { GAME, GAME_BLOCK, resolveInput } from "../../../core/typescript/tools/paths.js";
 import { readMdlBones } from "../formats/mdlbones.js";
 import { readAttachments } from "../formats/mdlmeta.js";
-import { buildVrd, readProceduralBones } from "../formats/mdlprocedural.js";
+import { buildVrd, parseVrd, readProceduralBones } from "../formats/mdlprocedural.js";
 import { looseOrVpk, normalizeModelPath } from "./source.js";
 
 const QUAT = z.tuple([z.number(), z.number(), z.number(), z.number()]);
@@ -109,4 +109,69 @@ export const readModelProceduralTool = defineTool({
   },
 });
 
-export const modelProceduralTools = [readModelProceduralTool];
+export const readVrdTool = defineTool({
+  name: "read_vrd",
+  description:
+    "Reads a hand-authored `.vrd` procedural-bones file: quat-interp helpers with their " +
+    "control bone and triggers, and aim constraints with their aim/up vectors. Reports the " +
+    "structure a compile would otherwise swallow -- a missing `<basepos>`, a `<trigger>` with " +
+    "nine numbers instead of ten, an aim rule without vectors, a tag outside a block. Use it " +
+    "before pointing `$proceduralbones` at a file; `read_model_procedural` is the compiled " +
+    "side of the same data.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the .vrd, absolute or relative to the repo root."),
+  },
+  outputSchema: {
+    path: z.string(),
+    count: z.number(),
+    lineCount: z.number(),
+    entries: z.array(
+      z.union([
+        z.object({
+          kind: z.literal("quatinterp"),
+          bone: z.string(),
+          parent: z.string(),
+          controlParent: z.string().optional(),
+          control: z.string().optional(),
+          display: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
+          basePos: z.tuple([z.number(), z.number(), z.number()]).nullable(),
+          triggers: z.array(
+            z.object({
+              tolerance: z.number(),
+              trigger: z.tuple([z.number(), z.number(), z.number()]),
+              pose: z.tuple([z.number(), z.number(), z.number()]),
+              position: z.tuple([z.number(), z.number(), z.number()]),
+            }),
+          ),
+        }),
+        z.object({
+          kind: z.literal("aim"),
+          bone: z.string(),
+          parent: z.string(),
+          aimBone: z.string().optional(),
+          aimVector: z.tuple([z.number(), z.number(), z.number()]).optional(),
+          upVector: z.tuple([z.number(), z.number(), z.number()]).optional(),
+          display: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
+          basePos: z.tuple([z.number(), z.number(), z.number()]).nullable(),
+          triggers: z.array(z.never()),
+        }),
+      ]),
+    ),
+    warnings: z.array(z.string()),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    if (!existsSync(path)) throw new Error(`${path} does not exist`);
+    const parsed = parseVrd(readFileSync(path, "utf8"));
+    return {
+      path,
+      count: parsed.entries.length,
+      lineCount: parsed.lineCount,
+      entries: parsed.entries,
+      warnings: parsed.warnings,
+    };
+  },
+});
+
+export const modelProceduralTools = [readModelProceduralTool, readVrdTool];

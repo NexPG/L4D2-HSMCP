@@ -105,6 +105,7 @@ import { vtaTools } from "./models/typescript/tools/vta.js";
 import { modelEyesTools } from "./models/typescript/tools/eyes.js";
 import { modelJiggleTools } from "./models/typescript/tools/jiggle.js";
 import { modelProceduralTools } from "./models/typescript/tools/procedural.js";
+import { modelKeyValueTools } from "./models/typescript/tools/keyvalues.js";
 import { modelBodygroupTools } from "./models/typescript/tools/bodygroups.js";
 import { modelLodTools } from "./models/typescript/tools/lods.js";
 import { modelAniTools } from "./models/typescript/tools/ani.js";
@@ -213,6 +214,7 @@ export const allTools: AnyToolDef[] = [
   ...modelEyesTools,
   ...modelJiggleTools,
   ...modelProceduralTools,
+  ...modelKeyValueTools,
   ...modelBodygroupTools,
   ...modelLodTools,
   ...modelAniTools,

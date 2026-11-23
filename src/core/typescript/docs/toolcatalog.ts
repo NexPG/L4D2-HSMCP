@@ -94,6 +94,7 @@ const AREAS: Area[] = [
       "Skeleton and animation": ["skeleton", "animation", "ani"],
       "Flexes and VTA": ["flexes", "vta"],
       "Eyes, jigglebones and procedural bones": ["eyes", "jiggle", "procedural"],
+      "Model keyvalues": ["keyvalues"],
       "LODs and bodygroups": ["lods", "bodygroups"],
       "Preview": ["models/preview"],
     },

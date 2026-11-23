@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **288 tools**.
+Last checked against the tool list on 22/11/2026: **290 tools**.
 
 ## The file itself
 
@@ -274,6 +274,8 @@ map and looking, or by not happening at all.
 | `read_scenes_image` | nothing: the image is engine dialogue metadata |
 | `read_model_ani` | nothing: an external `.ani` block table is not exposed by the editor |
 | `read_model_procedural` | nothing: Hammer cannot show quat-interp helpers or aim rules, and has no `.vrd` view |
+| `read_vrd` | nothing: Hammer has no `.vrd` viewer, and a malformed file is a compiler error, not an editor one |
+| `read_model_keyvalues` | nothing: Hammer shows a model's name in a picker, not its `$keyvalues` or `door_options` |
 | `read_model_lods` | nothing: switch distances, `facial`, material/bone replacements and removed bodygroup models are not in the editor |
 | `read_model_bodygroups` | nothing: body parts with their mixed-radix bases and the `$bodygrouppreset` table. L4D2's compiler rejects the command, so write-back is blocked and documented |
 | `read_vta` | nothing: a VTA is a compiler input the editor never shows |

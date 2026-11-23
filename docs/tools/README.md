@@ -1,6 +1,6 @@
 # Tools by area
 
-288 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
+290 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
 rendering, the runtime harness, and so on — not a source directory and not a bucket for
 several jobs. A new kind of tool gets a new row and a new page.
 
@@ -15,7 +15,7 @@ not this file.
 | Compiled maps (BSP) | BSP lumps, entity lumps, pakfile, static props, map rename and compiled-map reports | 12 | [bsp.md](bsp.md) |
 | Rendering and measurement | offline views and plans, room/space measurement, visibility and sight lines | 20 | [rendering.md](rendering.md) |
 | Navigation | nav areas, attributes, connections, hiding spots, encounters, path and sight queries | 16 | [nav.md](nav.md) |
-| Models | compiled MDL/VVD/VTX/PHY, decompiling and compiling, QC/SMD, collision, animation, LODs and effects | 28 | [models.md](models.md) |
+| Models | compiled MDL/VVD/VTX/PHY, decompiling and compiling, QC/SMD, collision, animation, LODs and effects | 30 | [models.md](models.md) |
 | Textures (VTF) | reading, writing, converting and extracting VTF textures | 8 | [textures.md](textures.md) |
 | Materials (VMT and PBR) | VMT read/write, engine-read checks, PBR parameters and the game's surface properties | 7 | [materials.md](materials.md) |
 | Cubemaps and skyboxes | building and converting cubemaps, six-face skyboxes and the sky_camera | 6 | [cubemaps.md](cubemaps.md) |
@@ -37,7 +37,7 @@ not this file.
 | Configuration and health | toolchain health and the stored add-on author | 4 | [configuration.md](configuration.md) |
 | Game discovery | how Left 4 Dead 2 was found on this machine | 1 | [games.md](games.md) |
 | File and text primitives | path resolution and raw UTF-8 text files | 2 | [text.md](text.md) |
-| **Total** | | **288** | |
+| **Total** | | **290** | |
 
 Each area page has logical tables inside it (for example, “Geometry”, “Faces, lighting,
 overlays and terrain” and “Instances and prefabs” inside VMF authoring).

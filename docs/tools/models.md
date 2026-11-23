@@ -1,6 +1,6 @@
 # Models
 
-28 tools: compiled MDL/VVD/VTX/PHY, decompiling and compiling, QC/SMD, collision, animation, LODs and effects.
+30 tools: compiled MDL/VVD/VTX/PHY, decompiling and compiling, QC/SMD, collision, animation, LODs and effects.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -63,6 +63,13 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_model_eyes` | Reads a compiled model's eyeball and mouth records: bone, model-space and bone-local origin, radius, z-offset, iris scale, the upper/lower lid flexes and their target angles, and the eye material (with the stored index and the `_l`/`_r` guess). |
 | `read_model_jiggle` | Reads a compiled model's jigglebones: each bone with `proctype 5`, its flags, length, tip mass, stiffness/damping, angle and pitch/yaw constraints, base spring and boing parameters, plus the exact `$jigglebone` block. |
 | `read_model_procedural` | Reads a compiled model's procedural bones: quat-interp helpers (proctype 2) with their control bone and triggers, and aim rules (proctype 3/4) with parent, aim bone or attachment, aim/up vectors and base position. |
+| `read_vrd` | Reads a hand-authored `.vrd` procedural-bones file: quat-interp helpers with their control bone and triggers, and aim constraints with their aim/up vectors. |
+
+## Model keyvalues
+
+| Tool | What it does |
+|---|---|
+| `read_model_keyvalues` | Reads the `$keyvalues` block a compiled model carries: the raw block, and `door_options` parsed out when present. |
 
 ## LODs and bodygroups
 
