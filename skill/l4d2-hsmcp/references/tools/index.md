@@ -1,6 +1,6 @@
 # Tool catalogue
 
-293 tools. This page groups them by the job you are doing; each tool's own description is the
+294 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -97,6 +97,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_nav_attribute_region` | `func_nav_attribute_region` with CHECKPOINT/FINALE/RESCUE_CLOSET bits; the nav half of a closet |
 | `write_zombie_border` | the infected spawn border marker |
 | `check_campaign_wiring` | follow transitions across chapters: map, landmark pair, doors, finale |
+| `check_transition` | one chapter pair both ways: changelevel, landmark, class-based checkpoint door near the landmark, arrival volume |
 ## Compiled map
 
 | Tool | Use |

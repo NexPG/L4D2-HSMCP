@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 22/11/2026: **293 tools**.
+Last checked against the tool list on 23/11/2026: **294 tools**.
 
 ## The file itself
 
@@ -417,6 +417,7 @@ map and looking, or by not happening at all.
 | `write_scenes_image` | nothing: Hammer cannot build the CRC-keyed scene summary |
 | `check_campaign` | nothing: no editor checks that a campaign's maps and images exist |
 | `check_campaign_wiring` | nothing: no editor follows a chapter's changelevel into the next map and compares the landmark pair |
+| `check_transition` | nothing: no editor checks one pair both ways, including the checkpoint door's class near the landmark and its distance from it |
 | `run_vpk_pack` | nothing: Hammer has no addon packaging |
 | `run_vpk_build` | nothing: Hammer has no addon packaging, and this one needs neither the game nor its `vpk.exe` |
 | `read_vpk` | nothing: Hammer cannot open an addon archive |

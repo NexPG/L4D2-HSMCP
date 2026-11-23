@@ -1,6 +1,6 @@
 # Campaigns
 
-19 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
+20 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -13,7 +13,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `check_modes` | Checks each mission mode against the maps it lists, without the engine: scavenge needs `weapon_scavenge_item_spawn`; survival needs a `trigger_finale`/`func_finale` or the timer never starts; the last coop/versus chapter needs a finale or a changelevel; a map repeated inside one mode is a warning; a mode name outsid... |
 | `read_campaign` | Reads a Left 4 Dead 2 campaign file: the `mission` block, its modes (coop, versus, survival, scavenge) and each mode's numbered chapters with the map, display name and image. |
 | `read_mission_poster` | Reads the `poster` block of a mission file: `posterImage`, the widescreen variant, `fullscreen` and every extra key. |
-| `run_campaign_gate` | Runs a campaign through one gate instead of a checklist an agent can forget: mission check, VMF lint, compile, nav generation with the string-table dictionary baked, a fresh BSP/nav pair, static-prop collision, the finale contract, the engine's own `nav_trouble_report`, and a map test that installs the exact pair it... |
+| `run_campaign_gate` | Runs a campaign through one gate instead of a checklist an agent can forget: mission check, VMF lint, compile, nav generation with the string-table dictionary baked, a fresh BSP/nav pair, static-prop collision, every chapter transition (door class near the landmark, matching landmark, arrival volume), the finale con... |
 | `write_campaign` | Writes a campaign file from a name and a list of modes with numbered chapters. |
 | `write_intro_camera` | Writes a `point_viewcontrol` and a `logic_auto` that enables it OnMapSpawn, optionally disabling it after `holdSeconds` through a `logic_timer`. |
 | `write_item_spawns` | Places item/weapon spawners at points: the L4D2 `weapon_*_spawn` classes, with an optional `count`, skin or classname override for a spawner the enum does not list. |
@@ -27,6 +27,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | Tool | What it does |
 |---|---|
 | `check_campaign_wiring` | Checks chapters against each other, which no single-map tool can. |
+| `check_transition` | Checks one chapter pair, both ways, which neither chapter can answer alone: the departure `info_changelevel` names the next map and carries a landmark that exists in both maps, the arrival volume has `spawnflags 2`, and each safe room has a `prop_door_rotating_checkpoint` **within 1024 units of that landmark**. |
 | `write_changelevel` | Writes a chapter transition as the pair the engine uses: an `info_changelevel` brush volume with `map` and `landmark`, and an `info_landmark` point with that name. |
 | `write_finale_setup` | Writes the finale end of a campaign: a `trigger_finale` with the game's type numbers (standard 0, gauntlet 1, custom 2, scavenge 4), its model, optional ScriptFile, and up to four ordered `info_survivor_position`s for the escape. |
 | `write_map_parameters` | Writes `info_map_parameters` (or the versus variant) with the 18 item-density keys the game reads, named the way a mapper says them: pistol, ammo, painPills, adrenaline, defibrillator, molotov, pipeBomb, vomitJar, meleeWeapon, chainsaw, gasCan, oxygenTank, propaneTank, upgradepack, magnum, configurableWeapon, itemCl... |

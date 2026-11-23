@@ -7,8 +7,10 @@ The map plays, the safe room is reachable, and walking into it does nothing.
 An `info_changelevel` transition needs all of these. Missing any one is enough to fail
 silently.
 
-1. **`prop_door_rotating_checkpoint`** exists in the safe room. Without it `info_changelevel`
-   does not even spawn. A plain `prop_door_rotating` is not a substitute.
+1. **`prop_door_rotating_checkpoint`** exists in the safe room, within 1024 units of the
+   pair's `info_landmark`. Without one `info_changelevel` does not even spawn. A plain
+   `prop_door_rotating` is not a substitute. The **class** is what the engine resolves:
+   20 of the 57 stock chapters leave the door unnamed, so a name is not the test.
 2. **CHECKPOINT nav attribute** on the safe room areas. `func_nav_attribute_region` with
    `spawnflags 2048`, applied during `nav_generate`. A nav generated before the region existed
    does not have it.
@@ -28,6 +30,8 @@ read_bsp_entities(path: "<map>.bsp", classname: "info_landmark")
 
 The changelevel must have a `model` (`*N`): that is what proves VBSP made a brush volume for
 it. An entity without a model has no volume and cannot be entered.
+`check_transition(first, next)` does all of this for the pair, including the distance from
+the door to the landmark and, on a BSP, whether the door origin is inside world solid.
 
 ## Look at the nav
 

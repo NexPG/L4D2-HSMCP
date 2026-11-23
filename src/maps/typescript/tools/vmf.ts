@@ -382,7 +382,7 @@ export const readVmfLint = defineTool({
     "brush id, which vbsp does not print), props standing below the floor they were placed " +
     "on because their model's origin is at its centre, doors whose opening does not match " +
     "the door model's width, a door hinge in the middle of the opening or a prop inside its " +
-    "swing, checkpoint doors not named `checkpoint_exit`/`checkpoint_entrance`, " +
+    "swing, a checkpoint door whose canonical name is only advice, " +
     "`prop_static` models without a `.phy`, `info_landmark` entities inside a solid, a " +
     "`trigger_finale` outside its FINALE area, and counts that approach " +
     "the compiler limits. " +

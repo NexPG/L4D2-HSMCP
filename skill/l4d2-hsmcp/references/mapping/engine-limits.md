@@ -48,9 +48,9 @@ half the doorway stays open while the other half goes through the wall.
   the build uses it for both checkpoint doors.
 - `read_vmf_lint` reports `l4d2-door-hinge-at-center` when the origin is more than 8 units
   from both jambs, and `l4d2-door-opening-too-wide` / `-too-narrow` for the fit.
-- The engine looks up the checkpoint door by name: **`checkpoint_exit`** on the room being
-  left and **`checkpoint_entrance`** on the room being entered. `checkpoint_exit_door` is
-  not the name it looks for.
+- The engine resolves the checkpoint door by **class near the safe room's landmark**, not
+  by name. `checkpoint_exit`/`checkpoint_entrance` are canonical advice; 20 of 57 stock
+  chapters leave the door unnamed and still transition.
 - Keep the leaf's width + 16 units clear of props; `l4d2-door-swing-blocked` reports a bench
   or crate inside the swing arc.
 

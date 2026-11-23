@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.255-alpha - 2026-11-23
+
+- **A chapter transition is checked by class, not by a door name.** The engine resolves
+  `prop_door_rotating_checkpoint` near the safe room's `info_landmark`; 20 of the 57 stock
+  chapters leave it unnamed, and names such as `door_checkpointentrance`/`saferoom_door` are
+  common. `check_transition(first, next)` reads both maps and fails a safe room whose nearest
+  checkpoint door is more than 1024 units from the landmark, a missing landmark, a missing
+  arrival volume, or a BSP door origin inside world solid. A name is reported as **info**.
+- **`run_campaign_gate` has a `transition` stage** for every mission pair, after the maps are
+  built and before the finale. `transitions` reports each pair and its findings; a failing
+  pair fails the gate.
+- **`check_campaign_wiring` no longer rejects stock chapters.** A later chapter without
+  `info_player_start` is spawned by its arrival volume (info, not an error); a stock arrival
+  volume with `spawnflags 0` (`c1m3_mall`) is advice, because Disable Touch is the common
+  pattern, not the contract; the lint's `l4d2-checkpoint-door-name` is now info.
+- Measured: the largest landmark→checkpoint-door distance in the stock maps is 537 units
+  (`c2m2_fairgrounds`); all 37 checkpoint doors on the loose stock maps have origins in open
+  space. `c1m1_hotel`→`c1m2_streets` passes, and the Santa Monica pair passes.
+- **Tool count: 294.** Tests: 241 files, 1,960 passed, 30 skipped.
+
 ## 0.0.254-alpha - 2026-11-23
 
 - **A prop's class and collision are checked, not assumed.** `read_model_info` now reports the
@@ -21,7 +41,7 @@ with a line here.
   `$staticprop`; `models/props/cs_office/trash_can.mdl` and
   `models/props_street/electrical_box02.mdl` do; `c1m1_hotel` has 60 no-`.phy` models, all
   scenery (skybox, rooftops, dead bodies).
-- **Tool count: 293.** Tests: 239 files, 1,956 passed, 30 skipped.
+- **Tool count: 293.** Tests: 240 files, 1,956 passed, 30 skipped.
 
 ## 0.0.253-alpha - 2026-11-23
 

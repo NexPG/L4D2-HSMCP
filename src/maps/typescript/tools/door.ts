@@ -28,8 +28,8 @@ export const placeDoorTool = defineTool({
     "in the middle of the leaf. Reads the model's hull with read_model_info, computes the " +
     "hinge from the opening and the yaw, and writes the entity with the model, origin, " +
     "angles, optional targetname and spawnflags. For a safe-room door use " +
-    "`prop_door_rotating_checkpoint` and the names `checkpoint_exit` / `checkpoint_entrance`; " +
-    "the engine looks those names up. Refuses a door wider than its opening and a yaw that " +
+    "`prop_door_rotating_checkpoint`; the engine resolves that class near the safe room's " +
+    "landmark, so a name is advice. Refuses a door wider than its opening and a yaw that " +
     "runs the leaf across the opening. Run read_vmf_lint after; it checks swing clearance.",
   realm: "map",
   guarded: true,
@@ -49,7 +49,10 @@ export const placeDoorTool = defineTool({
     targetname: z
       .string()
       .optional()
-      .describe("For a checkpoint door: `checkpoint_exit` or `checkpoint_entrance`."),
+      .describe(
+      "Advice for a checkpoint door: `checkpoint_exit` or `checkpoint_entrance`. The " +
+        "engine resolves the class near the landmark, not this name.",
+    ),
     spawnflags: z
       .number()
       .optional()

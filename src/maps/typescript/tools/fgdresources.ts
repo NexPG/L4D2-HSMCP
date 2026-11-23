@@ -41,13 +41,15 @@ const CLASS_NOTES: Record<string, string[]> = {
     "The sound override keys (`soundmoveoverride` and friends) are broken in L4D2; the door's " +
       "sounds come from the model's `door_options` (see `read_model_keyvalues`). The mapper " +
       "workaround is `logic_auto` -> door -> `AddOutput \"SoundMoveOverride Doors.Move14\"`.",
-    "A checkpoint door must be named `checkpoint_exit` on the room being left and " +
-      "`checkpoint_entrance` on the one being entered; any other name is not found.",
+    "A checkpoint door is resolved by class near the safe room's landmark. 20 of the 57 " +
+      "stock chapters leave it unnamed; `checkpoint_exit`/`checkpoint_entrance` are advice, " +
+      "not a lookup key.",
   ],
   prop_door_rotating_checkpoint: [
-    "The engine looks this up by name: `checkpoint_exit` on the room being left and " +
-      "`checkpoint_entrance` on the one being entered. Without one, `info_changelevel` does " +
-      "not spawn at all.",
+    "The engine resolves this class near the safe room's landmark; the name is not the " +
+      "key. Official maps leave it unnamed or use `door_checkpointentrance`/`saferoom_door`, " +
+      "and still transition. Without any checkpoint door near the landmark, " +
+      "`info_changelevel` does not spawn.",
   ],
   env_sprite: [
     "`model` is a `.spr` sprite, not a `.vmt`; a VMT path here renders nothing.",

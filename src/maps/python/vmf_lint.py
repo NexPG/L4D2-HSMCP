@@ -879,19 +879,19 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
 
     landmarks = {ent["targetname", ""] for ent in by_class.get("info_landmark", [])}
     has_checkpoint_door = bool(by_class.get("prop_door_rotating_checkpoint"))
-    # The engine/Director looks these two doors up by name. `checkpoint_exit_door` is not
-    # `checkpoint_exit`; the safe room may load but the transition logic does not find the
-    # door it is supposed to close.
+    # The engine resolves this class **near the safe room's landmark**; 20 of the 57 stock
+    # chapters leave the door unnamed, and names such as `door_checkpointentrance` exist.
+    # A name is advice, not a condition: reporting it as a warning rejected official maps.
     for ent in by_class.get("prop_door_rotating_checkpoint", []):
         name = str(ent["targetname", ""]).strip()
         if name not in {"checkpoint_exit", "checkpoint_entrance"}:
             findings.append(
                 _finding(
-                    "warning",
+                    "info",
                     "l4d2-checkpoint-door-name",
-                    f'checkpoint door is named "{name or "(unnamed)"}"; the engine looks for '
-                    f'`checkpoint_exit` on the safe room being left and `checkpoint_entrance` '
-                    f'on the one being entered',
+                    f'checkpoint door is named "{name or "(unnamed)"}"; the engine resolves '
+                    f'the class near the landmark, and the canonical name '
+                    f'`checkpoint_exit`/`checkpoint_entrance` is advice',
                     entity_id=int(ent.id),
                     classname="prop_door_rotating_checkpoint",
                 )

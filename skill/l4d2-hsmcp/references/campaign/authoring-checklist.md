@@ -24,8 +24,9 @@ contracts the tools enforce.
 
 ## 3. Safe room
 
-- [ ] Door targetname **`checkpoint_exit`** on the room being left,
-      **`checkpoint_entrance`** on the room being entered.
+- [ ] `prop_door_rotating_checkpoint` **within 1024 units of the pair's landmark** on
+      each side. The name (`checkpoint_exit`/`checkpoint_entrance`) is advice; the class is
+      what the engine resolves.
 - [ ] Door origin is the hinge, 2 units inside the jamb; opening 64 x 112 for
       `checkpoint_door_02`, 72 x 112 for `checkpoint_door_01`.
 - [ ] Keep the leaf's width + 16 units clear of props; the lint

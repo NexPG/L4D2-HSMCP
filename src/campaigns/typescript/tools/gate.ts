@@ -6,6 +6,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { checkCampaignTool } from "./campaign.js";
 import { runCompile } from "../../../maps/typescript/tools/compile.js";
 import { checkFinaleTool } from "./finale.js";
+import { checkTransitionTool } from "./campaignbuild.js";
 import { readStaticProps } from "../../../maps/typescript/tools/measure.js";
 import { navTroubleReport } from "../../../nav/typescript/tools/navtrouble.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
@@ -13,7 +14,17 @@ import { runMapTest, runNavGenerate } from "../../../scripts/typescript/tools/ru
 import { readVmfLint } from "../../../maps/typescript/tools/vmf.js";
 
 const KIND = z.enum(["first", "middle", "last", "single"]);
-const STAGE = z.enum(["campaign", "lint", "compile", "nav", "props", "finale", "trouble", "test"]);
+const STAGE = z.enum([
+  "campaign",
+  "lint",
+  "compile",
+  "nav",
+  "props",
+  "transition",
+  "finale",
+  "trouble",
+  "test",
+]);
 
 const MAP = z.object({
   name: z
@@ -170,12 +181,22 @@ const CAMPAIGN = z.object({
   findings: z.array(z.object({ severity: z.string(), rule: z.string(), message: z.string() })),
 });
 
+const TRANSITION = z.object({
+  from: z.string(),
+  to: z.string(),
+  ok: z.boolean(),
+  findings: z.array(
+    z.object({ severity: z.string(), rule: z.string(), message: z.string() }),
+  ),
+});
+
 export const runCampaignGate = defineTool({
   name: "run_campaign_gate",
   description:
     "Runs a campaign through one gate instead of a checklist an agent can forget: mission " +
     "check, VMF lint, compile, nav generation with the string-table dictionary baked, a " +
-    "fresh BSP/nav pair, static-prop collision, the finale contract, the engine's own " +
+    "fresh BSP/nav pair, static-prop collision, every chapter transition (door class near " +
+    "the landmark, matching landmark, arrival volume), the finale contract, the engine's own " +
     "`nav_trouble_report`, and a map test that installs the exact pair it just produced. " +
     "Every stage reports its own verdict and the gate stops at the first hard failure by " +
     "default, because a compile after a lint error or a nav for a map that did not compile " +
@@ -202,7 +223,7 @@ export const runCampaignGate = defineTool({
     maps: z.array(MAP).min(1),
     stages: z
       .array(STAGE)
-      .default(["campaign", "lint", "compile", "nav", "props", "finale", "trouble", "test"])
+      .default(["campaign", "lint", "compile", "nav", "props", "transition", "finale", "trouble", "test"])
       .describe("Stages to run, in this order. Default: all of them."),
     navDir: z
       .string()
@@ -234,6 +255,7 @@ export const runCampaignGate = defineTool({
     stagesRun: z.array(STAGE),
     campaign: CAMPAIGN.nullable(),
     maps: z.array(MAP_RESULT),
+    transitions: z.array(TRANSITION),
     note: z.string(),
   },
   handler: async (args, ctx) => {
@@ -243,6 +265,7 @@ export const runCampaignGate = defineTool({
       "compile",
       "nav",
       "props",
+      "transition",
       "finale",
       "trouble",
       "test",
@@ -618,22 +641,66 @@ export const runCampaignGate = defineTool({
       results.push(result);
     }
 
+    const transitions: Array<z.infer<typeof TRANSITION>> = [];
+    if (stages.includes("transition")) {
+      let ran = false;
+      for (let index = 0; index + 1 < results.length; index += 1) {
+        if (stopped && args.stopOnError) break;
+        const from = results[index]!;
+        const to = results[index + 1]!;
+        if (!from.shippingBsp || !to.shippingBsp || !from.ok || !to.ok) continue;
+        ran = true;
+        const transition = (await checkTransitionTool.handler(
+          {
+            first: from.shippingBsp,
+            next: to.shippingBsp,
+            firstName: from.map,
+            nextName: to.map,
+          },
+          ctx,
+        )) as {
+          ok: boolean;
+          findings: Array<{ severity: string; rule: string; message: string }>;
+        };
+        transitions.push({
+          from: from.map,
+          to: to.map,
+          ok: transition.ok,
+          findings: transition.findings.map((f) => ({
+            severity: f.severity,
+            rule: f.rule,
+            message: f.message,
+          })),
+        });
+        if (!transition.ok) {
+          from.ok = false;
+          from.stoppedAt ??= "transition";
+          if (args.stopOnError) stopped = true;
+        }
+      }
+      if (ran) stagesRun.push("transition");
+    }
+
     const ok =
       (campaign?.ok ?? true) &&
       !stopped &&
       results.length === args.maps.length &&
-      results.every((r) => r.ok);
+      results.every((r) => r.ok) &&
+      transitions.every((t) => t.ok);
     return {
       ok,
       stopped,
       stagesRun: [...new Set(stagesRun)],
       campaign,
       maps: results,
+      transitions,
       note:
         "The shipping BSP is the nav-generated one: the engine appends the string-table " +
         "dictionary at nav time, so the compile output and the tested map are not the same " +
         "file. `stoppedAt` names the first hard failure for each map; the remaining stages " +
-        "for that map are reported as null, not as passes.",
+        "for that map are reported as null, not as passes. `transitions` checks every " +
+        "chapter pair after the maps are built: the door is resolved by class near the " +
+        "landmark, so an unnamed stock door passes.",
     };
   },
 });

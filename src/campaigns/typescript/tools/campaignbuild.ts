@@ -5,6 +5,7 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
+import { CONTENTS_SOLID, pointContents, readTree } from "../../../maps/typescript/bsp/trace.js";
 import { readEntities } from "../../../maps/typescript/vmf/edit.js";
 import { writeVmfSolidTool } from "../../../maps/typescript/tools/build.js";
 import { placeDoorTool } from "../../../maps/typescript/tools/door.js";
@@ -858,6 +859,129 @@ function hasSpawnflag(value: string | undefined, flag: number): boolean {
   return Number.isFinite(n) && (n & flag) !== 0;
 }
 
+/**
+ * How far a checkpoint door may sit from the safe room's `info_landmark`.
+ *
+ * Measured on the stock maps with both entities present: the largest distance from a
+ * transition landmark to the nearest checkpoint door is 537 units (`c2m2_fairgrounds`,
+ * `c2m2_c2m3_landmark`). 1024 leaves room for a large safe room without accepting a door
+ * from the other end of the map.
+ */
+const CHECKPOINT_DOOR_RADIUS = 1024;
+
+type Point3 = [number, number, number];
+
+function originPoint(entity: WiringEntity): Point3 | null {
+  const raw = entity.keys["origin"];
+  if (!raw) return null;
+  const parts = raw.trim().split(/\s+/).map(Number);
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+  return [parts[0]!, parts[1]!, parts[2]!];
+}
+
+function distance(a: Point3, b: Point3): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function landmarkPoint(entities: WiringEntity[], name: string): Point3 | null {
+  const landmark = entities.find(
+    (e) => e.classname === "info_landmark" && e.targetname === name,
+  );
+  return landmark ? originPoint(landmark) : null;
+}
+
+/** True when the BSP's world tree has solid at the point. `null` for a VMF or a bad BSP. */
+function insideWorldSolid(path: string, point: Point3): boolean | null {
+  if (!path.toLowerCase().endsWith(".bsp")) return null;
+  try {
+    return (pointContents(readTree(path), point) & CONTENTS_SOLID) !== 0;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The checkpoint door at one end of a transition.
+ *
+ * The engine resolves `prop_door_rotating_checkpoint` by **class near the landmark**; the
+ * entity name is not the lookup key. 20 of the 57 stock chapters leave it unnamed, and names
+ * such as `door_checkpointentrance` and `saferoom_door` are common. A name is therefore
+ * advice, never a pass or a failure.
+ */
+function doorSideFindings(
+  chapter: { name: string; path: string; source: "vmf" | "bsp"; entities: WiringEntity[] },
+  landmark: string,
+  side: "outgoing" | "incoming",
+): Array<z.infer<typeof FINDING>> {
+  const findings: Array<z.infer<typeof FINDING>> = [];
+  const label = side === "outgoing" ? "exit safe room" : "arrival safe room";
+  const at = landmarkPoint(chapter.entities, landmark);
+  if (!at) {
+    findings.push({
+      severity: "error",
+      rule: "landmark-missing-here",
+      message: `${chapter.name} has no info_landmark named ${landmark} for its ${label}`,
+      chapter: chapter.name,
+      map: chapter.name,
+    });
+    return findings;
+  }
+
+  const doors = chapter.entities.filter((e) => e.classname === "prop_door_rotating_checkpoint");
+  let nearest: { door: WiringEntity; at: Point3; distance: number } | null = null;
+  for (const door of doors) {
+    const point = originPoint(door);
+    if (!point) continue;
+    const d = distance(point, at);
+    if (!nearest || d < nearest.distance) nearest = { door, at: point, distance: d };
+  }
+  if (!nearest || nearest.distance > CHECKPOINT_DOOR_RADIUS) {
+    findings.push({
+      severity: "error",
+      rule: "checkpoint-door-missing",
+      message:
+        `${chapter.name}: no prop_door_rotating_checkpoint within ` +
+        `${CHECKPOINT_DOOR_RADIUS} units of ${landmark} (${label}). The engine resolves the ` +
+        `class near the landmark, so a name cannot stand in for it` +
+        (nearest
+          ? `; the nearest is ${nearest.door.targetname || "unnamed"} at ` +
+            `${Math.round(nearest.distance)} units`
+          : ""),
+      chapter: chapter.name,
+      map: chapter.name,
+    });
+    return findings;
+  }
+
+  const canonical = side === "outgoing" ? "checkpoint_exit" : "checkpoint_entrance";
+  if (nearest.door.targetname !== canonical) {
+    findings.push({
+      severity: "info",
+      rule: "checkpoint-door-name",
+      message:
+        `the checkpoint door nearest ${landmark} is ` +
+        (nearest.door.targetname ? `named ${nearest.door.targetname}` : "unnamed") +
+        `; the engine resolves the class near the landmark. Naming it ${canonical} is advice`,
+      chapter: chapter.name,
+      map: chapter.name,
+    });
+  }
+
+  const solid = insideWorldSolid(chapter.path, nearest.at);
+  if (solid === true) {
+    findings.push({
+      severity: "error",
+      rule: "checkpoint-door-in-solid",
+      message:
+        `${chapter.name}: the ${label} checkpoint door origin is inside world solid; it ` +
+        `cannot swing. Place the hinge in the opening, not in a wall`,
+      chapter: chapter.name,
+      map: chapter.name,
+    });
+  }
+  return findings;
+}
+
 const FINDING = z.object({
   severity: z.enum(["error", "warning", "info"]),
   rule: z.string(),
@@ -873,11 +997,12 @@ export const checkCampaignWiringTool = defineTool({
     "chapter order (.vmf or .bsp) and it follows every transition: an outgoing " +
     "`info_changelevel` must name the next chapter, its landmark must exist in both maps, " +
     "the destination should carry the arrival changelevel with `spawnflags 2`, each map " +
-    "needs `info_player_start`, and a chapter that ends in a safe room needs a " +
-    "`prop_door_rotating_checkpoint` named `checkpoint_exit`/`checkpoint_entrance` (a suffix " +
-    "is accepted with a warning). The last map needs a `trigger_finale` unless `mode` is " +
-    "survival; scavenge needs type 4. Findings are errors, warnings and info, never a " +
-    "refusal; `overall` says fail, warn or pass.",
+    "needs `info_player_start`, and each safe room needs a `prop_door_rotating_checkpoint` " +
+    "**within 1024 units of the transition's landmark** — the engine resolves the door class, " +
+    "not a name, so an unnamed official door passes and a name is only advice. A BSP door " +
+    "origin inside world solid fails as well. The last map needs a `trigger_finale` unless " +
+    "`mode` is survival; scavenge needs type 4. Findings are errors, warnings and info, never " +
+    "a refusal; `overall` says fail, warn or pass.",
   realm: "map",
   inputSchema: {
     maps: z
@@ -890,6 +1015,13 @@ export const checkCampaignWiringTool = defineTool({
       .optional()
       .describe("Map names for comparison; defaults to each file's basename."),
     requireFinale: z.boolean().default(true).describe("Whether the last map must have a finale."),
+    transitionOnly: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Only the cross-map contract and its safe rooms: skip player-start, Director and " +
+          "finale checks. Used by check_transition and the gate's transition stage.",
+      ),
   },
   outputSchema: {
     overall: z.enum(["pass", "warn", "fail"]),
@@ -950,6 +1082,7 @@ export const checkCampaignWiringTool = defineTool({
       return { path, name: names[index]!, source: path.toLowerCase().endsWith(".bsp") ? ("bsp" as const) : ("vmf" as const), entities };
     });
 
+    const transitionOnly = args.transitionOnly === true;
     loaded.forEach((chapter, index) => {
       if (!chapter) return;
       const chapterName = chapter.name;
@@ -961,15 +1094,29 @@ export const checkCampaignWiringTool = defineTool({
       const finale = chapter.entities.find((e) => e.classname === "trigger_finale");
       const isLast = index === loaded.length - 1;
 
-      if (playerStarts.length === 0) {
-        findings.push({
-          severity: "error",
-          rule: "no-player-start",
-          message: "no info_player_start: the team has nowhere to spawn",
-          chapter: chapterName,
-          map: chapter.name,
-        });
-      } else if (playerStarts.length > 1) {
+      if (!transitionOnly && playerStarts.length === 0) {
+        if (index === 0) {
+          findings.push({
+            severity: "error",
+            rule: "no-player-start",
+            message: "no info_player_start: the campaign has nowhere to spawn",
+            chapter: chapterName,
+            map: chapter.name,
+          });
+        } else {
+          // Stock later chapters have no info_player_start: the arrival info_changelevel
+          // places the team at the landmark. Only the first chapter needs one.
+          findings.push({
+            severity: "info",
+            rule: "no-player-start",
+            message:
+              "no info_player_start; a later chapter is spawned by its arrival " +
+              "info_changelevel at the landmark",
+            chapter: chapterName,
+            map: chapter.name,
+          });
+        }
+      } else if (!transitionOnly && playerStarts.length > 1) {
         findings.push({
           severity: "info",
           rule: "several-player-starts",
@@ -978,7 +1125,7 @@ export const checkCampaignWiringTool = defineTool({
           map: chapter.name,
         });
       }
-      if (!director) {
+      if (!transitionOnly && !director) {
         findings.push({
           severity: "warning",
           rule: "no-director",
@@ -1059,7 +1206,6 @@ export const checkCampaignWiringTool = defineTool({
             const arrival = next.entities.find(
               (e) =>
                 e.classname === "info_changelevel" &&
-                hasSpawnflag(e.keys["spawnflags"], 2) &&
                 (e.keys["landmark"] ?? "") === landmark,
             );
             if (!arrival) {
@@ -1067,63 +1213,33 @@ export const checkCampaignWiringTool = defineTool({
                 severity: "warning",
                 rule: "arrival-missing",
                 message:
-                  `${next.name} has no arrival info_changelevel for ${landmark} ` +
-                  `(spawnflags 2); stock chapters carry one so the team is placed at the landmark`,
+                  `${next.name} has no info_changelevel for ${landmark}; stock chapters ` +
+                  `carry one so the team is placed at the landmark`,
+                chapter: names[index + 1],
+                map: next.name,
+              });
+            } else if (!hasSpawnflag(arrival.keys["spawnflags"], 2)) {
+              // c1m3_mall ships its arrival volume with spawnflags 0, so "Disable Touch"
+              // is the common pattern, not the contract. Touching the arrival volume can
+              // reload the chapter; advice, not a failure.
+              findings.push({
+                severity: "info",
+                rule: "arrival-touch-enabled",
+                message:
+                  `${next.name}'s arrival info_changelevel for ${landmark} has ` +
+                  `spawnflags ${arrival.keys["spawnflags"] ?? "0"}; "Disable Touch" (2) is ` +
+                  `the common stock pattern and prevents a reload on touch`,
                 chapter: names[index + 1],
                 map: next.name,
               });
             }
+            findings.push(...doorSideFindings(chapter, landmark, "outgoing"));
+            findings.push(...doorSideFindings(next, landmark, "incoming"));
           }
         }
       }
 
-      if (!isLast) {
-        const exitDoor = doors.find((name) => name.toLowerCase().startsWith("checkpoint_exit"));
-        if (!exitDoor) {
-          findings.push({
-            severity: isLast ? "info" : "warning",
-            rule: "checkpoint-exit-missing",
-            message:
-              doors.length > 0
-                ? `no checkpoint_exit door; this room has ${doors.join(", ") || "an unnamed door"}`
-                : "no checkpoint_exit door; a safe room exit is looked up by that name",
-            chapter: chapterName,
-            map: chapter.name,
-          });
-        } else if (exitDoor !== "checkpoint_exit") {
-          findings.push({
-            severity: "warning",
-            rule: "checkpoint-exit-name",
-            message: `the exit door is named ${exitDoor}; the engine looks up checkpoint_exit`,
-            chapter: chapterName,
-            map: chapter.name,
-          });
-        }
-      }
-      if (index > 0) {
-        const entranceDoor = doors.find((name) =>
-          name.toLowerCase().startsWith("checkpoint_entrance"),
-        );
-        if (!entranceDoor) {
-          findings.push({
-            severity: "warning",
-            rule: "checkpoint-entrance-missing",
-            message: "no checkpoint_entrance door at the start of this chapter",
-            chapter: chapterName,
-            map: chapter.name,
-          });
-        } else if (entranceDoor !== "checkpoint_entrance") {
-          findings.push({
-            severity: "warning",
-            rule: "checkpoint-entrance-name",
-            message: `the entrance door is named ${entranceDoor}; the engine looks up checkpoint_entrance`,
-            chapter: chapterName,
-            map: chapter.name,
-          });
-        }
-      }
-
-      if (isLast && args.requireFinale !== false && args.mode !== "survival") {
+      if (isLast && !transitionOnly && args.requireFinale !== false && args.mode !== "survival") {
         if (!finale) {
           findings.push({
             severity: "error",
@@ -1193,6 +1309,61 @@ export const checkCampaignWiringTool = defineTool({
   },
 });
 
+export const checkTransitionTool = defineTool({
+  name: "check_transition",
+  description:
+    "Checks one chapter pair, both ways, which neither chapter can answer alone: the " +
+    "departure `info_changelevel` names the next map and carries a landmark that exists in " +
+    "both maps, the arrival volume has `spawnflags 2`, and each safe room has a " +
+    "`prop_door_rotating_checkpoint` **within 1024 units of that landmark**. The door is " +
+    "resolved by class, not name — 20 of 57 stock chapters leave it unnamed — so a name is " +
+    "reported as advice. On a BSP the door origin is also tested against world solid. " +
+    "Errors fail the pair; warnings and info do not. Reads .vmf or .bsp.",
+  realm: "map",
+  inputSchema: {
+    first: z.string().describe("The chapter being left, .vmf or .bsp."),
+    next: z.string().describe("The chapter being entered, .vmf or .bsp."),
+    firstName: z.string().optional().describe("Map name; defaults to the file basename."),
+    nextName: z.string().optional().describe("Map name; defaults to the file basename."),
+  },
+  outputSchema: {
+    ok: z.boolean(),
+    first: z.string(),
+    next: z.string(),
+    findings: z.array(FINDING),
+    counts: z.object({ error: z.number(), warning: z.number(), info: z.number() }),
+  },
+  handler: async (args, ctx) => {
+    const name = (path: string, given: string | undefined): string => {
+      if (given) return given;
+      const resolved = resolveInput(path, ctx.config);
+      return basename(resolved, extname(resolved));
+    };
+    const firstName = name(args.first, args.firstName);
+    const nextName = name(args.next, args.nextName);
+    const result = (await checkCampaignWiringTool.handler(
+      {
+        maps: [args.first, args.next],
+        names: [firstName, nextName],
+        mode: "coop",
+        requireFinale: false,
+        transitionOnly: true,
+      },
+      ctx,
+    )) as {
+      counts: { error: number; warning: number; info: number };
+      findings: Array<z.infer<typeof FINDING>>;
+    };
+    return {
+      ok: result.counts.error === 0,
+      first: firstName,
+      next: nextName,
+      findings: result.findings,
+      counts: result.counts,
+    };
+  },
+});
+
 export const campaignBuildTools = [
   writeSpawnPointsTool,
   writeSafeRoomTool,
@@ -1200,4 +1371,5 @@ export const campaignBuildTools = [
   writeFinaleSetupTool,
   writeMapParametersTool,
   checkCampaignWiringTool,
+  checkTransitionTool,
 ];

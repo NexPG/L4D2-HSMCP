@@ -111,7 +111,7 @@ covered: this table is the summary.
 | Finale | `write_finale_setup` | verified by vbsp: type 0/1/2/4, custom refuses no script and starts disabled, four escape positions |
 | Spawn areas | `write_spawn_points` | verified by vbsp: one `info_player_start`, ordered survivor positions, zombie spawns with population/offer_tank, rescue |
 | Item density | `write_map_parameters` | verified by unit: only the 18 FGD keys given are written, defaults left absent |
-| Cross-chapter wiring | `check_campaign_wiring` | verified against the test campaign: follows the changelevel, compares the landmark pair, checks doors and the finale; no errors on a working chain |
+| Cross-chapter wiring | `check_campaign_wiring`, `check_transition` | verified against the test campaign and stock `c1m1_hotel`→`c1m2_streets`: follows the changelevel, compares the landmark pair, resolves the checkpoint door by class near the landmark (an unnamed stock door passes), checks the arrival volume; no errors on a working chain |
 
 ## Assets
 

@@ -58,9 +58,11 @@ the map has none. It delegates the door to `place_door`, so the origin is on the
 model hull decides the swing rather than the middle of the opening.
 
 - The door class is `prop_door_rotating_checkpoint`, never a plain `prop_door_rotating`.
-- The **name matters**: `checkpoint_exit` for the door that ends the chapter,
-  `checkpoint_entrance` for the door behind the team at the start. The engine looks those
-  names up. A name like `checkpoint_exit_door` is a suffix the engine does not promise.
+- The **class is what matters**: `prop_door_rotating_checkpoint` near the transition's
+  `info_landmark`. The engine resolves the class, not a name: 20 of the 57 stock chapters
+  leave it unnamed, and names such as `door_checkpointentrance` exist. `checkpoint_exit` /
+  `checkpoint_entrance` are canonical advice. `check_transition` fails a safe room whose
+  nearest door is more than 1024 units from the landmark.
 - Four survivor positions default to a 48-unit square around the player start and the call
   says so. Move them; spawn points inside a wall or on a prop are a common first-pass bug.
 - It does **not** write the changelevel volume. That is `write_changelevel`, and a safe room
@@ -144,8 +146,8 @@ This is the cross-file check no single-map tool can do:
 - the named landmark exists in both maps;
 - the destination has the arrival volume (`spawnflags 2`) for that landmark;
 - every map has `info_player_start` and, normally, `info_director`;
-- a chapter that leaves has a `checkpoint_exit` door, and a chapter that is entered has a
-  `checkpoint_entrance` (a suffixed name is a warning, not a pass);
+- each safe room has a `prop_door_rotating_checkpoint` within 1024 units of the pair's
+  landmark; the name is reported as advice, and a stock unnamed door passes;
 - the last chapter has a `trigger_finale` unless the mode is survival; scavenge needs type 4.
 
 Findings are errors, warnings and info; `overall` is fail, warn or pass. It reads `.vmf` and
