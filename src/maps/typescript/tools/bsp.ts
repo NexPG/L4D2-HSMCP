@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import { readEntityLump } from "../bsp/entities.js";
+import { readDisplacements } from "../bsp/displacements.js";
 import { checkBsp } from "../bsp/integrity.js";
 import { readBspFaces } from "../bsp/faces.js";
 import { HDR_LUMPS, readHeader } from "../bsp/header.js";
@@ -38,8 +39,10 @@ export const readBspInfo = defineTool({
   name: "read_bsp_info",
   description:
     "Header of a compiled .bsp: ident, version, mapRevision and all 64 lumps with their " +
-    "offset and size. Reads only the first 1036 bytes, so it is instant even on a 1 GB map. " +
-    "mapRevision is the build stamp a compiled map carries.",
+    "offset and size. Uses the Source 2013 names: DISPINFO is lump 26 and DISP_VERTS is 33 " +
+    "(lump 22 is PORTALS); see read_bsp_displacements for the terrain itself. Reads only the " +
+    "first 1036 bytes, so it is instant even on a 1 GB map. mapRevision is the build stamp a " +
+    "compiled map carries.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Path to the .bsp, absolute or relative to the repo root."),
@@ -394,4 +397,50 @@ export const checkBspTool = defineTool({
   },
 });
 
-export const bspTools = [readBspInfo, readBspEntities, readBspFacesTool, checkBspTool, readNavDump];
+export const readBspDisplacementsTool = defineTool({
+  name: "read_bsp_displacements",
+  description:
+    "Reads the compiled map's terrain: DISPINFO is lump 26 (176 bytes) and DISP_VERTS is " +
+    "lump 33 (20 bytes), not lump 22/26 as older readers assumed. Returns the displacement " +
+    "count, power histogram, vertex records, surface bbox and the first `limit` records " +
+    "(start, power, size, vertex range, face). A flat map is allowed to return 0. It does " +
+    "not rebuild the interpolated grid; count/power/bbox answer whether terrain exists.",
+  realm: "map",
+  inputSchema: {
+    path: z.string().describe("Path to the compiled .bsp, absolute or relative to the repo root."),
+    limit: z.number().int().min(1).max(2000).default(200),
+  },
+  outputSchema: {
+    path: z.string(),
+    count: z.number(),
+    powerCounts: z.record(z.number()),
+    dispVertRecords: z.number(),
+    expectedVertices: z.number(),
+    bbox: z.object({ mins: VEC3, maxs: VEC3 }).nullable(),
+    displacements: z.array(
+      z.object({
+        index: z.number(),
+        start: VEC3,
+        power: z.number(),
+        size: z.number(),
+        dispVertStart: z.number(),
+        mapFace: z.number().nullable(),
+      }),
+    ),
+    truncated: z.boolean(),
+    note: z.string(),
+  },
+  handler: (args, ctx) => {
+    const path = resolveInput(args.path, ctx.config);
+    return readDisplacements(path, args.limit) as unknown as Record<string, unknown>;
+  },
+});
+
+export const bspTools = [
+  readBspInfo,
+  readBspEntities,
+  readBspFacesTool,
+  readBspDisplacementsTool,
+  checkBspTool,
+  readNavDump,
+];

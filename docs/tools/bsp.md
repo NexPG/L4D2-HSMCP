@@ -1,6 +1,6 @@
 # Compiled maps (BSP)
 
-12 tools: BSP lumps, entity lumps, pakfile, static props, map rename and compiled-map reports.
+13 tools: BSP lumps, entity lumps, pakfile, static props, map rename and compiled-map reports.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -10,6 +10,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 |---|---|
 | `check_bsp` | Checks a compiled .bsp as a file and against its source. |
 | `edit_bsp_entities` | Adds, updates or removes entities in a COMPILED .bsp -- the primitive needed for things a source map cannot express, such as point_servercommand plus logic_auto for buildcubemaps. |
+| `read_bsp_displacements` | Reads the compiled map's terrain: DISPINFO is lump 26 (176 bytes) and DISP_VERTS is lump 33 (20 bytes), not lump 22/26 as older readers assumed. |
 | `read_bsp_entities` | Entities of a compiled .bsp, read from lump 0. |
 | `read_bsp_faces` | Reads a compiled map's faces: the material, smoothing-group bitmask, lightmap footprint and texture vectors vbsp actually produced. |
 | `read_bsp_info` | Header of a compiled .bsp: ident, version, mapRevision and all 64 lumps with their offset and size. |

@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.259-alpha - 2026-11-24
+
+- **L4D2 BSP displacement lumps are corrected.** `DISPINFO` is lump **26** (176-byte
+  `ddispinfo_t`), `DISP_VERTS` is **33** (20-byte records) and lump 22 is `PORTALS`; the
+  old table named 22 DISPINFO and 26 DISP_VERTS, so it read PORTALS as terrain and saw
+  "0 displacements" on maps full of it. `read_bsp_info`, `read_map_geometry` and the
+  geometry limits now use the Source 2013 names.
+- **`read_bsp_displacements`** reports count, power histogram, `DISP_VERTS` records,
+  expected vertices, surface bbox and the first records (start, power, size, vertex range,
+  face). Verified on stock maps: `c3m2_swamp` 247 / 11,127, power 2:166, 3:79, 4:2;
+  `c1m1_hotel` 43 / 2,027; flat fixture 0.
+- **Tool count: 295.** Tests: 242 files, 1,972 passed, 32 skipped.
+
 ## 0.0.258-alpha - 2026-11-23
 
 - **Prop collision was a missing `solid` key, not a missing `.phy`.** The FGD says

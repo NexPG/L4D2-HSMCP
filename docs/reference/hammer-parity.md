@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 23/11/2026: **294 tools**.
+Last checked against the tool list on 24/11/2026: **295 tools**.
 
 ## The file itself
 
@@ -285,6 +285,7 @@ map and looking, or by not happening at all.
 | `read_particle` | Hammer lists `.pcf` files, not the systems inside them, their materials or a map's `effect_name` resolution |
 | `write_particle` | Valve's separate Particle Editor, not Hammer, authors a `.pcf` |
 | `read_bsp_faces` | nothing: Hammer reads the source, not the compiled faces, their masks or luxels |
+| `read_bsp_displacements` | nothing: Hammer edits the displacement in the source; this reports the compiled terrain and the L4D2 lump indices |
 | `read_bsp_lightmaps` | nothing: baked RGB luxels and one face's lightmap as a PNG |
 | `write_bsp_lightmap` | nothing: Hammer cannot edit baked luxels, and vrad would rebuild the whole map |
 | `read_bsp_vis` | `mat_leafvis` shows the leaf the player is in; this decodes PVS cluster vectors |
