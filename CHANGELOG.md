@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.240-alpha - 2026-11-23
+
+- **Non-campaign add-on measured end to end as far as the harness reaches.** A one-material
+  pack validated (`pass`), packed to a 2-entry VPK, installed, and the game started normally
+  with it mounted. The engine does not log an add-on's name, and the add-ons browser needs
+  synthetic UI that the harness cannot drive, so the coverage row says the menu listing is
+  unproven rather than claiming it.
+- **Tool count: 293.** Tests: 236 files, 1,939 passed, 30 skipped.
+
 ## 0.0.239-alpha - 2026-11-23
 
 - **`read_fgd_resources`**: the asset-bearing keyvalues of one class -- model, sprite, sound,
