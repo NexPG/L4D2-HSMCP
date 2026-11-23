@@ -68,7 +68,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_trigger` | a trigger as a brush volume: multiple, once, hurt, push, teleport, look, gravity |
 | `write_mover` | `func_movelinear`, `func_rotating` or `func_tracktrain` with the volume and origin |
 | `write_logic` | `logic_auto`, relay, timer, branch, compare, case, `math_counter`, `math_remap` with connections |
-| `write_prop` | `prop_static`/`prop_dynamic`/`prop_physics` with model, angles, skin and solid |
+| `write_prop` | `prop_static`/`prop_dynamic`/`prop_physics` (+ `_override`); `collision: auto/clip/dynamic/physics/none` warns on a missing `$staticprop` or `.phy` and can add a `TOOLS/TOOLSCLIP` hull |
 | `write_physics_constraint` | hinge, length, ballsocket, slide or ragdoll constraint between two names |
 | `write_ladder` | `func_ladder` brush and the `func_useableladder` AI point |
 | `write_scene` | `logic_choreographed_scene` with a `.vcd` and targets |

@@ -89,9 +89,36 @@ const NAV = z.object({
 const PROPS = z.object({
   read: z.boolean(),
   ok: z.boolean(),
+  /** Props with no .phy that are not wholly decorative: these are the failures listed. */
   missingPhysicsCount: z.number(),
   missingPhysics: z.array(z.object({ model: z.string(), instances: z.number() })),
+  /** Instances that are decoration (spawnflags 2) and are not a failure. */
+  decorativePhysicsCount: z.number(),
 });
+
+export type PropsStage = z.infer<typeof PROPS>;
+
+/**
+ * One number, one list.
+ *
+ * The count used to include decorative foliage while the list held only solid models, so a
+ * gate could print `3` beside `[]` and send the reader looking for a bug that was not there.
+ * A model is decorative only when the source marks every instance `spawnflags 2`.
+ */
+export function summarizeProps(reply: {
+  read?: boolean;
+  missingPhysics?: Array<{ model: string; instances: number; decorative?: boolean }>;
+}): PropsStage {
+  const missing = reply.missingPhysics ?? [];
+  const solidMissing = missing.filter((m) => m.decorative !== true);
+  return {
+    read: reply.read === true,
+    ok: solidMissing.length === 0,
+    missingPhysicsCount: solidMissing.length,
+    missingPhysics: solidMissing.map((m) => ({ model: m.model, instances: m.instances })),
+    decorativePhysicsCount: missing.length - solidMissing.length,
+  };
+}
 
 const FINALE = z.object({
   ok: z.boolean(),
@@ -452,14 +479,7 @@ export const runCampaignGate = defineTool({
           missingPhysicsSolidCount?: number;
           missingPhysics?: Array<{ model: string; instances: number; decorative?: boolean }>;
         };
-        const missing = props.missingPhysics ?? [];
-        const solidMissing = missing.filter((m) => m.decorative !== true);
-        result.props = {
-          read: props.read === true,
-          ok: (props.missingPhysicsSolidCount ?? solidMissing.length) === 0,
-          missingPhysicsCount: props.missingPhysicsCount ?? missing.length,
-          missingPhysics: solidMissing.map((m) => ({ model: m.model, instances: m.instances })),
-        };
+        result.props = summarizeProps(props);
       }
 
       if (stages.includes("finale")) {

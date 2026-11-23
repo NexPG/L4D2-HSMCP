@@ -415,9 +415,11 @@ def _lint_prop_physics(vmf: Any, entities: list[Any], game_dir: str | None) -> l
     """Props the player can walk through, named before a play test.
 
     `prop_static` defaults to solidity 6, which means vbsp uses the model's `.phy`. A model
-    without one is drawn solid in Hammer and has nothing in play. `solid 0` is explicit and
-    is reported separately; `spawnflags 2` is the decorative marker this project uses for
-    grass and escalator overlays, so it is not reported as a bug.
+    without one is drawn solid in Hammer and has nothing in play. A model without the MDL
+    `$staticprop` header flag is deleted from the map by vbsp, which exits 0 anyway, so it is
+    an error here. `solid 0` is explicit and is reported separately; `spawnflags 2` is the
+    decorative marker this project uses for grass and escalator overlays, so it is not
+    reported as a missing-physics bug.
     """
     if not game_dir:
         return []
@@ -434,6 +436,22 @@ def _lint_prop_physics(vmf: Any, entities: list[Any], game_dir: str | None) -> l
             return True
         except Exception:  # noqa: BLE001
             return False
+
+    # The header flag is per model, not per instance: a street of the same lamp reads it once.
+    static_flag: dict[str, bool | None] = {}
+
+    def is_static_prop(path: str) -> bool | None:
+        if path in static_flag:
+            return static_flag[path]
+        try:
+            from srctools.mdl import Flags, Model
+
+            mdl = Model(fsys, fsys[path])
+            value: bool | None = bool(getattr(mdl, "flags", 0) & Flags.static_prop)
+        except Exception:  # noqa: BLE001
+            value = None
+        static_flag[path] = value
+        return value
 
     findings: list[dict[str, Any]] = []
     for ent in entities:
@@ -461,6 +479,19 @@ def _lint_prop_physics(vmf: Any, entities: list[Any], game_dir: str | None) -> l
                 )
             )
             continue
+        if is_static_prop(model) is False:
+            findings.append(
+                _finding(
+                    "error",
+                    "prop-static-not-static-prop",
+                    f"{model} was not compiled with $staticprop, so vbsp deletes a "
+                    f"prop_static from it (\"Error! ... Deleted.\") and still exits 0. "
+                    f"Use prop_dynamic/prop_physics, or a model compiled with $staticprop",
+                    entity_id=int(ent.id),
+                    classname=classname,
+                    model=model,
+                )
+            )
         if solid == 6 and (flags & 2) == 0:
             phy = f"{model[:-4]}.phy"
             if not present(phy):

@@ -14,8 +14,18 @@ import {
   verifyEntities,
 } from "./entityfamilies.js";
 import { readModelInfoTool } from "../../../assets/typescript/tools/content.js";
+import { writeVmfSolidTool } from "./build.js";
 
 const VEC3 = z.tuple([z.number(), z.number(), z.number()]);
+
+type ModelCheck = {
+  found?: boolean;
+  readError?: string;
+  hasPhysics?: boolean;
+  staticProp?: boolean;
+  mins?: number[] | null;
+  maxs?: number[] | null;
+};
 const vec = (v: readonly number[]): string =>
   v.map((n) => String(Math.round(n * 1000) / 1000)).join(" ");
 
@@ -35,21 +45,38 @@ const OUTPUT = z.object({
 export const writePropTool = defineTool({
   name: "write_prop",
   description:
-    "Places a `prop_static`, `prop_dynamic` or `prop_physics` with its model, origin, " +
-    "angles, skin and solid mode, and checks the model with read_model_info when the game " +
-    "is available (a missing model is a warning, not a refusal). Outputs are attached to the " +
-    "new entity. Guarded.",
+    "Places a `prop_static`, `prop_dynamic`, `prop_physics`, `prop_dynamic_override` or " +
+    "`prop_physics_override` with its model, origin, angles, skin and solid mode. Checks the " +
+    "model with read_model_info: a prop_static without `$staticprop` will be deleted by vbsp, " +
+    "and a model without a `.phy` will not collide; `collision: \"clip\"` adds a world clip " +
+    "hull from the model bounds, and `collision: \"dynamic\"|\"physics\"` picks the class " +
+    "that carries its own VPhysics hull. Outputs are attached to the new entity. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
   inputSchema: {
     path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
-    kind: z.enum(["static", "dynamic", "physics"]),
+    kind: z
+      .enum(["static", "dynamic", "physics", "dynamic_override", "physics_override"])
+      .default("static")
+      .describe(
+        "The class to write. `collision: \"dynamic\"|\"physics\"` overrides it; a " +
+          "prop_static needs a model compiled with `$staticprop`.",
+      ),
     origin: VEC3,
     model: z.string().min(1),
     angles: VEC3.default([0, 0, 0]),
     skin: z.number().int().min(0).default(0),
     solid: z.number().int().min(0).max(6).optional().describe("prop_static solid mode."),
+    collision: z
+      .enum(["auto", "clip", "none", "dynamic", "physics"])
+      .default("auto")
+      .describe(
+        "How the prop is made solid. auto: use the model's .phy, or add a clip hull when it " +
+          "has none; clip: always add a TOOLS/TOOLSCLIP box from the model bounds and yaw; " +
+          "dynamic: write prop_dynamic (solid via its .phy, not movable); physics: write " +
+          "prop_physics (movable clutter); none: no collision on purpose.",
+      ),
     targetname: z.string().optional(),
     validateModel: z.boolean().default(true),
     keyvalues: z.record(z.string()).default({}),
@@ -61,18 +88,32 @@ export const writePropTool = defineTool({
     entityId: z.number().nullable(),
     classname: z.string(),
     keyvalues: z.record(z.string()),
+    clipAdded: z.boolean(),
+    clipBox: z.array(z.array(z.number()).length(3)).nullable(),
     warnings: z.array(z.string()),
     nextStep: z.string(),
   },
   handler: async (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
     if (!insideWorld(args.origin)) throw new Error("the prop origin leaves Source's world");
+    // Class has one owner: `collision: dynamic|physics` is a collision decision that needs
+    // that class, so it wins and kind stays the explicit class for everything else.
+    const kind =
+      args.collision === "dynamic"
+        ? "dynamic"
+        : args.collision === "physics"
+          ? "physics"
+          : (args.kind ?? "static");
     const classname =
-      args.kind === "static"
+      kind === "static"
         ? "prop_static"
-        : args.kind === "dynamic"
+        : kind === "dynamic"
           ? "prop_dynamic"
-          : "prop_physics";
+          : kind === "dynamic_override"
+            ? "prop_dynamic_override"
+            : kind === "physics_override"
+              ? "prop_physics_override"
+              : "prop_physics";
     const keyvalues: Record<string, string> = {
       classname,
       origin: vec(args.origin),
@@ -84,21 +125,82 @@ export const writePropTool = defineTool({
       ...(args.keyvalues ?? {}),
     };
     const warnings = await fgdWarnings(classname, keyvalues, ctx);
+    let info: ModelCheck | null = null;
     if (args.validateModel !== false) {
       try {
-        const info = (await readModelInfoTool.handler(
+        info = (await readModelInfoTool.handler(
           { model: args.model } as never,
           ctx as never,
-        )) as { found?: boolean; readError?: string; hasPhysics?: boolean };
-        if (!info.found) {
-          warnings.push(`model ${args.model} was not found: ${info.readError ?? "unknown reason"}`);
-        } else if (classname === "prop_physics" && info.hasPhysics === false) {
-          warnings.push(`${args.model} has no .phy; a prop_physics from it will not collide`);
+        )) as unknown as ModelCheck;
+        if (!info?.found) {
+          warnings.push(`model ${args.model} was not found: ${info?.readError ?? "unknown reason"}`);
+          info = null;
+        } else {
+          const staticClass = classname === "prop_static";
+          if (staticClass && info.staticProp === false) {
+            warnings.push(
+              `${args.model} has no $staticprop: vbsp deletes a prop_static from it ` +
+                `("Error! ... Deleted.") and exits 0. Use collision: "dynamic" or "physics"` +
+                `, or a $staticprop model`,
+            );
+          }
+          if (info.hasPhysics === false) {
+            const clipWillHelp = args.collision === "auto" || args.collision === "clip";
+            warnings.push(
+              `${args.model} has no .phy: a ${classname} from it will not collide` +
+                (clipWillHelp ? "; a clip hull is added" : ""),
+            );
+          }
         }
       } catch (error) {
         warnings.push(`the model could not be checked: ${(error as Error).message}`);
       }
     }
+
+    // A clip hull from the model's own bounds. Yaw is applied as a conservative AABB; it
+    // does not need to be exact, only to cover the prop for a player.
+    let clipAdded = false;
+    let clipBox: number[][] | null = null;
+    if (
+      info?.mins &&
+      info.maxs &&
+      (args.collision === "clip" || (args.collision === "auto" && info.hasPhysics === false))
+    ) {
+      const [x, y, z] = args.origin;
+      const [minX, minY, minZ] = info.mins as [number, number, number];
+      const [maxX, maxY, maxZ] = info.maxs as [number, number, number];
+      const yaw = ((args.angles?.[1] ?? 0) * Math.PI) / 180;
+      const c = Math.abs(Math.cos(yaw));
+      const s = Math.abs(Math.sin(yaw));
+      const halfX = (c * (maxX - minX) + s * (maxY - minY)) / 2;
+      const halfY = (s * (maxX - minX) + c * (maxY - minY)) / 2;
+      const cxLocal = (minX + maxX) / 2;
+      const cyLocal = (minY + maxY) / 2;
+      const cx = x + cxLocal * Math.cos(yaw) - cyLocal * Math.sin(yaw);
+      const cy = y + cxLocal * Math.sin(yaw) + cyLocal * Math.cos(yaw);
+      clipBox = [
+        [cx - halfX, cy - halfY, z + minZ],
+        [cx + halfX, cy + halfY, z + maxZ],
+      ];
+      await writeVmfSolidTool.handler(
+        {
+          path,
+          solids: [
+            {
+              shape: "box",
+              mins: clipBox[0] as [number, number, number],
+              maxs: clipBox[1] as [number, number, number],
+            },
+          ],
+          material: "TOOLS/TOOLSCLIP",
+          backup: true,
+          confirm: true,
+        },
+        ctx,
+      );
+      clipAdded = true;
+    }
+
     const [id = null] = await addEntities(path, [keyvalues], ctx);
     verifyEntities(path, [id], [classname]);
     await addOutputs(path, id!, args.outputs ?? [], ctx);
@@ -107,6 +209,8 @@ export const writePropTool = defineTool({
       entityId: id,
       classname,
       keyvalues,
+      clipAdded,
+      clipBox,
       warnings,
       nextStep:
         classname === "prop_static"

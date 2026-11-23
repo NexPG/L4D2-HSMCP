@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.254-alpha - 2026-11-23
+
+- **A prop's class and collision are checked, not assumed.** `read_model_info` now reports the
+  MDL `$staticprop` flag; `write_prop` warns when a `prop_static` would be deleted by vbsp and
+  when a model has no `.phy`, and `collision: auto|clip|dynamic|physics|none` can add a
+  `TOOLS/TOOLSCLIP` hull from the model bounds or write `prop_dynamic`/`prop_physics` instead.
+  A model without `$staticprop` used as `prop_static` is now an **error** in `read_vmf_lint`
+  (`prop-static-not-static-prop`), before the compile that used to exit 0 and drop it.
+- **The gate's props list matches its count.** `missingPhysicsCount` counted decorative
+  foliage while `missingPhysics` held only solid models, so a gate could print a number beside
+  an empty list. The count is now the listed models, and decoration is reported separately as
+  `decorativePhysicsCount`; a map whose only physics-less props are scenery passes.
+- Measured on stock content: `models/props_fairgrounds/arcadegame01.mdl` has no
+  `$staticprop`; `models/props/cs_office/trash_can.mdl` and
+  `models/props_street/electrical_box02.mdl` do; `c1m1_hotel` has 60 no-`.phy` models, all
+  scenery (skybox, rooftops, dead bodies).
+- **Tool count: 293.** Tests: 239 files, 1,956 passed, 30 skipped.
+
 ## 0.0.253-alpha - 2026-11-23
 
 - **The nav dump no longer claims flow.** `0x20000000` is `MOSTLY_FLAT`, not the escape route:

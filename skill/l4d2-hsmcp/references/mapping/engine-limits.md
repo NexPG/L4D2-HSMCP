@@ -70,6 +70,11 @@ one is drawn solid in Hammer and has no collision in play. `read_model_info.hasP
 deliberate decoration (grass, tree canopies, an escalator overlay) with `spawnflags 2`; for
 anything the player should bump into, use a model that ships `.phy` or add a clip brush.
 
+A model also needs the MDL `$staticprop` header flag to be a `prop_static`. Without it vbsp
+prints `Error! prop_static using model ..., which must be used on a dynamic entity ... Deleted.`
+and exits 0. `read_model_info.staticProp` and `read_vmf_lint`'s
+`prop-static-not-static-prop` (an error) name it before the compile; `write_prop` warns too.
+
 ## Geometry that nav can cross
 
 - Ramp/wedge: **<= 45 degrees**. `write_vmf_solid` refuses a steeper `wedge` unless

@@ -29,7 +29,8 @@ $collisionmodel "myprop_phys.smd" { $mass 10 $concave }
 - `$sequence` names an animation; `fps`, `loop`, `activity` and `events` are common.
 - `$collisionmodel` is the physics hull. A `prop_static` needs the `.phy` that comes from
   it; without one the prop is non-solid in game.
-- `$staticprop` is for a static prop; `$mostlyopaque` for cutout transparency.
+- `$staticprop` is required for a model used as a `prop_static`: vbsp deletes a `prop_static`
+  from a model without the flag and still exits 0. `$mostlyopaque` is for cutout transparency.
 - `write_qc` also writes `$bodygroup` alternatives, `$lod`/`$shadowlod` replacement blocks,
   `$hboxset`/`$hbox` sets, `$poseparameter` sliders, `$bbox`/`$cbox`/`$illumposition`/
   `$eyeposition`; a decompiled single-hull model carries its `.phy` `$collisiontext`.
@@ -48,12 +49,14 @@ Source units (a player is 72 tall).
    and `$staticprop: true`.
 3. `run_studiomdl` - compiles with StudioMDL++/studiomdl, then proves the `.mdl`, `.vvd` and `.dx90.vtx` exist. `compiler: "studiomdl"` forces the stock binary if the ++ build crashes.
 4. `write_vmt` + `write_vtf` — the material and its texture; both are native.
-5. `read_model_info` — bounds to place it, `hasPhysics` to know whether it is solid.
+5. `read_model_info` — bounds to place it, `hasPhysics` to know whether it is solid, and
+   `staticProp` to know whether it may be a `prop_static` at all.
 
 **Physics is the trap.** `studiomdl` only writes a `.phy` from `$collisionmodel`, and this
 path does not build one. A `prop_static` without a `.phy` is non-solid: either add a
-`$collisionmodel` SMD in a DCC, or place a clip brush under the prop. The toolkit reports
-the absence instead of hiding it.
+`$collisionmodel` SMD in a DCC, or place a clip brush under the prop (`write_prop`
+`collision: "auto"` does the clip). A model without `$staticprop` cannot be a `prop_static`
+at all: vbsp deletes it and exits 0. The toolkit reports both instead of hiding them.
 
 A `.phy` can also exist and still be the wrong shape. `read_model_collision` reads its solids,
 convex pieces, triangles and `prop_data` block, and checks the `.phy` checksum against the
@@ -230,7 +233,8 @@ every bone it references. Do not paste numbers from a tutorial:
   setup is a set of QCI includes, not one QC.
 - **Attachments** are positioned with `.smd`/`.dmx` helper meshes and `$attachment`; the
   weapon attachment helper is a separate mesh.
-- **Physics** is `$collisionmodel`; a model with no `.phy` cannot be a solid `prop_static`.
+- **Physics** is `$collisionmodel`; a model with no `.phy` cannot be a solid `prop_static`,
+  and a model without `$staticprop` cannot be a `prop_static` at all.
 
 ## The commands
 
@@ -262,7 +266,7 @@ every bone it references. Do not paste numbers from a tutorial:
 | Look at a material | `preview_asset` (VTF → PNG) |
 | Look at a model | `run_hlmv` (HLMV++ first, stock fallback), or `preview_model` when the canvas is blank |
 | Find a stock model or material | `read_game_content`, `read_asset_catalog` |
-| Place the model | `edit_vmf` (`prop_static` / `prop_dynamic`) |
+| Place the model | `write_prop` (`prop_static` / `prop_dynamic` / `prop_physics`, with a clip when wanted) |
 
 `run_studiomdl` is a compiler driver, not a modeller: it does not sculpt, paint UVs or
 animate. Those come from the DCC. What the toolkit can do is create or inspect the source
@@ -273,7 +277,7 @@ files and prove the compiled result.
 1. `read_smd` / `read_dmx` — the source is structurally valid before a compiler sees it.
 2. `read_qc` — `$modelname`, `$body`, materials and attachments resolve.
 3. `run_studiomdl` — the `.mdl` and its `.vvd`/`.dx90.vtx`/`.phy` companions exist.
-4. `read_model_info` — `found`, bounds, skins, sequences, materials, `hasPhysics`.
+4. `read_model_info` — `found`, bounds, skins, sequences, materials, `hasPhysics`, `staticProp`.
 5. `preview_asset` on each material — a missing VTF is a purple checkerboard in game.
 6. Look at it with `preview_model` — it measures the HLMV capture and, when the canvas is a
    flat rectangle, compiles a sealed dev room and captures the engine's own view. HLMV's 3D

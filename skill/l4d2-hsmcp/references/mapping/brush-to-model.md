@@ -24,7 +24,7 @@ This is the Propper++ workflow with the toolkit's own plane oracle and UV maths.
    }
    ```
 3. `run_studiomdl` on the QC.
-4. `read_model_info` — bounds, skins, `hasPhysics`.
+4. `read_model_info` — bounds, skins, `hasPhysics` and `staticProp`.
 5. `write_vmt` / `write_vtf` if the brush's material is not already a stock one.
 
 `origin: "center"` puts the model origin at the brush's bounding-box centre; `"base"` puts
@@ -95,7 +95,9 @@ be correct in Hammer.
 - **Missing VMT.** The model compiles with a material name; a missing `.vmt`/`.vtf` is a
   purple checkerboard, not a compile error. `preview_asset` is the check.
 - **No `.phy`.** Without a collision model a `prop_static` is not solid; `read_model_info`
-  reports `hasPhysics`.
+  reports `hasPhysics`. `write_prop` `collision: "auto"` adds a clip hull from the bounds.
+- **No `$staticprop`.** A model compiled without it is deleted by vbsp as a `prop_static`
+  (`Error! ... Deleted.`, exit 0); `read_model_info.staticProp` reports the flag.
 
 ## Provenance
 

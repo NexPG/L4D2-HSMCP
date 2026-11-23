@@ -95,6 +95,24 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     ).toBe("info_player_strat");
   }, 60_000);
 
+  it.skipIf(!has.gameContent)("catches a prop_static vbsp would delete", async () => {
+    // `models/props_fairgrounds/arcadegame01.mdl` has no MDL `$staticprop`. The compile
+    // log rule in A1 reports the deletion after vbsp has already run; this reports it
+    // before the compile, and the model is real stock content.
+    const path = broken(
+      "not-static-prop",
+      (s) =>
+        s +
+        '\nentity\n{\n\t"id" "9003"\n\t"classname" "prop_static"\n' +
+        '\t"model" "models/props_fairgrounds/arcadegame01.mdl"\n' +
+        '\t"origin" "0 0 64"\n}\n',
+    );
+    const r = await lint(path);
+    expect(r.byRule["prop-static-not-static-prop"]).toBe(1);
+    const finding = r.findings.find((f) => f["rule"] === "prop-static-not-static-prop")!;
+    expect(finding["severity"]).toBe("error");
+  }, 60_000);
+
   it.skipIf(!ready)("catches a keyvalue the class does not have", async () => {
     const path = broken("bad-key", (s) =>
       s.replace(

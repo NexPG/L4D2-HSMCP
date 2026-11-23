@@ -179,7 +179,7 @@ def _model_bounds(fsys: Any, rel: str) -> dict[str, Any]:
     seconds, and a building's size is only needed when the caller is about to place it.
     """
     try:
-        from srctools.mdl import Model
+        from srctools.mdl import Flags, Model
 
         mdl = Model(fsys, fsys[rel])
         mins = getattr(mdl, "hull_min", None)
@@ -666,7 +666,7 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         return {"model": rel, "mounted": False, "mountError": mount_error, "found": False}
 
     try:
-        from srctools.mdl import Model
+        from srctools.mdl import Flags, Model
 
         mdl = Model(fsys, fsys[rel])
     except (KeyError, FileNotFoundError):
@@ -752,6 +752,14 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
     )
 
     phy = f"{rel[:-4]}.phy" if rel.lower().endswith(".mdl") else f"{rel}.phy"
+    # $staticprop is an MDL header flag, not a file. vbsp refuses a prop_static from a model
+    # without it with `Error! ... Deleted.` and exits 0; the compiler log rule catches that,
+    # and this lets write_prop warn before the compile.
+    static_prop = False
+    try:
+        static_prop = bool(getattr(mdl, "flags", 0) & Flags.static_prop)
+    except Exception:  # noqa: BLE001
+        static_prop = False
 
     skin_materials: list[list[str]] = []
     try:
@@ -832,6 +840,7 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
         "materials": textures,
         "hasPhysics": _present(fsys, phy),
         "physicsPath": phy,
+        "staticProp": static_prop,
         "boneCount": len(bones),
         "flexdescCount": flexdesc_count,
         "flexcontrollerCount": flexcontroller_count,
@@ -843,7 +852,8 @@ def model_info(req: dict[str, Any]) -> dict[str, Any]:
             "bounds are the model's own hull, around its origin. A prop placed at a floor's "
             "height sinks by however far its origin sits above its lowest point. "
             "hasPhysics false means a prop_static from this model has nothing to collide "
-            "with; add a clip brush or use a model that ships a .phy. "
+            "with; add a clip brush or use a model that ships a .phy. staticProp false means "
+            "vbsp will delete it as a prop_static: use prop_dynamic or a $staticprop model. "
             "attachments are in the model's own space and follow the bone named in boneName; "
             "a $attachment in a QC is what puts a muzzle flash there."
         ),

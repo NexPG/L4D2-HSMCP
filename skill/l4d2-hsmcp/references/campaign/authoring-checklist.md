@@ -49,6 +49,8 @@ contracts the tools enforce.
 - [ ] Detail: props, grass, trash, signs, lights; keep door approaches and nav clear.
 - [ ] `read_static_props` / `read_model_info.hasPhysics`: a prop without `.phy` needs a clip
       brush; `spawnflags 2` is decoration only.
+- [ ] `read_model_info.staticProp` / `read_vmf_lint` `prop-static-not-static-prop`: a
+      `prop_static` needs a `$staticprop` model, or vbsp deletes it and exits 0.
 
 ## 6. Gate
 

@@ -61,11 +61,14 @@ one. A `prop_static` without a `.phy` is **not solid**. Either:
 - add a `$collisionmodel` SMD (a simple box hull is enough), or
 - place a clip brush under the prop and accept that bullets pass through the model.
 
-`read_model_info` reports `hasPhysics`; check it before promising a solid prop.
+`read_model_info` reports `hasPhysics` and `staticProp`; check both before promising a solid
+prop. `write_prop` does it for you: `collision: "auto"` adds a clip when the model has no
+`.phy`, and `collision: "physics"` writes the movable `prop_physics` the official maps use for
+clutter.
 
 ## 7. Prove it in the map
 
-1. `edit_vmf` with `prop_static`, `model` set to the compiled path, and `skin` 0.
+1. `write_prop` with `kind: "static"`, `model` set to the compiled path, and `skin` 0.
 2. `run_compile`, then `run_map_test` with a screenshot.
 3. `read_static_props` after the compile — it lists the prop and whether its model has
    physics, which is the machine-checkable version of "it looks solid".

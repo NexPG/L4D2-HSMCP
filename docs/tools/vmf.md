@@ -35,7 +35,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_physics_constraint` | Writes a `phys_hinge`, `phys_lengthconstraint`, `phys_ballsocket`, `phys_slideconstraint` or `phys_ragdollconstraint` between two named entities. |
 | `write_point_entity` | The universal point-entity primitive: any classname, origin, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_portal` | Places an areaportal, an areaportal window or an occluder: the two brush entities read_map_geometry has counted since the beginning and nothing has ever placed. |
-| `write_prop` | Places a `prop_static`, `prop_dynamic` or `prop_physics` with its model, origin, angles, skin and solid mode, and checks the model with read_model_info when the game is available (a missing model is a warning, not a refusal). |
+| `write_prop` | Places a `prop_static`, `prop_dynamic`, `prop_physics`, `prop_dynamic_override` or `prop_physics_override` with its model, origin, angles, skin and solid mode. |
 | `write_scene` | Writes a `logic_choreographed_scene` with a required `SceneFile`, optional targets 1-8 and outputs. |
 | `write_test_bench` | Builds a sealed, playable bench map from one call: a hall of N bays divided by walled arches, `info_player_start`, `info_director`, `info_zombie_spawn`, a light per bay, and a FINALE nav region with a `trigger_finale` so the Director has a goal and the engine does not paint `NAV ERRORS` over the map. |
 | `write_trigger` | Writes a trigger as the brush entity it actually is: a sealed box tied to the class, with the keys that class needs (a teleport's or look trigger's `target`, a hurt trigger's damage and type, a push trigger's speed and direction, gravity's scale). |

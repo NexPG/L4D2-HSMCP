@@ -228,12 +228,16 @@ describe.skipIf(!installed || !has.toolchain)("brush -> SMD -> studiomdl", () =>
           found: boolean;
           boneCount: number;
           hasPhysics: boolean;
+          staticProp?: boolean;
           skins: string[][];
           cdmaterials: string[];
         };
         expect(info.found).toBe(true);
         expect(info.boneCount).toBe(1);
         expect(info.hasPhysics).toBe(true);
+        // The brush QC carries $staticprop; the field is what write_prop uses to keep vbsp
+        // from deleting a prop_static.
+        expect(info.staticProp).toBe(true);
         // The skin keeps the SMD material name and the QC's directory. The .vmt itself is
         // not required to exist for the model to compile; a missing one is a checkerboard.
         expect(info.skins).toContainEqual(["brickwall003a"]);

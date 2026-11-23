@@ -74,7 +74,7 @@ write_logic(path, kind: "counter", origin: [0,0,96], startValue: 2, maxValue: 10
 
 | Tool | What it writes |
 |---|---|
-| `write_prop` | `prop_static`, `prop_dynamic` or `prop_physics`; model checked with `read_model_info` when the game is present |
+| `write_prop` | `prop_static`, `prop_dynamic`, `prop_physics` (+ overrides); checks `staticProp`/`hasPhysics`, adds a clip hull on request |
 | `write_physics_constraint` | hinge, length, ballsocket, slide or ragdoll; `attach1`/`attach2` are required |
 | `write_ladder` | a `func_ladder` brush plus the `func_useableladder` point L4D2's AI uses |
 | `write_scene` | `logic_choreographed_scene` with `SceneFile` and up to eight targets |
@@ -83,6 +83,26 @@ write_logic(path, kind: "counter", origin: [0,0,96], startValue: 2, maxValue: 10
 These are shortcuts over `write_point_entity`/`write_brush_entity`, not a closed list:
 `func_useableladder` is itself a point entity, and a constraint class with no enum entry can
 be written through the primitive.
+
+### Choose the prop class from the official pattern
+
+The official maps use **`prop_physics`** for almost every movable thing — 11,667 instances
+against 12,147 static-prop instances that are architecture/detail (doors, windows, fences, AC
+units, shelves). A `prop_static` is not "the default prop"; it is for a model compiled with
+`$staticprop` and it is visual architecture.
+
+`write_prop` checks this when the game is present:
+
+- `read_model_info.staticProp` — an MDL without the flag is **deleted by vbsp** as a
+  `prop_static` (`Error! ... Deleted.`), even though vbsp exits 0;
+- `read_model_info.hasPhysics` — without a `.phy` the prop has no collision; `collision:
+  "auto"` or `"clip"` adds a `TOOLS/TOOLSCLIP` world box from the model bounds and yaw;
+- `kind` also covers `prop_dynamic_override` and `prop_physics_override`, which official
+  prefabs use;
+- `collision: "none"` is for a decoration you deliberately want walk-through.
+
+Check the class, not only the model name: a model with a `.phy` can still be a ghost as
+`prop_static`, and a chair that should be physics is a wall if it is static.
 
 ## Runtime presence
 

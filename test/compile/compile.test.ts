@@ -81,16 +81,17 @@ describe("compile log rules", () => {
   });
 
   it("fails a compile that deleted a prop, and names the model", () => {
-    // Measured on Tools++ vbsp, 23.11.2026: a prop_static from a dynamic-only model prints
-    // this and exits 0. The first map shipped without the prop while every gate was green.
+    // Measured on Tools++ vbsp, 23.11.2026: `arcadegame01.mdl` has no MDL `$staticprop`
+    // (`read_model_info.staticProp: false`) and vbsp prints this then exits 0. The first map
+    // shipped without the prop while every gate was green.
     const r = parseCompileLog(
-      'Error! prop_static using model "models/props/cs_office/trash_can.mdl", which must be used on a dynamic entity (i.e. prop_physics). Deleted.',
+      'Error! prop_static using model "models/props_fairgrounds/arcadegame01.mdl", which must be used on a dynamic entity (i.e. prop_physics). Deleted.',
     );
     expect(r.clean).toBe(false);
     expect(r.byRule["vbsp-deleted-prop"]).toBe(1);
     const finding = r.findings.find((x) => x.rule === "vbsp-deleted-prop")!;
     expect(finding.severity).toBe("error");
-    expect(finding.message).toMatch(/trash_can/);
+    expect(finding.message).toMatch(/arcadegame01/);
     expect(finding.message).toMatch(/prop_dynamic/);
   });
 

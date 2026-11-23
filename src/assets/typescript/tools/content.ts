@@ -190,6 +190,11 @@ export const readModelInfoTool = defineTool({
     /** A `.phy` exists. A prop_static from a model without one has nothing to collide with. */
     hasPhysics: z.boolean().optional(),
     physicsPath: z.string().optional(),
+    /**
+     * The MDL header carries `$staticprop`. vbsp deletes a prop_static from a model without
+     * it (`Error! ... Deleted.`) and exits 0; check before the compile.
+     */
+    staticProp: z.boolean().optional(),
     /** Bones in the skeleton. */
     boneCount: z.number().optional(),
     /** Shape-key descriptors compiled into the model. */

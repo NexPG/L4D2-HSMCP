@@ -79,6 +79,7 @@ again.
 | HUD says `NAV ERRORS — Map is unplayable!` while the map plays | The chapter has a CHECKPOINT nav attribute but no checkpoint door/changelevel, or a finale map with no `trigger_finale`. Give it a real end and regenerate nav | `troubleshooting/nav-unplayable.md` |
 | A player is dropped to the main menu when a test starts | Never launch while `left4dead2.exe` runs. The tools refuse unless you pass `replaceRunningGame: true`; they stop only the pid they started | `references/testing/harness.md` |
 | Nothing spawns, `no player`, bots idle | A fixture room has no flow. Use a playable chapter with player start, nav and Director | `troubleshooting/endless-loading.md` |
+| A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
 
 ## Route the task first
 
@@ -167,6 +168,7 @@ material; the instructions live in one place.
 | `troubleshooting/hlmv-screenshot.md` | HLMV shows an error, a black viewport, or the screenshot is blank |
 | `troubleshooting/endless-loading.md` | the loading bar never fills, or the same map restarts instead of loading |
 | `troubleshooting/nav-unplayable.md` | the HUD says `NAV ERRORS — Map is unplayable!` although the map loads |
+| `troubleshooting/prop-deleted.md` | a prop is in the VMF but missing in game, or vbsp logs `Error! ... Deleted.` |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 

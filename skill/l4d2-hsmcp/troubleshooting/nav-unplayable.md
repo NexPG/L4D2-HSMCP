@@ -53,8 +53,9 @@ the screenshot shows ordinary gameplay. (`Missing Battlefield` still reports 45 
 
 ## What not to conclude
 
-- A tool-level verdict of `playable` from `run_nav_generate` is not the engine's goal check;
-  it counts areas and flow, it does not prove the chapter ends anywhere.
+- A tool-level verdict of `goal-present` from `run_nav_generate` is not the engine's goal
+  check; it counts areas and a goal attribute, and it does not prove the chapter ends
+  anywhere. The dump's `0x20000000` is `MOSTLY_FLAT`, not flow.
 - `NAV ERRORS` is not about the mesh being stale. A stale nav prints
   `NAV ERRORS — Map is unplayable` too, but `read_nav` compares the nav with the BSP; check
   that first, then run the report above.
