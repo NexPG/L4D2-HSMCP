@@ -36,6 +36,19 @@ export interface MdlSequence {
   paramEnd: [number, number];
   fadeInTime: number;
   fadeOutTime: number;
+  /**
+   * `numikrules` at +144: IK rules the sequence's animations carry.
+   *
+   * Stock L4D2 uses them heavily -- 532 of the gambler's 814 sequences, 380 of the common
+   * infected's 407 -- and neither this decompiler nor the reference one reconstructs the
+   * `ikrule` lines, so a recompile loses them. The count is what lets `decompile_model` say
+   * so instead of staying silent.
+   */
+  ikrules: number;
+  /** `numautolayers` at +148: `addlayer`/`blendlayer` entries. */
+  autolayers: number;
+  /** `weightlistindex` at +156; 0 is the default all-ones list. */
+  weightlist: number;
   /** `event` lines stored with the sequence, in file order. */
   events: MdlEvent[];
 }
@@ -227,6 +240,9 @@ export function readSequences(mdl: Buffer, animations: MdlAnimationDesc[]): MdlS
       paramEnd: [mdl.readFloatLE(base + 92), mdl.readFloatLE(base + 96)],
       fadeInTime: mdl.readFloatLE(base + 104),
       fadeOutTime: mdl.readFloatLE(base + 108),
+      ikrules: mdl.readInt32LE(base + 144),
+      autolayers: mdl.readInt32LE(base + 148),
+      weightlist: mdl.readInt32LE(base + 156),
       events: readSequenceEvents(mdl, base),
     });
   }

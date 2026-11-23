@@ -154,3 +154,17 @@ describe.skipIf(!has.gameContent)("mdlanim", () => {
     expect(Math.abs(last.rotation[2] - first.rotation[2])).toBeGreaterThan(0.2);
   });
 });
+
+
+describe("sequence options stock L4D2 actually uses", () => {
+  it.skipIf(!has.gameContent)("reports IK rules, autolayers and weight lists", () => {
+    const bytes = openGameVpk(ctx.config.gameDir!)!.read("models/infected/anim_hunter.mdl")!;
+    const sequences = readSequences(bytes, readAnimations(bytes));
+    expect(sequences.length).toBeGreaterThan(50);
+    // Hunters aim limbs; most of their sequences carry IK rules and a weight list.
+    const withRules = sequences.filter((sequence) => sequence.ikrules > 0);
+    expect(withRules.length).toBeGreaterThan(20);
+    expect(sequences.some((sequence) => sequence.autolayers > 0)).toBe(true);
+    expect(sequences.every((sequence) => sequence.weightlist >= 0)).toBe(true);
+  }, 60_000);
+});

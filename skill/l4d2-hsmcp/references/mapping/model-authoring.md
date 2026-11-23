@@ -143,6 +143,16 @@ decoded. Bodygroup presets are the remaining gap; the tool lists it in `warnings
 than pretending the QC is complete. The default target is `<name>_decompiled.mdl`, so a
 direct recompile cannot overwrite the source.
 
+**IK rules and autolayers are read but not written.** They are not a rare corner: measured
+on stock L4D2, `anim_gambler.mdl` has 532 of 814 sequences carrying IK rules, the common
+infected 380 of 407, the hunter 51 of 89, and gambler has 310 sequences with autolayers.
+Neither this decompiler nor the reference one (Crowbar's v49 writer lists `ikrule` and
+`walkframe` as not done) reconstructs the QC line from the compiled records, so
+`decompile_model` writes a warning with the counts instead of inventing lines. `read_model_animation`
+shows `ikrules`, `autolayers` and `weightlist` per sequence, so the loss is visible before a
+compile, not after it. For an aim-matrix-heavy character, treat the decompiled QC as a
+starting point, not a faithful source.
+
 ## L4D2 specifics
 
 - **Viewmodels** need `$attachment "primary"` / `"melee"`, the right `$weaponmodel`/hands

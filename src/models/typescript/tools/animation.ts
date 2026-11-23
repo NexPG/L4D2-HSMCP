@@ -84,6 +84,11 @@ export const readModelAnimationTool = defineTool({
         paramIndices: z.tuple([z.number(), z.number()]),
         paramStart: z.tuple([z.number(), z.number()]),
         paramEnd: z.tuple([z.number(), z.number()]),
+        /** IK rules the sequence carries; the decompiler cannot write `ikrule` back. */
+        ikrules: z.number(),
+        /** `addlayer`/`blendlayer` entries on the sequence. */
+        autolayers: z.number(),
+        weightlist: z.number(),
         events: z.array(EVENT),
       }),
     ),
@@ -196,6 +201,9 @@ export const readModelAnimationTool = defineTool({
           paramIndices: sequence.paramIndices,
           paramStart: sequence.paramStart,
           paramEnd: sequence.paramEnd,
+          ikrules: sequence.ikrules,
+          autolayers: sequence.autolayers,
+          weightlist: sequence.weightlist,
           events: sequence.events.map((event) => ({
             ...event,
             frame:

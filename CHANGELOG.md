@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.243-alpha - 2026-11-23
+
+- **Sequence IK rules, autolayers and weight lists are read and reported.** Stock L4D2 uses
+  them heavily: 532 of `anim_gambler.mdl`'s 814 sequences carry IK rules, 380 of the common
+  infected's 407, 51 of the hunter's 89, and gambler has 310 sequences with autolayers.
+  `read_model_animation` now returns `ikrules`, `autolayers` and `weightlist` per sequence, and
+  `decompile_model` warns with the totals. The `ikrule` QC line itself is **not** written:
+  neither this decompiler nor Crowbar's v49 writer reconstructs it from the compiled records
+  (Crowbar lists `ikrule` and `walkframe` as not done), so inventing it would be a guess.
+  `walkframe` is not in `mstudioseqdesc_t` at all; the root-rotation correction is separate
+  and already in place.
+- **Skill**: `model-authoring.md` and `coverage.md` state the loss before a compile instead of
+  after it.
+- **Tool count: 293.** Tests: 237 files, 1,943 passed, 30 skipped.
+
 ## 0.0.242-alpha - 2026-11-23
 
 - **Duplicate-name audit, and the copies it found are gone.** A scan of every exported name

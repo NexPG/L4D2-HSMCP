@@ -1576,6 +1576,25 @@ export const decompileModelTool = defineTool({
         );
       }
     }
+    const ikRuleSequences = sequences.filter((sequence) => sequence.ikrules > 0);
+    if (ikRuleSequences.length > 0) {
+      const ikRules = ikRuleSequences.reduce((sum, sequence) => sum + sequence.ikrules, 0);
+      warnings.push(
+        `${ikRuleSequences.length} of ${sequences.length} sequences carry ${ikRules} IK rules; ` +
+          "`ikrule` is not written. The rule records live in the animation data, and neither this " +
+          "decompiler nor the reference one reconstructs the QC line, so a recompile loses the " +
+          "aim-matrix and limb pinning those rules express.",
+      );
+    }
+    const autoLayerSequences = sequences.filter((sequence) => sequence.autolayers > 0);
+    if (autoLayerSequences.length > 0) {
+      const layers = autoLayerSequences.reduce((sum, sequence) => sum + sequence.autolayers, 0);
+      warnings.push(
+        `${autoLayerSequences.length} sequences carry ${layers} autolayers; ` +
+          "`addlayer`/`blendlayer` are not written yet, so layered gestures do not survive a " +
+          "recompile.",
+      );
+    }
     if (skippedSequences.length > 0) {
       warnings.push(
         `${skippedSequences.length} sequences were skipped: ` +
