@@ -49,9 +49,31 @@ export interface MdlSequence {
   autolayers: number;
   /** `weightlistindex` at +156; 0 is the default all-ones list. */
   weightlist: number;
+  /** `addlayer`/`blendlayer` records (`mstudioautolayer_t`, 24 bytes each). */
+  autoLayers: MdlAutoLayer[];
   /** `event` lines stored with the sequence, in file order. */
   events: MdlEvent[];
 }
+
+/** One `mstudioautolayer_t`: a layer of another sequence blended over this one. */
+export interface MdlAutoLayer {
+  /** Index of the sequence used as the layer. */
+  sequence: number;
+  /** Pose parameter index when `flags` has `STUDIO_AL_POSE`. */
+  pose: number;
+  flags: number;
+  /** Influence window as phases 0..1; `blendlayer` writes them as frames. */
+  start: number;
+  peak: number;
+  tail: number;
+  end: number;
+}
+
+export const STUDIO_AL_SPLINE = 0x40;
+export const STUDIO_AL_XFADE = 0x80;
+export const STUDIO_AL_NOBLEND = 0x200;
+export const STUDIO_AL_LOCAL = 0x1000;
+export const STUDIO_AL_POSE = 0x4000;
 
 /** One `mstudioevent_t`: 80 bytes, with an optional name relative to the record. */
 export interface MdlEvent {
@@ -161,6 +183,35 @@ const ANIM_ANIMROT = 0x08;
 const ANIM_DELTA = 0x10;
 const ANIM_RAWROT2 = 0x20;
 
+/**
+ * Reads a sequence's `mstudioautolayer_t` list.
+ *
+ * `numautolayers` (148) and `autolayerindex` (152) are relative to the sequence descriptor;
+ * each record is 24 bytes: `short sequence, short pose, int flags, float start/peak/tail/end`.
+ * The window is a phase in 0..1, and `blendlayer` wants frames, which is why the writer
+ * multiplies by `frameCount - 1` (unless `STUDIO_AL_POSE`, where the values are used as given).
+ */
+function readAutoLayers(mdl: Buffer, base: number): MdlAutoLayer[] {
+  const count = mdl.readInt32LE(base + 148);
+  const offset = mdl.readInt32LE(base + 152);
+  if (count <= 0 || count > 64 || offset <= 0) return [];
+  const layers: MdlAutoLayer[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const at = base + offset + index * 24;
+    if (at + 24 > mdl.length) break;
+    layers.push({
+      sequence: mdl.readInt16LE(at),
+      pose: mdl.readInt16LE(at + 2),
+      flags: mdl.readInt32LE(at + 4),
+      start: mdl.readFloatLE(at + 8),
+      peak: mdl.readFloatLE(at + 12),
+      tail: mdl.readFloatLE(at + 16),
+      end: mdl.readFloatLE(at + 20),
+    });
+  }
+  return layers;
+}
+
 function readName(bytes: Buffer, offset: number): string {
   if (offset < 0 || offset >= bytes.length) return "";
   const end = bytes.indexOf(0, offset);
@@ -243,6 +294,7 @@ export function readSequences(mdl: Buffer, animations: MdlAnimationDesc[]): MdlS
       ikrules: mdl.readInt32LE(base + 144),
       autolayers: mdl.readInt32LE(base + 148),
       weightlist: mdl.readInt32LE(base + 156),
+      autoLayers: readAutoLayers(mdl, base),
       events: readSequenceEvents(mdl, base),
     });
   }

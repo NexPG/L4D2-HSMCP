@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.245-alpha - 2026-11-23
+
+- **`addlayer`/`blendlayer` are written and verified by a recompile.** The autolayer records
+  (`mstudioautolayer_t`, 24 bytes: target sequence, pose, flags, start/peak/tail/end) are read
+  from the sequence descriptor, resolved to sequence and pose-parameter names, and written as
+  `addlayer "<sequence>"` or `blendlayer ... <start> <peak> <tail> <end>` with
+  `xfade`/`spline`/`noblend`/`poseparameter`/`local`, in frames rather than the stored phase.
+  A/B on `gascan001a`: decompile, compile, read back -- `gasCan_idle` returned with
+  **autolayers 1**.
+- **The IK-rule claim is corrected in the skill.** The records are not in the `.mdl` at all for
+  L4D2: 90 of the hunter's 164 animation descriptors and 990 of the gambler's 2202 use
+  `animblockikruleindex`, and none use the in-file index. The decompiler reads the frames from
+  `.ani` but not that rule block, so it reports the counts instead of inventing `ikrule` lines.
+- **Tool count: 293.** Tests: 238 files, 1,944 passed, 30 skipped.
+
 ## 0.0.244-alpha - 2026-11-23
 
 - **Sequence options are written from the flags, and verified by a compile.** `snap`,

@@ -39,5 +39,8 @@ describe("sequence options", () => {
     expect(qc).toContain("\thidden");
     // delta is not written: the reference SMD frames are baked, not differences.
     expect(qc).not.toContain("\tdelta");
+    // addlayer: gasCan_idle layers a_gasCan_vaims. Verified by a real compile: the sequence
+    // came back with one autolayer.
+    expect(qc).toContain('\taddlayer "a_gasCan_vaims"');
   }, 60_000);
 });

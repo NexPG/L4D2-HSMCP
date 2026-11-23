@@ -54,6 +54,11 @@ import {
   readIkChains,
   readIkLocks,
   readSequences,
+  STUDIO_AL_LOCAL,
+  STUDIO_AL_NOBLEND,
+  STUDIO_AL_POSE,
+  STUDIO_AL_SPLINE,
+  STUDIO_AL_XFADE,
 } from "../formats/mdlanim.js";
 import type { AnimationFrame, MdlIkChain, MdlIkLock } from "../formats/mdlanim.js";
 import {
@@ -555,6 +560,15 @@ function qcText(
     fadeOut: number;
     events: Array<{ name: string; frame: number; options: string }>;
     options: string[];
+    autoLayers: Array<{
+      sequenceName: string;
+      poseName: string | null;
+      flags: number;
+      start: number;
+      peak: number;
+      tail: number;
+      end: number;
+    }>;
   }>,
   attachments: MdlAttachment[],
   hitboxSets: MdlHitboxSet[],
@@ -724,6 +738,7 @@ function qcText(
       const needsBlock =
         sequence.events.length > 0 ||
         sequence.options.length > 0 ||
+        sequence.autoLayers.length > 0 ||
         Math.abs(sequence.fadeIn - 0.2) > 1e-6 ||
         Math.abs(sequence.fadeOut - 0.2) > 1e-6;
       if (sequence.files.length <= 1 && sequence.blends.length === 0 && !needsBlock) {
@@ -749,6 +764,26 @@ function qcText(
       if (sequence.activityName) lines.push(`\tactivity ${sequence.activityName}`);
       if (sequence.loop) lines.push("\tloop");
       for (const option of sequence.options) lines.push(`\t${option}`);
+      for (const layer of sequence.autoLayers) {
+        if (layer.flags === 0 && layer.start === layer.end) {
+          lines.push(`\taddlayer "${layer.sequenceName}"`);
+          continue;
+        }
+        const frames = Math.max(1, sequence.frameCount - 1);
+        const at = (value: number): string =>
+          (layer.flags & STUDIO_AL_POSE) !== 0 ? fmt(value) : fmt(Math.round(value * frames));
+        let line =
+          `\tblendlayer "${layer.sequenceName}" ${at(layer.start)} ${at(layer.peak)} ` +
+          `${at(layer.tail)} ${at(layer.end)}`;
+        if ((layer.flags & STUDIO_AL_XFADE) !== 0) line += " xfade";
+        if ((layer.flags & STUDIO_AL_SPLINE) !== 0) line += " spline";
+        if ((layer.flags & STUDIO_AL_NOBLEND) !== 0) line += " noblend";
+        if ((layer.flags & STUDIO_AL_POSE) !== 0 && layer.poseName) {
+          line += ` poseparameter ${layer.poseName}`;
+        }
+        if ((layer.flags & STUDIO_AL_LOCAL) !== 0) line += " local";
+        lines.push(line);
+      }
       if (sequence.blendWidth !== undefined) lines.push(`\tblendwidth ${sequence.blendWidth}`);
       for (const blend of sequence.blends) {
         lines.push(`\tblend "${blend.name}" ${fmt(blend.start)} ${fmt(blend.end)}`);
@@ -1154,6 +1189,16 @@ export const decompileModelTool = defineTool({
       events: Array<{ name: string; frame: number; options: string }>;
       /** QC option words from the compiled sequence flags (`snap`, `delta`, `hidden`, ...). */
       options: string[];
+      /** `addlayer`/`blendlayer` entries, with the target sequence and pose parameter named. */
+      autoLayers: Array<{
+        sequenceName: string;
+        poseName: string | null;
+        flags: number;
+        start: number;
+        peak: number;
+        tail: number;
+        end: number;
+      }>;
       clips: Array<{ smd: string; frames: AnimationFrame[] }>;
     }> = [];
     const skippedSequences: Array<{ name: string; reason: string }> = [];
@@ -1248,6 +1293,17 @@ export const decompileModelTool = defineTool({
           options: event.options,
         })),
         options: sequenceQcOptions(sequence, poseParamNames),
+        autoLayers: sequence.autoLayers
+          .map((layer) => ({
+            sequenceName: sequences[layer.sequence]?.name ?? "",
+            poseName: poseParamNames[layer.pose] ?? null,
+            flags: layer.flags,
+            start: layer.start,
+            peak: layer.peak,
+            tail: layer.tail,
+            end: layer.end,
+          }))
+          .filter((layer) => layer.sequenceName.length > 0),
         clips: decoded.map((entry, blend) => ({ smd: files[blend]!, frames: entry.frames })),
       });
     }

@@ -143,15 +143,21 @@ decoded. Bodygroup presets are the remaining gap; the tool lists it in `warnings
 than pretending the QC is complete. The default target is `<name>_decompiled.mdl`, so a
 direct recompile cannot overwrite the source.
 
-**IK rules and autolayers are read but not written.** They are not a rare corner: measured
-on stock L4D2, `anim_gambler.mdl` has 532 of 814 sequences carrying IK rules, the common
-infected 380 of 407, the hunter 51 of 89, and gambler has 310 sequences with autolayers.
-Neither this decompiler nor the reference one (Crowbar's v49 writer lists `ikrule` and
-`walkframe` as not done) reconstructs the QC line from the compiled records, so
-`decompile_model` writes a warning with the counts instead of inventing lines. `read_model_animation`
-shows `ikrules`, `autolayers` and `weightlist` per sequence, so the loss is visible before a
-compile, not after it. For an aim-matrix-heavy character, treat the decompiled QC as a
-starting point, not a faithful source.
+**Autolayers are written; IK rules are not.** Autolayers are common (measured: 310 of the
+gambler's 814 sequences, 36 of the hunter's 89) and the decompiler writes them as
+`addlayer "<sequence>"` or `blendlayer "<sequence>" <start> <peak> <tail> <end>` with
+`xfade`/`spline`/`noblend`/`poseparameter`/`local`, using frames rather than the stored 0..1
+phase. Verified by a real compile of `gascan001a`: `gasCan_idle` came back with one autolayer.
+
+IK rules are a different case. The count is in the sequence descriptor, but the records are in
+the animation block, not the `.mdl`: measured on stock L4D2, 90 of the hunter's 164 animation
+descriptors and 990 of the gambler's 2202 store `animblockikruleindex`, and **none** store the
+in-file `ikruleindex`. This decompiler reads the frame data from `.ani` but not that rule
+block, so `decompile_model` reports the totals and does not invent `ikrule` lines.
+`read_model_animation` shows the per-sequence counts, so the loss is visible before a compile.
+For an aim-matrix-heavy character, treat the decompiled QC as a starting point, not a faithful
+source. (`walkframe` is not in the sequence descriptor at all; it is a QC option baked into the
+clips during compile.)
 
 **Sequence options are written from the flags, with one deliberate exception.** `snap`,
 `hidden`, `autoplay`, `realtime` and `posecycle` come from the compiled sequence flags and go
