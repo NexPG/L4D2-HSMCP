@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.263-alpha - 2026-11-24
+
+- **`write_breakable` writes the brush breakables.** `func_breakable` (wall/door),
+  `func_breakable_surf` (glass/tile window) and `func_physbox` (simulated brush), with the
+  FGD's `material`, `health`, `BreakableType`, `propdata`, surface type and fragility. The
+  surface variant warns that all but the visible face must be nodraw and the visible face
+  four-sided. A `prop_wall_breakable`/`prop_car_glass`/`prop_car_alarm`/`prop_fuel_barrel`
+  is a prop class and goes through `write_point_entity`, not `prop_static`.
+- **Official physics/breakable patterns documented:** the class table (wall, surface,
+  physbox, wall prop, car glass, car alarm, fuel barrel), the `prop_physics` `Color`
+  input/`rendercolor` key for random car colours, and why `skin` is not a colour.
+- **Verified with the real compiler:** a `func_breakable` wall and a `prop_physics` car
+  compile in a sealed room. The live break reaction is not automated; the class and keys
+  are what vbsp reads.
+- **Tool count: 296.** Tests: 243 files, 1,982 passed, 32 skipped.
+
 ## 0.0.262-alpha - 2026-11-24
 
 - **Tools++ L4D2 compiles emit AI ladders.** `run_compile` passes `-simpleladders` on the

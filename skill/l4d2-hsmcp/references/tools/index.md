@@ -1,6 +1,6 @@
 # Tool catalogue
 
-295 tools. This page groups them by the job you are doing; each tool's own description is the
+296 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -69,6 +69,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_mover` | `func_movelinear`, `func_rotating` or `func_tracktrain` with the volume and origin |
 | `write_logic` | `logic_auto`, relay, timer, branch, compare, case, `math_counter`, `math_remap` with connections |
 | `write_prop` | `prop_static`/`prop_dynamic`/`prop_physics` (+ `_override`); `collision: auto/clip/dynamic/physics/none`, and `facing`/`modelForward`/`yawOffset` from the model-facing table |
+| `write_breakable` | `func_breakable`/`func_breakable_surf`/`func_physbox` with material, health, BreakableType and propdata |
 | `write_physics_constraint` | hinge, length, ballsocket, slide or ragdoll constraint between two names |
 | `write_ladder` | `func_ladder` brush and the `func_useableladder` AI point |
 | `write_scene` | `logic_choreographed_scene` with a `.vcd` and targets |

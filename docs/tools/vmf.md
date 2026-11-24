@@ -1,6 +1,6 @@
 # VMF authoring
 
-87 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+88 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -26,6 +26,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `set_worldspawn` | Sets or removes ANY keyvalue on worldspawn: sky, mapversion, message, detail sprites, custom keys, whatever the engine or a mod reads. |
 | `validate_io` | Checks a map's entity wiring against the game's own FGD. |
 | `write_ambient_generic` | Writes an `ambient_generic` sound emitter with `message` (the soundscript name), `health` volume, `radius`, `pitch` and outputs. |
+| `write_breakable` | Writes a breakable brush: `func_breakable` (a wall or door that takes damage), `func_breakable_surf` (a glass/tile window that fractures in a pattern) or `func_physbox` (a physically simulated brush). |
 | `write_brush_entity` | The universal brush-entity primitive: any classname, a box volume, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_detail_sprites` | Adds a detail-sprite type to `detail.vbsp`: density, one sprite group with a sprite rectangle (`x y w h sheetSize`), `spritesize` (x y z random), amount and alpha. |
 | `write_entity_probe` | Adds a runtime presence probe to every entity with the given targetname: an `OnUser1` output that echoes a unique line through a `point_servercommand`. |

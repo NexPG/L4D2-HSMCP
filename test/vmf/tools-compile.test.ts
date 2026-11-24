@@ -28,7 +28,11 @@ import { setFaceUvTool, setSmoothingGroupsTool } from "../../src/maps/typescript
 import { readBspFacesTool, readBspEntities } from "../../src/maps/typescript/tools/bsp.js";
 import { readBspFaces } from "../../src/maps/typescript/bsp/faces.js";
 import { writeVmfTerrain } from "../../src/maps/typescript/tools/terrain.js";
-import { writeLadderTool } from "../../src/maps/typescript/tools/entityextras.js";
+import {
+  writeBreakableTool,
+  writeLadderTool,
+  writePropTool,
+} from "../../src/maps/typescript/tools/entityextras.js";
 import {
   writeDecalTool,
   writeLightTool,
@@ -541,6 +545,48 @@ describe.skipIf(!has.plusplus || !has.gameContent)("L4D2 ladders", () => {
       expect(entities.histogram.func_ladder ?? 0).toBe(0);
       expect(entities.histogram.func_simpleladder ?? 0).toBeGreaterThan(0);
       expect(entities.histogram.func_useableladder ?? 0).toBeGreaterThan(0);
+    },
+    300_000,
+  );
+});
+
+describe.skipIf(!has.toolchain || !has.gameContent)("breakable brush and physics prop", () => {
+  it(
+    "a func_breakable wall and a prop_physics car survive vbsp",
+    async () => {
+      const path = join(scratch, "breakable_room.vmf");
+      writeFileSync(path, room());
+      await writeBreakableTool.handler(
+        {
+          path,
+          kind: "breakable",
+          bounds: { mins: [64, 64, 8], maxs: [96, 96, 96] },
+          material: "wood",
+          health: 25,
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      await writePropTool.handler(
+        {
+          path,
+          kind: "physics",
+          model: "models/props_vehicles/cara_95sedan.mdl",
+          origin: [-100, 0, 16],
+          collision: "physics",
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      const result = await compile(path, { stages: ["vbsp"] });
+      expect(result.leaked).toBe(false);
+      expect(result.ok).toBe(true);
+      const entities = (await readBspEntities.handler(
+        { path: result.bsp, limit: 1, offset: 0, histogramOnly: true },
+        ctx,
+      )) as unknown as { histogram: Record<string, number> };
+      expect(entities.histogram.func_breakable ?? 0).toBeGreaterThan(0);
+      expect(entities.histogram.prop_physics ?? 0).toBeGreaterThan(0);
     },
     300_000,
   );

@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
   writeAmbientGenericTool,
+  writeBreakableTool,
   writeConstraintTool,
   writeLadderTool,
   writePropTool,
@@ -142,5 +143,49 @@ describe("ladders, scenes and ambient sounds", () => {
     expect(e.keyvalues["health"]).toBe("8");
     expect(e.keyvalues["radius"]).toBe("512");
     expect(e.keyvalues["pitch"]).toBe("90");
+  });
+});
+
+describe("breakables", () => {
+  it("writes a func_breakable wall with material, health and BreakableType", async () => {
+    const path = map();
+    const r = (await writeBreakableTool.handler(
+      {
+        path,
+        kind: "breakable",
+        bounds: { mins: [0, 0, 0], maxs: [64, 16, 96] },
+        material: "cinderblock",
+        health: 42,
+        breakableBy: "tank",
+        texture: "CONCRETE/CONCRETE01",
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; solidIds: number[]; classname: string };
+    expect(r.classname).toBe("func_breakable");
+    expect(r.solidIds).toHaveLength(1);
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.keyvalues["material"]).toBe("4");
+    expect(e.keyvalues["health"]).toBe("42");
+    expect(e.keyvalues["BreakableType"]).toBe("2");
+  });
+
+  it("writes a breakable surface as func_breakable_surf", async () => {
+    const path = map();
+    const r = (await writeBreakableTool.handler(
+      {
+        path,
+        kind: "surface",
+        bounds: { mins: [0, 0, 0], maxs: [64, 4, 96] },
+        surfacetype: "glass",
+        fragility: 60,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; classname: string };
+    expect(r.classname).toBe("func_breakable_surf");
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.keyvalues["surfacetype"]).toBe("0");
+    expect(e.keyvalues["fragility"]).toBe("60");
   });
 });

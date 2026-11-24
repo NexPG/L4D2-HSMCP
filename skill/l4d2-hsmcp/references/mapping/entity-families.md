@@ -142,6 +142,34 @@ units, shelves). A `prop_static` is not "the default prop"; it is for a model co
 Check the class, not only the model name: a model with a `.phy` can still be a ghost as
 `prop_static`, and a chair that should be physics is a wall if it is static.
 
+### Breakables and physics patterns
+
+`write_breakable` writes the brush versions; the stock breakable **props** are written with
+`write_point_entity` (or `edit_vmf`) because their classnames are outside `write_prop`'s
+enum. A `prop_wall_breakable` model that is placed through `write_prop` as `prop_static` is
+not breakable; the class is the behaviour.
+
+| What | Class | How to write it | Official count |
+|---|---|---|---|
+| wall/door that takes damage | `func_breakable` | `write_breakable(kind: "breakable")`; `material` 0-8, `health`, `BreakableType` 0/1/2 | 1,542 |
+| glass/tile window that fractures | `func_breakable_surf` | `write_breakable(kind: "surface")`; visible face four-sided, other faces `TOOLS/TOOLSNODRAW` | 34 |
+| physically simulated brush | `func_physbox` | `write_breakable(kind: "physbox")`; `massScale` | 18 |
+| breakable wall prop | `prop_wall_breakable` | `write_point_entity` with the model and `health` | 108 |
+| car window | `prop_car_glass` | `write_point_entity`; models `police_car_glass.mdl`/`racecar_glass.mdl` | 117 |
+| alarmed car | `prop_car_alarm` | `write_point_entity`; a `prop_physics` car body with the alarm class | 58 |
+| fuel barrel | `prop_fuel_barrel` | `write_point_entity`; `models/props_industrial/barrel_fuel.mdl` | 39 |
+
+A physics car is `write_prop(kind: "physics")` with a model that has a `.phy`; nav ignores
+dynamic props, so a parked car does not leave an orphan nav island (a solid `prop_static` car
+does). `prop_wall_breakable` and `prop_car_glass` are **dynamic** prop classes, not static:
+they need their own animation/health handling and must not be compressed into
+`prop_static`.
+
+`prop_physics` colours: the class has a `Color` input from `RenderFields` and a
+`rendercolor` key. Set `keyvalues: { rendercolor: "200 30 30" }` at spawn, or fire `Color`
+from a `logic_case` for random car colours. `skin` is a different model texture set, not a
+colour; using it for "red car" picks whatever the model's skin 1 is.
+
 ### Face the model, do not guess a yaw
 
 The MDL has no forward axis. `write_prop` takes `facing` (the world yaw the front should point

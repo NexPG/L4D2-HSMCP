@@ -56,8 +56,7 @@ type ModelCheck = {
   staticProp?: boolean;
   mins?: number[] | null;
   maxs?: number[] | null;
-};
-const vec = (v: readonly number[]): string =>
+};const vec = (v: readonly number[]): string =>
   v.map((n) => String(Math.round(n * 1000) / 1000)).join(" ");
 
 function insideWorld(point: readonly number[]): boolean {
@@ -592,10 +591,137 @@ export const writeAmbientGenericTool = defineTool({
   },
 });
 
+const BREAKABLE_MATERIAL: Record<string, number> = {
+  glass: 0,
+  wood: 1,
+  metal: 2,
+  flesh: 3,
+  cinderblock: 4,
+  ceiling_tile: 5,
+  computer: 6,
+  unbreakable_glass: 7,
+  rocks: 8,
+  none: 10,
+};
+
+export const writeBreakableTool = defineTool({
+  name: "write_breakable",
+  description:
+    "Writes a breakable brush: `func_breakable` (a wall or door that takes damage), " +
+    "`func_breakable_surf` (a glass/tile window that fractures in a pattern) or " +
+    "`func_physbox` (a physically simulated brush). Sets the FGD's `material` (glass, " +
+    "wood, metal, cinderblock, ...), `health`, `BreakableType` and `propdata`; outputs are " +
+    "attached. For a breakable prop model (`prop_wall_breakable`, `prop_car_glass`, " +
+    "`prop_fuel_barrel`) use `write_prop`, not this. `func_breakable_surf` needs all faces " +
+    "but the visible one nodraw and the visible face four-sided; the tool warns rather than " +
+    "guessing. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    kind: z.enum(["breakable", "surface", "physbox"]).default("breakable"),
+    bounds: z.object({ mins: VEC3, maxs: VEC3 }),
+    material: z
+      .enum(Object.keys(BREAKABLE_MATERIAL) as [string, ...string[]])
+      .default("cinderblock")
+      .describe("Sound/gib material for func_breakable and func_physbox."),
+    health: z.number().int().min(0).default(10).describe("0 means it does not break."),
+    breakableBy: z
+      .enum(["everyone", "infected", "tank"])
+      .default("everyone")
+      .describe("func_breakable's BreakableType; only Tanks is a one-hit barricade."),
+    propdata: z
+      .number()
+      .int()
+      .min(0)
+      .max(25)
+      .optional()
+      .describe("BreakableBrush propdata index; overrides health and weapon damage."),
+    surfacetype: z.enum(["glass", "tile"]).default("glass").describe("func_breakable_surf only."),
+    fragility: z.number().int().min(0).default(100).describe("func_breakable_surf only."),
+    mass: z.number().positive().optional().describe("func_physbox mass scale."),
+    targetname: z.string().optional(),
+    texture: z
+      .string()
+      .default("CONCRETE/CONCRETE01")
+      .describe("Brush material; `func_breakable_surf` needs a breakable window material."),
+    keyvalues: z.record(z.string()).default({}),
+    outputs: z.array(OUTPUT).default([]),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classname: z.string(),
+    solidIds: z.array(z.number()),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const kind = args.kind ?? "breakable";
+    const classname =
+      kind === "surface" ? "func_breakable_surf" : kind === "physbox" ? "func_physbox" : "func_breakable";
+    const keyvalues: Record<string, string> = {
+      classname,
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+      ...(kind !== "surface"
+        ? {
+            material: String(BREAKABLE_MATERIAL[args.material ?? "cinderblock"] ?? 10),
+            health: String(args.health ?? 10),
+          }
+        : {
+            health: String(args.health ?? 5),
+            surfacetype: String((args.surfacetype ?? "glass") === "tile" ? 1 : 0),
+            fragility: String(args.fragility ?? 100),
+          }),
+      ...(kind === "breakable"
+        ? {
+            BreakableType: String(
+              (args.breakableBy ?? "everyone") === "infected"
+                ? 1
+                : (args.breakableBy ?? "everyone") === "tank"
+                  ? 2
+                  : 0,
+            ),
+          }
+        : {}),
+      ...(args.propdata !== undefined ? { propdata: String(args.propdata) } : {}),
+      ...(kind === "physbox" && args.mass !== undefined ? { massScale: String(args.mass) } : {}),
+      ...(args.keyvalues ?? {}),
+    };
+    const warnings = await fgdWarnings(classname, keyvalues, ctx);
+    if (kind === "surface") {
+      warnings.push(
+        "func_breakable_surf: every face except the visible one must be TOOLS/TOOLSNODRAW, " +
+          "the visible face must be four-sided, and the material must be a breakable window.",
+      );
+    }
+    const brush = await addBrushEntity(path, keyvalues, args.bounds, args.texture ?? "CONCRETE/CONCRETE01", ctx);
+    if (brush.id === null) throw new Error("the breakable brush was not created");
+    await addOutputs(path, brush.id, args.outputs ?? [], ctx);
+    return {
+      path,
+      entityId: brush.id,
+      classname,
+      solidIds: brush.solidIds,
+      keyvalues,
+      warnings,
+      nextStep:
+        "Compile and break it. `func_breakable` starts solid and disappears at 0 health; " +
+        "`func_breakable_surf` keeps its frame. A `prop_wall_breakable`/`prop_car_glass` is " +
+        "a prop model, not this brush.",
+    };
+  },
+});
+
 export const entityExtraTools = [
   writePropTool,
   writeConstraintTool,
   writeLadderTool,
+  writeBreakableTool,
   writeSceneTool,
   writeAmbientGenericTool,
 ];
