@@ -1,6 +1,6 @@
 # VScript authoring
 
-4 tools: Squirrel source: writing and checking .nut files, DirectorOptions and include paths.
+5 tools: Squirrel source: writing and checking .nut files, DirectorOptions and include paths.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -12,3 +12,9 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_vscript` | Reads a .nut as Squirrel without running it: functions, IncludeScript targets, the DirectorOptions and MutationOptions tables, the custom-finale stage list, whether a load banner exists, and diagnostics. |
 | `read_vscript_api` | Lists the Left 4 Dead 2 VScript contract this server knows: game events from the engine's own `resource/modevents.res`, the `OnGameEvent_<event>` hook names derived from them, named hooks such as OnMapSpawn, and the DirectorOptions/MutationOptions catalogue with each key's expected type. |
 | `write_vscript` | Writes a Left 4 Dead 2 VScript (.nut) and optionally attaches it to a map. |
+
+## Script catalogue
+
+| Tool | What it does |
+|---|---|
+| `read_script_catalog` | Lists the VScript files the SDK and game carry: `.nut` source, `.nuc` compiled, or both, by category (`usetargets`, `entitygroups`, `mutations`, `anv*`, `director`, `root`) with bytes, `IncludeScript` edges and whether only the compiled file exists. |

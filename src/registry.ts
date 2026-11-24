@@ -101,6 +101,7 @@ import { entityGroupTools } from "./maps/typescript/tools/entitygroup.js";
 import { itemDensityTools } from "./maps/typescript/tools/itemdensity.js";
 import { variabilityTools } from "./maps/typescript/tools/variability.js";
 import { finaleContractTools } from "./campaigns/typescript/tools/finalecontract.js";
+import { scriptCatalogTools } from "./scripts/typescript/tools/scriptcatalog.js";
 import { qcTools } from "./models/typescript/tools/qc.js";
 import { modelCheckTools } from "./models/typescript/tools/check.js";
 import { modelCollisionTools } from "./models/typescript/tools/collision.js";
@@ -217,6 +218,7 @@ export const allTools: AnyToolDef[] = [
   ...itemDensityTools,
   ...variabilityTools,
   ...finaleContractTools,
+  ...scriptCatalogTools,
   ...bspLumpTools,
   ...staticPropTools,
   ...qcTools,

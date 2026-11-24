@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.276-alpha - 2026-11-24
+
+- **`read_script_catalog` inventories the `.nut`/`.nuc` trees** from the SDK and game:
+  category, source/compiled presence, bytes, `IncludeScript` edges and a compiled-only note.
+  It is a file inventory, not a compiler or loader proof.
+- **Measured:** the SDK `usetargets` family is present; `emergency_ammo.nut` reports its
+  `usetargets/base_buildable_target` include; the catalogue finds 12+ use-target scripts.
+- **Tool count: 304.** Tests: 254 files, 2,008 passed, 32 skipped.
+
 ## 0.0.275-alpha - 2026-11-24
 
 - **`check_finale_contract` checks types 0/1/2/4 offline.** Exactly one `trigger_finale`,

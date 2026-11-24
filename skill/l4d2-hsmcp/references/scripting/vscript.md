@@ -3,6 +3,23 @@
 L4D2 supports VScript natively, and an add-on VPK can ship it. This page covers what is
 verified: the file path, the attachment entity, and how to prove the engine loaded it.
 
+## Find the script first
+
+`read_script_catalog` inventories the SDK and game `scripts/vscripts` trees: name, category
+(`usetargets`, `entitygroups`, `mutations`, `anv*`, `director`, `root`), bytes, whether the
+source `.nut` exists, whether a `.nuc` exists, and each `IncludeScript` edge.
+
+```text
+read_script_catalog(search: "emergency_ammo", details: true)
+read_script_catalog(category: "usetargets", limit: 1000)
+```
+
+A `.nuc` without a `.nut` is compiled-only: it can be loaded but not read or patched here.
+A `.nut` without a `.nuc` is source the engine can execute; a shipped add-on should include it
+in `scripts/vscripts`. The catalogue is a file inventory, not a loader proof; use
+`read_vscript`/`check_vscript_contract` for content and `logic_script`/`script_execute` for the
+load path.
+
 ## Where the file goes
 
 ```
