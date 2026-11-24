@@ -65,6 +65,9 @@ contracts the tools enforce.
       changelevel and `FinaleEscapeStarted` wiring.
 - [ ] `read_static_props` with the `vmf`: a missing `.phy` on a decorative model is not a
       failure; on a solid prop it is.
+- [ ] The gate's `audit` stage: item spawners against the ~150 budget, displacement count,
+      the four atmosphere controllers, and duplicated targetnames (a shared name fires an
+      output at every copy; a warning, not a failure).
 - [ ] `run_map_test` with the exact nav-generated BSP/nav pair; screenshot per requested
       mechanic. `NAV ERRORS` or `Map is unplayable` in the log fails the run.
 - [ ] `check_campaign(vpk: ...)` reads the installed archive.

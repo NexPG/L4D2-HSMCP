@@ -40,7 +40,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_mutation` | scaffolds `modes/<name>.txt`, `scripts/vscripts/<name>.nut` and `addoninfo.txt` for a new mutation |
 | `read_special_infected` | effective special-infected limits from MutationOptions, DirectorOptions or z_*_limit convars, with impossible-set checks |
 | `check_campaign` | verify chapters, maps, images against real files or VPKs |
-| `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, finale, trouble report, map test |
+| `run_campaign_gate` | one gate: mission, lint, compile, nav, collision, content audit (items/terrain/atmosphere/targetnames), finale + nav areas, trouble report, map test |
 | `check_finale` | finale contract: type, script, stage list, FINALE nav, escape outputs |
 
 | `write_addoninfo` | write `addoninfo.txt` with the AI provenance line before packing |

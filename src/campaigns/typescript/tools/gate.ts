@@ -6,12 +6,16 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { checkCampaignTool } from "./campaign.js";
 import { runCompile } from "../../../maps/typescript/tools/compile.js";
 import { checkFinaleTool } from "./finale.js";
+import { checkFinaleContract } from "./finalecontract.js";
 import { checkTransitionTool } from "./campaignbuild.js";
 import { readStaticProps } from "../../../maps/typescript/tools/measure.js";
 import { navTroubleReport } from "../../../nav/typescript/tools/navtrouble.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { runMapTest, runNavGenerate } from "../../../scripts/typescript/tools/runtime.js";
 import { readVmfLint } from "../../../maps/typescript/tools/vmf.js";
+import { readDisplacements } from "../../../maps/typescript/bsp/displacements.js";
+import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
+import { readItemDensityTool } from "../../../maps/typescript/tools/itemdensity.js";
 
 const KIND = z.enum(["first", "middle", "last", "single"]);
 const STAGE = z.enum([
@@ -20,6 +24,7 @@ const STAGE = z.enum([
   "compile",
   "nav",
   "props",
+  "audit",
   "transition",
   "finale",
   "trouble",
@@ -143,6 +148,16 @@ const FINALE = z.object({
   errors: z.number(),
   warnings: z.number(),
   rules: z.array(z.string()),
+  contract: z
+    .object({
+      verdict: z.enum(["pass", "fail", "unknown"]),
+      finaleAreas: z.number().nullable(),
+      rescueAreas: z.number().nullable(),
+      escapeAreas: z.number().nullable(),
+      failures: z.array(z.string()),
+      warnings: z.array(z.string()),
+    })
+    .nullable(),
 });
 
 const TROUBLE = z.object({
@@ -161,6 +176,24 @@ const TEST = z.object({
   navErrors: z.array(z.string()),
 });
 
+const AUDIT = z.object({
+  ok: z.boolean(),
+  items: z.object({
+    total: z.number(),
+    random: z.number(),
+    status: z.enum(["sparse", "in-range", "dense"]),
+  }),
+  terrain: z.object({ displacements: z.number() }),
+  atmosphere: z.object({
+    fog: z.number(),
+    postprocess: z.number(),
+    tonemap: z.number(),
+    colourCorrection: z.number(),
+  }),
+  prefab: z.object({ duplicateTargetnames: z.number(), rules: z.array(z.string()) }),
+  warnings: z.array(z.string()),
+});
+
 const MAP_RESULT = z.object({
   map: z.string(),
   kind: KIND,
@@ -174,6 +207,7 @@ const MAP_RESULT = z.object({
   nav: NAV.nullable(),
   props: PROPS.nullable(),
   finale: FINALE.nullable(),
+  audit: AUDIT.nullable(),
   trouble: TROUBLE.nullable(),
   test: TEST.nullable(),
 });
@@ -200,9 +234,12 @@ export const runCampaignGate = defineTool({
   description:
     "Runs a campaign through one gate instead of a checklist an agent can forget: mission " +
     "check, VMF lint, compile, nav generation with the string-table dictionary baked, a " +
-    "fresh BSP/nav pair, static-prop collision, every chapter transition (door class near " +
-    "the landmark, matching landmark, arrival volume), the finale contract, the engine's own " +
-    "`nav_trouble_report`, and a map test that installs the exact pair it just produced. " +
+    "fresh BSP/nav pair, static-prop collision, an offline content audit (item density, " +
+    "terrain, atmosphere counts, duplicated targetnames), every chapter transition (door " +
+    "class near the landmark, matching landmark, arrival volume), the finale contract (type, " +
+    "script shape, FINALE/RESCUE_VEHICLE/ESCAPE_ROUTE nav areas), the " +
+    "engine's own `nav_trouble_report`, and a map test that installs the exact pair it just " +
+    "produced. " +
     "Every stage reports its own verdict and the gate stops at the first hard failure by " +
     "default, because a compile after a lint error or a nav for a map that did not compile " +
     "is wasted time. `stopOnError: false` runs every stage and collects the whole picture. " +
@@ -228,7 +265,7 @@ export const runCampaignGate = defineTool({
     maps: z.array(MAP).min(1),
     stages: z
       .array(STAGE)
-      .default(["campaign", "lint", "compile", "nav", "props", "transition", "finale", "trouble", "test"])
+      .default(["campaign", "lint", "compile", "nav", "props", "audit", "transition", "finale", "trouble", "test"])
       .describe("Stages to run, in this order. Default: all of them."),
     navDir: z
       .string()
@@ -270,6 +307,7 @@ export const runCampaignGate = defineTool({
       "compile",
       "nav",
       "props",
+      "audit",
       "transition",
       "finale",
       "trouble",
@@ -358,6 +396,7 @@ export const runCampaignGate = defineTool({
         nav: null,
         props: null,
         finale: null,
+        audit: null,
         trouble: null,
         test: null,
       };
@@ -511,6 +550,85 @@ export const runCampaignGate = defineTool({
         result.props = summarizeProps(props);
       }
 
+      if (stages.includes("audit") && result.shippingBsp) {
+        stagesRun.push("audit");
+        const bsp = result.shippingBsp;
+        const density = (await readItemDensityTool.handler(
+          {
+            path: bsp,
+            expected: 150,
+            ...(result.shippingNav ? { nav: result.shippingNav } : {}),
+          },
+          ctx,
+        )) as {
+          total: number;
+          categories: Record<string, number>;
+          budget: { expected: number; status: "sparse" | "in-range" | "dense" };
+        };
+        const displacements = readDisplacements(bsp, 1).count;
+        const entities = readEntityLump(bsp).entities;
+        const countClass = (test: (classname: string) => boolean): number =>
+          entities.filter((entity) => test(entity.classname)).length;
+        const atmosphere = {
+          fog: countClass((c) => c === "env_fog_controller"),
+          postprocess: countClass((c) => c === "postprocess_controller"),
+          tonemap: countClass((c) => c.startsWith("env_tonemap_controller")),
+          colourCorrection: countClass((c) => c === "color_correction"),
+        };
+        const names = new Map<string, number>();
+        for (const entity of entities) {
+          const name = entity.targetname?.trim();
+          if (name) names.set(name, (names.get(name) ?? 0) + 1);
+        }
+        const duplicates = [...names.entries()]
+          .filter(([, uses]) => uses > 1)
+          .sort((a, b) => b[1] - a[1]);
+        const warnings: string[] = [];
+        if (density.budget.status !== "in-range") {
+          warnings.push(
+            `${density.total} weapon spawners is ${density.budget.status} for a ` +
+              `~${density.budget.expected} budget`,
+          );
+        }
+        if (duplicates.length > 0) {
+          const top = duplicates
+            .slice(0, 5)
+            .map(([name, uses]) => `${name} x${uses}`)
+            .join(", ");
+          warnings.push(
+            `${duplicates.length} targetnames are shared by more than one entity ` +
+              `(${top}); an output to a shared name fires at every copy`,
+          );
+        }
+        if (atmosphere.fog > 1) {
+          warnings.push(
+            `${atmosphere.fog} env_fog_controller entities; a layered atmosphere is ` +
+              "intentional in a multi-zone chapter, but check that each zone has its own " +
+              "trigger and none was pasted twice at one origin",
+          );
+        }
+        result.audit = {
+          ok: density.budget.status !== "dense",
+          items: {
+            total: density.total,
+            random: density.categories["random"] ?? 0,
+            status: density.budget.status,
+          },
+          terrain: { displacements },
+          atmosphere,
+          prefab: {
+            duplicateTargetnames: duplicates.length,
+            rules: duplicates.slice(0, 20).map(([name, uses]) => `${name} x${uses}`),
+          },
+          warnings,
+        };
+        if (!result.audit.ok) {
+          hardStop("audit");
+          results.push(result);
+          continue;
+        }
+      }
+
       if (stages.includes("finale")) {
         stagesRun.push("finale");
         const defaultScriptDirs = [
@@ -544,11 +662,38 @@ export const runCampaignGate = defineTool({
           errors: finale.counts.error,
           warnings: finale.counts.warning,
           rules: finale.findings.map((f) => f.rule),
+          contract: null,
         };
         if (!finale.ok) {
           hardStop("finale");
           results.push(result);
           continue;
+        }
+        if (spec.kind === "last" || spec.kind === "single") {
+          // The contract adds what the script check cannot see: the FINALE/RESCUE_VEHICLE/
+          // ESCAPE_ROUTE nav areas and the gas cans a Scavenge finale needs.
+          const contractPath = result.shippingBsp ?? source;
+          const contractNav =
+            result.shippingNav && existsSync(result.shippingNav)
+              ? result.shippingNav
+              : undefined;
+          const contract = checkFinaleContract(contractPath, {
+            ...(contractNav ? { nav: contractNav } : {}),
+          });
+          result.finale.contract = {
+            verdict: contract.verdict,
+            finaleAreas: contract.finaleAreas,
+            rescueAreas: contract.rescueAreas,
+            escapeAreas: contract.escapeAreas,
+            failures: contract.failures,
+            warnings: contract.warnings,
+          };
+          if (contract.verdict === "fail") {
+            result.finale.ok = false;
+            hardStop("finale");
+            results.push(result);
+            continue;
+          }
         }
       }
 
@@ -704,7 +849,12 @@ export const runCampaignGate = defineTool({
         "The shipping BSP is the nav-generated one: the engine appends the string-table " +
         "dictionary at nav time, so the compile output and the tested map are not the same " +
         "file. `stoppedAt` names the first hard failure for each map; the remaining stages " +
-        "for that map are reported as null, not as passes. `transitions` checks every " +
+        "for that map are reported as null, not as passes. `audit` is the offline content " +
+        "check: item density against the chapter budget, displacement count, the four " +
+        "atmosphere controllers and duplicated targetnames (a warning unless items are " +
+        "dense). `finale.contract` is the nav-area side of the finale (FINALE / " +
+        "RESCUE_VEHICLE / ESCAPE_ROUTE), checked when the .nav is available. " +
+        "`transitions` checks every " +
         "chapter pair after the maps are built: the door is resolved by class near the " +
         "landmark, so an unnamed stock door passes.",
     };

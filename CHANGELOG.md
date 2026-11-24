@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.278-alpha - 2026-11-24
+
+- **`run_campaign_gate` gains an offline `audit` stage.** Item spawners against the measured
+  ~150 chapter budget (dense is a hard stop, sparse a warning), displacement count, the four
+  atmosphere controller counts, and targetnames shared by more than one entity (an output to
+  a shared name fires at every copy; a warning).
+- **The `finale` stage now also checks the nav contract.** Type/script shape from the script
+  check, then FINALE/RESCUE_VEHICLE/ESCAPE_ROUTE areas and Scavenge gas cans from
+  `check_finale_contract`; a failing contract stops the map.
+- **Measured:** `c2m1_highway` audits 187 spawners / 60 random / `in-range`; campaign 003 m1
+  has 21 displacements and 6 fog / 3 postprocess / 3 colour-correction / 3 tonemap, m2's
+  contract reports 112 FINALE areas. Live gate run deferred while the launch pause holds.
+- **Tool count: 305.** Tests: 256 files, 2,011 passed, 32 skipped.
+
 ## 0.0.277-alpha - 2026-11-24
 
 - **`check_director_options` validates the Director/Mutation options table offline.** Known

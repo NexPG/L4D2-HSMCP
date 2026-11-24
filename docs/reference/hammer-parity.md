@@ -259,7 +259,7 @@ map and looking, or by not happening at all.
 | `nav_los` | nothing: Hammer has no nav-aware sight query |
 | `run_nav_generate` | the engine's nav generator, driven without a person at the console |
 | `check_finale` | nothing: no editor checks the finale contract — type, script, stage list, nav area, escape outputs |
-| `run_campaign_gate` | nothing: lint, compile, nav, collision, finale, trouble report and map test are separate manual acts |
+| `run_campaign_gate` | nothing: lint, compile, nav, collision, content audit, finale + nav areas, trouble report and map test are separate manual acts |
 | `run_map_test` | nothing: loading a map and watching the console is a manual act |
 | `read_vscript` | nothing: the editor never reads a `.nut` |
 | `write_vscript` | nothing: Hammer cannot author or attach a Squirrel script |

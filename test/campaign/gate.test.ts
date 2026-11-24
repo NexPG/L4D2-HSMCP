@@ -48,8 +48,7 @@ describe("the gate's props stage", () => {
   });
 });
 
-describe.skipIf(!has.gameContent)("the gate's transition stage", () => {
-  it("passes a stock pair from its compiled BSPs", async () => {
+describe.skipIf(!has.gameContent)("the gate's transition stage", () => {  it("passes a stock pair from its compiled BSPs", async () => {
     const maps = join(config.gameDir!, "maps");
     const first = join(maps, "c1m1_hotel.bsp");
     const second = join(maps, "c1m2_streets.bsp");
@@ -75,5 +74,47 @@ describe.skipIf(!has.gameContent)("the gate's transition stage", () => {
       to: "c1m2_streets",
       ok: true,
     });
+  });
+});
+
+describe.skipIf(!has.gameContent)("the gate's audit stage", () => {
+  it("reports the item layer, terrain, atmosphere and shared names of an official map", async () => {
+    const bsp = join(config.gameDir!, "maps", "c2m1_highway.bsp");
+    if (!existsSync(bsp)) return;
+    const r = (await runCampaignGate.handler(
+      {
+        maps: [{ name: "c2m1_highway", kind: "first", bsp }],
+        stages: ["audit"],
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as {
+      ok: boolean;
+      maps: Array<{
+        audit: {
+          ok: boolean;
+          items: { total: number; random: number; status: string };
+          terrain: { displacements: number };
+          atmosphere: {
+            fog: number;
+            postprocess: number;
+            tonemap: number;
+            colourCorrection: number;
+          };
+          prefab: { duplicateTargetnames: number };
+          warnings: string[];
+        } | null;
+      }>;
+    };
+    expect(r.ok).toBe(true);
+    const audit = r.maps[0]!.audit!;
+    // Measured: c2m1_highway has 187 spawners, 60 of them the random layer.
+    expect(audit.items.total).toBe(187);
+    expect(audit.items.random).toBe(60);
+    expect(audit.items.status).toBe("in-range");
+    expect(audit.terrain.displacements).toBeGreaterThan(0);
+    expect(audit.atmosphere.fog).toBeGreaterThan(0);
+    expect(audit.atmosphere.colourCorrection).toBeGreaterThan(0);
+    expect(audit.prefab.duplicateTargetnames).toBeGreaterThanOrEqual(0);
   });
 });
