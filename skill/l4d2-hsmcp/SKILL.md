@@ -84,6 +84,7 @@ again.
 | Official servers work, a friend's local/listen server does not | Check the game's `Network: IP` line; use a Steam lobby, not `connect` to a NAT'd host, and remove `-insecure` | `troubleshooting/local-server-connection.md` |
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
 | Nav generation finishes in 0.1 s and the dump has 0 areas | Put the spawn on a flat brush ring, keep the patch's rise ≤96 units from it, and block scenery tops with `func_nav_blocker`; a pure displacement floor or a 2048 patch at 1:12 gives empty nav | `troubleshooting/terrain-nav-empty.md` |
+| vvis takes minutes and the PVS is huge; every trim, pillar and window frame is structural | Move visual-only brushes into `func_detail`, then compile and `read_leak` because detail does not seal; use `func_areaportal`/`func_occluder` only after the hull is closed | `references/mapping/detail-and-vis.md` |
 
 ## Route the task first
 
@@ -140,6 +141,8 @@ material; the instructions live in one place.
 | `references/mapping/world-dressing.md` | light, postprocess, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
 | `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
+| `references/mapping/detail-and-vis.md` | world vs `func_detail` vs `func_brush`/`func_lod`, and areaportal/occluder rules |
+| `references/mapping/terrain-water-boundaries.md` | terrain patches, slope/profile, the measured nav band, water and map edges |
 | `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |

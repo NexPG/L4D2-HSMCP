@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.261-alpha - 2026-11-24
+
+- **The brush-class decision table is documented.** New
+  `references/mapping/detail-and-vis.md`: world vs `func_detail` vs `func_brush` vs
+  `func_lod`, and `func_areaportal` / `func_areaportalwindow` / `func_occluder` /
+  `func_detail_blocker`, with what each costs and the seal trap. `func_brush` defaults to
+  `Solidity 1` (never solid); `func_lod`'s `Solid 0` is solid, `1` is not.
+- **The "detail is not structural" rule is in the mistakes table.** Move visual-only
+  brushes into `func_detail`, then compile and `read_leak`; a detail wall does not seal.
+- **Santa Monica chapter 1 uses facade detail.** The beach-house parapets are one
+  `func_detail` entity instead of world brushes; lint is clean, both chapters compile,
+  nav, pass `nav_trouble_report`, map tests and the checkpoint transition.
+- **Tool count: 295.** Tests: 243 files, 1,978 passed, 32 skipped.
+
 ## 0.0.260-alpha - 2026-11-24
 
 - **`write_vmf_terrain` shapes a patch, not a row of sawteeth.** New `slope` and

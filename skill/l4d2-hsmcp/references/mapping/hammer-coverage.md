@@ -102,6 +102,8 @@ covered: this table is the summary.
 | Areaportal / occluder | `write_portal` | verified: a `func_areaportal` filling a sealed doorway compiled with vbsp and vvis |
 | Visgroups / groups / cordon | `set_visgroup`, `auto_visgroups`, `group_solids`, `set_cordon` | verified for the cordon: an active box filters the compile copy, and the leaky structure outside it is absent from the BSP (`tools-compile.test.ts`). Auto visgroups build one group per class and one per dominant material |
 
+The class decision table, the seal trap and the runtime cost of each: `detail-and-vis.md`.
+
 ## Campaign wiring
 
 | Feature | Tool | Status |
