@@ -58,6 +58,8 @@ contracts the tools enforce.
 
 - [ ] `run_compile` clean; `read_map_geometry` under limits.
 - [ ] `run_nav_generate` `fresh: true`, dictionary true, dump `playable`.
+- [ ] A build with `navSlopeLimit` passes the same value to `run_campaign_gate`; the gate
+      regenerates nav and the game default can differ.
 - [ ] `nav_trouble_report` returns `pass`: orphan, missing Finale/Checkpoint/Battlefield,
       overlap, corner-to-corner, non-walkable connections. A failure comes with the selected
       areas' coordinates; fix the geometry rather than deleting nav areas.

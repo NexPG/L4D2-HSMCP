@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.285-alpha - 2026-11-25
+
+- **`run_campaign_gate` accepts a per-map `allowMissingSkyFaces`** and passes it to
+  `run_compile`. A map with an HDR-only sky (which L4D2 plays) no longer fails the gate's LDR
+  compile check; the campaign build already needed this flag.
+- **Documented the `navSlopeLimit` handoff:** a build that used one must pass the same value to
+  the gate, which regenerates nav; the game default can report a short vertical connection the
+  shipping mesh does not have.
+- **Live baseline:** the full campaign 003 gate now passes on both maps with
+  `navSlopeLimit: 0.5` and `allowMissingSkyFaces` on m1. Evidence: m1 1,273 nav areas / 21
+  displacements / 6 fog / 3 postprocess / 3 colour correction / 3 tonemap / 0 duplicate
+  targetnames; m2 452 areas / 112 FINALE / finale contract pass; transition and both map
+  tests pass (`matched`). Item density is still 5 per map (`sparse`) — the F4 design work.
+- **Tool count: 308.** Tests: 258 files, 2,021 passed, 32 skipped.
+
 ## 0.0.284-alpha - 2026-11-25
 
 - **A new map or campaign is now two passes.** Pass 1 writes

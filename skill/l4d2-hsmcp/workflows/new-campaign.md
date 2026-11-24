@@ -75,6 +75,10 @@ CHECKPOINT/PLAYER_START/FINALE on the right areas, and the live `nav_trouble_rep
 flow. The dump's `0x20000000` is `MOSTLY_FLAT`, not flow. No flow
 means no playable map, even with a valid file.
 
+If the build passed a `navSlopeLimit`, pass the **same value** to `run_campaign_gate`. The
+gate regenerates nav; without the limit it uses the game default and can report a short
+vertical connection the shipping mesh does not have.
+
 ## 5. Mission and add-on
 
 1. `write_campaign` into `addon/missions/<name>.txt`, with the same base name the VPK will

@@ -72,6 +72,13 @@ const MAP = z.object({
       "scripts/vscripts directory installed for the test. Default `<source>/../addon/scripts/vscripts` " +
         "when it exists.",
     ),
+  allowMissingSkyFaces: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Passed to run_compile. Set it for a map whose chosen sky is HDR-only (L4D2 plays " +
+        "HDR) or LDR-only; the compile otherwise refuses a mode with missing faces.",
+    ),
 });
 
 const LINT = z.object({
@@ -244,7 +251,9 @@ export const runCampaignGate = defineTool({
     "default, because a compile after a lint error or a nav for a map that did not compile " +
     "is wasted time. `stopOnError: false` runs every stage and collects the whole picture. " +
     "The shipping BSP is the nav-generated one, not the compile output: the engine appends " +
-    "the dictionary at nav time, and shipping the compile output makes the pair stale. " +
+    "the dictionary at nav time, and shipping the compile output makes the pair stale. A map " +
+    "whose chosen sky is HDR-only (L4D2 plays HDR) sets `allowMissingSkyFaces` so the compile " +
+    "does not refuse the LDR half. " +
     "Long-running and guarded; the full gate on two maps is tens of minutes.",
   realm: "local",
   guarded: true,
@@ -441,6 +450,7 @@ export const runCampaignGate = defineTool({
             stages: ["vbsp", "vvis", "vrad"],
             toolchain: "plusplus",
             timeoutMinutes: args.timeoutMinutes,
+            allowMissingSkyFaces: spec.allowMissingSkyFaces,
             confirm: true,
           },
           ctx,
