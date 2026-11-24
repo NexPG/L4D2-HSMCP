@@ -169,7 +169,7 @@ const AREAS: Area[] = [
     slug: "vscript",
     title: "VScript authoring",
     covers: "Squirrel source: writing and checking .nut files, DirectorOptions and include paths",
-    groups: { "VScript source": ["vscript"], "Script catalogue": ["scriptcatalog"] },
+    groups: { "VScript source": ["vscript"], "Script catalogue": ["scriptcatalog"], "Director options": ["directoroptions"] },
   },
   {
     slug: "runtime",

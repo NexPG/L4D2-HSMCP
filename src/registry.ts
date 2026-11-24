@@ -102,6 +102,7 @@ import { itemDensityTools } from "./maps/typescript/tools/itemdensity.js";
 import { variabilityTools } from "./maps/typescript/tools/variability.js";
 import { finaleContractTools } from "./campaigns/typescript/tools/finalecontract.js";
 import { scriptCatalogTools } from "./scripts/typescript/tools/scriptcatalog.js";
+import { directorOptionsTools } from "./scripts/typescript/tools/directoroptions.js";
 import { qcTools } from "./models/typescript/tools/qc.js";
 import { modelCheckTools } from "./models/typescript/tools/check.js";
 import { modelCollisionTools } from "./models/typescript/tools/collision.js";
@@ -219,6 +220,7 @@ export const allTools: AnyToolDef[] = [
   ...variabilityTools,
   ...finaleContractTools,
   ...scriptCatalogTools,
+  ...directorOptionsTools,
   ...bspLumpTools,
   ...staticPropTools,
   ...qcTools,

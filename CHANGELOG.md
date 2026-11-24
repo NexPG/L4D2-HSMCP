@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.277-alpha - 2026-11-24
+
+- **`check_director_options` validates the Director/Mutation options table offline.** Known
+  keys, number/boolean types, non-negative limits, `MinSpecials <= MaxSpecials`, and the
+  `read_vscript` diagnostics. Unknown keys stay information, because the catalogue is not the
+  engine's complete API; a pass is a table check, not a Director run.
+- **Verified:** a valid table passes; `TankLimit = -1` and `MinSpecials 3 > MaxSpecials 2`
+  fail; the stock no-mob script (runtime assignments, no table) passes.
+- **Tool count: 305.** Tests: 256 files, 2,010 passed, 32 skipped.
+
 ## 0.0.276-alpha - 2026-11-24
 
 - **`read_script_catalog` inventories the `.nut`/`.nuc` trees** from the SDK and game:

@@ -1,6 +1,6 @@
 # VScript authoring
 
-5 tools: Squirrel source: writing and checking .nut files, DirectorOptions and include paths.
+6 tools: Squirrel source: writing and checking .nut files, DirectorOptions and include paths.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -18,3 +18,9 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | Tool | What it does |
 |---|---|
 | `read_script_catalog` | Lists the VScript files the SDK and game carry: `.nut` source, `.nuc` compiled, or both, by category (`usetargets`, `entitygroups`, `mutations`, `anv*`, `director`, `root`) with bytes, `IncludeScript` edges and whether only the compiled file exists. |
+
+## Director options
+
+| Tool | What it does |
+|---|---|
+| `check_director_options` | Validates the DirectorOptions/MutationOptions table in a .nut without running it: known keys, number/boolean types, non-negative limits, MinSpecials <= MaxSpecials and the read_vscript diagnostics. |

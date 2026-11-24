@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **304 tools**.
+Last checked against the tool list on 24/11/2026: **305 tools**.
 
 ## The file itself
 
@@ -157,6 +157,7 @@ getting `ENOENT` on the first call.
 | Templated spawns | `write_template_spawner` | `point_template` + `env_entity_maker`, `ForceSpawn` |
 | Finale contract | `check_finale_contract` | `trigger_finale` count/type, type-4 gas cans, FINALE/RESCUE/ESCAPE nav areas |
 | VScript catalogue | `read_script_catalog` | `.nut`/`.nuc` inventory by category, source presence and includes |
+| Director options | `check_director_options` | table keys/types, non-negative limits, MinSpecials <= MaxSpecials |
 
 ## Organisation
 

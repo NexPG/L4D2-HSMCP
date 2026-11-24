@@ -48,6 +48,23 @@ script, `addoninfo.txt`) and validate the whole add-on with `check_mutation`.
 - `addoninfo.txt` sets `addonContent_Script 1` when a script ships.
 
 A convar-only mutation with no script is valid; the warning says so rather than failing.
+
+## Validate the options table
+
+`check_director_options(path)` reads the table without running it: known
+`DirectorOptions`/`MutationOptions` keys, number/boolean types, non-negative limits,
+`MinSpecials <= MaxSpecials`, and the `read_vscript` Lua diagnostics. Unknown keys are
+information, not errors, because the catalogue is not the engine's complete API.
+
+```text
+check_director_options(path: "scripts/vscripts/my_mutation.nut")
+```
+
+Measured: a table with `CommonLimit = 0; MinSpecials = 0; MaxSpecials = 2` passes; one with
+`TankLimit = -1; MinSpecials = 3; MaxSpecials = 2` fails on the sign and the impossible pair.
+The stock no-mob script (`santa_monica_nomobs.nut`) has no table literal and passes, because
+it assigns `DirectorOptions` fields at runtime; a pass is a table check, not a live Director
+proof.
 `check_mutation` also resolves the special-infected set and fails a negative limit or
 `MinSpecials > MaxSpecials`; `write_mutation` refuses to write such a set.
 
