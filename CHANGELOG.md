@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.286-alpha - 2026-11-25
+
+- **One workspace per addon.** `write_addon_workspace(name, kind)` creates
+  `workspaces/<addon-name>/` with `plan/` (`DESIGN.md`, `ASSETS.md`), `templates/`
+  (`addoninfo.txt`, `mission.txt`), `logs/` (`errors.md`, `gate.json`), `src/`, `addon/`,
+  `dist/` and `evidence/`. The directory is named after the addon; a non-empty one is refused
+  unless `overwrite: true`. No map and no game file is written.
+- **Two-pass paths point at the workspace:** pass 1 writes `plan/DESIGN.md` and stops; pass 2
+  builds into `src/` and stages in `addon/`. `workspaces/` is local and ignored.
+- **Skill:** `workflows/addon-workspace.md` defines the layout and the log rules; the design,
+  build, mission and deployment pages route through it.
+- **Tool count: 309.** Tests: 259 files, 2,024 passed, 32 skipped.
+
 ## 0.0.285-alpha - 2026-11-25
 
 - **`run_campaign_gate` accepts a per-map `allowMissingSkyFaces`** and passes it to

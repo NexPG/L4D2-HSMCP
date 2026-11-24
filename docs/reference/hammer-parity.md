@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **308 tools**.
+Last checked against the tool list on 24/11/2026: **309 tools**.
 
 ## The file itself
 
@@ -345,6 +345,7 @@ map and looking, or by not happening at all.
 | `write_scene` | a choreographed scene with its .vcd and targets |
 | `write_ambient_generic` | an ambient sound with its soundscript name and volume |
 | `write_addon_scaffold` | a script addon needs a manifest and a mapspawn; this is the starting layout |
+| `write_addon_workspace` | every addon gets one named workspace with plan/templates/logs/src/addon/dist/evidence |
 | `install_addon` | copying a VPK/folder into the game is a manual file operation |
 | `write_mission_poster` | the poster block is hand-written in the mission file |
 | `write_detail_sprites` | detail.vbsp is hand-edited KeyValues |

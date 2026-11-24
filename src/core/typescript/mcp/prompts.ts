@@ -51,15 +51,16 @@ export const SKILL_PROMPTS: readonly SkillPrompt[] = [
     render: (args) =>
       `Use the L4D2-HSMCP skill page l4d2-hsmcp://skill/workflows/design-a-map.md.\n\n` +
       `Brief: ${given(args.brief)}\n\n` +
-      `Pass 1 only. Use read-only tools to query every asset, class and peer number, write ` +
-      `campaigns/<NNN-slug>/DESIGN.md with the full template, set Status: draft, report the ` +
-      `path and stop for approval. Do not create a .vmf and do not start the build.`,
+      `Pass 1 only. Create the workspace with write_addon_workspace, then use read-only tools ` +
+      `to query every asset, class and peer number, write ` +
+      `workspaces/<addon-name>/plan/DESIGN.md with the full template, set Status: draft, report ` +
+      `the path and stop for approval. Do not create a .vmf and do not start the build.`,
   },
   {
     name: "l4d2_build_from_design",
     title: "Build from an approved design (pass 2)",
     description: "Build the map or campaign that DESIGN.md describes.",
-    args: { design: z.string().describe("Path to campaigns/<NNN-slug>/DESIGN.md.") },
+    args: { design: z.string().describe("Path to workspaces/<addon-name>/plan/DESIGN.md.") },
     render: (args) =>
       `Use the L4D2-HSMCP skill page l4d2-hsmcp://skill/workflows/new-campaign.md.\n\n` +
       `Design: ${given(args.design)}\n\n` +

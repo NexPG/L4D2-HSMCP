@@ -24,9 +24,10 @@ scratchpad/
 # Development diary: working notes for this fork, kept locally and never published.
 .develop-diary/
 
-# Test campaigns: the directory itself is local, never pushed.
+# Test campaigns and addon workspaces: the directories themselves are local, never pushed.
 # History lives here; the game only ever holds the latest deploy.
 /campaigns/
+/workspaces/
 /addons/
 .3d-projects/
 

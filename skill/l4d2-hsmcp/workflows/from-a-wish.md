@@ -6,7 +6,8 @@ requested mechanic.
 
 **A new map or campaign is two passes, and they do not run in one message.**
 
-1. **Pass 1 — design.** Produce `campaigns/<NNN-slug>/DESIGN.md`: the complete route, rooms,
+1. **Pass 1 — design.** Create the workspace with `write_addon_workspace`, then produce
+   `workspaces/<addon-name>/plan/DESIGN.md`: the complete route, rooms,
    floors, beats, events, finale, palette, variability and budget. Read-only tools only; no
    `.vmf`. Follow [`design-a-map.md`](design-a-map.md). End the message with the design path
    and stop for approval.
@@ -60,7 +61,7 @@ place.
 Check the design against `references/mapping/hammer-coverage.md`. If a wish needs an editor
 preview or a two-team round, say what will be verified and what will not.
 
-**Write the design to `campaigns/<NNN-slug>/DESIGN.md` with the full template in
+**Write the design to `workspaces/<addon-name>/plan/DESIGN.md` with the full template in
 [`design-a-map.md`](design-a-map.md). Set `Status: draft` and stop.** Do not open a VMF, do not
 "test the idea with a box". Pass 2 starts only after the user approves the design.
 
@@ -134,7 +135,7 @@ answer is "load/HUD verified, full round not played", not "done".
 Wish: *"A two-chapter swamp-town campaign: a dark safe room, a street crescendo, a tank
 before the second safe room, then a finale in a church with two panic waves and an escape."*
 
-Pass 1 design: `campaigns/004-swamp-town/DESIGN.md` — two maps, `swamp1`/`swamp2`, mission
+Pass 1 design: `workspaces/swamp-town/plan/DESIGN.md` — two maps, `swamp1`/`swamp2`, mission
 `SwampTown`, `sky_l4d_urb01`, brick/wood palette, one street crescendo on map 1, tank at the
 map 2 safe-room approach, type 2 finale in a church with `PANIC`/`PANIC`/`TANK`, escape to
 credits. Every asset queried; every entity class read from the FGD. Approved, then stopped.

@@ -87,7 +87,7 @@ describe("skill resources", () => {
     expect(designText).toContain("Do not create a .vmf");
 
     const build = SKILL_PROMPTS.find((prompt) => prompt.name === "l4d2_build_from_design")!;
-    const buildText = build.render({ design: "campaigns/004/DESIGN.md" });
+    const buildText = build.render({ design: "workspaces/swamp-town/plan/DESIGN.md" });
     expect(buildText).toContain("l4d2-hsmcp://skill/workflows/new-campaign.md");
     expect(buildText).toContain("Status: approved");
 

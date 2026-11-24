@@ -1,12 +1,21 @@
 # Workflow: design a map or campaign (pass 1)
 
-This is the **design pass**. It ends with one file — `campaigns/<NNN-slug>/DESIGN.md` — and
+This is the **design pass**. It ends with one file — `workspaces/<addon-name>/plan/DESIGN.md` — and
 **no `.vmf`**. The next pass builds from that file. The point of the split is that the creative
 decisions are made once, in one place, while the build pass spends its attention on geometry,
 assets and evidence.
 
 **Stop at the end of this page.** Do not "just start a box" to see whether the idea works.
 A box built before the design is a decision made by accident.
+
+Create the workspace first if it does not exist:
+
+```text
+write_addon_workspace(name: "<addon-name>", title: "<title>", kind: "campaign")
+```
+
+It creates `workspaces/<addon-name>/` with the plan, templates, logs, src, addon, dist and
+evidence folders. See [`addon-workspace.md`](addon-workspace.md).
 
 ## Rules for pass 1
 
@@ -26,7 +35,7 @@ A box built before the design is a decision made by accident.
 
 ## The file
 
-Path: `campaigns/<NNN-slug>/DESIGN.md` (local; `campaigns/` is never committed).
+Path: `workspaces/<addon-name>/plan/DESIGN.md` (local; `workspaces/` is never committed).
 
 ```markdown
 # <Campaign or map name> — design

@@ -69,7 +69,7 @@ The campaign-level `Image` is what the menu draws; chapter images are optional a
 ## Checking
 
 ```
-check_campaign(path: "campaigns/001/src/missions/my_campaign.txt", mapsDirs: ["campaigns/001/addon/maps"])
+check_campaign(path: "workspaces/my-campaign/addon/missions/my_campaign.txt", mapsDirs: ["workspaces/my-campaign/addon/maps"])
 ```
 
 It reports `chapter-numbering`, `map-not-a-name`, `map-file-missing`, `image-missing` and
@@ -82,7 +82,7 @@ survival map, and warns when the last coop/versus chapter has neither a finale n
 changelevel. A BSP that exists only in a VPK is reported as skipped, not passed.
 
 ```
-check_modes(path: "campaigns/001/src/missions/my_campaign.txt", mapsDirs: ["campaigns/001/addon/maps"])
+check_modes(path: "workspaces/my-campaign/addon/missions/my_campaign.txt", mapsDirs: ["workspaces/my-campaign/addon/maps"])
 ```
 
 When reading a campaign already installed in the game, point it at a VPK and an entry:

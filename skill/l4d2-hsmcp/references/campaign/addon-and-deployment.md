@@ -83,8 +83,9 @@ entry list with the staging tree. A file the packer dropped is reported, not ass
 ## Deployment rules
 
 1. **One campaign at a time in the game.** Deploy under a fixed name
-   (`hsmcp_campaign.vpk`), remove earlier `hsmcp*.vpk` first. The numbered history lives in
-   `campaigns/`, the game holds the latest.
+   (`hsmcp_campaign.vpk`), remove earlier `hsmcp*.vpk` first. The history lives in the addon's
+   workspace (`workspaces/<name>/dist/`), and the legacy `campaigns/`; the game holds only the
+   latest.
 2. **The add-on must be enabled** in *Extras → Add-ons*. A disabled add-on is mounted; its
    campaign is not offered.
 3. **Restart the game** after replacing the VPK. Add-ons are mounted at startup.

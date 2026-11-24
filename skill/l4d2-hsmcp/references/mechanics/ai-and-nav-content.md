@@ -57,7 +57,7 @@ records: rescue points against RESCUE_CLOSET areas, remarkables and their subjec
 and hiding spots by flag. It finds a sibling `.nav` when `nav` is not given.
 
 ```text
-check_ai_contract(path: "campaigns/003-santa-monica/nav/sm01_beach.bsp")
+check_ai_contract(path: "workspaces/santa-monica/nav/sm01_beach.bsp")
 ```
 
 A rescue point with no RESCUE_CLOSET area **fails**; a closet area with no point is a

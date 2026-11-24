@@ -203,7 +203,7 @@ const AREAS: Area[] = [
     slug: "addons",
     title: "Addons",
     covers: "addoninfo, scaffolding, validation, installation and Workshop metadata",
-    groups: { "Addon manifests and installation": ["addon", "addoncheck", "manifests", "workshop"] },
+    groups: { "Addon manifests and installation": ["addon", "addoncheck", "manifests", "workshop", "workspace"] },
   },
   {
     slug: "vpk",

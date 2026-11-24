@@ -27,12 +27,13 @@ compilation, native VTF writing and add-on VPKs are proven. Two-team rounds and 
 checks still need a person or a second client. Read
 [What is not supported](#what-is-not-supported) before promising the rest.
 
-**A new map or campaign is two passes.** Pass 1 writes
-campaigns/<NNN-slug>/DESIGN.md: the full route, rooms, floors, beats, events, finale,
-palette, variability and budget, using read-only tools. It writes no `.vmf` and stops for
-approval. Pass 2 builds that design; it chooses exact assets within the palette but may not
-silently change the route, a room's purpose or a beat. See `workflows/design-a-map.md`,
-`workflows/new-campaign.md` and `workflows/from-a-wish.md`.
+**A new addon or campaign is one workspace and two passes.** `write_addon_workspace(name)` creates
+`workspaces/<addon-name>/` with `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and
+`evidence/`. Pass 1 writes plan/DESIGN.md: the full route, rooms, floors, beats, events,
+finale, palette, variability and budget, using read-only tools. It writes no `.vmf` and stops
+for approval. Pass 2 builds that design; it chooses exact assets within the palette but may not
+silently change the route, a room's purpose or a beat. See `workflows/addon-workspace.md`,
+`workflows/design-a-map.md`, `workflows/new-campaign.md` and `workflows/from-a-wish.md`.
 
 **Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
 `edit_vmf`, `write_brush_entity`, `write_point_entity`, `set_worldspawn`, `transform_solids`,
@@ -106,6 +107,7 @@ material; the instructions live in one place.
 
 | Task | Read |
 |---|---|
+| Create the addon workspace | `workflows/addon-workspace.md` |
 | Turn a user's campaign wish into a design (pass 1) | `workflows/design-a-map.md` |
 | Build from an approved design (pass 2) | `workflows/new-campaign.md` |
 | The two passes in one view | `workflows/from-a-wish.md` |
@@ -129,6 +131,7 @@ material; the instructions live in one place.
 
 | File | Read when |
 |---|---|
+| `workflows/addon-workspace.md` | one workspace per addon: plan, templates, logs, src, addon, dist, evidence |
 | `workflows/design-a-map.md` | pass 1: the design file, route, rooms, floors, beats, palette, variability |
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
 | `workflows/from-a-wish.md` | the two passes in one view |
@@ -208,19 +211,21 @@ material; the instructions live in one place.
 
 1. **State of the install.** `health`. It reports the game profile, compilers, FGD, sidecar
    and tool count. Missing pieces are named with their cost; do not guess around them.
-2. **Design.** `workflows/design-a-map.md`: the route, rooms, floors, beats, events, finale,
-   palette, variability and budget in DESIGN.md. Read-only; no `.vmf`; stop for approval.
-3. **Source map.** `workflows/new-campaign.md`: create or open a `.vmf`, build the sealed
+2. **Workspace.** `write_addon_workspace(name)` creates `workspaces/<addon-name>/` with
+   `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and `evidence/`.
+3. **Design.** `workflows/design-a-map.md`: the route, rooms, floors, beats, events, finale,
+   palette, variability and budget in plan/DESIGN.md. Read-only; no `.vmf`; stop for approval.
+4. **Source map.** `workflows/new-campaign.md`: create or open a `.vmf`, build the sealed
    shell, then lint and check for leaks *before* a compile that can take minutes.
-4. **Compile.** `run_compile` with the stock chain or Tools++, and read the per-stage
+5. **Compile.** `run_compile` with the stock chain or Tools++, and read the per-stage
    findings. A non-zero exit is a stop, not a warning.
-5. **Nav.** The engine generates it, not the toolkit: `references/nav/generation.md`.
+6. **Nav.** The engine generates it, not the toolkit: `references/nav/generation.md`.
    A `.nav` without CHECKPOINT/FINALE and a flow path is not a playable mesh.
-6. **Mission file.** `references/campaign/mission-file.md`: naming rules that decide whether
+7. **Mission file.** `references/campaign/mission-file.md`: naming rules that decide whether
    the campaign appears at all.
-7. **Pack and deploy.** `references/campaign/addon-and-deployment.md`: one archive in the
+8. **Pack and deploy.** `references/campaign/addon-and-deployment.md`: one archive in the
    game, fixed name, previous ones removed.
-8. **Play test.** `workflows/playtest.md`. What counts as passed is written there, not
+9. **Play test.** `workflows/playtest.md`. What counts as passed is written there, not
    inferred. The one-call form is `run_campaign_gate`: mission → lint → compile → nav →
    props → audit → finale → `nav_trouble_report` → map test with the exact BSP/nav pair.
 
@@ -241,7 +246,8 @@ material; the instructions live in one place.
   CHECKPOINT nav (+ PLAYER_START on the first map) + landmark pair. All four.
 - **Bots follow flow, not the player.** They path to the goal area. No goal area, no
   following.
-- **Campaigns are local.** Never commit `campaigns/`; it is ignored on purpose.
+- **Workspaces are local.** `campaigns/` and `workspaces/` are ignored on purpose; never
+  commit an addon's source or history.
 - **One campaign in the game.** Deploy the latest under a fixed name and remove older
   archives.
 - **No number without a source.** A limit, size or flag comes from a tool result, a dump or

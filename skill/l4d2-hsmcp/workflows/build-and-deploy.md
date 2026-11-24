@@ -17,8 +17,9 @@ Keep the ordering in one script so nobody has to remember it:
 8. Remove older `hsmcp*.vpk` from the game's addons and copy the new archive under the fixed
    name.
 
-The reference implementation is `campaigns/001-hsmcp-test/build.mjs`. Read it before writing
-another; it encodes the order and the traps.
+The legacy reference implementation is `campaigns/001-hsmcp-test/build.mjs`; read it before
+writing another. A new addon's build script lives in its workspace
+(`workspaces/<name>/build.mjs`).
 
 ## Fixed name, one campaign
 

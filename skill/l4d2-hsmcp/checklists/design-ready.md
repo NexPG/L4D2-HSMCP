@@ -1,6 +1,6 @@
 # Design ready (pass 1)
 
-Use this before setting `Status: approved` in `campaigns/<NNN-slug>/DESIGN.md`. The build pass
+Use this before setting `Status: approved` in `workspaces/<addon-name>/plan/DESIGN.md`. The build pass
 starts only when every line is true. This is a design checklist, not a build checklist: no
 `.vmf` exists yet.
 
