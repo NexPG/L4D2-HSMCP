@@ -17,6 +17,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { readEntityLump } from "../bsp/entities.js";
 
 export type CoverageStatus = "covered" | "partial" | "documented" | "none";
@@ -308,8 +309,7 @@ export const readEntityCoverageTool = defineTool({
     const gameDir = ctx.config.gameDir;
     if (!gameDir) throw new Error("the game directory is not resolved; run health first");
     const maps =
-      args.maps?.map((path) => (path.match(/^[a-zA-Z]:|^\//) ? path : join(gameDir, path))) ??
-      officialMaps(gameDir);
+      args.maps?.map((path) => resolveInput(path, ctx.config)) ?? officialMaps(gameDir);
     if (maps.length === 0) throw new Error("no official BSPs were found beside the game");
     return readEntityCoverage({ maps, examples: args.examples }) as unknown as Record<string, unknown>;
   },

@@ -5,6 +5,11 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.282-alpha - 2026-11-24
+
+- **`read_entity_coverage` resolves explicit `maps` like every other tool** (repo-relative or
+  absolute), instead of joining a relative path onto the game directory.
+
 ## 0.0.281-alpha - 2026-11-24
 
 - **`read_entity_coverage` builds the official class inventory and audits it.** It reads every
