@@ -87,6 +87,7 @@ again.
 | Nav generation finishes in 0.1 s and the dump has 0 areas | Use `run_nav_generate(via: "steam")` when the origin is not open floor; a direct launch marks the world origin before the player spawns. Keep the spawn on a flat brush ring and block scenery tops with `func_nav_blocker`; a 2048 1:12 patch gets 1,158 areas through Steam | `troubleshooting/terrain-nav-empty.md` |
 | A bot will not climb the ladder the player can use | Compile with Tools++ so vbsp emits `func_simpleladder`; span the brush to the upper floor and keep its centre line off the world origin; check `read_nav_ladders` | `references/mapping/entity-families.md` |
 | Two copies of one prefab fight over the same `screen01`/`door_button` names | Paste with `insert_prefab` `namePrefix`; check `duplicates`/`unresolvedOutputs` in the result, not by eye | `references/mapping/prefabs-and-instances.md` |
+| An ammo cabinet/helicopter button is inert | Place it with `place_entity_group`; the prefab needs its `vscripts` (`usetargets/...`) copied, not only the geometry | `references/mapping/prefabs-and-instances.md` |
 | vvis takes minutes and the PVS is huge; every trim, pillar and window frame is structural | Move visual-only brushes into `func_detail`, then compile and `read_leak` because detail does not seal; use `func_areaportal`/`func_occluder` only after the hull is closed | `references/mapping/detail-and-vis.md` |
 
 ## Route the task first

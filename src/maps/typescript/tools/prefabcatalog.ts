@@ -26,6 +26,8 @@ interface PrefabSummary {
   classes: Record<string, number>;
   targetnames: string[];
   outputs: string[];
+  scripts: string[];
+  useTargets: Array<{ classname: string; targetname: string; vscripts: string | null }>;
   nestedInstances: number;
   warnings: string[];
 }
@@ -67,6 +69,8 @@ function summarize(root: string, path: string, details: boolean): PrefabSummary 
   const classes: Record<string, number> = {};
   const targetnames: string[] = [];
   const outputs: string[] = [];
+  const scripts = new Set<string>();
+  const useTargets: PrefabSummary["useTargets"] = [];
   let nestedInstances = 0;
   const warnings: string[] = [];
   for (const entity of entities) {
@@ -75,6 +79,15 @@ function summarize(root: string, path: string, details: boolean): PrefabSummary 
     if (classname === "func_instance") nestedInstances += 1;
     const targetname = get(entity, "targetname");
     if (targetname) targetnames.push(targetname);
+    const vscripts = get(entity, "vscripts");
+    if (vscripts) scripts.add(vscripts);
+    if (classname === "point_script_use_target" || classname === "point_prop_use_target") {
+      useTargets.push({
+        classname,
+        targetname: targetname ?? "",
+        vscripts: vscripts ?? null,
+      });
+    }
     if (details) {
       for (const conn of children(entity, "connections")) {
         for (const entry of conn.entries) {
@@ -103,6 +116,8 @@ function summarize(root: string, path: string, details: boolean): PrefabSummary 
     classes,
     targetnames,
     outputs,
+    scripts: [...scripts],
+    useTargets,
     nestedInstances,
     warnings,
   };
@@ -153,6 +168,14 @@ export const readOfficialPrefabTool = defineTool({
         classes: z.record(z.number()),
         targetnames: z.array(z.string()),
         outputs: z.array(z.string()),
+        scripts: z.array(z.string()),
+        useTargets: z.array(
+          z.object({
+            classname: z.string(),
+            targetname: z.string(),
+            vscripts: z.string().nullable(),
+          }),
+        ),
         nestedInstances: z.number(),
         warnings: z.array(z.string()),
       }),

@@ -32,7 +32,7 @@ const AREAS: Area[] = [
       "Files, entities and wiring": ["vmf", "fgdresources", "vmfedit", "wiring", "worldspawn", "entityextras", "entityfamilies", "entityprobe", "detail", "autosave", "door", "diff", "exportmap", "bench"],
       "Geometry": ["build", "solids", "clip", "carve", "hull", "merge", "hollow", "vertex", "snap", "modify"],
       "Faces, lighting, overlays and terrain": ["face", "lightmap", "lightmaps", "overlay", "overlays", "dressing", "water", "terrain", "displacement", "cubemapgrid"],
-      "Instances and prefabs": ["instance", "instancecollapse", "instancecreate", "prefab", "prefabcatalog"],
+      "Instances and prefabs": ["instance", "instancecollapse", "instancecreate", "prefab", "prefabcatalog", "entitygroup"],
       "Organisation and optimisation": ["organise", "optimise"],
       "Weather": ["weather"],
       "Map analysis and leak": ["scene"],

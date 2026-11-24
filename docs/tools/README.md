@@ -1,6 +1,6 @@
 # Tools by area
 
-298 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
+299 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
 rendering, the runtime harness, and so on — not a source directory and not a bucket for
 several jobs. A new kind of tool gets a new row and a new page.
 
@@ -9,7 +9,7 @@ not this file.
 
 | Area | Covers | Tools | Reference |
 |---|---|---:|---|
-| VMF authoring | source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather | 89 | [vmf.md](vmf.md) |
+| VMF authoring | source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather | 90 | [vmf.md](vmf.md) |
 | Map compilation | running vbsp/vvis/vrad, the Hammer++ chain, compile logs and sequences | 7 | [compilation.md](compilation.md) |
 | Map audit and rules | reviewing a source map, map rules, missing assets and dependencies | 4 | [audit.md](audit.md) |
 | Compiled maps (BSP) | BSP lumps, entity lumps, pakfile, static props, map rename and compiled-map reports | 13 | [bsp.md](bsp.md) |
@@ -37,7 +37,7 @@ not this file.
 | Configuration and health | toolchain health and the stored add-on author | 4 | [configuration.md](configuration.md) |
 | Game discovery | how Left 4 Dead 2 was found on this machine | 1 | [games.md](games.md) |
 | File and text primitives | path resolution and raw UTF-8 text files | 2 | [text.md](text.md) |
-| **Total** | | **298** | |
+| **Total** | | **299** | |
 
 Each area page has logical tables inside it (for example, “Geometry”, “Faces, lighting,
 overlays and terrain” and “Instances and prefabs” inside VMF authoring).

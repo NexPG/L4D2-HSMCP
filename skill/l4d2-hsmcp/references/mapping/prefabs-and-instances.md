@@ -118,7 +118,42 @@ environment and 3 tonemaps. The prefab also uses FGD-unknown keys (`heightFog*`,
 ## Entity groups
 
 The `entitygroups`/`usetargets` files are prefabs with a **behaviour contract**:
-`point_script_use_target` or `point_prop_use_target` plus a VScript file. Paste the `.vmf`
-with `insert_prefab` and ship the matching script from `usetargets` (or the group's own
-`vscripts` key); the geometry without the script is inert. `read_official_prefab(details)`
-lists the targetnames and outputs so the script and the map agree.
+`point_script_use_target` or `point_prop_use_target` plus a VScript file. The geometry without
+the script is inert.
+
+```text
+place_entity_group(path, group: "ammo_cabinet", origin: [-600, 0, 0],
+                   namePrefix: "ammo1_", scriptsDir: "addon/scripts/vscripts",
+                   confirm: true)
+```
+
+`place_entity_group` does three things `insert_prefab` does not:
+
+1. **Centres the prefab on `origin`.** A group is authored at its own map coordinates, often
+   thousands of units away; a plain offset leaves the entity outside a small room and the map
+   leaks through the first entity.
+2. **Copies the `vscripts` source** from `sdk_content/scripting/scripts/vscripts`, including
+   the `IncludeScript` chain, into `scriptsDir`. Without `scriptsDir` it only reports what the
+   add-on must ship.
+3. **Reports the use-target contract:** each `point_script_use_target`/
+   `point_prop_use_target` with its targetname and `vscripts`, so the script and the map can
+   be checked together.
+
+| Family | Examples | Contract |
+|---|---|---|
+| cabinets | `ammo_cabinet`, `ammo_crate`, `health_cabinet`, `med_cabinet`, `defib_cabinet` | `point_script_use_target` + `usetargets/emergency_ammo`, `health_cabinet`, ... |
+| traversal | `ladder`, `ladder_button`, `blocknav64/128/256` | use target or a plain nav blocker volume |
+| buildables | `buildable_minigun`, `landmine`, `mine_table`, `firewall_*` | use target + a buildable script |
+| helicopters | `gascan_helicopter_button`, `resupply_helicopter_button`, `gascan_helicopter` | a compact button/use target; the full `gascan_helicopter` is a delivery sequence |
+| finale sequence | `rescue_helicopter` | 54 entities, 7 `path_track`, one world brush, a `trigger_finale`; it is a finale, not a cabinet-like use target |
+
+Measured: `ammo_cabinet` (7 entities) and `gascan_helicopter_button` (5) placed into a sealed
+room with prefixes; the copied scripts were `usetargets/emergency_ammo.nut` plus its
+`base_buildable_target` include and `usetargets/gascan_drop_usetarget.nut`; vbsp compiled with
+two `point_script_use_target` entities and no leak. Player activation is a live play-test, not
+an offline proof.
+
+`rescue_helicopter` is not a compact prop: its path tracks span about 6,500 units. Place it in
+a finale arena, not a 2,048-unit room; a plain prefab paste of it outside the sealed hull
+leaks through its first `logic_relay`.
+

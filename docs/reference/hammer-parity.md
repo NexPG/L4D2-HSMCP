@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **298 tools**.
+Last checked against the tool list on 24/11/2026: **299 tools**.
 
 ## The file itself
 
@@ -132,6 +132,7 @@ getting `ENOENT` on the first call.
 | Look at a model in the engine | `preview_model` | When HLMV's 3D canvas is blank, builds a sealed room, compiles it, generates a nav and captures the real game view; the model's lowest point is placed on the pedestal |
 | Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it; `namePrefix`/`remap` and duplicate/output validation |
 | Read the stock prefab library | `read_official_prefab` | SDK `instance` folders, with family, solids, entities, class histogram, targetnames and outputs |
+| Place an entity group | `place_entity_group` | Centres the group prefab, copies its `vscripts`/`IncludeScript` chain, reports the `point_script_use_target` contract |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Rotating door | `place_door` | Origin is the hinge; model hull read with `read_model_info`; checkpoint names checked |
 | Create instance from selection | `create_instance_from_selection` | Writes the instance file, recentres it and leaves one `func_instance`; a brush entity is taken whole |

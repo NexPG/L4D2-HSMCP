@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.270-alpha - 2026-11-24
+
+- **`place_entity_group` places a stock entity group with its script.** It finds the
+  `entitygroups` prefab, centres it on the requested world origin (the groups are authored
+  thousands of units away), prefixes its targetnames, copies its `vscripts` plus the
+  `IncludeScript` chain into `scriptsDir`, and reports each
+  `point_script_use_target`/`point_prop_use_target` with its targetname and script.
+- **The prefab catalogue now reports `scripts` and `useTargets`,** so a group's behaviour
+  half is visible before placement.
+- **Verified with the real compiler:** `ammo_cabinet` + `gascan_helicopter_button` in a
+  sealed room copied `usetargets/emergency_ammo.nut` with `base_buildable_target` and
+  `usetargets/gascan_drop_usetarget.nut`; vbsp compiled two `point_script_use_target`
+  entities with no leak. Player activation is a live play-test, deferred.
+- **`rescue_helicopter` is a finale sequence, not a compact use target:** 54 entities, seven
+  `path_track`s spanning ~6,500 units and one world brush; placing it in a small sealed room
+  leaks through its first `logic_relay`. Use `gascan_helicopter_button` for the button
+  contract; place the finale helicopter in its arena.
+- **Tool count: 299.** Tests: 246 files, 1,994 passed, 32 skipped.
+
 ## 0.0.269-alpha - 2026-11-24
 
 - **`write_safe_room_prefab` makes a stock house a safe room.** It pastes the prefab with a

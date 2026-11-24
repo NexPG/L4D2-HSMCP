@@ -1,6 +1,6 @@
 # Tool catalogue
 
-298 tools. This page groups them by the job you are doing; each tool's own description is the
+299 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -233,6 +233,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_skybox_copy` | copy brushes at 1/16 scale and move them to the skybox origin |
 | `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation; `namePrefix`/`remap` and duplicate/output validation |
 | `read_official_prefab` | list and inspect the stock SDK prefabs by family, with class histogram, targetnames and outputs |
+| `place_entity_group` | place an `entitygroups` prefab (cabinet, ladder, helicopter button), centre it, copy its `vscripts` and report the use targets |
 | `write_weather` | add rain/snow/ash as `func_precipitation` and distance fog as `env_fog_controller` |
 | `clone_solids` | copy selected brushes with fresh ids, optionally move/rotate/scale/mirror the copy |
 
