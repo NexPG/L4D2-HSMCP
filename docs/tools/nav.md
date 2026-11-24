@@ -1,6 +1,6 @@
 # Navigation
 
-16 tools: nav areas, attributes, connections, hiding spots, encounters, path and sight queries.
+17 tools: nav areas, attributes, connections, hiding spots, encounters, path and sight queries.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -16,6 +16,12 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `read_nav_visibility` | Reads nav visibility: each list entry stores the target area index, not its hash id, with NOT_VISIBLE 0, POTENTIALLY_VISIBLE 1, COMPLETELY_VISIBLE 2 or both. |
 | `write_nav_areas` | Changes nav area attributes, L4D2 spawn attributes and place names in place. |
 | `write_nav_attribute_region` | Writes a `func_nav_attribute_region` brush with the L4D2 spawnflags (CHECKPOINT 2048, FINALE 64, RESCUE_CLOSET 65536, ...). |
+
+## AI and nav content
+
+| Tool | What it does |
+|---|---|
+| `check_ai_contract` | Checks the AI/nav content of a map without launching the game: `info_survivor_rescue` points against RESCUE_CLOSET nav areas, `info_remarkable` count and contextsubject, `func_nav_blocker`/`func_nav_avoidance_obstacle` brushes, and nav hiding spots by flag (IN_COVER, EXPOSED, sniper spots). |
 
 ## Path and sight queries
 

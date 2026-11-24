@@ -1,6 +1,6 @@
 # Tool catalogue
 
-306 tools. This page groups them by the job you are doing; each tool's own description is the
+307 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -103,6 +103,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `check_director_options` | validate `DirectorOptions`/`MutationOptions` keys, types, signs and Min/Max |
 | `write_intro_camera` | `point_viewcontrol` + `logic_auto`, optional disable timer |
 | `write_rescue_closet` | `info_survivor_rescue` and ordered survivor positions |
+| `check_ai_contract` | rescue points vs RESCUE_CLOSET areas, remarkables, blockers, hiding spots |
 | `write_nav_attribute_region` | `func_nav_attribute_region` with CHECKPOINT/FINALE/RESCUE_CLOSET bits; the nav half of a closet |
 | `write_zombie_border` | the infected spawn border marker |
 | `check_campaign_wiring` | follow transitions across chapters: map, landmark pair, doors, finale |

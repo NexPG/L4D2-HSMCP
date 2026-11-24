@@ -77,6 +77,7 @@ const AREAS: Area[] = [
     covers: "nav areas, attributes, connections, hiding spots, encounters, path and sight queries",
     groups: {
       "Areas, attributes and connections": ["navareas", "navconnections", "navdetails", "maps/navattrs"],
+      "AI and nav content": ["aicontract"],
       "Path and sight queries": ["navpath"],
       "Troubleshooting": ["navtrouble"],
       "Edit records": ["navwrite"],

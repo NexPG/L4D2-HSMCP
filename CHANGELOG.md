@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.280-alpha - 2026-11-24
+
+- **`check_ai_contract` checks the AI/nav content offline.** `info_survivor_rescue` points
+  against nav RESCUE_CLOSET (`0x00010000`) areas, `info_remarkable` count and
+  `contextsubject`, `func_nav_blocker`/`func_nav_avoidance_obstacle`, and hiding spots by
+  `IN_COVER`/`EXPOSED`/sniper flags. Reads a VMF or BSP and finds a sibling `.nav`.
+- **Measured:** `c1m1_hotel` 6 rescue points / 4 RESCUE_CLOSET areas / 760 hiding spots
+  (310 IN_COVER), `c2m5_concert` 3 and 5, `c5m5_bridge` neither and passes as a finale map;
+  a rescue point against a zero-closet nav fails. Zero GOOD_SNIPER spots is normal in L4D2.
+- **Skill:** `references/mechanics/ai-and-nav-content.md` explains the two halves of a rescue
+  closet and when a blocker removes nav rather than telling bots to avoid it.
+- **Tool count: 307.** Tests: 257 files, 2,017 passed, 32 skipped.
+
 ## 0.0.279-alpha - 2026-11-24
 
 - **`check_gamemode_contract` reads the mode layer offline.** It lists which `info_gamemode`

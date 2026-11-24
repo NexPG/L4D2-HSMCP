@@ -99,6 +99,7 @@ import { prefabTools } from "./maps/typescript/tools/prefab.js";
 import { prefabCatalogTools } from "./maps/typescript/tools/prefabcatalog.js";
 import { entityGroupTools } from "./maps/typescript/tools/entitygroup.js";
 import { itemDensityTools } from "./maps/typescript/tools/itemdensity.js";
+import { aiContractTools } from "./maps/typescript/tools/aicontract.js";
 import { variabilityTools } from "./maps/typescript/tools/variability.js";
 import { finaleContractTools } from "./campaigns/typescript/tools/finalecontract.js";
 import { gamemodeContractTools } from "./campaigns/typescript/tools/gamemode.js";
@@ -218,6 +219,7 @@ export const allTools: AnyToolDef[] = [
   ...prefabCatalogTools,
   ...entityGroupTools,
   ...itemDensityTools,
+  ...aiContractTools,
   ...variabilityTools,
   ...finaleContractTools,
   ...gamemodeContractTools,

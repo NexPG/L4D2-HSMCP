@@ -175,6 +175,7 @@ material; the instructions live in one place.
 | `references/mechanics/versus.md` | mission mode, `run_map_test mode: "versus"`, `anv_versus.nut` evidence |
 | `references/mechanics/mutations.md` | `modes/*.txt` + `MutationOptions`, validation, VPK, runtime proof |
 | `references/mechanics/weather.md` | `func_precipitation`, `env_fog_controller`, and what a static check can prove |
+| `references/mechanics/ai-and-nav-content.md` | rescue closets, `info_remarkable`, nav blockers and hiding spots |
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
 | `references/tools/primitives.md` | which tool is the general operation, and which is only a shortcut |

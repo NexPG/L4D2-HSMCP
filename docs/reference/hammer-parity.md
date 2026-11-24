@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **306 tools**.
+Last checked against the tool list on 24/11/2026: **307 tools**.
 
 ## The file itself
 
@@ -152,6 +152,7 @@ getting `ENOENT` on the first call.
 | Chapter change | `write_changelevel` | The `info_changelevel` brush volume and its landmark; departure or arrival (`spawnflags 2`) |
 | Finale | `write_finale_setup` | `trigger_finale` with L4D2's type numbers (0, 1, 2, 4), custom script, start state and escape positions |
 | Spawn areas | `write_spawn_points` | Player, survivor, zombie and rescue spawns with the keys each reads |
+| AI and nav content | `check_ai_contract` | rescue points vs RESCUE_CLOSET areas, `info_remarkable`, nav blockers, hiding spots |
 | Item density | `write_map_parameters`, `read_item_density` | The 18 density keys of `info_map_parameters` or its versus variant; `read_item_density` counts `weapon_*_spawn` by layer and compares with a peer |
 | Mode switch | `check_gamemode_contract` | `info_gamemode` `OnCoop`/`OnVersus`/`OnSurvival`/`OnScavenge` wiring, dangling targets, `info_map_parameters` keys |
 | Random choice | `write_random_case` | `logic_case` + `PickRandom` + case outputs; the official car-colour/prop pattern |
