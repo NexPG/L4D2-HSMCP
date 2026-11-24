@@ -132,6 +132,10 @@ Verified for this project:
   reason and without checking the result. It is the non-cheat way to suppress infected:
   `CommonLimit`, `MaxSpecials`, `TankLimit`, `WitchLimit` and `MobSpawnSize` set to 0.
   `director_stop` is a **cheat command** and is ignored in a normal client.
+  `CommonLimit = 0` stops new spawns but does **not** remove a common that existed before
+  the first tick. Kill stragglers in the same timer:
+  `local e = null; while ((e = Entities.FindByClassname(e, "infected")) != null) e.Kill();`
+  Santa Monica 003 does this; without it a single common can survive the whole map.
 - The stock FGD does not declare `logic_script`; `read_vmf_lint` tolerates it and its
   `vscripts` key. The engine still creates it and runs the script.
 - Finale victory is an entity input (`trigger_finale.FinaleEscapeFinished`), not a script

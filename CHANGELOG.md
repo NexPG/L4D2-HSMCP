@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.267-alpha - 2026-11-24
+
+- **No-mob scripts must remove a common that predates the first tick.** `CommonLimit = 0`
+  stops new spawns but leaves one already placed; the skill now includes the `Entities.
+  FindByClassname(..., "infected").Kill()` loop. Santa Monica 003's timer does this, and its
+  start view has no infected. The campaign gate still passes.
+- **Tool count: 296.** Tests: 243 files, 1,984 passed, 32 skipped.
+
 ## 0.0.266-alpha - 2026-11-24
 
 - **Corrected: the 1:12 terrain patch was never a height-band limit.** A 2048x2048 patch
