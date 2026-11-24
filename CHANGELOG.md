@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.281-alpha - 2026-11-24
+
+- **`read_entity_coverage` builds the official class inventory and audits it.** It reads every
+  `left4dead2*/maps/*.bsp` (or explicit maps), groups each classname by an ordered family rule
+  and reports status (`covered`, `partial`, `documented`, `none`), the tools and page for the
+  family, and every class no rule matched. Read-only, no launch.
+- **Measured:** 60 stock BSPs, 219 distinct classes, **0 unclassified**, 17 families (11
+  covered, 4 partial, 2 documented). The task's 223 figure is not rounded: a new class lands
+  in `unclassified`.
+- **Skill:** `references/mechanics/entity-coverage.md` is the family matrix with class and
+  occurrence counts, linked from the coverage page.
+- **Tool count: 308.** Tests: 258 files, 2,021 passed, 32 skipped.
+
 ## 0.0.280-alpha - 2026-11-24
 
 - **`check_ai_contract` checks the AI/nav content offline.** `info_survivor_rescue` points

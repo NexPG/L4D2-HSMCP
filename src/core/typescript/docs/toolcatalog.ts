@@ -51,7 +51,7 @@ const AREAS: Area[] = [
     slug: "audit",
     title: "Map audit and rules",
     covers: "reviewing a source map, map rules, missing assets and dependencies",
-    groups: { "Audit and rules": ["report", "review", "rules", "deps"] },
+    groups: { "Audit and rules": ["report", "review", "rules", "deps", "entitycoverage"] },
   },
   {
     slug: "bsp",

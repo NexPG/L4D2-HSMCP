@@ -1,6 +1,6 @@
 # Tool catalogue
 
-307 tools. This page groups them by the job you are doing; each tool's own description is the
+308 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -180,6 +180,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |
 | `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
 | `preview_model` | **look at** a model when HLMV's canvas is blank: renders it in a sealed engine room and captures the game window |
+| `read_entity_coverage` | the official class inventory by family, with covered/partial/documented/none status |
 | `read_model_info` | bounds, skins, sequences, materials, attachments, body parts and hitbox sets of one `.mdl` |
 | `read_surfaceprops` | the game's `scripts/surfaceproperties_*` table: 91 properties, base chains, physics and sound fields |
 | `check_surfaceprop` | is a name (or a model's `$surfaceprop`) in that table, what does it inherit, which `gamematerial` |
