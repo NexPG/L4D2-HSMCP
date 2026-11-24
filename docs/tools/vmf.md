@@ -1,6 +1,6 @@
 # VMF authoring
 
-90 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+92 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -37,7 +37,9 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_point_entity` | The universal point-entity primitive: any classname, origin, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_portal` | Places an areaportal, an areaportal window or an occluder: the two brush entities read_map_geometry has counted since the beginning and nothing has ever placed. |
 | `write_prop` | Places a `prop_static`, `prop_dynamic`, `prop_physics`, `prop_dynamic_override` or `prop_physics_override` with its model, origin, angles, skin and solid mode. |
+| `write_random_case` | Writes a `logic_case` with one output per case and, by default, a `logic_auto` that fires `PickRandom` at map spawn. |
 | `write_scene` | Writes a `logic_choreographed_scene` with a required `SceneFile`, optional targets 1-8 and outputs. |
+| `write_template_spawner` | Writes the official `point_template` + `env_entity_maker` pair. |
 | `write_test_bench` | Builds a sealed, playable bench map from one call: a hall of N bays divided by walled arches, `info_player_start`, `info_director`, `info_zombie_spawn`, a light per bay, and a FINALE nav region with a `trigger_finale` so the Director has a goal and the engine does not paint `NAV ERRORS` over the map. |
 | `write_trigger` | Writes a trigger as the brush entity it actually is: a sealed box tied to the class, with the keys that class needs (a teleport's or look trigger's `target`, a hurt trigger's damage and type, a push trigger's speed and direction, gravity's scale). |
 | `write_vmf` | Creates an empty .vmf: Hammer's File > New. |

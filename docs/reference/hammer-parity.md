@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **300 tools**.
+Last checked against the tool list on 24/11/2026: **302 tools**.
 
 ## The file itself
 
@@ -153,6 +153,8 @@ getting `ENOENT` on the first call.
 | Finale | `write_finale_setup` | `trigger_finale` with L4D2's type numbers (0, 1, 2, 4), custom script, start state and escape positions |
 | Spawn areas | `write_spawn_points` | Player, survivor, zombie and rescue spawns with the keys each reads |
 | Item density | `write_map_parameters`, `read_item_density` | The 18 density keys of `info_map_parameters` or its versus variant; `read_item_density` counts `weapon_*_spawn` by layer and compares with a peer |
+| Random choice | `write_random_case` | `logic_case` + `PickRandom` + case outputs; the official car-colour/prop pattern |
+| Templated spawns | `write_template_spawner` | `point_template` + `env_entity_maker`, `ForceSpawn` |
 
 ## Organisation
 

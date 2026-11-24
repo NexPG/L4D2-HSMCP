@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.274-alpha - 2026-11-24
+
+- **`write_random_case` writes the official variability beat.** One `logic_case` with
+  `Case01..` values and `OnCase01..` outputs, plus a `logic_auto` `OnMapSpawn -> PickRandom`
+  by default; each case can fire `Color`, `SetSkin`, `SetBodyGroup` or a spawner.
+- **`write_template_spawner` writes the `point_template` + `env_entity_maker` pair** for
+  `ForceSpawn` sets (random props, gascan drops, rescue sequences). The named template
+  entities must already exist; the tool says so.
+- **Verified with the real compiler:** a two-case `Color` selector, a `point_template` and an
+  `env_entity_maker` compile in a sealed room with no leak. The chosen colour/prop is a live
+  play-test, deferred.
+- **Tool count: 302.** Tests: 252 files, 2,003 passed, 32 skipped.
+
 ## 0.0.273-alpha - 2026-11-24
 
 - **`read_item_density` measures the item layer without launching the game.** It counts every

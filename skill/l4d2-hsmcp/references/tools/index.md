@@ -1,6 +1,6 @@
 # Tool catalogue
 
-300 tools. This page groups them by the job you are doing; each tool's own description is the
+302 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -95,6 +95,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_item_spawns` | L4D2 `weapon_*_spawn` item/weapon spawners at points |
 | `write_saferoom_stock` | a row of medkit/pills/ammo/pistol stock |
 | `read_item_density` | count `weapon_*_spawn` by layer, compare with a full-chapter budget and an official peer |
+| `write_random_case` | `logic_case` + `PickRandom` + one output per case, for `Color`/`SetSkin`/spawn |
+| `write_template_spawner` | `point_template` + `env_entity_maker` pair for a `ForceSpawn` set |
 | `write_intro_camera` | `point_viewcontrol` + `logic_auto`, optional disable timer |
 | `write_rescue_closet` | `info_survivor_rescue` and ordered survivor positions |
 | `write_nav_attribute_region` | `func_nav_attribute_region` with CHECKPOINT/FINALE/RESCUE_CLOSET bits; the nav half of a closet |

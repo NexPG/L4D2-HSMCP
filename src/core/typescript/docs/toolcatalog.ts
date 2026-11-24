@@ -29,7 +29,7 @@ const AREAS: Area[] = [
     title: "VMF authoring",
     covers: "source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather",
     groups: {
-      "Files, entities and wiring": ["vmf", "fgdresources", "vmfedit", "wiring", "worldspawn", "entityextras", "entityfamilies", "entityprobe", "detail", "autosave", "door", "diff", "exportmap", "bench"],
+      "Files, entities and wiring": ["vmf", "fgdresources", "vmfedit", "wiring", "worldspawn", "entityextras", "entityfamilies", "entityprobe", "detail", "autosave", "door", "diff", "exportmap", "bench", "variability"],
       "Geometry": ["build", "solids", "clip", "carve", "hull", "merge", "hollow", "vertex", "snap", "modify"],
       "Faces, lighting, overlays and terrain": ["face", "lightmap", "lightmaps", "overlay", "overlays", "dressing", "water", "terrain", "displacement", "cubemapgrid"],
       "Instances and prefabs": ["instance", "instancecollapse", "instancecreate", "prefab", "prefabcatalog", "entitygroup"],
