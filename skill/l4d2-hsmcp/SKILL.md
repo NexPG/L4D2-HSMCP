@@ -147,6 +147,7 @@ material; the instructions live in one place.
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/detail-and-vis.md` | world vs `func_detail` vs `func_brush`/`func_lod`, and areaportal/occluder rules |
 | `references/mapping/prefabs-and-instances.md` | the official prefab catalogue, `insert_prefab` names/validation, and instance vs prefab |
+| `references/mapping/atmosphere.md` | the six atmosphere layers, multiple fog controllers, tonemaps/colour correction and wind |
 | `references/mapping/terrain-water-boundaries.md` | terrain patches, slope/profile, the measured nav band, water and map edges |
 | `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |

@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.271-alpha - 2026-11-24
+
+- **The map atmosphere is documented as an environment set, not one fog controller.**
+  New `references/mapping/atmosphere.md`: 1–9 fog controllers (most 2–3), interior/exterior
+  and fire states switched by triggers, 2–5 postprocess, colour correction, global/infected/
+  ghost tonemaps, sun/light/shadow/wind. `weather.md` no longer claims "one per map";
+  `write_weather` is the one-zone shortcut, not the ceiling.
+- **Verified with the real compiler:** a fixture with 3 `env_fog_controller`, 3
+  `env_tonemap_controller`, 1 `color_correction`, 1 `env_sun`, 1 `shadow_control`, 1
+  `env_wind` and 1 `light_environment` compiled with exactly those entities. A sun point
+  above the sealed hull leaks, which is why the fixture keeps it inside.
+- **Tool count: 299.** Tests: 247 files, 1,995 passed, 32 skipped.
+
 ## 0.0.270-alpha - 2026-11-24
 
 - **`place_entity_group` places a stock entity group with its script.** It finds the
