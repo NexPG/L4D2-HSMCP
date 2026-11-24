@@ -80,6 +80,37 @@ when the game directory is resolved. `read_soundscape` reads one file or all
 not have. Point an `env_soundscape` at the scape name; `env_soundscape_proxy` forwards from
 another entity.
 
+## Two rooms, one bed: the map-level pattern
+
+A map usually needs an exterior bed and an interior bed, not one scape for everything. Use
+two `env_soundscape` entities with different `soundscape` names and radii, and a
+`env_soundscape_proxy` where the same bed is reused under another name:
+
+```text
+edit_vmf(path, ops: [
+  { op: "add", keyvalues: { classname: "env_soundscape", targetname: "scape_out",
+    origin: "0 0 64", soundscape: "SantaMonica.Rain", radius: "-1" } },
+  { op: "add", keyvalues: { classname: "env_soundscape", targetname: "scape_in",
+    origin: "0 0 64", soundscape: "SantaMonica.RainInside", radius: "-1" } },
+  { op: "add", keyvalues: { classname: "env_soundscape_proxy", targetname: "scape_proxy",
+    origin: "0 0 64", MainSoundscapeName: "scape_out", radius: "512" } },
+  { op: "add", keyvalues: { classname: "ambient_music", targetname: "music_cue",
+    origin: "0 0 64", message: "Event.MissionStart" } },
+  { op: "add", keyvalues: { classname: "sound_mix_layer", targetname: "mix_rain",
+    origin: "0 0 0", MixLayerName: "rain", Level: "0.5" } }
+])
+```
+
+- `radius -1` means the scape is global; a positive radius makes it a local volume.
+- `ambient_music` plays a **GameSound** entry (`message`), fired by `PlaySound`; it is not a
+  soundscript name.
+- `sound_mix_layer` sets a named mix layer; it is a point entity, not a sound.
+- Two rooms need two scapes **and** a trigger/volume boundary; the entity radius alone does
+  not fade the bed.
+- Measured fixture: two `env_soundscape`, one proxy, one `ambient_music` and one
+  `sound_mix_layer` compile with no leak. Hearing the mix is a live test, deferred with the
+  game launch.
+
 ## Checking it
 
 1. `read_wav` — `gameReady: true`, and the duration is what you expect.

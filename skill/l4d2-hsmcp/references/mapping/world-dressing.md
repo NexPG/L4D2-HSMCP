@@ -65,6 +65,25 @@ write_postprocess(path, kind: "colorcorrection",
 - A `color_correction_volume` (a brush entity) is the other way to scope correction; this
   builder writes the point entity.
 
+## Spotlights
+
+`write_light` covers point/environment/dynamic/sun/shadow; `light_spot` and the two spotlight
+effects are written through `edit_vmf` or `write_point_entity`:
+
+```text
+edit_vmf(path, ops: [{ op: "add", keyvalues: {
+  classname: "light_spot", origin: "0 0 300", angles: "-90 0 0", pitch: "-90",
+  _light: "255 240 220 500", _cone: "45", _inner_cone: "20", _exponent: "1" } }])
+```
+
+- `_light` is the same four-number colour+brightness as `light`; `_cone`/`_inner_cone` are
+  the outer/inner cone in degrees and `_exponent` is the falloff.
+- `beam_spotlight` and `point_spotlight` are point classes; write them with
+  `write_point_entity` and their FGD keys. They are effects, not light sources; pair them
+  with a real `light_spot`.
+- Measured fixture: one `light_spot`, one `infodecal` and one `env_beam` compile in a sealed
+  room with no leak; the screenshot is deferred with the game launch.
+
 ## Decals
 
 ```

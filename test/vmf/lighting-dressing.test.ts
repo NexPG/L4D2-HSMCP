@@ -1,0 +1,28 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
+import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
+import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
+import { writeDecalTool, writeSpriteTool } from "../../src/maps/typescript/tools/dressing.js";
+import { runCompile } from "../../src/maps/typescript/tools/compile.js";
+import { readBspEntities } from "../../src/maps/typescript/tools/bsp.js";
+import { ctx as sharedCtx, has } from "../support/env.js";
+const ctx=sharedCtx as unknown as ToolContext;const scratch=mkdtempSync(join(tmpdir(),"hammer-dress-"));afterAll(()=>rmSync(scratch,{recursive:true,force:true}));
+const S='versioninfo\n{\n\t"editorversion" "400"\n\t"mapversion" "1"\n\t"formatversion" "100"\n}\nworld\n{\n\t"id" "1"\n\t"classname" "worldspawn"\n\t"skyname" "sky_l4d_c1_1_hdr"\n}\nentity\n{\n\t"id" "2"\n\t"classname" "info_player_start"\n\t"origin" "0 0 16"\n}\n';
+const ROOM=insertSolids(S,[{shape:"box",mins:[-512,-512,-32],maxs:[512,512,0]},{shape:"box",mins:[-512,-512,384],maxs:[512,512,416]},{shape:"box",mins:[-544,-544,-32],maxs:[-512,512,416]},{shape:"box",mins:[512,-544,-32],maxs:[544,512,416]},{shape:"box",mins:[-512,-544,-32],maxs:[512,-512,416]},{shape:"box",mins:[-512,512,-32],maxs:[512,544,416]}],{material:"DEV/DEV_MEASUREGENERIC01"}).text;
+describe.skipIf(!has.toolchain)("lighting and dressing",()=>{
+ it("writes a spotlight, a decal and a beam",async()=>{
+  const path=join(scratch,"dress.vmf");writeFileSync(path,ROOM);
+  await editVmf.handler({path,ops:[{op:"add",keyvalues:{classname:"light_spot",origin:"0 0 300",angles:"-90 0 0",_light:"255 240 220 500",_cone:"45",_inner_cone:"20",_exponent:"1",pitch:"-90"}}],confirm:true} as never,ctx);
+  await writeDecalTool.handler({path,material:"decals/blood/blood1",positions:[[0,0,0]],confirm:true} as never,ctx);
+  await writeSpriteTool.handler({path,kind:"beam",start:[-256,0,64],end:[256,0,64],confirm:true} as never,ctx);
+  const c=await runCompile.handler({vmf:path,fast:true,hdr:false,stages:["vbsp"],toolchain:"stock",cull:false,timeoutMinutes:10,confirm:true} as never,ctx) as unknown as {ok:boolean;leaked:boolean;bsp:string};
+  expect(c.leaked).toBe(false);expect(c.ok).toBe(true);
+  const e=await readBspEntities.handler({path:c.bsp,limit:1,offset:0,histogramOnly:true},ctx) as unknown as {histogram:Record<string,number>};
+  expect(e.histogram.light_spot??0).toBe(1);
+  expect(e.histogram.infodecal??0).toBe(1);
+  expect(e.histogram.env_beam??0).toBe(1);
+ },300000);
+});

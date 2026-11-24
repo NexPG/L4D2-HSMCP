@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.272-alpha - 2026-11-24
+
+- **3D skybox, spotlights and map audio were verified offline.** A 128-unit tower copied at
+  1/16 produced a sealed skybox room and one `sky_camera` with no leak. A `light_spot`, an
+  `infodecal` and an `env_beam` compile in a sealed room. Two `env_soundscape`, one
+  `env_soundscape_proxy`, one `ambient_music` and one `sound_mix_layer` compile with no leak.
+- **The skill now has the recipes:** `world-dressing.md` covers `light_spot`/beam/point
+  spotlights through `edit_vmf`, `assets/sound.md` covers the two-room scape, proxy, music and
+  mix-layer pattern, and `3d-skybox.md` records the measured room/camera.
+- **Deferred by request:** all screenshots and audible/in-game checks; the offline compile
+  proofs stand.
+- **Tool count: 299.** Tests: 250 files, 1,998 passed, 32 skipped.
+
 ## 0.0.271-alpha - 2026-11-24
 
 - **The map atmosphere is documented as an environment set, not one fog controller.**
