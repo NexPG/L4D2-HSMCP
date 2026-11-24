@@ -95,6 +95,11 @@ describe("ladders, scenes and ambient sounds", () => {
     expect(entities(path).find((entity) => entity.id === r.useableId)?.classname).toBe(
       "func_useableladder",
     );
+    const useable = entities(path).find((entity) => entity.id === r.useableId)!;
+    // The points are outside the climbing face, not on its centre line: vbsp calls an
+    // inside point blocked and nav then has no walkable seed.
+    expect(useable.keyvalues["point0"]).toBe("49 16 16");
+    expect(useable.keyvalues["point1"]).toBe("49 16 144");
     expect(r.solidIds).toHaveLength(1);
   });
 

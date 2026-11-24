@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.262-alpha - 2026-11-24
+
+- **Tools++ L4D2 compiles emit AI ladders.** `run_compile` passes `-simpleladders` on the
+  Tools++ chain; `func_simpleladder` is compiler output, absent from the FGD, and stock vbsp
+  rejects the flag. A new compile test proves a `func_ladder` brush becomes
+  `func_simpleladder` in the BSP.
+- **`write_ladder` points are outside the climbing face.** The `func_useableladder` points
+  were on the brush centre line, which the engine logs as `funcladder with blocked bottom
+  point`; they are now offset 33 units along `facing` (player hull 32) and carry `angles` so
+  the generated ladder normal is horizontal. Existing point expectations updated.
+- **Clip families documented.** `func_playerinfected_clip` (players/infected),
+  `func_clip_vphysics` (physics only), `func_block_charge`, world `TOOLS/TOOLSCLIP`,
+  `func_nav_blocker` and `func_brush` solidity, with when each is the right one.
+- **Measured ladder limit:** a ladder whose brush overlaps a solid upper platform makes nav
+  report `Invalid ground position`/`No valid walkable seed positions`, because the compiler's
+  ladder points are brush centres and `nav_mark_walkable` from a listen-server cfg marks the
+  world origin before the player spawns. The compiler output is verified; the bot-path test
+  remains open and is in the task list.
+- **Tool count: 295.** Tests: 243 files, 1,978 passed, 32 skipped.
+
 ## 0.0.261-alpha - 2026-11-24
 
 - **The brush-class decision table is documented.** New

@@ -25,9 +25,10 @@ import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { hollowSolidsTool } from "../../src/maps/typescript/tools/hollow.js";
 import { setLightmapScaleTool } from "../../src/maps/typescript/tools/optimise.js";
 import { setFaceUvTool, setSmoothingGroupsTool } from "../../src/maps/typescript/tools/face.js";
-import { readBspFacesTool } from "../../src/maps/typescript/tools/bsp.js";
+import { readBspFacesTool, readBspEntities } from "../../src/maps/typescript/tools/bsp.js";
 import { readBspFaces } from "../../src/maps/typescript/bsp/faces.js";
 import { writeVmfTerrain } from "../../src/maps/typescript/tools/terrain.js";
+import { writeLadderTool } from "../../src/maps/typescript/tools/entityextras.js";
 import {
   writeDecalTool,
   writeLightTool,
@@ -512,6 +513,39 @@ describe.skipIf(!has.toolchain)("visibility tools, compiled with vvis", () => {
     300_000,
   );
 });
+describe.skipIf(!has.plusplus || !has.gameContent)("L4D2 ladders", () => {
+  it(
+    "vbsp++ emits func_simpleladder from a func_ladder brush",
+    async () => {
+      // L4D2's FGD has no func_simpleladder: it is compiler output from -simpleladders,
+      // which only Tools++ understands. Without the flag the ladder is invisible to the
+      // AI even though the player can still climb it.
+      const path = join(scratch, "ladder_room.vmf");
+      writeFileSync(path, room());
+      await writeLadderTool.handler(
+        {
+          path,
+          bounds: { mins: [240, -32, 0], maxs: [256, 32, 128] },
+          targetname: "test_ladder",
+          confirm: true,
+        } as never,
+        ctx,
+      );
+      const result = await compile(path, { toolchain: "plusplus", stages: ["vbsp"] });
+      expect(result.leaked).toBe(false);
+      expect(result.ok).toBe(true);
+      const entities = (await readBspEntities.handler(
+        { path: result.bsp, limit: 1, offset: 0, histogramOnly: true },
+        ctx,
+      )) as unknown as { histogram: Record<string, number> };
+      expect(entities.histogram.func_ladder ?? 0).toBe(0);
+      expect(entities.histogram.func_simpleladder ?? 0).toBeGreaterThan(0);
+      expect(entities.histogram.func_useableladder ?? 0).toBeGreaterThan(0);
+    },
+    300_000,
+  );
+});
+
 describe.skipIf(!has.toolchain)("faces, read back out of the BSP", () => {
   it(
     "smoothing groups, lightmap scale and texture vectors are what the compiler wrote",

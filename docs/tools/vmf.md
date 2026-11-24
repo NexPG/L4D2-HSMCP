@@ -29,7 +29,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_brush_entity` | The universal brush-entity primitive: any classname, a box volume, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_detail_sprites` | Adds a detail-sprite type to `detail.vbsp`: density, one sprite group with a sprite rectangle (`x y w h sheetSize`), `spritesize` (x y z random), amount and alpha. |
 | `write_entity_probe` | Adds a runtime presence probe to every entity with the given targetname: an `OnUser1` output that echoes a unique line through a `point_servercommand`. |
-| `write_ladder` | Writes `func_ladder` as a brush volume, optionally with the `func_useableladder` point L4D2 uses for AI. |
+| `write_ladder` | Writes `func_ladder` as a brush volume plus the `func_useableladder` point L4D2's compiler turns into AI ladder data. |
 | `write_logic` | Writes a point logic entity with its origin and outputs: `logic_auto`, `logic_relay`, `logic_timer`, `logic_branch`, `logic_compare`, `logic_case`, `math_counter` or `math_remap`. |
 | `write_mover` | Writes a brush mover with the volume it needs: `func_movelinear` (movedir, speed, startposition), `func_rotating` (maxspeed, angles, axis flags) or `func_tracktrain` (a `target` path of `path_track`s). |
 | `write_physics_constraint` | Writes a `phys_hinge`, `phys_lengthconstraint`, `phys_ballsocket`, `phys_slideconstraint` or `phys_ragdollconstraint` between two named entities. |

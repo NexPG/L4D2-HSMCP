@@ -368,9 +368,13 @@ export const writeConstraintTool = defineTool({
 export const writeLadderTool = defineTool({
   name: "write_ladder",
   description:
-    "Writes `func_ladder` as a brush volume, optionally with the `func_useableladder` point " +
-    "L4D2 uses for AI. `func_ladder` has no keyvalues of its own; the volume is the ladder. " +
-    "Guarded.",
+    "Writes `func_ladder` as a brush volume plus the `func_useableladder` point L4D2's " +
+    "compiler turns into AI ladder data. `func_ladder` has no keyvalues of its own; the " +
+    "volume is the ladder. The useable points sit 33 units outside the climbing face and " +
+    "16 above the bottom/top, because a point inside the brush is rejected as blocked and " +
+    "nav generation then has no walkable seed. Extend the brush to the top of the upper " +
+    "floor and pass `facing` when the approach is not the thinner positive axis. Compile " +
+    "with Tools++ so vbsp emits `func_simpleladder`; stock vbsp cannot. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -379,6 +383,13 @@ export const writeLadderTool = defineTool({
     bounds: z.object({ mins: VEC3, maxs: VEC3 }),
     targetname: z.string().optional(),
     useable: z.boolean().default(true).describe("Also write func_useableladder for AI."),
+    facing: z
+      .enum(["x+", "x-", "y+", "y-"])
+      .optional()
+      .describe(
+        "Side the player climbs from. Default: the thinner horizontal axis, positive side. " +
+          "The useable points are offset 17 units this way; the wrong side is a blocked point.",
+      ),
     material: z.string().default("TOOLS/TOOLSNODRAW"),
     confirm: z.boolean().default(false),
   },
@@ -406,20 +417,41 @@ export const writeLadderTool = defineTool({
       ctx,
     );
     let useableId: number | null = null;
+    const warnings: string[] = [];
     if (args.useable !== false) {
-      const center = [
-        (args.bounds.mins[0] + args.bounds.maxs[0]) / 2,
-        (args.bounds.mins[1] + args.bounds.maxs[1]) / 2,
-        (args.bounds.mins[2] + args.bounds.maxs[2]) / 2,
-      ];
+      const [mx, my, mz] = args.bounds.mins;
+      const [xx, xy, xz] = args.bounds.maxs;
+      const size = [xx - mx, xy - my, xz - mz];
+      // A ladder brush is thin across the climbing face. The points must be outside that
+      // face and above/below the ends; the old centre-line points were inside the brush,
+      // and vbsp logged `funcladder with blocked bottom point` before nav found no seed.
+      const axis = args.facing?.[0] ?? (size[0]! <= size[1]! ? "x" : "y");
+      const sign = args.facing?.endsWith("-") === true ? -1 : 1;
+      const yaw = axis === "x" ? (sign > 0 ? 0 : 180) : sign > 0 ? 90 : 270;
+      const outset = 33;
+      const climbX = (mx + xx) / 2 + (axis === "x" ? sign * outset : 0);
+      const climbY = (my + xy) / 2 + (axis === "y" ? sign * outset : 0);
+      const point0: [number, number, number] = [climbX, climbY, mz + 16];
+      const point1: [number, number, number] = [climbX, climbY, xz + 16];
+      const center = [(point0[0] + point1[0]) / 2, (point0[1] + point1[1]) / 2, (point0[2] + point1[2]) / 2];
+      if (Math.min(size[0]!, size[1]!) > 32) {
+        warnings.push(
+          `the ladder is ${Math.min(size[0]!, size[1]!)} units thick across its thin axis; ` +
+            `a ladder brush is normally one player width (32) or less`,
+        );
+      }
+      if (size[2]! < 64) {
+        warnings.push(`the ladder is ${size[2]} units tall; a climb under 64 is not a ladder`);
+      }
       const [id = null] = await addEntities(
         path,
         [
           {
             classname: "func_useableladder",
-            origin: vec(center),
-            point0: vec([center[0]!, center[1]!, args.bounds.mins[2]]),
-            point1: vec([center[0]!, center[1]!, args.bounds.maxs[2]]),
+            origin: vec(center as [number, number, number]),
+            angles: `0 ${yaw} 0`,
+            point0: vec(point0),
+            point1: vec(point1),
             ...(args.targetname !== undefined ? { targetname: `${args.targetname}_use` } : {}),
           },
         ],
@@ -428,7 +460,8 @@ export const writeLadderTool = defineTool({
       verifyEntities(path, [id], ["func_useableladder"]);
       useableId = id;
     }
-    const warnings = await fgdWarnings("func_ladder", { classname: "func_ladder" }, ctx);
+    const fgd = await fgdWarnings("func_ladder", { classname: "func_ladder" }, ctx);
+    warnings.push(...fgd);
     return {
       path,
       entityId: brush.id,
@@ -436,8 +469,9 @@ export const writeLadderTool = defineTool({
       useableId,
       warnings,
       nextStep:
-        "Compile and walk into it; the brush is the climb volume. The useable point is what " +
-        "bots path to on this engine.",
+        "Compile with Tools++: its vbsp emits `func_simpleladder` from the useable points; " +
+        "stock vbsp has no `-simpleladders`. Then run nav and `read_nav_ladders`; a blocked " +
+        "point is printed at map load and leaves no climb link.",
     };
   },
 });

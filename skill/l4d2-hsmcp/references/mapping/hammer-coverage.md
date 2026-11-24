@@ -83,6 +83,7 @@ covered: this table is the summary.
 | Light entities | `write_light` for point/environment/dynamic/sun/shadow, `edit_vmf` for the rest | verified: the five kinds compile into the entity lump; `_light` is the four-number form and `light_environment` gets angles/ambient (`tools-compile.test.ts`) |
 | Postprocess | `write_postprocess` | verified: a tonemap controller wired to `logic_auto` with three `OnMapSpawn` outputs compiles; `color_correction` is the L4D2 class name, not `colorcorrection` |
 | Decals | `write_decal` for `infodecal`, `write_overlay` for a sized overlay | verified: decals written at surface points reach the entity lump |
+| Ladders | `write_ladder` | **verified with the real compiler:** Tools++ vbsp emits `func_simpleladder` from a `func_ladder` brush; stock vbsp has no `-simpleladders` and leaves only the touch volume. The useable points are offset 33 outside the climbing face and carry `angles`, because centre-line points are logged as blocked. A ladder at the world origin or over a solid platform makes nav report `Invalid ground position`/`No valid walkable seed positions` |
 | Ropes | `write_rope` | verified: the `move_rope`/`keyframe_rope` pair links by `NextKey` and compiles |
 | Sprites, beams, lasers | `write_sprite` | verified: a sprite and a beam with its two `info_target`s compile; a laser without a target gets one |
 | Map properties (sky, detail, fade) | `set_map_properties` | verified |

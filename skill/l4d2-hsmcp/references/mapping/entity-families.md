@@ -84,6 +84,44 @@ These are shortcuts over `write_point_entity`/`write_brush_entity`, not a closed
 `func_useableladder` is itself a point entity, and a constraint class with no enum entry can
 be written through the primitive.
 
+### Ladders
+
+`write_ladder` writes a `func_ladder` brush and a `func_useableladder` point. Two facts are
+not in the entity's own keys:
+
+- **L4D2's `func_simpleladder` is compiler output, not an authored class.** It is absent
+  from the FGD; Tools++ vbsp creates it from the ladder with `-simpleladders`, which is why
+  `run_compile` now passes that flag only on the Tools++ L4D2 chain. Stock vbsp rejects the
+  flag outright. Without it the player can still touch the ladder, but the AI has no ladder
+  nav data.
+- **The useable points must be outside the climbing face.** `write_ladder` offsets them 33
+  units along `facing` (the player hull is 32 wide) and sets `angles` so the generated
+  ladder's `normal` points away from the wall. Points on the brush centre line are logged as
+  `funcladder with blocked bottom point` at map load.
+
+The brush spans the lower floor to the **top of the upper floor** and sits flush against its
+edge. A ladder brush at the world origin, or one that overlaps a solid platform, makes nav
+print `Invalid ground position` / `No valid walkable seed positions`; the compiler's ladder
+points are the brush centres, so the bottom/top must be over open floor. After nav,
+`read_nav_ladders` is the check; a climb link appears only when both ends connect.
+
+### Clip families
+
+| Class | Blocks | Does not block | Use |
+|---|---|---|---|
+| `TOOLS/TOOLSCLIP` world brush | players, infected, physics | nothing | the default invisible wall; it is solid geometry and can seal a hull |
+| `func_playerinfected_clip` | players and infected | physics props | keep survivors and AI out of a volume without stopping a barrel; 746 in the stock maps |
+| `func_clip_vphysics` | VPhysics objects | players and infected | a rail that stops a rolling car but not a survivor |
+| `func_block_charge` | Charger charges | other movement | L4D2-specific charger blocker |
+| `func_nav_blocker` | nav generation and paths | all physics | keep a visible-but-unwalkable roof, water or scenery out of the mesh |
+| `func_brush` `Solidity 1` | nothing (default) | everything | a toggleable visual; `Solidity 2` makes it always solid |
+| `func_illusionary` | nothing | everything | legacy non-solid; prefer `func_brush` |
+
+`func_playerinfected_clip` is a brush entity with no special keys: `write_brush_entity`
+writes it, and `TOOLS/TOOLSCLIP` is the material unless the class needs the trigger texture.
+Do not use a world clip where the player should pass and only a prop should stop; the
+difference is the whole point.
+
 ### Choose the prop class from the official pattern
 
 The official maps use **`prop_physics`** for almost every movable thing — 11,667 instances

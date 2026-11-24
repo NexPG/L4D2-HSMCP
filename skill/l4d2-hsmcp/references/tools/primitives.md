@@ -13,7 +13,7 @@ of that path, but deleting it must not remove the capability.
 | Copy one face's alignment | `copy_face_alignment` | Exact uaxis/vaxis, optional material and lightmap scale; `align_faces` is the computed alternative |
 | Copy / paste | `clone_solids` | Fresh ids, byte-for-byte materials and alignment |
 | Any entity, keyvalue or output | `edit_vmf` | `add`, `update`, `remove`, `addOutput`, `removeOutput` |
-| Any brush entity with a volume | `write_brush_entity` | class is a string, not an enum; keys and outputs pass through |
+| Any brush entity with a volume | `write_brush_entity` | class is a string, not an enum; keys and outputs pass through. `func_playerinfected_clip` and `func_block_charge` are this call; `func_simpleladder` is compiler output, not authored |
 | Any point entity with an origin | `write_point_entity` | class is a string, not an enum |
 | Prove an entity exists in the running map | `write_entity_probe` | adds an `OnUser1` or natural-output echo; pair its `schedule`/`markers` with `run_map_test` |
 | Mark nav areas | `write_nav_attribute_region` | `func_nav_attribute_region` bits; regenerate nav and test with `write_nav_probe` |

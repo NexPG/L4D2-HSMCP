@@ -312,7 +312,18 @@ export const runCompile = defineTool({
       : [];
 
     const plans: Record<string, { exe: string; argv: string[] }> = {
-      vbsp: { exe: compilerExe("vbsp", chain), argv: [...cull, "-game", game, target] },
+      vbsp: {
+        exe: compilerExe("vbsp", chain),
+        argv: [
+          ...cull,
+          // L4D2's AI ladders are `func_simpleladder`, and only Tools++ vbsp knows how to
+          // emit them from `func_ladder`/`func_useableladder`; stock vbsp rejects the flag.
+          ...(chain === "plusplus" && profile.id === "l4d2" ? ["-simpleladders"] : []),
+          "-game",
+          game,
+          target,
+        ],
+      },
       vvis: {
         exe: compilerExe("vvis", chain),
         argv: [...(args.fast ? ["-fast"] : []), "-game", game, target],
