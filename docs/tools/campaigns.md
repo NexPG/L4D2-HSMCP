@@ -1,6 +1,6 @@
 # Campaigns
 
-21 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
+22 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -12,6 +12,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `check_finale` | Checks a finale as a contract, not as a trigger that exists. |
 | `check_modes` | Checks each mission mode against the maps it lists, without the engine: scavenge needs `weapon_scavenge_item_spawn`; survival needs a `trigger_finale`/`func_finale` or the timer never starts; the last coop/versus chapter needs a finale or a changelevel; a map repeated inside one mode is a warning; a mode name outsid... |
 | `read_campaign` | Reads a Left 4 Dead 2 campaign file: the `mission` block, its modes (coop, versus, survival, scavenge) and each mode's numbered chapters with the map, display name and image. |
+| `read_item_density` | Counts a map's item/weapon spawners: total `weapon_*_spawn`, the random `weapon_item_spawn` layer, and categories (random, melee, health, throwable, ammo, scavenge, specific). |
 | `read_mission_poster` | Reads the `poster` block of a mission file: `posterImage`, the widescreen variant, `fullscreen` and every extra key. |
 | `run_campaign_gate` | Runs a campaign through one gate instead of a checklist an agent can forget: mission check, VMF lint, compile, nav generation with the string-table dictionary baked, a fresh BSP/nav pair, static-prop collision, every chapter transition (door class near the landmark, matching landmark, arrival volume), the finale con... |
 | `write_campaign` | Writes a campaign file from a name and a list of modes with numbered chapters. |

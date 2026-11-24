@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.273-alpha - 2026-11-24
+
+- **`read_item_density` measures the item layer without launching the game.** It counts every
+  `weapon_*_spawn` in a VMF or BSP, separates random (`weapon_item_spawn`), specific, health,
+  throwable, ammo, melee and scavenge, compares against a ~150-spawner full-chapter budget,
+  normalizes per 1,000 nav areas when a `.nav` is given, and can diff an official peer.
+- **Measured official totals:** `c2m1_highway` 187 (60 random), `c2m2_fairgrounds` 191 (101),
+  `c2m3_coaster` 152 (66), `c1m1_hotel` 81 (51), `c5m1_waterfront` 96 (28). The task list's
+  "321 each" is not what the entity lump counts; the skill now records the real table.
+- **Tool count: 300.** Tests: 251 files, 2,000 passed, 32 skipped.
+
 ## 0.0.272-alpha - 2026-11-24
 
 - **3D skybox, spotlights and map audio were verified offline.** A 128-unit tower copied at

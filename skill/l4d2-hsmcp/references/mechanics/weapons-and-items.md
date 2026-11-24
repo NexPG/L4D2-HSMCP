@@ -63,6 +63,33 @@ Rules that matter:
 - The Director controls item density outside safe rooms; a corridor full of tier 2 weapons is
   not what a campaign wants.
 
+## Density: what a full chapter carries
+
+`read_item_density` counts every `weapon_*_spawn` in a VMF or BSP, separates the random
+`weapon_item_spawn` layer from specific/health/throwable/ammo/melee/scavenge, and compares
+with one official peer. Measured totals on the official maps:
+
+| Map | Total spawners | `weapon_item_spawn` |
+|---|---|---|
+| `c2m1_highway` | 187 | 60 |
+| `c2m2_fairgrounds` | 191 | 101 |
+| `c2m3_coaster` | 152 | 66 |
+| `c1m1_hotel` | 81 | 51 |
+| `c5m1_waterfront` | 96 | 28 |
+
+The task list's "321 each for Milltown" is not the spawner count this reader sees: the three
+Milltown chapters are 187/191/152. Use **~150 total** as the full-chapter budget and
+`weapon_item_spawn` ~50–100 as the random layer; a short arena needs the nav-area ratio.
+
+```text
+read_item_density(path: "src/map.vmf")                         # counts + budget
+read_item_density(path: "map.bsp", nav: "map.nav",
+                  peer: "c2m1_highway")                        # per-1,000 areas + peer
+```
+
+`status` is `sparse` below half the budget, `dense` above double, otherwise `in-range`. It
+counts what the map offers, not what the Director spawns; a play test is still the item proof.
+
 ## Checking
 
 - `read_fgd_class(classname: "weapon_rifle_spawn")` — keyvalues, inputs, outputs.

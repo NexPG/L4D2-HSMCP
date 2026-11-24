@@ -155,7 +155,7 @@ const AREAS: Area[] = [
     title: "Campaigns",
     covers: "mission files, modes, finales, gates, posters and campaign scaffolding",
     groups: {
-      "Campaign and mission files": ["campaign", "modes", "gameplay", "gate", "finale", "poster"],
+      "Campaign and mission files": ["campaign", "modes", "gameplay", "gate", "finale", "poster", "itemdensity"],
       "Campaign scaffolding": ["campaignbuild"],
     },
   },
