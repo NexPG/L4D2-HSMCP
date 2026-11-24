@@ -38,8 +38,34 @@ export const SKILL_PROMPTS: readonly SkillPrompt[] = [
       `Use the L4D2-HSMCP skill at l4d2-hsmcp://skill/SKILL.md.\n\n` +
       `Task: ${given(args.task)}\n\n` +
       `Read SKILL.md and the workflow or reference it routes this task to before acting. ` +
+      `If the task is a new map or campaign and there is no approved DESIGN.md, do pass 1 ` +
+      `(workflows/design-a-map.md) and stop; do not build in the same message. ` +
       `Use the MCP tools for file work; do not guess a format. If the task depends on an ` +
       `item under "What is not supported", say so plainly instead of faking the step.`,
+  },
+  {
+    name: "l4d2_design_map",
+    title: "Design a map or campaign (pass 1)",
+    description: "Write a complete DESIGN.md route, rooms, beats, finale, palette and budget.",
+    args: { brief: TASK },
+    render: (args) =>
+      `Use the L4D2-HSMCP skill page l4d2-hsmcp://skill/workflows/design-a-map.md.\n\n` +
+      `Brief: ${given(args.brief)}\n\n` +
+      `Pass 1 only. Use read-only tools to query every asset, class and peer number, write ` +
+      `campaigns/<NNN-slug>/DESIGN.md with the full template, set Status: draft, report the ` +
+      `path and stop for approval. Do not create a .vmf and do not start the build.`,
+  },
+  {
+    name: "l4d2_build_from_design",
+    title: "Build from an approved design (pass 2)",
+    description: "Build the map or campaign that DESIGN.md describes.",
+    args: { design: z.string().describe("Path to campaigns/<NNN-slug>/DESIGN.md.") },
+    render: (args) =>
+      `Use the L4D2-HSMCP skill page l4d2-hsmcp://skill/workflows/new-campaign.md.\n\n` +
+      `Design: ${given(args.design)}\n\n` +
+      `Pass 2. Read the design, confirm Status: approved, and build chapter by chapter in its ` +
+      `§14 order. Choose exact assets within its palette; do not change the route, a room's ` +
+      `purpose, a beat or the finale type without an approved §15 amendment.`,
   },
   {
     name: "l4d2_hud_override",

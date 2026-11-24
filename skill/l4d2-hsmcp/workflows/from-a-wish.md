@@ -1,14 +1,29 @@
-# Workflow: from a wish to a playable campaign
+# Workflow: from a wish to a playable campaign, in two passes
 
 The user should be able to describe a campaign in their own words. This page turns that
 description into a build that can be checked, without inventing content or skipping a
 requested mechanic.
 
-## 0. Write the wish back as a spec
+**A new map or campaign is two passes, and they do not run in one message.**
 
-Read the request and write a short spec before touching a file. If something is genuinely
+1. **Pass 1 — design.** Produce `campaigns/<NNN-slug>/DESIGN.md`: the complete route, rooms,
+   floors, beats, events, finale, palette, variability and budget. Read-only tools only; no
+   `.vmf`. Follow [`design-a-map.md`](design-a-map.md). End the message with the design path
+   and stop for approval.
+2. **Pass 2 — build.** Read the approved design and build it. Follow
+   [`new-campaign.md`](new-campaign.md). The route and beats are fixed; the build pass chooses
+   exact assets within the palette and records any deviation in the design's `## 15.
+   Amendments`.
+
+A build started before the design is a decision made by accident. A design that needs the chat
+to be understood is not finished.
+
+## Pass 1 — write the wish back as a design
+
+Read the request and write the design before touching a file. If something is genuinely
 ambiguous, choose a sensible default and say what you chose; ask only when the answer changes
-the map's identity (chapter count, campaign vs single map, mode).
+the map's identity (chapter count, campaign vs single map, mode). The full template is
+[`design-a-map.md`](design-a-map.md); this table is the minimum it must answer.
 
 | Field | What to record |
 |---|---|
@@ -24,7 +39,7 @@ Names are content: query them. `read_game_content(kind: "material" | "model" | "
 "sound")` returns the exact strings; `read_fgd_class` returns every key, input and output.
 A name from memory is a purple checkerboard or a silent entity.
 
-## 1. Design before geometry
+## Pass 1 — design before geometry
 
 1. Draw the critical path as rooms, not coordinates: spawn → first fight → safe room →
    chapter 2 → … → finale arena → escape.
@@ -32,8 +47,9 @@ A name from memory is a purple checkerboard or a silent entity.
    one-way drop, a dark room. If it has no beat, it is a corridor with a compile time.
 3. Decide where each mechanic lives and which entity carries it. Look the class up in the
    FGD; do not guess a key.
-4. Sketch the finale: arena, stage list (`PANIC`, `TANK`, …), escape trigger, outtro. Type 2
-   is the only stock finale with stages; see `references/campaign/custom-finale.md`.
+4. Sketch the finale: arena, stage list (`PANIC`, `TANK`, …), escape trigger, outtro. Type 2 is
+   the custom finale with a `DirectorOptions` stage list; see
+   `references/campaign/custom-finale.md`.
 5. Budget: every chapter should be small enough to compile and play in one sitting. A first
    build of two short chapters proves the pipeline; a city can come after.
 
@@ -41,12 +57,18 @@ Room sizes, cover, sightlines and lighting are in
 `references/mapping/level-design.md`. The tools check the numbers; the wish decides the
 place.
 
-Check the spec against `references/mapping/hammer-coverage.md`. If a wish needs an editor
+Check the design against `references/mapping/hammer-coverage.md`. If a wish needs an editor
 preview or a two-team round, say what will be verified and what will not.
 
-## 2. Build a chapter
+**Write the design to `campaigns/<NNN-slug>/DESIGN.md` with the full template in
+[`design-a-map.md`](design-a-map.md). Set `Status: draft` and stop.** Do not open a VMF, do not
+"test the idea with a box". Pass 2 starts only after the user approves the design.
 
-Follow `workflows/new-campaign.md` for the exact tool order. Per chapter:
+## Pass 2 — build a chapter from the design
+
+Follow `workflows/new-campaign.md` for the exact tool order. The route, rooms, floors, beats,
+finale type and palette come from the design; choosing the exact crate or sign within a
+palette is execution. Per chapter:
 
 1. `write_vmf`; `write_vmf_solid` for the sealed shell.
 2. Shape rooms with clips, hollows and vertex moves; use `write_vmf_fitting` for door
@@ -60,7 +82,7 @@ Follow `workflows/new-campaign.md` for the exact tool order. Per chapter:
 Do not build all chapters before compiling the first. A leak found on chapter 1 is cheaper
 than three chapters of the same mistake.
 
-## 3. Mechanics, one at a time
+## Pass 2 — mechanics, one at a time
 
 | Wish | Build | Prove |
 |---|---|---|
@@ -75,13 +97,13 @@ than three chapters of the same mistake.
 Runtime claims need runtime evidence: the `-condebug` log, the nav dump, a screenshot. An
 entity that exists is not a mechanic that works.
 
-## 4. Compile, nav, mission, add-on
+## Pass 2 — compile, nav, mission, add-on
 
 `run_compile` → `run_nav_generate` → `write_campaign` → `run_vpk_pack` →
 `check_campaign` → deploy. The checkpoints in `workflows/new-campaign.md` are not optional;
 each one is cheaper than the failure it catches.
 
-## 5. Play test the wish
+## Pass 2 — play test the design
 
 Run the campaign from the spawn, not from a console `map` command if the transition matters.
 Record evidence per line of the wish:
@@ -98,10 +120,12 @@ Evidence: PANIC … TANK … escape … credits
 If a requested mechanic cannot be proven with the available client, say which and why. The
 answer is "load/HUD verified, full round not played", not "done".
 
-## 6. Report
+## Pass 2 — report
 
 - What was built: chapters, maps, mechanics, assets.
 - Evidence per requested feature, with paths or log lines.
+- The design path and every `## 15. Amendments` row; a build that disagrees with the design
+  without an amendment is not finished.
 - What is not verified, and what it would take.
 - Cleanup: test maps, screenshots and backups out of the game install; originals restored.
 
@@ -110,7 +134,10 @@ answer is "load/HUD verified, full round not played", not "done".
 Wish: *"A two-chapter swamp-town campaign: a dark safe room, a street crescendo, a tank
 before the second safe room, then a finale in a church with two panic waves and an escape."*
 
-Spec: two maps, `swamp1`/`swamp2`, mission `SwampTown`, `sky_l4d_urb01`, brick/wood
-materials, one street crescendo on map 1, tank at the map 2 safe-room approach, type 2
-finale in a church with `PANIC`/`PANIC`/`TANK`, escape to credits. Every asset queried;
-every entity class read from the FGD; each line tested in the order above.
+Pass 1 design: `campaigns/004-swamp-town/DESIGN.md` — two maps, `swamp1`/`swamp2`, mission
+`SwampTown`, `sky_l4d_urb01`, brick/wood palette, one street crescendo on map 1, tank at the
+map 2 safe-room approach, type 2 finale in a church with `PANIC`/`PANIC`/`TANK`, escape to
+credits. Every asset queried; every entity class read from the FGD. Approved, then stopped.
+
+Pass 2 build: the same file, built chapter by chapter, each line tested in the order above,
+with any deviation recorded as an amendment.

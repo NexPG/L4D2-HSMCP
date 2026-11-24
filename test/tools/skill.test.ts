@@ -61,6 +61,8 @@ describe("skill resources", () => {
     expect(new Set(names).size).toBe(names.length);
     expect(names).toEqual([
       "l4d2_task",
+      "l4d2_design_map",
+      "l4d2_build_from_design",
       "l4d2_hud_override",
       "l4d2_material_edit",
       "l4d2_compiled_light",
@@ -78,6 +80,16 @@ describe("skill resources", () => {
     expect(text).toContain("l4d2-hsmcp://skill/workflows/hud-override.md");
     expect(text).toContain("resource/ui/l4d360ui/audio.res");
     expect(text).toContain("shift the volume slider 10 px left");
+
+    const design = SKILL_PROMPTS.find((prompt) => prompt.name === "l4d2_design_map")!;
+    const designText = design.render({ brief: "a two-chapter beach campaign" });
+    expect(designText).toContain("l4d2-hsmcp://skill/workflows/design-a-map.md");
+    expect(designText).toContain("Do not create a .vmf");
+
+    const build = SKILL_PROMPTS.find((prompt) => prompt.name === "l4d2_build_from_design")!;
+    const buildText = build.render({ design: "campaigns/004/DESIGN.md" });
+    expect(buildText).toContain("l4d2-hsmcp://skill/workflows/new-campaign.md");
+    expect(buildText).toContain("Status: approved");
 
     const registered: string[] = [];
     const count = registerSkillPrompts({

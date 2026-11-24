@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.284-alpha - 2026-11-25
+
+- **A new map or campaign is now two passes.** Pass 1 writes
+  `campaigns/<NNN-slug>/DESIGN.md` with the complete route, rooms, floors, beats, events,
+  finale, palette, variability and budget, using read-only tools, and stops for approval. Pass
+  2 builds that design; it may choose exact assets within the palette but may not silently
+  change the route or a beat. A deviation is a `## 15. Amendments` row.
+- **New `workflows/design-a-map.md`** with the full design template, and
+  `checklists/design-ready.md` as the pass-1 gate. `workflows/new-campaign.md` is now the
+  pass-2 build page; `workflows/from-a-wish.md` routes the two passes and says where to stop.
+- **MCP prompts** `l4d2_design_map` and `l4d2_build_from_design`; `l4d2_task` routes a new
+  map or campaign to pass 1 when no approved design exists.
+- **`SKILL.md`** has the two-pass rule in the opening contract, the routing table, the pipeline
+  and the invariants. `campaigns/README.md` shows the `DESIGN.md` layout.
+- **Tool count: 308.** Tests: 258 files, 2,021 passed, 32 skipped.
+
 ## 0.0.283-alpha - 2026-11-24
 
 - **Corrected stale skill/reference claims that would produce a wrong first build.** The

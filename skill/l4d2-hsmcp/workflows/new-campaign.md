@@ -1,13 +1,23 @@
-# Workflow: a campaign from scratch
+# Workflow: build a campaign from an approved design (pass 2)
 
-If the input is a user's description rather than a spec, start with
-[`from-a-wish.md`](from-a-wish.md). This page assumes the chapters and mechanics are decided.
+This is the **build pass**. It starts only when `campaigns/<NNN-slug>/DESIGN.md` exists with
+`Status: approved`. The creative decisions — chapter count, route, rooms, floors, beats,
+finale type, asset palette, variability and budget — are in that file. This pass spends its
+attention on geometry, exact assets, compile, nav and evidence.
+
+If the design is still a draft, or there is no design, stop and finish
+[`design-a-map.md`](design-a-map.md) first. **No new design decisions here.** Choosing which
+concrete crate or sign fits a palette is execution; changing the route, a room's purpose, a
+beat, a floor count or the finale type is a design change: append it to the design's
+`## 15. Amendments` and get it approved instead of making it silently.
 
 A campaign is numbered and local: `campaigns/<NNN-slug>/`. It never goes into git. The work
 below is ordered so each step can fail cheaply.
 
 ## 0. Preconditions
 
+- `campaigns/<NNN-slug>/DESIGN.md` exists, its `Status` is `approved`, and its §14 build order
+  is the order you are about to use.
 - `health` reports the game, compilers, FGD and sidecar. If a piece is missing, stop and say
   what it costs; do not build around it.
 - The chapter names are decided: mission `Name` is alphanumeric, map names are bare
@@ -81,3 +91,8 @@ and script.
 Deploy under one fixed name, remove older archives, restart the game, enable the add-on, and
 follow `workflows/playtest.md`. Record what happened; do not call the campaign done without a
 play test.
+
+Before the deploy, walk the design's `## 13. Acceptance criteria` line by line. Every
+deviation from the design belongs in `## 15. Amendments` with the reason; an amendment is a
+decision, not a cleanup. If a design line turned out to be impossible, stop and fix the
+design before building around it.
