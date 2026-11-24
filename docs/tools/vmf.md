@@ -1,6 +1,6 @@
 # VMF authoring
 
-88 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+89 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -98,6 +98,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `collapse_instances` | Expands every `func_instance` the way vbsp does and writes an ordinary VMF. |
 | `create_instance_from_selection` | Hammer++'s Create Instance from Selection: writes the selected brushes as a standing instance .vmf, removes them from the map and leaves one `func_instance` at their centre. |
 | `insert_prefab` | Pastes a saved Hammer prefab -- a `.vmf` fragment -- into a map. |
+| `read_official_prefab` | Lists and inspects the official prefabs the stock game ships: `sdk_content/mapsrc/instance` and `sdk_content/scripting/maps/instance` (house/safe-room, car, environment, entitygroups, usetargets). |
 | `write_instance` | Places a Hammer instance: adds a `func_instance` entity pointing at an instance .vmf, with an origin, angles and a fixup style. |
 
 ## Organisation and optimisation

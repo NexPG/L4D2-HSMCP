@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.268-alpha - 2026-11-24
+
+- **`read_official_prefab` reads the stock prefab library.** It lists and searches
+  `sdk_content/mapsrc/instance`, `sdk_content/scripting/maps/instance` and the DeadLine2
+  source by family (`mapsrc`, `entitygroups`, `usetargets`), with bytes, world solids, entity
+  count, class histogram, nested-instance count, and — with `details` — targetnames and
+  outputs. 63 mapsrc entries plus the entity-group library.
+- **`insert_prefab` places a prefab without name collisions.** New `namePrefix`/`remap`
+  rewrite the prefab's own targetnames and output targets; `validate` reports duplicate
+  targetnames and outputs whose target is not in the finished map. `!self`/`!activator`/
+  `!caller`/`!player` are exempt.
+- **Verified with the real compiler:** `prop_swamphouse02` (52 solids, 36 entities) pasted
+  into a sealed room with `namePrefix: "house_"` produced 52/36, 17 prefixed names, zero
+  duplicates, zero unresolved outputs, and compiled through vbsp with no leak.
+- **Tool count: 297.** Tests: 244 files, 1,988 passed, 32 skipped.
+
 ## 0.0.267-alpha - 2026-11-24
 
 - **No-mob scripts must remove a common that predates the first tick.** `CommonLimit = 0`

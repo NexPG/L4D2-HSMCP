@@ -96,6 +96,7 @@ import { pakfileAddTools } from "./maps/typescript/tools/pakfileadd.js";
 import { pakfileTools } from "./packages/typescript/tools/pakfile.js";
 import { planTools } from "./maps/typescript/tools/plan.js";
 import { prefabTools } from "./maps/typescript/tools/prefab.js";
+import { prefabCatalogTools } from "./maps/typescript/tools/prefabcatalog.js";
 import { qcTools } from "./models/typescript/tools/qc.js";
 import { modelCheckTools } from "./models/typescript/tools/check.js";
 import { modelCollisionTools } from "./models/typescript/tools/collision.js";
@@ -207,6 +208,7 @@ export const allTools: AnyToolDef[] = [
   ...renderBspTools,
   ...planTools,
   ...prefabTools,
+  ...prefabCatalogTools,
   ...bspLumpTools,
   ...staticPropTools,
   ...qcTools,

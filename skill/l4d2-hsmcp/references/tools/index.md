@@ -1,6 +1,6 @@
 # Tool catalogue
 
-296 tools. This page groups them by the job you are doing; each tool's own description is the
+297 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -230,7 +230,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_hud` | edit a `.res` value, add a key, or batch-shift `xpos`/`ypos`; preserves conditions, comments and indentation; `fromGame` + `out` copies a stock screen |
 | `build_skybox` | copy, seal the room and place `sky_camera` in one call |
 | `write_skybox_copy` | copy brushes at 1/16 scale and move them to the skybox origin |
-| `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation |
+| `insert_prefab` | paste a saved `.vmf` fragment with fresh ids, a move and a yaw rotation; `namePrefix`/`remap` and duplicate/output validation |
+| `read_official_prefab` | list and inspect the stock SDK prefabs by family, with class histogram, targetnames and outputs |
 | `write_weather` | add rain/snow/ash as `func_precipitation` and distance fog as `env_fog_controller` |
 | `clone_solids` | copy selected brushes with fresh ids, optionally move/rotate/scale/mirror the copy |
 

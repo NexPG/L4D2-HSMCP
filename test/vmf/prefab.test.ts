@@ -82,3 +82,35 @@ describe("insertPrefab", () => {
     expect(() => insertPrefab(EMPTY, 'world\n{\n\t"id" "1"\n}\n')).toThrow(/no world solids/);
   });
 });
+
+function wiredPrefab(): string {
+  return (
+    EMPTY +
+    'entity\n{\n\t"id" "99"\n\t"classname" "info_target"\n\t"targetname" "button"\n\t"origin" "0 0 0"\n}\n' +
+    'entity\n{\n\t"id" "100"\n\t"classname" "logic_relay"\n\t"targetname" "relay"\n\t"origin" "0 0 0"\n' +
+    '\tconnections\n\t{\n\t\t"OnTrigger" "button,Enable,,0,-1"\n\t}\n}\n'
+  );
+}
+
+describe("insertPrefab targetnames", () => {
+  it("prefixes names and rewrites the prefab's own output targets", () => {
+    const result = insertPrefab(EMPTY, wiredPrefab(), [0, 0, 0], { namePrefix: "house_" });
+    expect(result.targetnames.sort()).toEqual(["house_button", "house_relay"]);
+    expect(result.duplicates).toEqual([]);
+    expect(result.unresolvedOutputs).toEqual([]);
+    expect(result.text).toContain('"targetname" "house_button"');
+    expect(result.text).toMatch(/"OnTrigger"\s+"house_button,Enable,,0,-1"/);
+  });
+
+  it("finds a duplicate when the same prefab is pasted twice without a prefix", () => {
+    const first = insertPrefab(EMPTY, wiredPrefab()).text;
+    const second = insertPrefab(first, wiredPrefab());
+    expect(second.duplicates.map((d) => d.name).sort()).toEqual(["button", "relay"]);
+  });
+
+  it("reports an output that points outside the prefab and the map", () => {
+    const external = wiredPrefab().replace("button,Enable", "missing_door,Open");
+    const result = insertPrefab(EMPTY, external);
+    expect(result.unresolvedOutputs.join(" ")).toContain("missing_door");
+  });
+});

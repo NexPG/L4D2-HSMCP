@@ -86,6 +86,7 @@ again.
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
 | Nav generation finishes in 0.1 s and the dump has 0 areas | Use `run_nav_generate(via: "steam")` when the origin is not open floor; a direct launch marks the world origin before the player spawns. Keep the spawn on a flat brush ring and block scenery tops with `func_nav_blocker`; a 2048 1:12 patch gets 1,158 areas through Steam | `troubleshooting/terrain-nav-empty.md` |
 | A bot will not climb the ladder the player can use | Compile with Tools++ so vbsp emits `func_simpleladder`; span the brush to the upper floor and keep its centre line off the world origin; check `read_nav_ladders` | `references/mapping/entity-families.md` |
+| Two copies of one prefab fight over the same `screen01`/`door_button` names | Paste with `insert_prefab` `namePrefix`; check `duplicates`/`unresolvedOutputs` in the result, not by eye | `references/mapping/prefabs-and-instances.md` |
 | vvis takes minutes and the PVS is huge; every trim, pillar and window frame is structural | Move visual-only brushes into `func_detail`, then compile and `read_leak` because detail does not seal; use `func_areaportal`/`func_occluder` only after the hull is closed | `references/mapping/detail-and-vis.md` |
 
 ## Route the task first
@@ -144,6 +145,7 @@ material; the instructions live in one place.
 | `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/detail-and-vis.md` | world vs `func_detail` vs `func_brush`/`func_lod`, and areaportal/occluder rules |
+| `references/mapping/prefabs-and-instances.md` | the official prefab catalogue, `insert_prefab` names/validation, and instance vs prefab |
 | `references/mapping/terrain-water-boundaries.md` | terrain patches, slope/profile, the measured nav band, water and map edges |
 | `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |

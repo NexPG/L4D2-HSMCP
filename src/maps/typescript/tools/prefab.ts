@@ -30,6 +30,23 @@ export const insertPrefabTool = defineTool({
       .optional()
       .describe("Yaw rotation in degrees about Z through `pivot`. Default 0."),
     pivot: Vec3.optional().describe("Point the rotation turns around. Default 0 0 0."),
+    namePrefix: z
+      .string()
+      .optional()
+      .describe(
+        "Prefix every inserted targetname and the prefab's own output targets, so placing " +
+          "the same house twice does not produce two `door_button` entities.",
+      ),
+    remap: z
+      .record(z.string())
+      .optional()
+      .describe("Explicit old targetname -> new targetname, applied before namePrefix."),
+    validate: z
+      .boolean()
+      .optional()
+      .describe(
+        "Check duplicate targetnames and unresolved outputs after the paste (default true).",
+      ),
     dryRun: DRY_RUN,
     backup: BACKUP,
     confirm: CONFIRM,
@@ -46,6 +63,9 @@ export const insertPrefabTool = defineTool({
     warnings: z.array(z.string()),
     solidsBefore: z.number(),
     solidsAfter: z.number(),
+    targetnames: z.array(z.string()),
+    duplicates: z.array(z.object({ name: z.string(), count: z.number() })),
+    unresolvedOutputs: z.array(z.string()),
   },
   handler: (args, ctx) => {
     const path = resolveVmfInput(args.path, ctx.config);
@@ -59,6 +79,9 @@ export const insertPrefabTool = defineTool({
       {
         ...(args.rotate !== undefined ? { rotate: args.rotate } : {}),
         ...(args.pivot !== undefined ? { pivot: args.pivot as [number, number, number] } : {}),
+        ...(args.namePrefix !== undefined ? { namePrefix: args.namePrefix } : {}),
+        ...(args.remap !== undefined ? { remap: args.remap } : {}),
+        ...(args.validate !== undefined ? { validate: args.validate } : {}),
       },
     );
 
@@ -83,6 +106,9 @@ export const insertPrefabTool = defineTool({
       warnings: result.warnings,
       solidsBefore,
       solidsAfter,
+      targetnames: result.targetnames,
+      duplicates: result.duplicates,
+      unresolvedOutputs: result.unresolvedOutputs,
     };
   },
 });

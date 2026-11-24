@@ -9,7 +9,7 @@
  * turned with it. Nested `func_instance` geometry is still not expanded; the result says
  * so.
  */
-import { get, parse } from "../../../formats/typescript/kv/parse.js";
+import { children, get, parse } from "../../../formats/typescript/kv/parse.js";
 import type { KvBlock } from "../../../formats/typescript/kv/parse.js";
 import { maxId } from "./edit.js";
 import { transformSolids } from "./modify.js";
@@ -35,6 +35,12 @@ export interface PrefabResult {
   newSolidIds: number[];
   warnings: string[];
   unchanged: boolean;
+  /** Targetnames the inserted entities carry after the prefix/remap. */
+  targetnames: string[];
+  /** Names that appear more than once in the finished map. */
+  duplicates: Array<{ name: string; count: number }>;
+  /** Outputs on inserted entities whose target is not a name in the finished map. */
+  unresolvedOutputs: string[];
 }
 
 function remap(body: string, start: number): { text: string; firstId: number | null; count: number } {
@@ -84,6 +90,40 @@ export interface PrefabOptions {
   /** Yaw rotation in degrees, about Z through `pivot`. */
   rotate?: number;
   pivot?: Vec3;
+  /** Prefix every inserted targetname; outputs inside the prefab are remapped with it. */
+  namePrefix?: string;
+  /** Explicit old targetname -> new targetname, applied before the prefix. */
+  remap?: Record<string, string>;
+  /** Check duplicate targetnames and unresolved outputs after the paste. Default true. */
+  validate?: boolean;
+}
+
+/** A targetname rewrite for the prefab's own names; external targets are left alone. */
+function renameEntity(body: string, names: ReadonlyMap<string, string>): string {
+  if (names.size === 0) return body;
+  let text = body;
+  // Ordinary target keys. `targetname` is the entity's own name; the rest point at another
+  // entity and must move with a prefix or the output resolves to the original map's name.
+  for (const key of ["targetname", "parentname", "target", "filtername", "damagefilter", "landmark"]) {
+    const pattern = new RegExp(`"${key}"(\\s+)"([^"]*)"`, "gi");
+    text = text.replace(pattern, (whole, space: string, value: string) => {
+      const next = names.get(value);
+      return next === undefined ? whole : `"${key}"${space}"${next}"`;
+    });
+  }
+  // Connections: "OnX" "target,input,param,delay,times". Only the target field is renamed.
+  text = text.replace(
+    /"((?:On|Out)[A-Za-z0-9_]+)"(\s+)"([^"]*)"/g,
+    (whole, key: string, space: string, value: string) => {
+      const sep = value.includes("\u001b") ? "\u001b" : ",";
+      const parts = value.split(sep);
+      const next = names.get(parts[0] ?? "");
+      if (next === undefined) return whole;
+      parts[0] = next;
+      return `"${key}"${space}"${parts.join(sep)}"`;
+    },
+  );
+  return text;
 }
 
 export function insertPrefab(
@@ -120,6 +160,15 @@ export function insertPrefab(
   if (worldSolids.length === 0 && entities.length === 0) {
     throw new VmfPrefabError("the prefab has no world solids and no entities");
   }
+  const nameMap = new Map<string, string>();
+  for (const entity of entities) {
+    const old = get(entity, "targetname");
+    if (old === undefined || old.length === 0) continue;
+    const explicit = options.remap?.[old];
+    const next = explicit ?? `${options.namePrefix ?? ""}${old}`;
+    if (next !== old) nameMap.set(old, next);
+  }
+  const insertedEntityText: string[] = [];
 
   const firstNewId = maxId(targetNodes) + 1;
   let nextId = firstNewId;
@@ -143,8 +192,12 @@ export function insertPrefab(
           `there is nothing to move or turn`,
       );
     }
-    const remapped = remap(transformEntity(prefab.slice(start, end), matrix, rotate), nextId);
+    const remapped = remap(
+      renameEntity(transformEntity(prefab.slice(start, end), matrix, rotate), nameMap),
+      nextId,
+    );
     nextId += remapped.count;
+    insertedEntityText.push(remapped.text);
     const separator = index === 0 && target.length > 0 && !target.endsWith("\n") ? "\n" : "";
     entitySplices.push({
       start: target.length,
@@ -195,6 +248,43 @@ export function insertPrefab(
     warnings.push("the prefab contains a func_instance; its nested geometry is not expanded here");
   }
 
+  const targetnames = [...nameMap.values()];
+  const duplicates: Array<{ name: string; count: number }> = [];
+  const unresolvedOutputs: string[] = [];
+  if (options.validate !== false) {
+    const allEntities = afterRoots.filter((b) => b.name === "entity");
+    const counts = new Map<string, number>();
+    for (const entity of allEntities) {
+      const name = get(entity, "targetname");
+      if (name === undefined || name.length === 0) continue;
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    for (const [name, count] of counts) if (count > 1) duplicates.push({ name, count });
+    const known = new Set(counts.keys());
+    for (const snippet of insertedEntityText) {
+      const block = parse(snippet).find((n): n is KvBlock => n.kind === "block" && n.name === "entity");
+      if (!block) continue;
+      const classname = get(block, "classname") ?? "?";
+      for (const conn of children(block, "connections")) {
+        for (const entry of conn.entries) {
+          if (entry.kind !== "pair") continue;
+          const target = entry.value.split(/[,\u001b]/)[0] ?? "";
+          if (target.length === 0 || target.startsWith("!")) continue;
+          if (!known.has(target)) unresolvedOutputs.push(`${classname}.${entry.key} -> ${target}`);
+        }
+      }
+    }
+    if (duplicates.length > 0) {
+      warnings.push(
+        `${duplicates.length} duplicate targetname(s): ` +
+          duplicates.map((d) => `${d.name} x${d.count}`).join(", "),
+      );
+    }
+    if (unresolvedOutputs.length > 0) {
+      warnings.push(`${unresolvedOutputs.length} output target(s) are not in the map`);
+    }
+  }
+
   return {
     text,
     solids: allSolids.length,
@@ -202,5 +292,8 @@ export function insertPrefab(
     newSolidIds: insertedSolidIds,
     warnings,
     unchanged: text === target,
+    targetnames,
+    duplicates,
+    unresolvedOutputs,
   };
 }

@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **296 tools**.
+Last checked against the tool list on 24/11/2026: **297 tools**.
 
 ## The file itself
 
@@ -130,7 +130,8 @@ getting `ENOENT` on the first call.
 | `check_surfaceprop` | nothing: Hammer lets any string into `$surfaceprop` and never checks it |
 | Look at a model or texture | `preview_asset` | Material: base VTF decoded to a PNG. Model: HLMV viewport captured
 | Look at a model in the engine | `preview_model` | When HLMV's 3D canvas is blank, builds a sealed room, compiles it, generates a nav and captures the real game view; the model's lowest point is placed on the pedestal |
-| Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it |
+| Paste a prefab | `insert_prefab` | A saved `.vmf` fragment; fresh ids, move, yaw about a pivot; brush-entity geometry and entity angles turn with it; `namePrefix`/`remap` and duplicate/output validation |
+| Read the stock prefab library | `read_official_prefab` | SDK `instance` folders, with family, solids, entities, class histogram, targetnames and outputs |
 | `func_instance` | `edit_vmf` | Created as an entity; `read_vmf` expands them with `collapseInstances` |
 | Rotating door | `place_door` | Origin is the hinge; model hull read with `read_model_info`; checkpoint names checked |
 | Create instance from selection | `create_instance_from_selection` | Writes the instance file, recentres it and leaves one `func_instance`; a brush entity is taken whole |
