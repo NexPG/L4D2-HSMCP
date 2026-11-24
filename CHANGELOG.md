@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.265-alpha - 2026-11-24
+
+- **The breakable brush reacts in the running engine.** A scratch map's `func_breakable`
+  wall was fired with `ent_fire break_wall Break` at 8 s; its `OnBreak` output echoed
+  `HSMCP_BREAK_BROKEN` at 21.8 s, and `run_map_test` matched it. The class, `health`,
+  `material` and output path are now evidence, not only a compile.
+- **Tool count: 296.** Tests: 243 files, 1,984 passed, 32 skipped.
+
 ## 0.0.264-alpha - 2026-11-24
 
 - **`run_nav_generate` can mark a real player, not the world origin.** A direct launch runs
