@@ -328,6 +328,7 @@ map and looking, or by not happening at all.
 | `check_model` | nothing: no editor validates a QC/MDL before or after the compiler |
 | `decompile_model` | nothing: Hammer cannot open a compiled model at all |
 | `write_prop` | the prop tool with model/skin/solid checks |
+| `write_breakable` | `func_breakable`/`func_breakable_surf`/`func_physbox` with material, health, BreakableType |
 | `write_physics_constraint` | a constraint between two names, with the class keys passed through |
 | `write_ladder` | func_ladder plus the func_useableladder point L4D2's AI uses |
 | `write_scene` | a choreographed scene with its .vcd and targets |

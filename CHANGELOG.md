@@ -19,7 +19,7 @@ with a line here.
 - **Verified with the real compiler:** a `func_breakable` wall and a `prop_physics` car
   compile in a sealed room. The live break reaction is not automated; the class and keys
   are what vbsp reads.
-- **Tool count: 296.** Tests: 243 files, 1,982 passed, 32 skipped.
+- **Tool count: 296.** Tests: 243 files, 1,983 passed, 32 skipped.
 
 ## 0.0.262-alpha - 2026-11-24
 
