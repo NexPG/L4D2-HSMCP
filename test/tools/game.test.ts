@@ -37,6 +37,20 @@ describe("navGenerateConfig", () => {
       "nav_generate",
     ]);
   });
+
+  it("leaves the mark out when the caller sends it after the player spawns", () => {
+    // A Steam launch sends setpos + nav_mark_walkable through the client console; putting
+    // the same commands in the cfg would mark the world origin before a player exists.
+    expect(navGenerateConfig(undefined, false).trim().split("\n")).toEqual([
+      "sv_cheats 1",
+      "nav_edit 1",
+    ]);
+    expect(navGenerateConfig(0.5, false).trim().split("\n")).toEqual([
+      "sv_cheats 1",
+      "nav_edit 1",
+      "nav_slope_limit 0.5",
+    ]);
+  });
 });
 
 describe("flowWarnings", () => {

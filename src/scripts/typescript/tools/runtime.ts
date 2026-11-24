@@ -14,6 +14,8 @@ import {
 import { basename, dirname, join } from "node:path";
 import { parseNavDump } from "../../../nav/typescript/bsp/navdump.js";
 import { checkNavFreshness } from "../../../nav/typescript/bsp/nav.js";
+import { callSidecar } from "../../../core/typescript/sidecar/client.js";
+import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import {
   flowWarnings,
   gameExecutable,
@@ -197,6 +199,15 @@ export const runNavGenerate = defineTool({
           "each source .bsp.",
       ),
     timeoutSeconds: z.number().int().min(30).max(900).default(240).describe("Per map."),
+    via: z
+      .enum(["direct", "steam"])
+      .optional()
+      .describe(
+        "`direct` starts left4dead2.exe with -insecure; the cfg marks the world origin because " +
+          "no player exists yet, so maps whose origin is not open floor need `steam`. `steam` " +
+          "launches app 550 and retries `setpos` + `nav_mark_walkable` + `nav_generate` through " +
+          "the client console after the host has spawned.",
+      ),
     navSlopeLimit: z
       .number()
       .min(0.1)
@@ -258,7 +269,11 @@ export const runNavGenerate = defineTool({
 
     if (!existsSync(cfgPath)) writeFileSync(cfgPath, STOCK_CFG, "utf8");
     if (!existsSync(backup)) copyFileSync(cfgPath, backup);
-    writeFileSync(cfgPath, navGenerateConfig(args.navSlopeLimit), "utf8");
+    writeFileSync(
+      cfgPath,
+      navGenerateConfig(args.navSlopeLimit, (args.via ?? "direct") !== "steam"),
+      "utf8",
+    );
 
     const named = (args.addonsToHide ?? []).map((addon) =>
       resolveAddonPath(addon, (p) => resolveInput(p, ctx.config), gameDir),
@@ -326,10 +341,91 @@ export const runNavGenerate = defineTool({
 
         let reason: "matched" | "exited" | "timeout" = "timeout";
         const generate = async (): Promise<void> => {
-          writeFileSync(cfgPath, navGenerateConfig(args.navSlopeLimit), "utf8");
+          // Direct: the cfg runs with no player, so it can only mark the world origin.
+          // Steam: no mark in the cfg; the client console gets it after the host connects.
+          writeFileSync(cfgPath, navGenerateConfig(args.navSlopeLimit, (args.via ?? "direct") !== "steam"), "utf8");
           rmSync(engineNav, { force: true });
           rmSync(engineDump, { force: true });
           rmSync(consoleLog, { force: true });
+
+          if ((args.via ?? "direct") === "steam") {
+            const steam = steamExecutable();
+            if (!steam) {
+              throw new Error(
+                "Steam was not found; pass via:'direct' or set STEAM_PATH. A direct launch " +
+                  "cannot mark a non-walkable origin because no player exists when the cfg runs.",
+              );
+            }
+            const before = listGamePids();
+            spawn(
+              steam,
+              [
+                "-applaunch",
+                "550",
+                "-novid",
+                "-console",
+                "-allowdebug",
+                "-condebug",
+                "-stringtables",
+                "+map",
+                name,
+              ],
+              { detached: true, stdio: "ignore", windowsHide: false },
+            );
+            const pid = await waitForNewGamePid(60_000, before);
+            if (pid === null) {
+              throw new Error(
+                "Steam did not start left4dead2.exe within 60 s; check Steam is logged in.",
+              );
+            }
+            const gameStateFile = join(ctx.config.stateDir, "running-game.json");
+            recordGamePid(gameStateFile, pid);
+            const alive = (): boolean => {
+              try {
+                process.kill(pid, 0);
+                return true;
+              } catch {
+                return false;
+              }
+            };
+            const commands = (async (): Promise<void> => {
+              // Steam needs 25-30 s from -applaunch to a spawned host on this machine; the
+              // host is frozen in the intro before that, and a mark then lands on the origin.
+              // Retry after the spawn instead of trusting one clock: a first pass at 30 s
+              // may still have no player, and a later command is harmless.
+              let at = "";
+              try {
+                const start = readEntityLump(loose).entities.find(
+                  (entity) => entity.classname === "info_player_start" && entity.origin,
+                );
+                if (start?.origin) {
+                  at = `setpos ${start.origin[0]} ${start.origin[1]} ${start.origin[2]}; `;
+                }
+              } catch {
+                // The live player position is the fallback seed.
+              }
+              for (let attempt = 0; attempt < 6 && alive(); attempt += 1) {
+                await sleep(attempt === 0 ? 30_000 : 10_000);
+                if (!alive() || existsSync(engineNav)) return;
+                await callSidecar(
+                  "send_console_command",
+                  { command: `${at}nav_mark_walkable; nav_generate`, classname: "Valve001" },
+                  ctx.config,
+                  30_000,
+                );
+              }
+            })();
+            try {
+              reason = await waitForFile(engineNav, args.timeoutSeconds * 1000, alive);
+            } finally {
+              stopGamePid(pid);
+              await commands.catch(() => undefined);
+              clearRecordedGamePid(gameStateFile);
+              await sleep(1200);
+            }
+            return;
+          }
+
           const handle = launchGame(exe, [
             "-novid",
             "-console",
@@ -515,7 +611,7 @@ export const runMapTest = defineTool({
     timeoutSeconds: z.number().int().min(10).max(600).default(120),
     via: z
       .enum(["direct", "steam"])
-      .default("direct")
+      .optional()
       .describe(
         "'direct' starts left4dead2.exe: fast, and a direct launch outside Steam reaches " +
           "'No Steam logon' after about a minute. 'steam' launches the same map through " +
@@ -771,7 +867,7 @@ export const runMapTest = defineTool({
     ];
     let direct: ReturnType<typeof launchGame> | null = null;
     let gamePid: number | null = null;
-    if (args.via === "steam") {
+    if ((args.via ?? "direct") === "steam") {
       const steam = steamExecutable();
       if (!steam) {
         throw new Error(

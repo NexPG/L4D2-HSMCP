@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.264-alpha - 2026-11-24
+
+- **`run_nav_generate` can mark a real player, not the world origin.** A direct launch runs
+  `listenserver.cfg` before the local player exists, so `nav_mark_walkable` marked the origin;
+  that is invisible on a map whose origin is open floor, and fatal on a ladder, prop or slope
+  there. New `via: "steam"` launches app 550 and retries `setpos` to `info_player_start` +
+  `nav_mark_walkable` + `nav_generate` through the client console after the host spawns.
+  `direct` stays the default and is unchanged.
+- **A ladder nav path is proven.** The two-level test map generated 17 nav areas;
+  `read_nav_ladders` reports one ladder (top 1 / bottom 2), and `nav_path` from the floor to
+  the platform returns one `ladder-up` step (length 338, direct 338). This closes the open
+  B4 item from 0.0.262. A live bot walk is still a play-test, not an automated capture.
+- **`navGenerateConfig` tests** cover the setup-only config the Steam path uses.
+- **Tool count: 296.** Tests: 243 files, 1,984 passed, 32 skipped.
+
 ## 0.0.263-alpha - 2026-11-24
 
 - **`write_breakable` writes the brush breakables.** `func_breakable` (wall/door),

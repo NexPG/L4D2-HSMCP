@@ -404,10 +404,13 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /** The listen-server config that makes `nav_generate` actually run. */
-export function navGenerateConfig(slopeLimit?: number): string {
+export function navGenerateConfig(slopeLimit?: number, markHere = true): string {
   const lines = ["sv_cheats 1", "nav_edit 1"];
   if (slopeLimit !== undefined) lines.push(`nav_slope_limit ${slopeLimit}`);
-  lines.push("nav_mark_walkable", "nav_generate");
+  // A direct launch has no player when the cfg runs, so the mark lands on the world origin
+  // and the launch depends on the origin being open floor. A Steam launch keeps a real
+  // player and sends the two commands through the client console instead.
+  if (markHere) lines.push("nav_mark_walkable", "nav_generate");
   return lines.join("\n") + "\n";
 }
 

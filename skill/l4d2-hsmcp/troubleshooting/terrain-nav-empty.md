@@ -35,6 +35,12 @@ empty result:
    (170 units) produced 0 areas; 85 and 96 units produced areas; 128 and 170 failed. The
    exact band is an engine detail, but the measured working limit is ≤96 units above the
    spawn. This is not `nav_slope_limit`: removing it or setting 0.5 changed nothing.
+3. **The mark is on the world origin.** A `via: "direct"` launch puts `nav_mark_walkable`
+   in `listenserver.cfg`, before the local player exists. On a map whose origin is open
+   floor this happens to work; on one whose origin is inside a ladder, a prop or a
+   displaced slope it is `Invalid ground position`. Use `run_nav_generate(via: "steam")`:
+   it launches a normal client and retries `setpos`/`nav_mark_walkable`/`nav_generate`
+   through the client console after the host spawns.
 
 A third, different failure looks similar: a **flat silhouette** (a horizon pier, a roof, a
 counter top) gets a few tiny `NO_MERGE` areas; the engine then reports `Areas with

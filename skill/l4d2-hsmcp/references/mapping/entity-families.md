@@ -105,6 +105,15 @@ print `Invalid ground position` / `No valid walkable seed positions`; the compil
 points are the brush centres, so the bottom/top must be over open floor. After nav,
 `read_nav_ladders` is the check; a climb link appears only when both ends connect.
 
+Generate nav with `via: "steam"` when the origin is not open floor. A direct launch's cfg
+runs before a player exists, so `nav_mark_walkable` lands on the world origin; a ladder there
+is reported as `Invalid ground position`. Steam keeps a host: the tool retries `setpos` to
+`info_player_start`, `nav_mark_walkable` and `nav_generate` through the client console after
+the host spawns. Measured on the two-level test map: 17 nav areas, `read_nav_ladders` returns
+one ladder (top area 1, bottom area 2), and `nav_path` from the floor to the platform returns
+a route with one `ladder-up` step. That is the AI path a bot walks; it is not a manually
+`nav_mark_walkable`-seeded floor only.
+
 ### Clip families
 
 | Class | Blocks | Does not block | Use |
