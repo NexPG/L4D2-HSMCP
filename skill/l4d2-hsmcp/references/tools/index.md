@@ -1,6 +1,6 @@
 # Tool catalogue
 
-305 tools. This page groups them by the job you are doing; each tool's own description is the
+306 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -92,6 +92,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_finale_setup` | `trigger_finale` with the right type, script, start state and escape positions |
 | `write_spawn_points` | player, survivor, zombie and rescue spawns as one family |
 | `write_map_parameters` | the 18 item-density keys of `info_map_parameters` (or versus) |
+| `check_gamemode_contract` | wired `OnCoop`/`OnVersus`/`OnSurvival`/`OnScavenge` outputs, dangling targets, map-parameter keys |
 | `write_item_spawns` | L4D2 `weapon_*_spawn` item/weapon spawners at points |
 | `write_saferoom_stock` | a row of medkit/pills/ammo/pistol stock |
 | `read_item_density` | count `weapon_*_spawn` by layer, compare with a full-chapter budget and an official peer |

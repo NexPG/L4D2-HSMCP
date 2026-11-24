@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.279-alpha - 2026-11-24
+
+- **`check_gamemode_contract` reads the mode layer offline.** It lists which `info_gamemode`
+  outputs (`OnCoop`/`OnVersus`/`OnSurvival`/`OnScavenge`, `*PostIO`) are wired, resolves each
+  target against the map, and reports scavenge spawners with no `OnScavenge`, unknown
+  `info_map_parameters` density keys and non-numeric values. No game launch.
+- **Measured:** `c2m1_highway` has two `info_gamemode` (coop/versus/survival, scavenge on the
+  second) and passes with every target resolved; `c5m5_bridge` wires coop/versus/survival;
+  `c1m1_hotel` has none and passes as a coop chapter. A synthetic VMF with a dangling
+  `OnVersus` target, `BogusDensity` and `AmmoDensity "lots"` fails.
+- **One map-entity reader.** `readMapEntities` now owns the `.vmf`/`.bsp` choice, reused by
+  the finale contract, the transition check and the gamemode contract instead of three
+  copies.
+- **Tool count: 306.** Tests: 256 files, 2,014 passed, 32 skipped.
+
 ## 0.0.278-alpha - 2026-11-24
 
 - **`run_campaign_gate` gains an offline `audit` stage.** Item spawners against the measured

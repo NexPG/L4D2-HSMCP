@@ -1,6 +1,6 @@
 # Campaigns
 
-23 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
+24 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -11,6 +11,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `check_campaign` | Checks a campaign against the files it references: every chapter's .bsp exists in a maps directory or in a VPK, every chapter image exists under materials/vgui, chapter numbering has no gaps, and every mode has chapters. |
 | `check_finale` | Checks a finale as a contract, not as a trigger that exists. |
 | `check_finale_contract` | Checks the finale contract offline: exactly one `trigger_finale`, a type in 0/1/2/4, a `ScriptFile` for type 2, gas-can spawns for type 4, and FINALE/RESCUE_VEHICLE/ESCAPE_ROUTE nav areas when a .nav is given. |
+| `check_gamemode_contract` | Reads a VMF or a compiled BSP and checks the mode layer without launching the game: which `info_gamemode` outputs (OnCoop/OnVersus/OnSurvival/OnScavenge and *PostIO) are wired and whether their targets exist in the map, scavenge spawners without a mode switch, a survival output without a finale trigger, and `info_ma... |
 | `check_modes` | Checks each mission mode against the maps it lists, without the engine: scavenge needs `weapon_scavenge_item_spawn`; survival needs a `trigger_finale`/`func_finale` or the timer never starts; the last coop/versus chapter needs a finale or a changelevel; a map repeated inside one mode is a warning; a mode name outsid... |
 | `read_campaign` | Reads a Left 4 Dead 2 campaign file: the `mission` block, its modes (coop, versus, survival, scavenge) and each mode's numbered chapters with the map, display name and image. |
 | `read_item_density` | Counts a map's item/weapon spawners: total `weapon_*_spawn`, the random `weapon_item_spawn` layer, and categories (random, melee, health, throwable, ammo, scavenge, specific). |

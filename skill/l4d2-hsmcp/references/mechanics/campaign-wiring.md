@@ -134,6 +134,19 @@ write_map_parameters(path, versus: true, densities: {molotov: 2})
 - `finaleItemClusterCount` and the cluster ranges control the finale's item pile.
 - Density is a probability, not a count; check the result in a loaded map.
 
+### `info_gamemode` and the mode switch
+
+`info_gamemode` names no mode. The engine fires `OnCoop`, `OnVersus`, `OnSurvival`,
+`OnScavenge` and their `*PostIO` forms when a round starts; each output usually targets a
+relay, a nav blocker or a `point_template` spawn. A map with no `info_gamemode` is the same
+in every mode (official `c1m1_hotel` is), which is valid for a coop-only chapter.
+
+`check_gamemode_contract(path)` reads a VMF or BSP and lists which modes are wired, whether
+each mode target exists, scavenge spawners with no `OnScavenge`, and unknown or non-numeric
+`info_map_parameters` keys. Measured: `c2m1_highway` has two `info_gamemode` (coop, versus
+and survival wired, scavenge on the second) and passes; `c5m5_bridge` wires coop, versus and
+survival. A target that exists nowhere is a mode switch that does nothing.
+
 ## Checking a whole campaign
 
 ```
@@ -152,8 +165,8 @@ This is the cross-file check no single-map tool can do:
 
 Findings are errors, warnings and info; `overall` is fail, warn or pass. It reads `.vmf` and
 `.bsp`, so run it before compile and again on the shipping files. It does not replace
-`check_finale` (finale contract) or `check_modes` (mode contract); the three answer different
-questions.
+`check_finale` (finale contract), `check_gamemode_contract` (mode switch and map densities) or
+`check_modes` (mission mode contract); they answer different questions.
 
 ## L4D2 facts that make this different from other Source games
 

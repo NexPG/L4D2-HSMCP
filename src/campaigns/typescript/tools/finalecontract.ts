@@ -10,8 +10,7 @@ import { extname } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
-import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
-import { readEntities } from "../../../maps/typescript/vmf/edit.js";
+import { readMapEntities } from "../../../maps/typescript/entity/read.js";
 import { readNavFile } from "../../../nav/typescript/formats/navfile.js";
 
 const FINALE = 0x00000040;
@@ -35,19 +34,9 @@ export interface FinaleContract {
 }
 
 function classes(path: string): { entities: Array<{ classname: string; keyvalues: Map<string, string> }>; source: "vmf" | "bsp" } {
-  if (extname(path).toLowerCase() === ".vmf") {
-    const entities = readEntities(readFileSync(path, "utf8")).entities;
-    return {
-      source: "vmf",
-      entities: entities.map((entity) => ({
-        classname: entity.classname,
-        keyvalues: new Map(Object.entries(entity.keyvalues ?? {})),
-      })),
-    };
-  }
-  const entities = readEntityLump(path).entities;
+  const entities = readMapEntities(path);
   return {
-    source: "bsp",
+    source: extname(path).toLowerCase() === ".vmf" ? "vmf" : "bsp",
     entities: entities.map((entity) => ({
       classname: entity.classname,
       keyvalues: new Map(entity.keyvalues),

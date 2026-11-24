@@ -4,9 +4,9 @@ import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput, resolveVmfInput } from "../../../core/typescript/tools/paths.js";
-import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import { CONTENTS_SOLID, pointContents, readTree } from "../../../maps/typescript/bsp/trace.js";
 import { readEntities } from "../../../maps/typescript/vmf/edit.js";
+import { readMapEntities } from "../../../maps/typescript/entity/read.js";
 import { writeVmfSolidTool } from "../../../maps/typescript/tools/build.js";
 import { insertPrefabTool } from "../../../maps/typescript/tools/prefab.js";
 import { placeDoorTool } from "../../../maps/typescript/tools/door.js";
@@ -885,7 +885,7 @@ export const writeFinaleSetupTool = defineTool({
 // Map parameters
 // ---------------------------------------------------------------------------
 
-const DENSITY = {
+export const MAP_PARAMETER_DENSITY = {
   pistol: "PistolDensity",
   ammo: "AmmoDensity",
   painPills: "PainPillDensity",
@@ -907,10 +907,10 @@ const DENSITY = {
   finaleItemClusterCount: "FinaleItemClusterCount",
 } as const;
 
-type DensityName = keyof typeof DENSITY;
+type DensityName = keyof typeof MAP_PARAMETER_DENSITY;
 
 const densityShape = Object.fromEntries(
-  Object.keys(DENSITY).map((key) => [key, z.number().optional()]),
+  Object.keys(MAP_PARAMETER_DENSITY).map((key) => [key, z.number().optional()]),
 ) as Record<DensityName, z.ZodOptional<z.ZodNumber>>;
 
 export const writeMapParametersTool = defineTool({
@@ -954,7 +954,7 @@ export const writeMapParametersTool = defineTool({
     };
     const given = args.densities ?? {};
     const written: string[] = [];
-    for (const [name, key] of Object.entries(DENSITY) as Array<[DensityName, string]>) {
+    for (const [name, key] of Object.entries(MAP_PARAMETER_DENSITY) as Array<[DensityName, string]>) {
       const value = given[name];
       if (value !== undefined) {
         keyvalues[key] = String(value);
@@ -994,18 +994,10 @@ interface WiringEntity {
 }
 
 function readWiringEntities(path: string): WiringEntity[] {
-  if (path.toLowerCase().endsWith(".bsp")) {
-    return readEntityLump(path).entities.map((entity) => ({
-      classname: entity.classname,
-      targetname: entity.targetname ?? null,
-      keys: Object.fromEntries(entity.keyvalues),
-      solidCount: entity.solidCount,
-    }));
-  }
-  return readEntities(readFileSync(path, "utf8")).entities.map((entity) => ({
+  return readMapEntities(path).map((entity) => ({
     classname: entity.classname,
-    targetname: entity.targetname,
-    keys: { ...entity.keyvalues },
+    targetname: entity.targetname ?? null,
+    keys: Object.fromEntries(entity.keyvalues),
     solidCount: entity.solidCount,
   }));
 }
