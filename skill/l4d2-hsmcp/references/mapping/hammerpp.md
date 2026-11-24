@@ -5,11 +5,11 @@ read before touching the editor's settings or trusting a VMF that came out of Ha
 
 ## The three settings that decide whether the map works
 
-1. **I/O delimiter.** L4D2 needs commas. In
-   ESC between output parts is L4D2's own form (stock maps use it exclusively), so the
-   Hammer++ "Use special I/O delimiter (ESC)" setting is correct. Only a legacy
-   comma-separated file needs `normalize_vmf_io`; it defaults to commas -> ESC and touches
-   nothing but `connections` blocks.
+1. **I/O delimiter.** Stock L4D2 maps write the five output fields with ESC (`0x1b`); the
+   engine also reads the legacy comma form, which this project's writers emit. In Hammer++,
+   "Use special I/O delimiter (ESC)" is the stock-compatible setting; do not switch it off.
+   `normalize_vmf_io(to: "esc")` converts a legacy comma file to ESC and touches nothing but
+   `connections` blocks.
 2. **The right build.** Plain L4D2 is 32-bit; current Hammer++ builds are x64. Use the last
    **x86** build or the `x86-64` beta. A 64-bit editor can save the VMF, but its bundled
    tools may not match the game.
@@ -74,7 +74,7 @@ Propper++-style brush → model authoring. See the priority list in the full ref
 ## What to do when a Hammer++-saved map misbehaves
 
 1. `health` — editor present, settings present, `ioEsc`.
-2. `read_vmf_lint` — `io-esc-delimiter`, FGD classes, invalid solids, door/prop/finale rules.
+2. `read_vmf_lint` — FGD classes, invalid solids, door/prop/finale rules.
 3. `read_vmf_leak` — sealed before a compile.
 4. `run_compile` — `plusplus`, and read the per-stage findings.
 5. `run_nav_generate` — `fresh: true` and `stringtableDictionary: true`.

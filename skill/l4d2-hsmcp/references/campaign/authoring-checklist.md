@@ -62,7 +62,13 @@ contracts the tools enforce.
       overlap, corner-to-corner, non-walkable connections. A failure comes with the selected
       areas' coordinates; fix the geometry rather than deleting nav areas.
 - [ ] `check_finale`: type, script, DirectorOptions stage count, FINALE area, arrival
-      changelevel and `FinaleEscapeStarted` wiring.
+      changelevel and `FinaleEscapeStarted` wiring. `check_finale_contract` adds the
+      FINALE/RESCUE_VEHICLE/ESCAPE_ROUTE areas and the gas cans for type 4.
+- [ ] `check_gamemode_contract` on a map with `info_gamemode`: every `OnCoop`/`OnVersus`/
+      `OnSurvival`/`OnScavenge` target resolves and `info_map_parameters` keys are known.
+- [ ] `check_ai_contract`: `info_survivor_rescue` has a RESCUE_CLOSET nav area; hiding spots
+      and nav blockers are counted.
+- [ ] `read_item_density`: the spawner total is in range for the chapter, not five.
 - [ ] `read_static_props` with the `vmf`: a missing `.phy` on a decorative model is not a
       failure; on a solid prop it is.
 - [ ] The gate's `audit` stage: item spawners against the ~150 budget, displacement count,

@@ -38,6 +38,18 @@ an opinion.
   `mostlyFlat` count is not flow (`0x20000000` is `MOSTLY_FLAT`).
 - [ ] The safe room has a real doorway and a `prop_door_rotating_checkpoint`.
 
+## Contracts
+
+- [ ] `check_finale_contract` (or the gate's `finale` stage): exactly one `trigger_finale`,
+      a type the map supports, FINALE nav areas, and RESCUE_VEHICLE/ESCAPE_ROUTE where the
+      type needs them.
+- [ ] `check_gamemode_contract` on any map with `info_gamemode`: every mode output resolves,
+      `info_map_parameters` has no unknown or non-numeric density.
+- [ ] `check_ai_contract`: a rescue point has a RESCUE_CLOSET area, and the hiding spots and
+      blockers are the ones the map intends.
+- [ ] `read_item_density`: the spawner total is in range for the chapter's size, not five in a
+      full chapter.
+
 ## Campaign
 
 - [ ] Mission base name equals the VPK base name.

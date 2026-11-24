@@ -162,6 +162,7 @@ material; the instructions live in one place.
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |
 | `docs/reference/l4d2-complete-reference.md` | L4D2 mechanics, Director defaults, finale stages, infected/weapon stats, entities, console, limits |
+| `docs/reference/l4d2-campaign-authoring.md` | the ten-guide synthesis: map sequence, safe-room contract, boundaries, finale shape |
 | `references/mapping/hammer-tabs.md` | finding textures, models, skyboxes, particles and model sizes |
 | `references/mapping/hammer-coverage.md` | every Hammer++ feature, its tool, and what is still a gap |
 | `references/mapping/3d-skybox.md` | `build_skybox`, scale 16, and the copy/room/camera workflow |
@@ -180,6 +181,7 @@ material; the instructions live in one place.
 | `references/compiling/toolchain.md` | compiling, or choosing stock vs Tools++ |
 | `references/tools/index.md` | choosing a tool for a job |
 | `references/tools/primitives.md` | which tool is the general operation, and which is only a shortcut |
+| `checklists/campaign-ready.md` | the final gate list before calling a campaign done |
 | `troubleshooting/cubemaps-do-not-build.md` | `buildcubemaps` writes nothing, or says a path is not writable |
 | `troubleshooting/mapping-edits.md` | a prefab, texture skew, clip, overlay or moved brush is not where it should be |
 | `troubleshooting/hlmv-screenshot.md` | HLMV shows an error, a black viewport, or the screenshot is blank |
@@ -243,8 +245,9 @@ material; the instructions live in one place.
   stale until regenerated.
 - Mission file base name must equal the VPK name, and `Name` is alphanumeric only. This is
   the difference between "add-on enabled" and "campaign in the list".
-- `trigger_finale` type 0 (Standard) is used by no Valve campaign. A completable finale is
-  type 2 plus `FinaleEscapeFinished` and an outtro.
+- `trigger_finale` type 0 (Standard) is used by no Valve campaign. A shipping finale is type 2
+  plus `scripts/vscripts/<map>_finale.nut`; `FinaleEscapeStarted` enables the escape and
+  `FinaleEscapeFinished` plus an outtro ends it. Type 0 is a scriptless test path only.
 - `addOutput` values have five comma-separated fields: `target,input,param,delay,timesToFire`.
   Four fields are rejected by the sidecar.
 - VScript in an add-on lives at `scripts/vscripts/<name>.nut` and is attached with

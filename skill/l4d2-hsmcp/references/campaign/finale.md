@@ -5,9 +5,9 @@ goal area is FINALE and whose entities give the survivors a way to win.
 
 ## What Valve does
 
-Every stock finale uses `trigger_finale` with **type 2 (Custom)**. The FGD keyvalue is
-`type` -- the display name is "Finale Type"; `FinaleType` is not a key and the engine
-ignores it.
+Stock finales use types **1, 2 and 4**; no base campaign uses type 0 (Standard). The FGD
+keyvalue is `type` -- the display name is "Finale Type"; `FinaleType` is not a key and the
+engine ignores it.
 
 | Campaign | Type | Script |
 |---|---|---|
@@ -17,10 +17,11 @@ ignores it.
 | `c4m5_milltown_escape` | 2 | generator, boat escape |
 | `c5m5_bridge` | 1 (Gauntlet) | run across, no rescue entity |
 
-No base campaign uses type 0 (Standard). But type 0 is **not broken**: firing
-`ForceFinaleStart` on a type 0 finale on a map with a FINALE nav area and an arrival
-`info_changelevel` makes the Director log `Finale started`. That is the scriptless path this
-project uses. Type 2 without a finale script starts nothing.
+Type 0 is **not broken**: firing `ForceFinaleStart` on a type 0 finale on a map with a FINALE
+nav area and an arrival `info_changelevel` makes the Director log `Finale started`. That is the
+scriptless path this project uses as a test. Type 2 is the Director-driven custom finale: it
+loads `scripts/vscripts/<map>_finale.nut`; without that file (or a `ScriptFile` key) it starts
+nothing.
 
 ## Inputs that end a finale
 
@@ -36,21 +37,23 @@ exactly this: a trigger on the rescue vehicle fires `FinaleEscapeFinished`, then
 
 ## Minimal completable finale
 
-Entity work, no script required:
+Two shapes, and they are not interchangeable:
 
-1. `trigger_finale` type 2, model for the radio/generator/board, `StartDisabled 0`.
-   A survivor **+use** on it fires `FinaleStart`.
-2. A `trigger_multiple` (clients only) away from the trigger, `StartDisabled 1`.
-   `FinaleStart` enables it after a delay — that delay is the finale.
-3. The escape trigger's `OnStartTouch` fires `FinaleEscapeFinished` on the finale and
-   `RollStatsCrawl` on an `env_outtro_stats`.
-4. Mark the finale area FINALE in nav, and put the escape point inside the playable space.
-5. Add the **disabled** `info_changelevel` that marks the arrival (`spawnflags 2`,
-   `map` = previous chapter, same landmark). Without it the Director logs
-   `No exit checkpoint could be found` and refuses to start the finale.
+**Shipping (type 2, script-driven).** `trigger_finale` type 2 plus
+`scripts/vscripts/<map>_finale.nut` with a `DirectorOptions` stage list (see
+`custom-finale.md`). A survivor **+use** on the trigger fires `FinaleStart`; the stages run;
+`FinaleEscapeStarted` enables the escape trigger; its `OnStartTouch` fires
+`FinaleEscapeFinished` and `RollStatsCrawl` on an `env_outtro_stats`.
 
-This wins the campaign without waves. Waves are VScript work and are not built yet; do not
-describe an untested wave script as working.
+**Scriptless test (type 0).** A type 0 trigger on a FINALE area with an arrival
+`info_changelevel` starts and can spawn a horde, but it has no stage list and never reaches
+the escape phase; `FinaleEscapeFinished` is ignored. Use it to prove the trigger and the nav,
+not as a shipping template.
+
+Both need FINALE nav (see `references/nav/attributes-and-flow.md`) and the **disabled**
+`info_changelevel` that marks the arrival (`spawnflags 2`, `map` = previous chapter, same
+landmark). Without it the Director logs `No exit checkpoint could be found` and refuses to
+start the finale.
 
 ## The standard finale's limit
 
@@ -58,8 +61,8 @@ Type 0 starts (`Finale started`) and its horde can spawn once the map has space 
 safety range, but on the test map it never reaches the escape phase, so `FinaleEscapeFinished`
 alone does not end the campaign. The test campaign therefore ends with a deliberate
 `point_servercommand` `changelevel credits` from the escape trigger. That is a **test
-harness**, not a template: a shipping campaign needs a scripted custom finale (`type 2` with a
-`ScriptFile`).
+harness**, not a template: a shipping campaign needs a type-2 custom finale with its
+`<map>_finale.nut` stages (a `ScriptFile` key is optional).
 
 ## Confirming the win
 
@@ -81,8 +84,9 @@ reaches its escape phase; the harness ends the campaign with a deliberate
 ## Checklist
 
 - [ ] `trigger_finale` type 2 compiles and responds to +use
-- [ ] `FinaleStart` enables the escape trigger with a deliberate delay
+- [ ] `scripts/vscripts/<map>_finale.nut` exists, declares the stage list and logs each stage
+- [ ] `FinaleStart` runs the stages; `FinaleEscapeStarted` enables the escape trigger
 - [ ] `OnStartTouch` fires `FinaleEscapeFinished` and the outtro
 - [ ] FINALE nav area exists and is reachable from the checkpoint
 - [ ] The escape trigger is not reachable before the finale starts
-- [ ] A play test records: finale started, escape triggered, stats crawl ran
+- [ ] A play test records: finale started, stage lines, escape triggered, stats crawl ran

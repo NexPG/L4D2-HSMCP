@@ -39,8 +39,8 @@ crash recovery and the Tools++ compilers.
 - Build 8871 removed `-steam` from the default L4D2 launch options. Do not put it back: a
   direct launch outside Steam already reaches `No Steam logon`; the normal-client path is
   `steam.exe -applaunch 550 ...`.
-- `hammerplusplus_settings.ini` is the file behind the Options dialog. The one setting that
-  silently breaks a map is `IOParamNewDelimiter` (see §3).
+- `hammerplusplus_settings.ini` is the file behind the Options dialog. The setting that
+  decides the output delimiter is `IOParamNewDelimiter` (see §3); ESC is the stock form.
 
 ## 2. Every Hammer++ feature, grouped by what it changes
 
@@ -205,13 +205,13 @@ Hammer++ writes entity outputs either as comma-separated fields or with the ESC 
 `bin/hammerplusplus/hammerplusplus_settings.ini`, exposed as **Use special I/O delimiter
 (ESC)**.
 
-- **L4D2 needs the comma form.** `IOParamNewDelimiter=0`.
 - L4D2 uses ESC (0x1b) between output parts: stock `c1m1_hotel` has 1,695 outputs and
   zero commas, `c2m1_highway` 324 and `c5m1_waterfront` 249. Hammer++'s "Use special I/O
-  delimiter (ESC)" is the canonical setting, not a bug.
-- The comma form is pre-Orange-Box legacy; it still fires in some engines, so a file that
-  already uses it is not broken. `normalize_vmf_io` defaults to commas -> ESC and can go
-  the other way on request; it only rewrites `connections` blocks.
+  delimiter (ESC)" (`IOParamNewDelimiter=1`) is the canonical setting, not a bug.
+- The comma form is pre-Orange-Box legacy. The engine still reads it — this project's writers
+  emit commas and their finales and triggers fire in game — so a file that uses it is not
+  broken. `normalize_vmf_io` defaults to commas -> ESC and can go the other way on request; it
+  only rewrites `connections` blocks.
 - Do not tell a user to turn the ESC setting off, and do not flag ESC in a lint: that would
   report almost every Valve map as faulty.
 

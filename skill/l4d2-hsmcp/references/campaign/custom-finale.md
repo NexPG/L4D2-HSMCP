@@ -1,8 +1,9 @@
 # Custom finale (type 2)
 
-A custom finale is a VScript file the engine loads by name. This is how every stock L4D2
-finale works, and it is the only path to a Director-driven finale with waves and a real
-escape phase.
+A custom finale is a VScript file the engine loads by name. This is how most stock L4D2
+finales work (`c5m5_bridge` is the type 1 gauntlet and `c1m4_atrium` the type 4 scavenge
+exception), and it is the path to a Director-driven finale with waves and a real escape
+phase.
 
 ## The file
 

@@ -354,8 +354,9 @@ export const writeSafeRoomTool = defineTool({
     "Builds a chapter's safe room in one call: a `prop_door_rotating_checkpoint` with its " +
     "origin on the hinge (through place_door, so the model hull decides the swing), an " +
     "`info_player_start`, four `info_survivor_position`s and the map's `info_director` if " +
-    "it has none. The door is named exactly `checkpoint_exit` or `checkpoint_entrance` " +
-    "because the engine looks those names up. Positions default to a 48-unit square around " +
+    "it has none. The door is named `checkpoint_exit` or `checkpoint_entrance` by convention; " +
+    "the engine resolves the checkpoint-door class near the landmark, so the name is advice. " +
+    "Positions default to a 48-unit square around " +
     "the player start and are reported so they can be moved; pass them to place the team. " +
     "The changelevel volume is `write_changelevel`, not this tool. Guarded.",
   realm: "map",
@@ -1145,8 +1146,9 @@ export const checkCampaignWiringTool = defineTool({
     "Checks chapters against each other, which no single-map tool can. Give the maps in " +
     "chapter order (.vmf or .bsp) and it follows every transition: an outgoing " +
     "`info_changelevel` must name the next chapter, its landmark must exist in both maps, " +
-    "the destination should carry the arrival changelevel with `spawnflags 2`, each map " +
-    "needs `info_player_start`, and each safe room needs a `prop_door_rotating_checkpoint` " +
+    "the destination should carry the arrival changelevel with `spawnflags 2`, the first map " +
+    "needs `info_player_start` (a later chapter may have none and be spawned by its arrival " +
+    "volume), and each safe room needs a `prop_door_rotating_checkpoint` " +
     "**within 1024 units of the transition's landmark** — the engine resolves the door class, " +
     "not a name, so an unnamed official door passes and a name is only advice. A BSP door " +
     "origin inside world solid fails as well. The last map needs a `trigger_finale` unless " +

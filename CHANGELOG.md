@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.283-alpha - 2026-11-24
+
+- **Corrected stale skill/reference claims that would produce a wrong first build.** The
+  finale page now says stock types are 1/2/4 (not "every finale is type 2"), type 2 loads
+  `<map>_finale.nut` (a `ScriptFile` key is optional), and type 0 is the scriptless test path,
+  not a shipping template. `docs/campaign/overview.md` had the same contradiction.
+- **Safe-room doors are resolved by class near the landmark, not by a fixed name** (20 of 57
+  stock chapters leave it unnamed). The reference, the workflow and the
+  `check_campaign_wiring`/`write_safe_room` descriptions now say so.
+- **`prop_static` needs an explicit `solid 6`**; an omitted key compiles to 0 even with a
+  `.phy`. The authoring synthesis no longer calls 6 the compiled default.
+- **I/O delimiter:** stock L4D2 maps use ESC (`0x1b`), the engine also reads the legacy comma
+  form this project writes, and the lint does not flag ESC. Removed the "L4D2 needs commas"
+  and `io-esc-delimiter` claims.
+- **Later chapters may have no `info_player_start`** (21 of 60 stock BSPs); the first map has
+  one. The campaign-wiring text and tool descriptions match the tool's own info finding.
+- **Checklists gained the contract checks:** `check_finale_contract`,
+  `check_gamemode_contract`, `check_ai_contract` and `read_item_density`. `SKILL.md` links the
+  authoring synthesis and `checklists/campaign-ready.md`.
+- **Tool count: 308.** Tests: 258 files, 2,021 passed, 32 skipped.
+
 ## 0.0.282-alpha - 2026-11-24
 
 - **`read_entity_coverage` resolves explicit `maps` like every other tool** (repo-relative or

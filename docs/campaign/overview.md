@@ -147,15 +147,16 @@ from the engine's own dump.
 
 ## The finale
 
-Every stock finale uses `trigger_finale` with `type 2` (Custom): a radio, generator or sound
-board starts a scripted sequence. `type 0` (Standard) and `type 1` (Gauntlet) exist in the FGD
-and no base campaign uses them.
+Stock finales use `trigger_finale` with `type 2` (Custom) in most campaigns — a radio,
+generator or sound board starts a scripted sequence. Two exceptions matter: `c5m5_bridge` is
+`type 1` (Gauntlet) and `c1m4_atrium` is `type 4` (Scavenge). No base campaign uses `type 0`
+(Standard).
 
 Type 0 is not broken, though: on a map with a FINALE nav area and an arrival
 `info_changelevel`, firing its `ForceFinaleStart` input produced
 `Director::OnFinaleStarted: Finale started` in the console. That is the scriptless path this
-project uses. Type 2 without a finale script starts nothing — it needs the script that drives
-its waves.
+project uses as a test. Type 2 without a finale script starts nothing — it needs the script
+that drives its waves.
 
 The engine does expose the end of a finale as an input, and the Authoring Tools' own rescue
 template (`sdk_content/scripting/scripts/vscripts/entitygroups/rescue_helicopter_group.nut`)
@@ -180,9 +181,10 @@ Map: credits
 `Map:` is what a changelevel prints; `Host_NewGame on map ...` is a direct `map` command.
 `Mission credits ver 1 loading...` is not a marker — every mission file is loaded at startup.
 
-So a minimal completable finale is entity work, not a script: a `trigger_finale` (type 2) whose
-`FinaleStart` enables a `trigger_multiple` after the wave delay, and that trigger's
-`OnStartTouch` fires `FinaleEscapeFinished` on the finale and `RollStatsCrawl` on the outtro.
+There are two shapes, and they are not interchangeable. A **shipping** finale is type 2 plus
+`scripts/vscripts/<mapname>_finale.nut` with a `DirectorOptions` stage list; a **scriptless
+test** is type 0, which starts and can spawn a horde but never reaches the escape phase. A
+type 2 trigger with no script and no `ScriptFile` is the one shape that does nothing.
 `info_survivor_rescue` marks where the rescue stands; it is not required for the victory.
 
 A finale map also needs the **disabled** `info_changelevel` that marks where the team arrived

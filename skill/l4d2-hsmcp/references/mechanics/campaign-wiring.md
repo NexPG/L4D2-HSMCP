@@ -158,7 +158,9 @@ This is the cross-file check no single-map tool can do:
 - every non-final chapter has an outgoing `info_changelevel` naming the next map;
 - the named landmark exists in both maps;
 - the destination has the arrival volume (`spawnflags 2`) for that landmark;
-- every map has `info_player_start` and, normally, `info_director`;
+- the first map has `info_player_start`; a later chapter is normally spawned by its arrival
+  `info_changelevel` and may have none (21 of the 60 stock BSPs have none), while
+  `info_director` should be present on every playable map;
 - each safe room has a `prop_door_rotating_checkpoint` within 1024 units of the pair's
   landmark; the name is reported as advice, and a stock unnamed door passes;
 - the last chapter has a `trigger_finale` unless the mode is survival; scavenge needs type 4.

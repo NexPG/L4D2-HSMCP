@@ -8,11 +8,12 @@ campaign. Sources are listed at the end; this page turns them into contracts the
 - L4D2 is **32-bit** (or the `x86-64` beta branch). The current Hammer++ builds are x64;
   for a plain L4D2 install use the last x86 build. A x64 Hammer++ can open the map and write
   a VMF the 32-bit game tolerates, but its compilers and VPK tools may not match.
-- **I/O delimiter must be commas.** In `hammerplusplus_settings.ini` set
-  `IOParamNewDelimiter=0` (the "Use special I/O delimiter (ESC)" option off). ESC-separated
-  outputs are the classic "entity I/O does nothing" bug; Hammer++ and Hammer write the
-  commas L4D2 expects. The project's VMF writer also uses commas; `read_vmf_lint` reports
-  `io-esc-delimiter` if a file has the ESC form.
+- **I/O delimiter:** stock L4D2 maps write the five output fields with the ESC separator
+  (`0x1b`), not commas: `c1m1_hotel`, `c2m1_highway` and `c5m1_waterfront` all do. The engine
+  also reads the older comma form, which this project's writers emit and its finales and
+  triggers use in game. `read_vmf_lint` does not flag ESC (that would mark Valve's own maps);
+  `normalize_vmf_io(to: "esc")` converts the legacy commas to the stock form. Do not convert
+  a stock map to commas to "fix" I/O; check the target, input and fields first.
 - **FGD**: use the game's `left4dead2.fgd` and, for Hammer++, its bundled Tools++ FGD.
   Missing classes are a FGD-mount problem, not a nonexistent entity.
 - **Game configuration**: copy the stock Hammer game/build settings; point Game Directory
@@ -65,9 +66,10 @@ campaign. Sources are listed at the end; this page turns them into contracts the
 
 ## The safe room is a named contract
 
-- `prop_door_rotating_checkpoint` on the safe room being **left** is named
-  **`checkpoint_exit`**. On the safe room being **entered** it is
-  **`checkpoint_entrance`**. `checkpoint_exit_door` is not the name the engine looks up.
+- `prop_door_rotating_checkpoint` is resolved by **class near the pair's landmark**, within
+  1024 units; the engine does not look up a fixed name. 20 of the 57 stock chapters leave the
+  door unnamed. `checkpoint_exit` / `checkpoint_entrance` are the canonical names and good
+  advice, but a name is not the lookup key; `checkpoint_exit_door` is a non-standard name.
 - The door's origin is its **hinge**, two units inside a jamb; a 64 x 112 opening fits
   `checkpoint_door_02` (58.3 x 105.8). A 128/256 opening around a 58-unit leaf is a hole.
 - Keep the swing arc clear: no prop within the leaf's width of the hinge. The lint
@@ -107,9 +109,9 @@ campaign. Sources are listed at the end; this page turns them into contracts the
 
 - vvis likes closed rooms and areaportals; an open sightline from start to end is both a
   performance and a pacing failure. Fog is the cheap last layer, not the first.
-- `prop_static` is solidity 6 by default and needs the model's `.phy`. A model without one
-  is walked through; `read_static_props` and `read_model_info.hasPhysics` name it. Add a
-  clip brush if the shape must block.
+- `prop_static` needs both the model's `.phy` and an **explicit `solid 6`**. An omitted `solid`
+  key compiles to solidity 0 even when the `.phy` exists, so every bench and car is walked
+  through. `read_static_props.solidity` reports it; `write_prop` writes the key.
 - Compile with `-both` and a dual-mode sky; L4D2's stock skies are `_hdr`/`_ldr` names.
 - Test: lint -> compile -> nav fresh -> `read_static_props` -> `run_map_test` with the exact
   BSP/nav pair -> screenshots on the requested mechanics.
@@ -149,7 +151,7 @@ campaign. Sources are listed at the end; this page turns them into contracts the
 12. Left 4 Dead Wiki, *Custom Campaigns* — installation and VPK placement.
     <https://left4dead.fandom.com/wiki/Custom_Campaigns>
 13. Ceno, *Setting up Hammer++ for the original game* — x86 build, Game/Build Programs,
-    `IOParamNewDelimiter=0`, VPK split, asset mount.
+    the I/O delimiter setting, VPK split, asset mount.
     <https://steamcommunity.com/sharedfiles/filedetails/?id=3320444257>
 14. Valve Developer Community, *Hammer++* and the compatibility template — the ESC
     delimiter setting must be off; instances are fullbright; x86-64 beta caveat.

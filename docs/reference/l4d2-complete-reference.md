@@ -111,9 +111,9 @@ not a full round.
 - `info_changelevel` is a **brush** with `map`, `landmark`, and on the arrival map
   `spawnflags 2` (disabled). It marks where the team leaves and where they arrive.
 - `info_landmark` is the same point in both maps. Entities transition relative to it.
-- Safe-room doors are looked up by name: **`checkpoint_exit`** on the room being left,
-  **`checkpoint_entrance`** on the room being entered. `checkpoint_exit_door` is not the
-  name.
+- Safe-room doors are resolved by **class near the pair's landmark** (`prop_door_rotating_checkpoint`
+  within 1024 units), not by a fixed name. `checkpoint_exit` / `checkpoint_entrance` are the
+  canonical names and good advice; 20 of the 57 stock chapters leave the door unnamed.
 - `trigger_changelevel` is not the L4D2 path. Use `info_changelevel` + `info_landmark`.
 - The last map also needs the disabled arrival `info_changelevel`; without it the Director
   can report `No exit checkpoint could be found` and refuse the finale.
@@ -470,9 +470,10 @@ ceiling; `read_map_report` turns that into a verdict.
 - **Materials** are `.vmt` files; a VMF stores the name uppercase, without `materials/` and
   without `.vmt`. A VMT names a `.vtf` base texture; `$surfaceprop`, `$bumpmap`, `$phong`,
   `$translucent`, `$alphatest`, `$decal`, `$rectanglemap` and proxies change behaviour.
-- **Models** are `.mdl` + `.vvd` + `.dx90.vtx` + `.phy` + materials. A `prop_static` with
-  `solidity 6` needs the `.phy`; without it the prop is non-solid. `spawnflags 2` marks a
-  decoration (grass, canopy, escalator overlay).
+- **Models** are `.mdl` + `.vvd` + `.dx90.vtx` + `.phy` + materials. A `prop_static` needs
+  an explicit `solid 6` **and** the `.phy`; an omitted `solid` key compiles to 0, so the prop is
+  walked through even when the `.phy` exists. `spawnflags 2` marks a decoration (grass, canopy,
+  escalator overlay).
 - **Sounds** are `.wav`/`.mp3`/`.ogg` with soundscripts (`scripts/game_sounds_*.txt`).
 - **Particles** are `.pcf`; `info_particle_system` names a system.
 - **Skyboxes** are six `skybox/<name><side>.vmt` faces plus a `_hdr`/`_ldr` suffix. L4D2
@@ -525,12 +526,12 @@ ceiling; `read_map_report` turns that into a verdict.
 | `Map coordinate extents are too large` | Geometry outside ±16384 | `read_map_geometry` |
 | `Bad surface extents` | Texture scale out of range | `read_vmf_lint`, `bad-texture-scale` |
 | Purple checkerboard | Missing material or model texture | `read_map_dependencies`, `read_game_content(details)` |
-| Walk through a prop | `prop_static` model has no `.phy` | `read_static_props`, `read_model_info(hasPhysics)` |
+| Walk through a prop | `prop_static` model has no `.phy`, or the `solid` key was omitted (it compiles to 0) | `read_static_props.solidity`, `read_model_info(hasPhysics)` |
 | Door opens through a wall | Origin at the leaf centre, not the hinge | `placeDoor`, `l4d2-door-hinge-at-center` |
-| Safe room never activates | Door not named `checkpoint_exit`/`checkpoint_entrance`, no CHECKPOINT | `read_vmf_lint`, nav dump |
-| Finale never starts | No player +use, trigger not over FINALE, no script, disabled start | `check_finale`, campaign-menu test |
+| Safe room never activates | No checkpoint-door class near the landmark, or no CHECKPOINT area | `read_vmf_lint`, nav dump |
+| Finale never starts | No player +use, trigger not over FINALE, no `<map>_finale.nut`, disabled start | `check_finale`, campaign-menu test |
 | Finale starts and never ends | No `FinaleEscapeStarted` wiring/escape trigger | `check_finale` |
-| I/O does nothing | legacy comma delimiter in a modern build (stock L4D2 maps are all ESC) | `health`, `normalize_vmf_io` |
+| I/O does nothing | A malformed field or a target that does not exist; both ESC and comma forms are read | `read_vmf_lint`, `check_entity_wiring` |
 | `Entity <name> encountered an error in RunScript()` | `logic_script` file not installed/mounted | `run_map_test(scriptsDir:)`, VPK contents |
 | `Missing stringtable dictionary` | Nav generated before the dictionary bake | `run_nav_generate` `stringtableDictionary` |
 
