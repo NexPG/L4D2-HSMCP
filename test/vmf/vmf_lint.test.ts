@@ -69,6 +69,23 @@ describe("read_vmf_lint finds faults that were put there on purpose", () => {
     expect(r.byRule["dead-keyvalue"]).toBeUndefined();
   }, 60_000);
 
+  it.skipIf(!ready)("accepts the official prefab's fog and postprocess keys", async () => {
+    // `c1m1_environment_ents.vmf` uses height-fog and dxlevel keys the FGD omits; the
+    // engine reads them. Tolerating the exact official names must not silence a typo.
+    const path = broken(
+      "official-env-keys",
+      (s) =>
+        s +
+        'entity\n{\n\t"id" "910"\n\t"classname" "env_fog_controller"\n' +
+        '\t"origin" "0 0 64"\n\t"heightFogStart" "128"\n\t"heightFogDensity" "0.1"\n' +
+        '\t"maxdxlevel" "0"\n}\n' +
+        'entity\n{\n\t"id" "911"\n\t"classname" "postprocess_controller"\n' +
+        '\t"origin" "0 0 64"\n\t"fadetoblackstrength" "0.5"\n}\n',
+    );
+    const r = await lint(path);
+    expect(r.byRule["unknown-keyvalue"]).toBeUndefined();
+  }, 60_000);
+
   it.skipIf(!ready)("accepts an add-on soundscape name, which the FGD list cannot know", async () => {
     // `env_soundscape.soundscape` is a CHOICES key in the FGD, but the values are five
     // conveniences; any scape in scripts/soundscapes_*.txt is valid. Lint flagged the

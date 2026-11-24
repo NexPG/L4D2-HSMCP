@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **297 tools**.
+Last checked against the tool list on 24/11/2026: **298 tools**.
 
 ## The file itself
 
@@ -146,7 +146,8 @@ getting `ENOENT` on the first call.
 | Decals | `write_decal` | `infodecal` projected onto a face; a sized overlay is `write_overlay` |
 | Ropes | `write_rope` | The `move_rope`/`keyframe_rope` pair linked by `NextKey`; one alone renders nothing |
 | Sprites, beams, lasers | `write_sprite` | Creates the two `info_target`s a beam needs and the end target a laser needs; `.spr` paths |
-| Safe room | `write_safe_room` | Checkpoint door on its hinge, player start, four ordered survivor positions and a director |
+| Safe room | `write_safe_room` | Checkpoint door on its hinge, player start, four ordered survivor positions and a director; `write_safe_room_prefab` pastes a stock house and wires the same room |
+| Safe room from a prefab | `write_safe_room_prefab` | A stock house shell plus the checkpoint wiring; the door stays the engine's `checkpoint_exit`/`checkpoint_entrance` |
 | Chapter change | `write_changelevel` | The `info_changelevel` brush volume and its landmark; departure or arrival (`spawnflags 2`) |
 | Finale | `write_finale_setup` | `trigger_finale` with L4D2's type numbers (0, 1, 2, 4), custom script, start state and escape positions |
 | Spawn areas | `write_spawn_points` | Player, survivor, zombie and rescue spawns with the keys each reads |

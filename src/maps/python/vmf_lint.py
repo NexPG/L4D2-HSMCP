@@ -140,6 +140,20 @@ DEAD_KEYVALUES: dict[str, dict[str, str]] = {
     },
 }
 
+# Keys the stock FGD omits but the engine reads. The official prefab library uses them:
+# `c1m1_environment_ents.vmf` is the source. A typo is still reported; only these exact
+# names on these exact classes are tolerated.
+TOLERATED_KEYVALUES: dict[str, set[str]] = {
+    "env_fog_controller": {
+        "heightfogdensity",
+        "heightfogmaxdensity",
+        "heightfogstart",
+        "maxdxlevel",
+        "mindxlevel",
+    },
+    "postprocess_controller": {"fadetoblackstrength"},
+}
+
 
 def _spawnflag_options(kv: Any) -> list[Any]:
     """The FGD's `SPAWNFLAGS` options, or an empty list for any other type."""
@@ -735,8 +749,9 @@ def lint_vmf(vmf: Any, fgd: Any, game_dir: str | None = None) -> list[dict[str, 
             continue
 
         known = {k.lower() for k in cls.kv} | UNIVERSAL_KEYS
+        tolerated = TOLERATED_KEYVALUES.get(classname, set())
         for key in ent.keys:
-            if key.lower() not in known:
+            if key.lower() not in known and key.lower() not in tolerated:
                 findings.append(
                     _finding(
                         "warning",

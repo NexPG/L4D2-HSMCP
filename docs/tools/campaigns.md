@@ -1,6 +1,6 @@
 # Campaigns
 
-20 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
+21 tools: mission files, modes, finales, gates, posters and campaign scaffolding.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -32,4 +32,5 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_finale_setup` | Writes the finale end of a campaign: a `trigger_finale` with the game's type numbers (standard 0, gauntlet 1, custom 2, scavenge 4), its model, optional ScriptFile, and up to four ordered `info_survivor_position`s for the escape. |
 | `write_map_parameters` | Writes `info_map_parameters` (or the versus variant) with the 18 item-density keys the game reads, named the way a mapper says them: pistol, ammo, painPills, adrenaline, defibrillator, molotov, pipeBomb, vomitJar, meleeWeapon, chainsaw, gasCan, oxygenTank, propaneTank, upgradepack, magnum, configurableWeapon, itemCl... |
 | `write_safe_room` | Builds a chapter's safe room in one call: a `prop_door_rotating_checkpoint` with its origin on the hinge (through place_door, so the model hull decides the swing), an `info_player_start`, four `info_survivor_position`s and the map's `info_director` if it has none. |
+| `write_safe_room_prefab` | Places an official house prefab (default `prop_swamphouse01`) and wires it as a chapter safe room in the same call: the prefab is pasted with a targetname prefix, then `write_safe_room` adds the `prop_door_rotating_checkpoint`, `info_player_start`, four survivor positions and the Director. |
 | `write_spawn_points` | Writes the entities a map spawns from, as a family rather than one class: one `info_player_start`, one to four ordered `info_survivor_position`s, one or more `info_zombie_spawn`s (with population and offer_tank), or `info_survivor_rescue`. |

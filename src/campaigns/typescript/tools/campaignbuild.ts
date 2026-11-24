@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { basename, extname } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import type { ToolContext } from "../../../core/typescript/mcp/registry.js";
@@ -8,6 +8,7 @@ import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import { CONTENTS_SOLID, pointContents, readTree } from "../../../maps/typescript/bsp/trace.js";
 import { readEntities } from "../../../maps/typescript/vmf/edit.js";
 import { writeVmfSolidTool } from "../../../maps/typescript/tools/build.js";
+import { insertPrefabTool } from "../../../maps/typescript/tools/prefab.js";
 import { placeDoorTool } from "../../../maps/typescript/tools/door.js";
 import { editVmf } from "../../../maps/typescript/tools/vmfedit.js";
 import { readFgdClass } from "../../../maps/typescript/tools/vmf.js";
@@ -23,6 +24,23 @@ function insideWorld(point: readonly number[]): boolean {
 
 function requireInside(label: string, point: readonly number[]): void {
   if (!insideWorld(point)) throw new Error(`${label} ${vec(point)} leaves Source's world`);
+}
+
+/** An official prefab name, a repo path or an absolute path. */
+function resolvePrefab(input: string, gameDir: string | null): string {
+  if (existsSync(input)) return input;
+  if (gameDir) {
+    const base = join(dirname(gameDir), "sdk_content");
+    const candidates = [
+      join(base, "mapsrc", "instance", input),
+      join(base, "mapsrc", "instance", `${input}.vmf`),
+      join(base, "scripting", "maps", "instance", input),
+      join(base, "scripting", "maps", "instance", `${input}.vmf`),
+    ];
+    const found = candidates.find((p) => existsSync(p));
+    if (found) return found;
+  }
+  throw new Error(`no prefab found at ${input}; use an official name or a .vmf path`);
 }
 
 /** Add entities and return the ids, in order. */
@@ -479,6 +497,145 @@ export const writeSafeRoomTool = defineTool({
 // ---------------------------------------------------------------------------
 // Changelevel
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Safe room from an official house prefab
+// ---------------------------------------------------------------------------
+
+export const writeSafeRoomPrefabTool = defineTool({
+  name: "write_safe_room_prefab",
+  description:
+    "Places an official house prefab (default `prop_swamphouse01`) and wires it as a " +
+    "chapter safe room in the same call: the prefab is pasted with a targetname prefix, then " +
+    "`write_safe_room` adds the `prop_door_rotating_checkpoint`, `info_player_start`, four " +
+    "survivor positions and the Director. The door is still the engine's `checkpoint_exit`/" +
+    "`checkpoint_entrance`; the prefab is the shell, not a substitute for the wiring. Pass " +
+    "the world-space opening/start because the house can be rotated. Refuses a map that " +
+    "already has an `info_player_start`. `write_changelevel` is still a separate call. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    prefab: z
+      .string()
+      .default("prop_swamphouse01")
+      .describe("Official prefab name (`prop_swamphouse01`) or a .vmf path."),
+    origin: VEC3.default([0, 0, 0]).describe("Where the prefab's own origin lands."),
+    rotate: z.number().default(0).describe("Prefab yaw in degrees."),
+    namePrefix: z
+      .string()
+      .default("safe_")
+      .describe("Prefix for the prefab's targetnames, so two houses do not collide."),
+    role: z.enum(["exit", "entrance"]).default("exit"),
+    opening: OPENING,
+    doorYaw: z.number().default(0).describe("Door entity yaw; the leaf runs along the opening."),
+    doorModel: z
+      .string()
+      .default("models/props_doors/checkpoint_door_-02.mdl")
+      .describe("Checkpoint door model."),
+    playerStart: z.object({ origin: VEC3, angles: VEC3.default([0, 0, 0]) }),
+    survivorPositions: z.array(SURVIVOR_POSITION).max(4).default([]),
+    withDirector: z.boolean().default(true),
+    keyvalues: z.record(z.string()).default({}),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    prefab: z.string(),
+    prefabSolids: z.number(),
+    prefabEntities: z.number(),
+    prefabTargetnames: z.array(z.string()),
+    duplicates: z.array(z.object({ name: z.string(), count: z.number() })),
+    unresolvedOutputs: z.array(z.string()),
+    doorId: z.number().nullable(),
+    playerStartId: z.number().nullable(),
+    survivorIds: z.array(z.number().nullable()),
+    directorId: z.number().nullable(),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const existing = readEntities(readFileSync(path, "utf8")).entities;
+    if (existing.some((entity) => entity.classname === "info_player_start")) {
+      throw new Error(
+        "this map already has an info_player_start; place the prefab without the safe-room " +
+          "wiring, or remove the old start first",
+      );
+    }
+    requireInside("prefab origin", args.origin ?? [0, 0, 0]);
+    requireInside("player start", args.playerStart.origin);
+    const prefab = resolvePrefab(args.prefab ?? "prop_swamphouse01", ctx.config.gameDir);
+
+    const inserted = (await insertPrefabTool.handler(
+      {
+        path,
+        prefab,
+        move: args.origin ?? [0, 0, 0],
+        rotate: args.rotate ?? 0,
+        namePrefix: args.namePrefix ?? "safe_",
+        validate: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as {
+      solids: number;
+      entities: number;
+      targetnames: string[];
+      duplicates: Array<{ name: string; count: number }>;
+      unresolvedOutputs: string[];
+      warnings: string[];
+    };
+
+    const safe = (await writeSafeRoomTool.handler(
+      {
+        path,
+        role: args.role ?? "exit",
+        opening: args.opening,
+        yaw: args.doorYaw ?? 0,
+        doorModel: args.doorModel ?? "models/props_doors/checkpoint_door_-02.mdl",
+        playerStart: args.playerStart,
+        survivorPositions: args.survivorPositions ?? [],
+        withDirector: args.withDirector ?? true,
+        keyvalues: args.keyvalues ?? {},
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as {
+      doorId: number | null;
+      playerStartId: number | null;
+      survivorIds: number[];
+      directorId: number | null;
+      warnings: string[];
+    };
+
+    const warnings = [...inserted.warnings, ...safe.warnings];
+    if (inserted.duplicates.length > 0) {
+      throw new Error(
+        `refusing to leave a duplicate targetname in the map: ` +
+          inserted.duplicates.map((d) => `${d.name} x${d.count}`).join(", "),
+      );
+    }
+    return {
+      path,
+      prefab,
+      prefabSolids: inserted.solids,
+      prefabEntities: inserted.entities,
+      prefabTargetnames: inserted.targetnames,
+      duplicates: inserted.duplicates,
+      unresolvedOutputs: inserted.unresolvedOutputs,
+      doorId: safe.doorId,
+      playerStartId: safe.playerStartId,
+      survivorIds: safe.survivorIds,
+      directorId: safe.directorId,
+      warnings,
+      nextStep:
+        "Pair it with write_changelevel in the same room, then compile and check_transition. " +
+        "The prefab's walls do not seal the map by themselves if they replaced a hull wall.",
+    };
+  },
+});
 
 export const writeChangelevelTool = defineTool({
   name: "write_changelevel",
@@ -1367,6 +1524,7 @@ export const checkTransitionTool = defineTool({
 export const campaignBuildTools = [
   writeSpawnPointsTool,
   writeSafeRoomTool,
+  writeSafeRoomPrefabTool,
   writeChangelevelTool,
   writeFinaleSetupTool,
   writeMapParametersTool,

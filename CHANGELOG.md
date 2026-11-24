@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.269-alpha - 2026-11-24
+
+- **`write_safe_room_prefab` makes a stock house a safe room.** It pastes the prefab with a
+  targetname prefix and then calls the same safe-room builder: one checkpoint door on its
+  hinge, one player start, four survivor positions, the Director, and the existing
+  `checkpoint_exit`/`checkpoint_entrance` names. Coordinates are world-space, so a rotated
+  house and its opening are independent; it refuses a map that already has a player start.
+- **Santa Monica m1 is now driven by the official environment prefab.**
+  `c1m1_environment_ents.vmf` adds sun, light_environment, shadow, six fog controllers,
+  three postprocess passes, three colour corrections and the global/infected/ghost tonemaps;
+  the hand-built singleton atmosphere is removed. The compiled BSP has 6 fog / 3 postprocess
+  / 3 colour-correction / 3 tonemap entities.
+- **Lint tolerates the official atmosphere keys the FGD omits:** `heightFogDensity`,
+  `heightFogMaxDensity`, `heightFogStart`, `maxdxlevel`, `mindxlevel` and
+  `fadetoblackstrength`, only on `env_fog_controller`/`postprocess_controller`.
+- **Tests:** a house + checkpoint + departure changelevel compiles with one checkpoint door,
+  four survivor positions, one changelevel and one landmark; the door targetname reads back
+  as `checkpoint_exit`.
+- **Tool count: 298.** Tests: 245 files, 1,991 passed, 32 skipped.
+
 ## 0.0.268-alpha - 2026-11-24
 
 - **`read_official_prefab` reads the stock prefab library.** It lists and searches

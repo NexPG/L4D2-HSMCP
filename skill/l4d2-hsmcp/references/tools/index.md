@@ -1,6 +1,6 @@
 # Tool catalogue
 
-297 tools. This page groups them by the job you are doing; each tool's own description is the
+298 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -87,6 +87,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | Tool | Use |
 |---|---|
 | `write_safe_room` | checkpoint door, player start, four survivor positions and a director in one call |
+| `write_safe_room_prefab` | paste a house prefab and wire the same safe room around a given opening/start |
 | `write_changelevel` | an `info_changelevel` brush volume plus its `info_landmark`; departure or arrival |
 | `write_finale_setup` | `trigger_finale` with the right type, script, start state and escape positions |
 | `write_spawn_points` | player, survivor, zombie and rescue spawns as one family |

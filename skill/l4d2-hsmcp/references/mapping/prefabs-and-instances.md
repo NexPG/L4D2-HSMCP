@@ -73,6 +73,48 @@ collapse_instances(path, out: "build/map_collapsed.vmf", confirm: true)
 fixup style, checks cycles/depth and writes the ordinary VMF that vbsp will see. Run it before
 a compile when the toolchain is stock or when you need to inspect the result.
 
+## A house as a safe room
+
+`write_safe_room_prefab` is the composition: paste a stock house, then place the same
+checkpoint wiring `write_safe_room` uses.
+
+```text
+write_safe_room_prefab(
+  path,
+  prefab: "prop_swamphouse01", origin: [0, 0, 0], rotate: 0, namePrefix: "safe_",
+  opening: { axis: "x", min: -32, max: 32, at: -288, floorZ: 0 },
+  doorYaw: 90,
+  playerStart: { origin: [-128, 0, 16] },
+  confirm: true,
+)
+```
+
+- The prefab is the **shell**; the door is still `checkpoint_exit`/`checkpoint_entrance`,
+  the player start is real, and four survivor positions + the Director are added.
+- Coordinates are world space, not prefab-local: the house can be rotated independently of
+  the door opening. Pass the opening where the actual wall is.
+- It refuses a map that already has an `info_player_start`, because a safe room adds one.
+- `write_changelevel` is still a separate call; run `check_transition` after both maps exist.
+- Measured: `prop_swamphouse01` + `write_safe_room_prefab` + a departure changelevel
+  compiled with `prop_door_rotating_checkpoint` x1, `info_player_start` x1,
+  `info_survivor_position` x4, `info_changelevel` x1 and `info_landmark` x1; the door's
+  targetname read back as `checkpoint_exit`.
+- The official house prefab carries no weapon/medkit spawns. Add them with
+  `write_saferoom_stock` or `write_item_spawns`; a prefab is geometry, not a supply cabinet.
+
+## The environment prefab
+
+`c1m1_environment_ents.vmf` (and the `c*m*_environment_ents` family) is the atmosphere set:
+`env_sun`, `light_environment`, `shadow_control`, 6 `env_fog_controller`, 3
+`postprocess_controller`, 3 `color_correction`, and global/infected/ghost tonemaps. Paste it
+with `insert_prefab` `namePrefix` and remove the hand-built singleton atmosphere, or the map
+ends up with two `light_environment` entities and a fog controller the prefab cannot drive.
+
+Measured on Santa Monica m1: 20 entities inserted, 15 names prefixed, zero duplicates; the
+compiled BSP has 6 fog controllers, 3 postprocess, 3 color corrections, 1 sun/shadow/light
+environment and 3 tonemaps. The prefab also uses FGD-unknown keys (`heightFog*`,
+`fadetoblackstrength`, `maxdxlevel`/`mindxlevel`); lint tolerates those exact official names.
+
 ## Entity groups
 
 The `entitygroups`/`usetargets` files are prefabs with a **behaviour contract**:
