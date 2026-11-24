@@ -1,6 +1,6 @@
 # Tool catalogue
 
-302 tools. This page groups them by the job you are doing; each tool's own description is the
+303 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -97,6 +97,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_item_density` | count `weapon_*_spawn` by layer, compare with a full-chapter budget and an official peer |
 | `write_random_case` | `logic_case` + `PickRandom` + one output per case, for `Color`/`SetSkin`/spawn |
 | `write_template_spawner` | `point_template` + `env_entity_maker` pair for a `ForceSpawn` set |
+| `check_finale_contract` | one `trigger_finale`, type 0/1/2/4, script/spawn/nav-area contract |
 | `write_intro_camera` | `point_viewcontrol` + `logic_auto`, optional disable timer |
 | `write_rescue_closet` | `info_survivor_rescue` and ordered survivor positions |
 | `write_nav_attribute_region` | `func_nav_attribute_region` with CHECKPOINT/FINALE/RESCUE_CLOSET bits; the nav half of a closet |

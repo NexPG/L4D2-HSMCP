@@ -85,6 +85,18 @@ escape_trigger.OnStartTouch -> finale.FinaleEscapeFinished
 escape_trigger.OnStartTouch -> outtro.RollStatsCrawl
 ```
 
+## Contract check
+
+`check_finale_contract(path, nav)` reads a VMF or BSP and the `.nav` without launching the
+game. It checks exactly one `trigger_finale`, `type` in 0/1/2/4, gas-can spawns for type 4,
+and FINALE/RESCUE_VEHICLE/ESCAPE_ROUTE nav areas. A type-2 map normally has **no
+`ScriptFile`**: the engine loads `<map>_finale.nut` from the map script scope, so the tool
+warns rather than failing. The official `c2m5_concert` and `c3m4_plantation` pass with that
+warning; `c5m5_bridge` (type 1) passes with 6,066 FINALE areas and 10 RESCUE_VEHICLE areas.
+
+A pass is a structural contract, not a played finale; the last stage, escape and credits are
+still a live test.
+
 ## The test campaign's finale
 
 `hsmcp_test_m2_finale.nut`: five stages — PANIC, DELAY 5, TANK, DELAY 5, DELAY 10. It

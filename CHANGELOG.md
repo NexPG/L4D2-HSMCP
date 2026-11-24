@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.275-alpha - 2026-11-24
+
+- **`check_finale_contract` checks types 0/1/2/4 offline.** Exactly one `trigger_finale`,
+  a valid `type`, gas-can spawns for Scavenge, and FINALE/RESCUE_VEHICLE/ESCAPE_ROUTE nav
+  areas when a `.nav` is given. A type-2 map without `ScriptFile` is the official shape
+  (`<map>_finale.nut` loads from the map script scope), so it warns rather than fails.
+- **Measured:** `c5m5_bridge` type 1 passes with 6,066 FINALE / 10 RESCUE_VEHICLE areas;
+  `c2m5_concert` and `c3m4_plantation` type 2 pass with the script warning; a type-4 fixture
+  with no gas cans fails. Campaign 003 m2 (type 2) passes with an ESCAPE_ROUTE warning.
+- **Tool count: 303.** Tests: 253 files, 2,006 passed, 32 skipped.
+
 ## 0.0.274-alpha - 2026-11-24
 
 - **`write_random_case` writes the official variability beat.** One `logic_case` with

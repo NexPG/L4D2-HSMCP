@@ -100,6 +100,7 @@ import { prefabCatalogTools } from "./maps/typescript/tools/prefabcatalog.js";
 import { entityGroupTools } from "./maps/typescript/tools/entitygroup.js";
 import { itemDensityTools } from "./maps/typescript/tools/itemdensity.js";
 import { variabilityTools } from "./maps/typescript/tools/variability.js";
+import { finaleContractTools } from "./campaigns/typescript/tools/finalecontract.js";
 import { qcTools } from "./models/typescript/tools/qc.js";
 import { modelCheckTools } from "./models/typescript/tools/check.js";
 import { modelCollisionTools } from "./models/typescript/tools/collision.js";
@@ -215,6 +216,7 @@ export const allTools: AnyToolDef[] = [
   ...entityGroupTools,
   ...itemDensityTools,
   ...variabilityTools,
+  ...finaleContractTools,
   ...bspLumpTools,
   ...staticPropTools,
   ...qcTools,
