@@ -59,14 +59,16 @@ at the skybox shell.
 6. **Keep the route gradeable.** A 45-degree slope is the walk limit; a 51-degree wedge is a
    wall. Stairs must be 18 units or less per step. `write_vmf_solid` refuses both unless
    `steep: true` is passed for scenery.
-7. **Nav does not sample an unbounded height range.** The engine marks a walkable position at
-   the player spawn and samples around it. A 2048x2048 patch at 1:12 (170 units of rise) with
-   the spawn on the low ring produced **0 nav areas**: `Generation complete! 0.1 seconds`, an
-   empty nav dump, and a `verdict: empty`. The same patch at 1:24 (85 units) produced nav
-   areas; 96 worked, 128 failed. Keep the spawn on a flat brush ring and the patch's total
-   rise inside the measured band (≤96 units), or split the terrain and generate nav in
-   bands. The Santa Monica beach is 48 units and navves normally. A pure displacement floor
-   with the spawn on it also produced 0 areas: the spawn must stand on an ordinary brush.
+7. **Nav needs a mark on a real walking position.** The engine marks one walkable position
+   and samples around it; it does not scan the whole BSP. A `via: "direct"` nav launch puts
+   `nav_mark_walkable` in `listenserver.cfg`, before the local player exists, so it marks the
+   **world origin**. That is invisible when the origin is open floor and fatal when it is
+   inside terrain, a ladder or a prop. The first 2048x2048 1:12 terrain test produced **0
+   nav areas** this way, not because of the rise: the same map with `via: "steam"` (a real
+   host, `setpos` to `info_player_start`, then the mark) generated **1,158 areas**. Use
+   `run_nav_generate(via: "steam")` for any map whose origin is not a clean floor; keep the
+   spawn on a flat brush ring anyway, and do not read an empty nav dump as a terrain limit.
+   Santa Monica's 48-unit beach navves normally.
 8. **Decorations are not nav.** A flat silhouette top (the horizon pier) becomes a few
    tiny no-merge areas and fails the engine's non-walkable-connections check. A
    `func_nav_blocker` over the scenery volume fixes the check without making the scenery

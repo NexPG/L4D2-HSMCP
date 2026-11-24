@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.266-alpha - 2026-11-24
+
+- **Corrected: the 1:12 terrain patch was never a height-band limit.** A 2048x2048 patch
+  rising 170 units generated 0 areas only because a direct nav launch marked the world
+  origin before a player existed. With `run_nav_generate(via: "steam")` the same patch
+  (flat spawn ring, noise 16) generated **1,158** nav areas, `fresh`. The 1:24/96/128 table
+  was an artefact of the same origin mark. The skill, the troubleshooting page and the
+  coverage row now say so; Santa Monica's 48-unit beach is unchanged.
+- **Tool count: 296.** Tests: 243 files, 1,984 passed, 32 skipped.
+
 ## 0.0.265-alpha - 2026-11-24
 
 - **The breakable brush reacts in the running engine.** A scratch map's `func_breakable`
@@ -88,11 +98,12 @@ with a line here.
   selected grid (`slope` remains per grid); `profile` follows control points. `noise` is
   documented as per-vertex, so its amplitude must stay under about a quarter of the vertex
   spacing.
-- **Nav sampling of terrain has a measured height band.** A 2048x2048 patch at 1:12
-  (170 units of rise) with the spawn on the low ring produced 0 nav areas; 1:24 (85) and
-  96 units worked, 128 and 170 failed. A pure displacement floor with the spawn on it also
-  produced 0. Keep the spawn on a flat brush ring and the rise at or below 96 units, or
-  split the patch. New `troubleshooting/terrain-nav-empty.md`.
+- **Nav sampling of terrain needs a real mark.** The first 2048x2048 1:12 test (170 units of
+  rise) produced 0 nav areas. **Corrected in 0.0.266:** that was the direct launch's
+  `nav_mark_walkable` landing on the world origin before a player existed, not a height
+  band. With `run_nav_generate(via: "steam")` the same patch generates 1,158 areas. Keep
+  the spawn on a flat brush ring; use the Steam path when the origin is not open floor. New
+  `troubleshooting/terrain-nav-empty.md`.
 - **Santa Monica's beach is a displacement surface.** Waterline, dune crest and house line
   at 0/48/0 units, seeded noise 8, painted by height; the horizon pier and the beach are
   kept out of nav with `func_nav_blocker`. The full gate passes: both chapters navved,

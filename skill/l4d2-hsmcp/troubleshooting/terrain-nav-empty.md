@@ -1,9 +1,11 @@
 # Terrain nav is empty
 
-**Prevention.** Put the player spawn on an ordinary flat brush, not on a displacement, and
-keep the patch's total rise within the measured band: a 2048x2048 patch at 1:12 (170 units)
-generated **0** nav areas; 1:24 (85 units) generated 1,211, 96 units worked and 128 failed.
-Block scenery tops that nav should not walk with `func_nav_blocker`.
+**Prevention.** Use `run_nav_generate(via: "steam")` for any map whose world origin is not
+open floor. A direct launch puts `nav_mark_walkable` in `listenserver.cfg` before the local
+player exists, so it marks the **world origin**; a ladder, a prop or a displaced slope there
+produces `Invalid ground position` and an empty mesh. With a real Steam host the same
+2048x2048 1:12 terrain patch generated **1,158 nav areas**. Keep the spawn on a flat brush
+ring anyway, and block scenery tops with `func_nav_blocker`.
 
 ## Symptom
 
@@ -17,33 +19,34 @@ Sampling walkable space...
 Generation complete!  0.1 seconds elapsed.
 ```
 
+or, when the mark itself failed:
+
+```text
+ERROR: Invalid ground position.
+No valid walkable seed positions.  Cannot generate Navigation Mesh.
+```
+
 `nav_trouble_report` may then pass trivially, because it has no areas to inspect. A
 `run_map_test` still loads the map; the player stands on it, but bots and the Director have
 nowhere to go.
 
 ## Cause
 
-`nav_generate` marks a walkable position at the player spawn and samples the surface around
-that mark; it is not a free scan of the whole BSP. Two different faults produce the same
-empty result:
+`nav_generate` samples around one marked walkable position; it is not a free scan of the
+whole BSP. The position comes from `nav_mark_walkable`, which uses the **current player**.
 
-1. **The spawn is not on a brush.** A patch made entirely of displacements, with
-   `info_player_start` on the terrain, produced 0 areas even when the terrain was flat. The
-   same patch inside a room with a flat brush ring produced nav normally. The mark needs a
-   solid brush surface under it.
-2. **The patch rises outside the sampling band.** A 2048x2048 patch with 1:12 slope
-   (170 units) produced 0 areas; 85 and 96 units produced areas; 128 and 170 failed. The
-   exact band is an engine detail, but the measured working limit is ≤96 units above the
-   spawn. This is not `nav_slope_limit`: removing it or setting 0.5 changed nothing.
-3. **The mark is on the world origin.** A `via: "direct"` launch puts `nav_mark_walkable`
-   in `listenserver.cfg`, before the local player exists. On a map whose origin is open
-   floor this happens to work; on one whose origin is inside a ladder, a prop or a
-   displaced slope it is `Invalid ground position`. Use `run_nav_generate(via: "steam")`:
-   it launches a normal client and retries `setpos`/`nav_mark_walkable`/`nav_generate`
-   through the client console after the host spawns.
+1. **The mark ran before the player existed.** `via: "direct"` executes the cfg at server
+   start; the local player is not spawned yet, so the mark lands on the world origin. This
+   worked by accident on maps whose origin is open floor; on a ladder, a prop or terrain it
+   is `Invalid ground position`.
+2. **The spawn is on a displacement.** A mark on a displaced surface may not find a solid
+   brush under it. A flat brush ring or pad under `info_player_start` is the safe shape; the
+   engine's own maps spawn on brush floors, not on terrain.
+3. **The nav area is there but not seeded.** A `func_nav_blocker` over the only spawn, or a
+   spawn inside a closed brush, leaves no seed.
 
-A third, different failure looks similar: a **flat silhouette** (a horizon pier, a roof, a
-counter top) gets a few tiny `NO_MERGE` areas; the engine then reports `Areas with
+A different failure looks similar: a **flat silhouette** (a horizon pier, a roof, a counter
+top) gets a few tiny `NO_MERGE` areas; the engine then reports `Areas with
 non-walkable connections`. Those are not empty nav, but they fail the gate.
 
 ## Check
@@ -54,21 +57,18 @@ read_nav_areas path: <map>.nav limit: 2000  # z range of the sampled surface
 read_displacements path: <map>.vmf          # minDistance/maxDistance of the patch
 ```
 
-Compare the nav dump's area count with the VMF: a map with a walkable floor and 0 areas is
-the spawn/band fault, not a missing floor. In the console, `Walkable position marked.` means
-the mark itself was placed; the empty result comes from sampling.
+In the console, `Walkable position marked.` means a mark was placed; `Invalid ground
+position` or `No valid walkable seed positions` means the mark itself was rejected. A map
+with a walkable floor and 0 areas is one of the causes above, not a missing floor.
 
 ## Fix
 
+- Use `run_nav_generate(via: "steam")`: it launches app 550, waits for a host, and retries
+  `setpos` to `info_player_start` + `nav_mark_walkable` + `nav_generate` through the client
+  console. Measured on the 2048x2048 1:12 patch: 1,158 areas, `fresh`.
 - Put a flat brush ring or spawn pad under `info_player_start`, even when the rest of the
   floor is displaced. A 2048 patch with a 512-unit ring and the spawn on the ring is the
-  tested shape.
-- Keep the patch's rise at or below about 96 units from the spawn. A beach at 48 units is
-  safe. If a taller hill is required, split it and generate nav in bands, or accept that
-  bots cannot path the upper part.
-- A pure displacement floor can still be navved if a small brush pad exists at the spawn;
-  the pad must be flush with the terrain edge, or its step (more than 18 units) becomes a
-  wall.
+  tested shape; the patch itself can rise 170 units.
 - Block a decorative top with a `func_nav_blocker` volume instead of deleting the brush:
   that keeps the silhouette and removes the tiny no-merge areas. Santa Monica uses this for
   the horizon pier and for the beach, which is scenery rather than the route.
