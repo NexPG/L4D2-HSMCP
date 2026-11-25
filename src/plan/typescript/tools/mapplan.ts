@@ -85,8 +85,13 @@ const Building = z.object({
   floors: z.number().int().min(1).max(64),
   floorHeight: z.number().min(96).default(128),
   baseZ: z.number(),
+  excavated: z.boolean().default(false).describe("Base is below the terrain on purpose (subway, basement)."),
   roofZ: z.number().optional(),
   enterable: z.boolean().default(false),
+  role: z
+    .enum(["route", "context", "landmark", "facade", "safe-room"])
+    .default("context")
+    .describe("route/safe-room are on the critical path; context/facade/landmark are the surrounding streetscape."),
   entrances: z.array(Entrance).default([]),
   floorsPlan: z.array(Floor).default([]),
   purpose: z.string().optional(),
@@ -204,6 +209,8 @@ const Area = z.object({
     "battlefield",
     "item-cluster",
   ]),
+  floor: z.number().int().min(1).default(1).describe("Floor plane; 1 is the lowest."),
+  buildingId: z.string().optional().describe("Building this area belongs to, when interior."),
   x: z.number(),
   y: z.number(),
   width: POSITIVE,
@@ -436,9 +443,11 @@ function stairAtNode(
   floor: PlanFloor,
   node: PlanNode,
   kind: PlanStair["kind"],
+  targetFloor?: number,
 ): PlanStair | null {
   for (const stair of floor.stairs) {
     if (stair.kind !== kind) continue;
+    if (targetFloor !== undefined && stair.to !== targetFloor) continue;
     const [x, y] = localToWorld(building, stair.x, stair.y);
     if (Math.hypot(x - node.x, y - node.y) <= Math.max(96, stair.width / 2 + 32)) return stair;
   }
@@ -774,6 +783,13 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     if (roof <= building.baseZ) {
       add("error", "roof-height", `${building.id} roof ${roof} is not above base ${building.baseZ}`);
     }
+    const ground = terrainAt(plan, building.x, building.y);
+    if (building.baseZ < ground - 16 && !building.excavated) {
+      add("warning", "building-below-terrain", `${building.id} base ${building.baseZ} is below terrain ${ground.toFixed(0)}; mark it excavated`);
+    }
+    if (building.excavated && building.baseZ >= ground - 16) {
+      add("warning", "excavation-not-below", `${building.id} is marked excavated but base ${building.baseZ} is not below terrain ${ground.toFixed(0)}`);
+    }
     if (building.enterable && building.entrances.length === 0) {
       add("error", "enterable-no-entrance", `${building.id} is enterable but has no entrance`);
     }
@@ -799,6 +815,12 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
           add("error", "duplicate-room", `${building.id} F${floor.level} has room ${key} twice`);
         }
         rooms.set(key, room);
+        if (
+          Math.abs(room.x) + room.width / 2 > building.width / 2 + 1 ||
+          Math.abs(room.y) + room.depth / 2 > building.depth / 2 + 1
+        ) {
+          add("warning", "room-outside-building", `${building.id} F${floor.level} room ${key} leaves the footprint`);
+        }
       }
 
       for (const door of floor.doors) {
@@ -903,6 +925,9 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
         add("error", "node-unknown-building", `${node.id} names building ${node.buildingId}, which does not exist`);
       }
       if (building) {
+        if (building.enterable === false) {
+          add("warning", "node-in-facade", `${node.id} is inside ${building.id}, which is not enterable`);
+        }
         if (
           !pointInPolygon(
             [node.x, node.y],
@@ -917,6 +942,9 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
           if (!floor) {
             add(severity, "node-no-floor-plan", `${building.id} has no floor plan for node ${node.id} at F${node.floor}`);
           } else {
+            if (Math.abs(node.z - floor.z) > 32) {
+              add("warning", "node-z-mismatch", `${node.id} z=${node.z} but ${building.id} F${node.floor} is z=${floor.z}`);
+            }
             const verticalKind = ["stair", "ladder", "elevator", "ramp"].includes(node.kind);
             if (node.kind === "door") {
               const door = doorAtNode(building, floor, node);
@@ -924,22 +952,23 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
                 add(severity, "node-no-door", `${node.id} is a door on ${building.id} F${node.floor} but no door is within reach`);
               }
             } else if (verticalKind) {
-              const stair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"]);
+              const target = [route.nodes[index - 1], route.nodes[index + 1]].find(
+                (neighbour): neighbour is PlanNode => Boolean(neighbour) && neighbour!.floor !== node.floor,
+              );
+              const stair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"], target?.floor);
               if (!stair) {
-                add(
-                  severity,
-                  "node-no-stair",
-                  `${node.id} is a ${node.kind} on ${building.id} F${node.floor} but no matching connection is within reach`,
-                );
-              } else {
-                const target = [route.nodes[index - 1], route.nodes[index + 1]].find(
-                  (neighbour) => neighbour && neighbour.floor !== node.floor,
-                );
-                if (target && stair.to !== target.floor) {
+                const anyStair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"]);
+                if (target && anyStair) {
                   add(
-                    "warning",
+                    ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning",
                     "stair-target-mismatch",
-                    `${node.id} uses a ${stair.kind} to F${stair.to} but the route continues on F${target.floor}`,
+                    `${node.id} uses a ${anyStair.kind} to F${anyStair.to} but the route continues on F${target.floor}`,
+                  );
+                } else {
+                  add(
+                    severity,
+                    "node-no-stair",
+                    `${node.id} is a ${node.kind} on ${building.id} F${node.floor} but no matching connection is within reach`,
                   );
                 }
               }
@@ -957,14 +986,32 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
           add("warning", "vertical-no-change", `${node.id} is a ${node.kind} but the route stays on F${node.floor}`);
         }
       }
+      const nextNode = route.nodes[index + 1];
+      if (
+        nextNode &&
+        nextNode.floor !== node.floor &&
+        Math.abs(nextNode.z - node.z) > 64 &&
+        !VERTICAL_KINDS.has(node.kind) &&
+        !VERTICAL_KINDS.has(nextNode.kind)
+      ) {
+        add(
+          ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning",
+          "floor-jump-without-vertical",
+          `${node.id} F${node.floor} z=${node.z} becomes ${nextNode.id} F${nextNode.floor} z=${nextNode.z} without a vertical node`,
+        );
+      }
     }
     const samples = routeSamples(route);
+    const visitedBuildings = new Set(
+      route.nodes.map((node) => node.buildingId).filter((id): id is string => Boolean(id)),
+    );
     routeSamplesAll.push(...samples);
     for (const sample of samples) {
       for (const building of plan.buildings) {
         if (!pointInPolygon(sample, corners(building.x, building.y, building.width, building.depth, building.rotation))) {
           continue;
         }
+        if (building.enterable && visitedBuildings.has(building.id)) continue;
         const nearEntrance = building.entrances.some(
           (entrance) => Math.hypot(entrance.x - sample[0], entrance.y - sample[1]) <= 96,
         );
@@ -996,12 +1043,55 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     }
   }
 
+  const routeBuildingIds = new Set(
+    plan.routes.flatMap((route) => route.nodes.map((node) => node.buildingId)).filter((id): id is string => Boolean(id)),
+  );
+  const roleSeverity = plan.stage === "approved" ? "error" : "warning";
+  for (const building of plan.buildings) {
+    if (routeBuildingIds.has(building.id) && !["route", "safe-room"].includes(building.role)) {
+      add(roleSeverity, "building-role-mismatch", `${building.id} carries route nodes but role is ${building.role}`);
+    }
+    if (!routeBuildingIds.has(building.id) && ["route", "safe-room"].includes(building.role)) {
+      add(roleSeverity, "building-role-unused", `${building.id} is role ${building.role} but no route node visits it`);
+    }
+  }
+  const contextCount = plan.buildings.filter(
+    (building) => !["route", "safe-room"].includes(building.role),
+  ).length;
+  if (contextCount < 3) {
+    add(
+      plan.stage === "approved" ? "error" : "warning",
+      "site-too-sparse",
+      `only ${contextCount} context/facade building(s): map the surrounding streetscape, not just the route boxes`,
+    );
+  }
+
   const areaIds = new Set<string>();
   for (const area of plan.areas) {
     if (areaIds.has(area.id)) {
       add("error", "duplicate-area-id", `area id ${area.id} is repeated`);
     }
     areaIds.add(area.id);
+    const areaBuilding = area.buildingId
+      ? plan.buildings.find((candidate) => candidate.id === area.buildingId)
+      : null;
+    if (area.buildingId && !areaBuilding) {
+      add("error", "area-unknown-building", `area ${area.id} names building ${area.buildingId}, which does not exist`);
+    } else if (areaBuilding) {
+      const areaFloor = areaBuilding.floorsPlan.find((candidate) => candidate.level === area.floor);
+      if (!areaFloor) {
+        add(
+          ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning",
+          "area-no-floor",
+          `${area.id} is on ${areaBuilding.id} F${area.floor}, which has no floor plan`,
+        );
+      }
+      if (!areaBuilding.enterable) {
+        add("warning", "area-in-facade", `${area.id} is inside ${areaBuilding.id}, which is not enterable`);
+      }
+    } else if (area.floor > 1) {
+      add("warning", "area-floor-no-building", `${area.id} is on F${area.floor} but names no building`);
+    }
     for (const [x, y] of corners(area.x, area.y, area.width, area.depth, area.rotation)) {
       if (x < site.x0 || x > site.x1 || y < site.y0 || y > site.y1) {
         add(
@@ -1015,9 +1105,16 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     if (
       ["crescendo", "holdout", "finale", "checkpoint", "safe-room", "battlefield"].includes(area.kind)
     ) {
-      const nearest = Math.min(
-        ...routeSamplesAll.map((point) => Math.hypot(point[0] - area.x, point[1] - area.y)),
-      );
+      const routePoints = area.buildingId
+        ? plan.routes
+            .flatMap((route) => route.nodes)
+            .filter((node) => node.buildingId === area.buildingId && node.floor === area.floor)
+            .map((node) => [node.x, node.y] as Vec2)
+        : routeSamplesAll;
+      if (area.buildingId && routePoints.length === 0) {
+        add("warning", "area-no-route-node", `${area.id} is on ${area.buildingId} F${area.floor} but no route node is there`);
+      }
+      const nearest = Math.min(...routePoints.map((point) => Math.hypot(point[0] - area.x, point[1] - area.y)));
       if (Number.isFinite(nearest) && nearest > 320) {
         add(
           "warning",
@@ -1084,8 +1181,15 @@ interface Transform {
   height: number;
 }
 
-function fit(plan: MapPlan, width = 1200, height = 900, margin = 48): Transform {
-  const { x0, y0, x1, y1 } = plan.site.bounds;
+interface Bounds {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+function fitBounds(bounds: Bounds, width = 1200, height = 900, margin = 48): Transform {
+  const { x0, y0, x1, y1 } = bounds;
   const scale = Math.min((width - 2 * margin) / Math.max(1, x1 - x0), (height - 2 * margin) / Math.max(1, y1 - y0));
   const ox = (width - (x1 - x0) * scale) / 2;
   const oy = (height - (y1 - y0) * scale) / 2;
@@ -1095,6 +1199,54 @@ function fit(plan: MapPlan, width = 1200, height = 900, margin = 48): Transform 
     scale,
     width,
     height,
+  };
+}
+
+function fit(plan: MapPlan, width = 1200, height = 900, margin = 48): Transform {
+  return fitBounds(plan.site.bounds, width, height, margin);
+}
+
+function contentBounds(plan: MapPlan): Bounds {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const collect = (points: Vec2[]): void => {
+    for (const [x, y] of points) {
+      xs.push(x);
+      ys.push(y);
+    }
+  };
+  for (const building of plan.buildings) {
+    collect(corners(building.x, building.y, building.width, building.depth, building.rotation));
+  }
+  for (const route of plan.routes) {
+    for (const [x, y] of route.points) {
+      xs.push(x);
+      ys.push(y);
+    }
+  }
+  for (const area of plan.areas) {
+    collect(corners(area.x, area.y, area.width, area.depth, area.rotation));
+  }
+  if (xs.length === 0) return plan.site.bounds;
+  const pad = 256;
+  return {
+    x0: Math.max(plan.site.bounds.x0, Math.min(...xs) - pad),
+    y0: Math.max(plan.site.bounds.y0, Math.min(...ys) - pad),
+    x1: Math.min(plan.site.bounds.x1, Math.max(...xs) + pad),
+    y1: Math.min(plan.site.bounds.y1, Math.max(...ys) + pad),
+  };
+}
+
+function buildingBounds(building: PlanBuilding): Bounds {
+  const shape = corners(building.x, building.y, building.width, building.depth, building.rotation);
+  const xs = shape.map(([x]) => x);
+  const ys = shape.map(([, y]) => y);
+  const pad = 192;
+  return {
+    x0: Math.min(...xs) - pad,
+    y0: Math.min(...ys) - pad,
+    x1: Math.max(...xs) + pad,
+    y1: Math.max(...ys) + pad,
   };
 }
 
@@ -1118,8 +1270,39 @@ ${body}
 </svg>`;
 }
 
-function frame(title: string, plan: MapPlan, t: Transform, body: string, legend: string[]): string {
-  const { x0, y0, x1, y1 } = plan.site.bounds;
+function wrapLegend(line: string, max = 38): string[] {
+  const words = line.split(/\s+/);
+  const out: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > max && current) {
+      out.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) out.push(current);
+  return out;
+}
+
+function nodeText(node: PlanNode, withFloor = false): string {
+  const label = node.label || node.kind;
+  return `${label}${withFloor ? ` F${node.floor}` : ""}${node.landmark ? " ★" : ""}`;
+}
+
+function frame(
+  title: string,
+  plan: MapPlan,
+  t: Transform,
+  body: string,
+  legend: string[],
+  bounds: Bounds = plan.site.bounds,
+  border?: Bounds | null,
+): string {
+  const { x0, y0, x1, y1 } = bounds;
+  const frameBorder = border === undefined ? bounds : border;
   const grid = plan.site.grid;
   const gridLines: string[] = [];
   for (let x = Math.ceil(x0 / grid) * grid; x <= x1; x += grid) {
@@ -1146,17 +1329,27 @@ function frame(title: string, plan: MapPlan, t: Transform, body: string, legend:
 <line x1="${x + px}" y1="${y - 5}" x2="${x + px}" y2="${y + 5}" stroke="#2c3e50"/>
 <text x="${x}" y="${y - 9}">0</text><text x="${x + px - 18}" y="${y - 9}">${unit} u</text></g>`;
   })();
-  const legendText = legend
-    .map((line, index) => `<text x="${t.width - 260}" y="${110 + index * 18}" font-family="sans-serif" font-size="12" fill="#2c3e50">${esc(line)}</text>`)
+  const legendLines = legend.flatMap((line) => wrapLegend(line));
+  const legendX = t.width - 320;
+  const legendY = 110;
+  const legendWidth = 312;
+  const legendHeight = legendLines.length * 14 + 16;
+  const legendText = legendLines
+    .map(
+      (line, index) =>
+        `<text x="${legendX + 8}" y="${legendY + 18 + index * 14}" font-family="sans-serif" font-size="10" fill="#2c3e50">${esc(line)}</text>`,
+    )
     .join("");
+  const legendBox = `<rect x="${legendX}" y="${legendY}" width="${legendWidth}" height="${legendHeight}" fill="#fffdf7" stroke="#d5dbdb" opacity="0.94"/>`;
   return `<rect width="100%" height="100%" fill="#f8f5ee"/>
 ${gridLines.join("")}
-<rect x="${t.sx(x0).toFixed(1)}" y="${t.sy(y1).toFixed(1)}" width="${((x1 - x0) * t.scale).toFixed(1)}" height="${((y1 - y0) * t.scale).toFixed(1)}" fill="#fffdf7" stroke="#2c3e50" stroke-width="2"/>
+${frameBorder ? `<rect x="${t.sx(frameBorder.x0).toFixed(1)}" y="${t.sy(frameBorder.y1).toFixed(1)}" width="${((frameBorder.x1 - frameBorder.x0) * t.scale).toFixed(1)}" height="${((frameBorder.y1 - frameBorder.y0) * t.scale).toFixed(1)}" fill="#fffdf7" stroke="#2c3e50" stroke-width="2"/>` : ""}
 ${body}
 <text x="48" y="42" font-family="sans-serif" font-size="22" fill="#1b2631">${esc(title)}</text>
 <text x="48" y="64" font-family="sans-serif" font-size="12" fill="#5d6d7e">${esc(plan.name)} · Hammer units · ${Math.round(t.scale * 100) / 100} px/u</text>
 ${north}
 ${scaleBar}
+${legendBox}
 ${legendText}`;
 }
 
@@ -1178,12 +1371,19 @@ function sitePlan(plan: MapPlan): string {
     );
   }
   for (const building of plan.buildings) {
-    body.push(rectSvg(building, t, building.enterable ? "#d5c3a1" : "#ded8cc", "#5d6d7e"));
+    const fill =
+      building.role === "route" || building.role === "safe-room"
+        ? "#d5c3a1"
+        : building.role === "landmark"
+          ? "#e8d5a8"
+          : "#ded8cc";
+    body.push(rectSvg(building, t, fill, "#5d6d7e"));
     const cx = t.sx(building.x);
     const cy = t.sy(building.y);
     body.push(
       `<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#1b2631">${esc(building.id)}</text>`,
       `<text x="${cx.toFixed(1)}" y="${(cy + 15).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5d6d7e">${building.width}×${building.depth} ${Math.round(building.rotation)}°</text>`,
+      `<text x="${cx.toFixed(1)}" y="${(cy + 29).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7f8c8d">${esc(building.role)}</text>`,
       `<circle cx="${t.sx(building.x).toFixed(1)}" cy="${t.sy(building.y).toFixed(1)}" r="2.5" fill="#2c3e50"/>`,
     );
   }
@@ -1192,8 +1392,9 @@ function sitePlan(plan: MapPlan): string {
     t.width,
     t.height,
     frame("1 · Site plan", plan, t, body.join("\n"), [
-      "brown fill: enterable building",
-      "grey fill: block / scenery",
+      "brown: route or safe-room building",
+      "tan: landmark building",
+      "grey: context / facade building",
       "dashed red: no-build zone",
       "blue: water",
     ]),
@@ -1292,7 +1493,8 @@ ${dots}
 }
 
 function circulationPlan(plan: MapPlan): string {
-  const t = fit(plan);
+  const bounds = contentBounds(plan);
+  const t = fitBounds(bounds);
   const body: string[] = [];
   for (const building of plan.buildings) {
     body.push(rectSvg(building, t, "#e8e2d6", "#8a8175"));
@@ -1337,9 +1539,10 @@ function circulationPlan(plan: MapPlan): string {
   };
   for (const area of plan.areas) {
     const color = areaColor[area.kind] ?? "#7f8c8d";
+    const level = area.buildingId || area.floor > 1 ? ` F${area.floor}` : "";
     body.push(
       `<polygon points="${polygonPoints(corners(area.x, area.y, area.width, area.depth, area.rotation), t)}" fill="${color}" fill-opacity="0.14" stroke="${color}" stroke-width="1.5" stroke-dasharray="6 4"/>`,
-      `<text x="${t.sx(area.x).toFixed(1)}" y="${t.sy(area.y).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="${color}">${esc(area.kind)}</text>`,
+      `<text x="${t.sx(area.x).toFixed(1)}" y="${t.sy(area.y).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="${color}" stroke="#fffdf7" stroke-width="2.5" paint-order="stroke">${esc(area.kind)}${level}</text>`,
     );
   }
   for (const route of plan.routes) {
@@ -1354,29 +1557,29 @@ function circulationPlan(plan: MapPlan): string {
         `<text x="${(t.sx(stop.x) + 9).toFixed(1)}" y="${(t.sy(stop.y) - 6).toFixed(1)}" font-family="sans-serif" font-size="11" fill="#1b2631">${esc(stop.label)}</text>`,
       );
     }
-    for (const node of route.nodes) {
+    for (let index = 0; index < route.nodes.length; index += 1) {
+      const node = route.nodes[index]!;
       const vertical = VERTICAL_KINDS.has(node.kind);
       const fill = intensityColor(node.intensity);
       const stroke = vertical ? "#8e44ad" : "#ffffff";
       const cx = t.sx(node.x);
       const cy = t.sy(node.y);
-      const label = `${node.kind} F${node.floor}${node.landmark ? " ★" : ""}${node.gate !== "none" ? ` ${node.gate}` : ""}`;
       if (vertical) {
         body.push(
-          `<polygon points="${cx.toFixed(1)},${(cy - 8).toFixed(1)} ${(cx + 8).toFixed(1)},${cy.toFixed(1)} ${cx.toFixed(1)},${(cy + 8).toFixed(1)} ${(cx - 8).toFixed(1)},${cy.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`,
+          `<polygon points="${cx.toFixed(1)},${(cy - 9).toFixed(1)} ${(cx + 9).toFixed(1)},${cy.toFixed(1)} ${cx.toFixed(1)},${(cy + 9).toFixed(1)} ${(cx - 9).toFixed(1)},${cy.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`,
         );
       } else {
         body.push(
-          `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`,
+          `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="7" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`,
         );
       }
       if (node.gate !== "none") {
         body.push(
-          `<rect x="${(cx + 5).toFixed(1)}" y="${(cy - 10).toFixed(1)}" width="7" height="7" fill="#f1c40f" stroke="#7d6608" stroke-width="0.8"/>`,
+          `<rect x="${(cx + 6).toFixed(1)}" y="${(cy - 12).toFixed(1)}" width="7" height="7" fill="#f1c40f" stroke="#7d6608" stroke-width="0.8"/>`,
         );
       }
       body.push(
-        `<text x="${(cx + 11).toFixed(1)}" y="${(cy - 8).toFixed(1)}" font-family="sans-serif" font-size="9" fill="#1b2631">${esc(label)}</text>`,
+        `<text x="${cx.toFixed(1)}" y="${(cy + 3).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" font-weight="bold" fill="#ffffff" stroke="#1b2631" stroke-width="2" paint-order="stroke">${index + 1}</text>`,
       );
     }
     const first = route.points[0]!;
@@ -1392,21 +1595,29 @@ function circulationPlan(plan: MapPlan): string {
     }
   }
   body.push(rhythmStrip(plan, t));
+  const legend = [
+    "red: critical path",
+    "blue dashed: branch/escape",
+    "green: building entrance",
+    "band width = clear width",
+    "coloured dashed: spawn/cover/holdout/crescendo/finale",
+    "dashed boundary: district; label = landmark",
+    "node fill: intensity (blue rest, red peak)",
+    "diamond: stair/ladder/ramp/drop; ★ landmark",
+    "gold square: gate; bottom right: rhythm",
+  ];
+  const critical = plan.routes.find((route) => route.kind === "critical");
+  if (critical) {
+    legend.push("route nodes:");
+    critical.nodes.forEach((node, index) => {
+      legend.push(`${index + 1}. ${node.label || node.kind} F${node.floor}${node.landmark ? " ★" : ""}`);
+    });
+  }
   return svg(
     "Circulation plan — critical path, branches, stops and entrances",
     t.width,
     t.height,
-    frame("3 · Circulation plan", plan, t, body.join("\n"), [
-      "red: critical path",
-      "blue dashed: branch/escape",
-      "green: building entrance",
-      "band width = clear width",
-      "coloured dashed: spawn/cover/holdout/crescendo/finale",
-      "dashed boundary: district; label = landmark",
-      "node fill: intensity (blue rest, red peak)",
-      "diamond: stair/ladder/ramp/drop; ★ landmark",
-      "gold square: gate; bottom right: rhythm",
-    ]),
+    frame("3 · Circulation plan", plan, t, body.join("\n"), legend, bounds),
   );
 }
 
@@ -1423,12 +1634,13 @@ function buildingSchedule(plan: MapPlan): string {
       area: building.width * building.depth,
       enterable: building.enterable ? "yes" : "no",
       entrances: building.entrances.length,
+      role: building.role,
     };
   });
-  const width = 1200;
+  const width = 1360;
   const height = 160 + rows.length * 30;
-  const cols = [60, 260, 420, 520, 620, 720, 820, 930, 1030];
-  const headers = ["id", "name", "floors", "base", "roof", "height", "area", "enterable", "doors"];
+  const cols = [60, 260, 420, 520, 620, 720, 820, 930, 1010, 1090];
+  const headers = ["id", "name", "floors", "base", "roof", "height", "area", "enterable", "doors", "role"];
   const body: string[] = [];
   const t = fit(plan);
   body.push(`<rect width="100%" height="100%" fill="#f8f5ee"/>`);
@@ -1450,6 +1662,7 @@ function buildingSchedule(plan: MapPlan): string {
       row.area.toFixed(0),
       row.enterable,
       String(row.entrances),
+      row.role,
     ];
     values.forEach((value, column) => {
       body.push(`<text x="${cols[column]}" y="${y}" font-family="sans-serif" font-size="11" fill="#1b2631">${esc(value)}</text>`);
@@ -1466,40 +1679,44 @@ function floorPlan(
   building: PlanBuilding,
   floor?: PlanBuilding["floorsPlan"][number],
 ): string {
-  const t = fit(plan);
+  const bounds = buildingBounds(building);
+  const t = fitBounds(bounds);
   const body: string[] = [];
   body.push(rectSvg(building, t, "#fdfbf6", "#1b2631"));
   const levels = floor ? [floor] : building.floorsPlan;
   for (const level of levels) {
     for (const room of level.rooms) {
       const [wx, wy] = localToWorld(building, room.x, room.y);
+      const [tx, ty] = localToWorld(building, room.x - room.width / 2, room.y + room.depth / 2);
       body.push(
         `<polygon points="${polygonPoints(corners(wx, wy, room.width, room.depth, building.rotation), t)}" fill="#f5efe3" stroke="#8a8175"/>`,
-        `<text x="${t.sx(wx).toFixed(1)}" y="${t.sy(wy).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1b2631">${esc(room.name)}</text>`,
+        `<text x="${(t.sx(tx) + 5).toFixed(1)}" y="${(t.sy(ty) + 13).toFixed(1)}" font-family="sans-serif" font-size="10" fill="#5d6d7e">${esc(room.name)}</text>`,
       );
     }
     for (const door of level.doors) {
       const [wx, wy] = localToWorld(building, door.x, door.y);
       body.push(
         `<polygon points="${polygonPoints(corners(wx, wy, door.width, door.depth, building.rotation + door.rotation), t)}" fill="#f1c40f" stroke="#7d6608" stroke-width="1"/>`,
-        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) - 6).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7d6608">${esc(door.from)}→${esc(door.to)}</text>`,
+        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) - 6).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7d6608" stroke="#fffdf7" stroke-width="2.5" paint-order="stroke">${esc(door.from)}→${esc(door.to)}</text>`,
       );
     }
     for (const stair of level.stairs) {
       const [wx, wy] = localToWorld(building, stair.x, stair.y);
       body.push(
         `<polygon points="${polygonPoints(corners(wx, wy, stair.width, stair.depth, building.rotation), t)}" fill="#d5dbdb" stroke="#5d6d7e"/>`,
-        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) + 4).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#2c3e50">${esc(stair.kind)} →F${stair.to}</text>`,
+        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) + 4).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#2c3e50" stroke="#f8f5ee" stroke-width="2.5" paint-order="stroke">${esc(stair.kind)} →F${stair.to}</text>`,
       );
     }
   }
   for (const route of plan.routes) {
-    for (const node of route.nodes) {
+    for (let index = 0; index < route.nodes.length; index += 1) {
+      const node = route.nodes[index]!;
       if (node.buildingId !== building.id) continue;
       if (floor && node.floor !== floor.level) continue;
+      const above = index % 2 === 0;
       body.push(
         `<circle cx="${t.sx(node.x).toFixed(1)}" cy="${t.sy(node.y).toFixed(1)}" r="5" fill="#b03a2e"/>`,
-        `<text x="${(t.sx(node.x) + 8).toFixed(1)}" y="${(t.sy(node.y) - 5).toFixed(1)}" font-family="sans-serif" font-size="9" fill="#b03a2e">${esc(node.kind)} F${node.floor}</text>`,
+        `<text x="${(t.sx(node.x) + 8).toFixed(1)}" y="${(t.sy(node.y) + (above ? -6 : 14)).toFixed(1)}" font-family="sans-serif" font-size="8" fill="#b03a2e" stroke="#fffdf7" stroke-width="2.5" paint-order="stroke">${esc(nodeText(node))}</text>`,
       );
     }
   }
@@ -1521,29 +1738,61 @@ function floorPlan(
       "grey: stair/ladder/elevator/ramp with target floor",
       "red: route node on this floor",
       "green: entrance",
-    ]),
+    ], bounds, null),
   );
 }
 
-function section(building: PlanBuilding): string {
+function section(plan: MapPlan, building: PlanBuilding): string {
   const width = 900;
   const roof = building.roofZ ?? building.baseZ + building.floors * building.floorHeight;
   const top = roof + 32;
   const bottom = building.baseZ - 32;
   const sy = (z: number): number => 700 - ((z - bottom) / Math.max(1, top - bottom)) * 600;
+  const xFor = (localX: number): number => 100 + ((localX + building.width / 2) / Math.max(1, building.width)) * 700;
   const body: string[] = [
     `<rect width="100%" height="100%" fill="#f8f5ee"/>`,
     `<text x="48" y="42" font-family="sans-serif" font-size="22" fill="#1b2631">Section — ${esc(building.name)}</text>`,
+    `<text x="48" y="92" font-family="sans-serif" font-size="11" fill="#5d6d7e">dots: route nodes · purple dashed: stair/ladder/elevator/ramp</text>`,
     `<line x1="100" y1="${sy(building.baseZ)}" x2="800" y2="${sy(building.baseZ)}" stroke="#1b2631" stroke-width="3"/>`,
     `<line x1="100" y1="${sy(roof)}" x2="800" y2="${sy(roof)}" stroke="#1b2631" stroke-width="3"/>`,
     `<line x1="100" y1="${sy(building.baseZ)}" x2="100" y2="${sy(roof)}" stroke="#1b2631" stroke-width="2"/>`,
     `<line x1="800" y1="${sy(building.baseZ)}" x2="800" y2="${sy(roof)}" stroke="#1b2631" stroke-width="2"/>`,
   ];
+  const seenConnections = new Set<string>();
   for (const floor of building.floorsPlan) {
     body.push(
       `<line x1="100" y1="${sy(floor.z)}" x2="800" y2="${sy(floor.z)}" stroke="#8a8175" stroke-width="1.5"/>`,
       `<text x="810" y="${sy(floor.z) + 4}" font-family="sans-serif" font-size="11" fill="#1b2631">F${floor.level} z=${floor.z}</text>`,
     );
+    for (const stair of floor.stairs) {
+      const target = building.floorsPlan.find((candidate) => candidate.level === stair.to);
+      if (!target) continue;
+      const low = Math.min(floor.level, stair.to);
+      const high = Math.max(floor.level, stair.to);
+      const key = `${low}-${high}-${Math.round(stair.x)}`;
+      if (seenConnections.has(key)) continue;
+      seenConnections.add(key);
+      const x = xFor(stair.x);
+      body.push(
+        `<line x1="${x.toFixed(1)}" y1="${sy(floor.z).toFixed(1)}" x2="${x.toFixed(1)}" y2="${sy(target.z).toFixed(1)}" stroke="#8e44ad" stroke-width="3" stroke-dasharray="8 5"/>`,
+        `<text x="${(x + 6).toFixed(1)}" y="${(sy((floor.z + target.z) / 2) + 4).toFixed(1)}" font-family="sans-serif" font-size="10" fill="#8e44ad">${esc(stair.kind)} F${low}-F${high}</text>`,
+      );
+    }
+  }
+  const c = Math.cos(rad(building.rotation));
+  const s = Math.sin(rad(building.rotation));
+  for (const route of plan.routes) {
+    for (const node of route.nodes) {
+      if (node.buildingId !== building.id) continue;
+      const dx = node.x - building.x;
+      const dy = node.y - building.y;
+      const lx = dx * c + dy * s;
+      if (lx < -building.width / 2 || lx > building.width / 2) continue;
+      const vertical = VERTICAL_KINDS.has(node.kind);
+      body.push(
+        `<circle cx="${xFor(lx).toFixed(1)}" cy="${sy(node.z).toFixed(1)}" r="${vertical ? 5 : 4}" fill="${vertical ? "#8e44ad" : "#b03a2e"}" stroke="#fffdf7" stroke-width="1.5"/>`,
+      );
+    }
   }
   body.push(
     `<text x="48" y="70" font-family="sans-serif" font-size="12" fill="#5d6d7e">base ${building.baseZ} · roof ${roof} · ${building.floors} floors</text>`,
@@ -1593,11 +1842,11 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
     "",
     "## Buildings",
     "",
-    "| id | name | floors | base | roof | enterable | doors |",
-    "|---|---|---:|---:|---:|---|---:|",
+    "| id | name | role | floors | base | roof | enterable | doors |",
+    "|---|---|---|---:|---:|---:|---|---:|",
     ...plan.buildings.map((building) => {
       const roof = building.roofZ ?? building.baseZ + building.floors * building.floorHeight;
-      return `| ${building.id} | ${building.name} | ${building.floors} | ${building.baseZ} | ${roof} | ${building.enterable ? "yes" : "no"} | ${building.entrances.length} |`;
+      return `| ${building.id} | ${building.name} | ${building.role} | ${building.floors} | ${building.baseZ} | ${roof} | ${building.enterable ? "yes" : "no"} | ${building.entrances.length} |`;
     }),
     "",
     "## Routes",
@@ -1634,10 +1883,11 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
       : []),
     "## Gameplay and nav areas",
     "",
-    "| id | kind | label | note |",
-    "|---|---|---|---|",
+    "| id | kind | floor | building | label | note |",
+    "|---|---|---:|---|---|---|",
     ...plan.areas.map(
-      (area) => `| ${area.id} | ${area.kind} | ${area.label} | ${area.note} |`,
+      (area) =>
+        `| ${area.id} | ${area.kind} | F${area.floor} | ${area.buildingId ?? "—"} | ${area.label} | ${area.note} |`,
     ),
     "",
     "## Findings",
@@ -1656,7 +1906,7 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
 
 function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
   const critical = plan.routes.find((route) => route.kind === "critical");
-  const connectionFor = (node: PlanNode): string => {
+  const connectionFor = (route: PlanRoute, node: PlanNode, index: number): string => {
     if (!node.buildingId) return "—";
     const building = plan.buildings.find((candidate) => candidate.id === node.buildingId);
     if (!building?.enterable) return "—";
@@ -1667,7 +1917,10 @@ function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
       return door ? `door ${door.id ?? `${door.from}→${door.to}`}` : "MISSING";
     }
     if (["stair", "ladder", "elevator", "ramp"].includes(node.kind)) {
-      const stair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"]);
+      const target = [route.nodes[index - 1], route.nodes[index + 1]].find(
+        (neighbour): neighbour is PlanNode => Boolean(neighbour) && neighbour!.floor !== node.floor,
+      );
+      const stair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"], target?.floor);
       return stair ? `${stair.kind} ${stair.id ?? `F${floor.level}→F${stair.to}`}` : "MISSING";
     }
     if (node.kind === "drop") return "drop";
@@ -1712,7 +1965,7 @@ function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
     ...(critical
       ? critical.nodes.map(
           (node, index) =>
-            `| ${index + 1} | ${node.label || node.id} (${node.id}) | ${node.kind} | ${node.space || "—"} | ${node.district ?? "—"} | F${node.floor} | ${node.buildingId ?? "—"} | ${node.x} | ${node.y} | ${node.z} | ${connectionFor(node)} | ${node.intensity} | ${node.enclosure} | ${node.landmark || "—"} | ${node.gate} | ${node.beat ?? "—"} |`,
+            `| ${index + 1} | ${node.label || node.id} (${node.id}) | ${node.kind} | ${node.space || "—"} | ${node.district ?? "—"} | F${node.floor} | ${node.buildingId ?? "—"} | ${node.x} | ${node.y} | ${node.z} | ${connectionFor(critical, node, index)} | ${node.intensity} | ${node.enclosure} | ${node.landmark || "—"} | ${node.gate} | ${node.beat ?? "—"} |`,
         )
       : ["| — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |"]),
     "",
@@ -1736,19 +1989,20 @@ function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
     lines.push(
       `### ${building.id} — ${building.name}`,
       "",
-      `- enterable: ${building.enterable ? "yes" : "no"} · floors: ${building.floors} · base: ${building.baseZ} · roof: ${roof} · floor height: ${building.floorHeight}`,
+      `- role: ${building.role} · enterable: ${building.enterable ? "yes" : "no"} · excavated: ${building.excavated ? "yes" : "no"} · floors: ${building.floors} · base: ${building.baseZ} · roof: ${roof} · floor height: ${building.floorHeight}`,
       `- purpose: ${building.purpose ?? "—"}`,
       "",
-      "| entrance x | y | z | width | face | door |",
-      "|---:|---:|---:|---:|---|---|",
+      "| entrance x | y | z | width | face | door | floor |",
+      "|---:|---:|---:|---:|---|---|---|",
       ...building.entrances.map((entrance) => {
-        const floor = building.floorsPlan.find((candidate) => candidate.level === 1);
-        const door = floor?.doors.find((candidate) => {
-          if (candidate.from !== "outside" && candidate.to !== "outside") return false;
-          const [x, y] = localToWorld(building, candidate.x, candidate.y);
-          return Math.hypot(x - entrance.x, y - entrance.y) <= 96;
-        });
-        return `| ${entrance.x} | ${entrance.y} | ${entrance.z} | ${entrance.width} | ${entrance.face} | ${door?.id ?? "—"} |`;
+        const door = building.floorsPlan
+          .flatMap((floor) => floor.doors.map((candidate) => ({ floor, door: candidate })))
+          .find(({ door: candidate }) => {
+            if (candidate.from !== "outside" && candidate.to !== "outside") return false;
+            const [x, y] = localToWorld(building, candidate.x, candidate.y);
+            return Math.hypot(x - entrance.x, y - entrance.y) <= 96;
+          });
+        return `| ${entrance.x} | ${entrance.y} | ${entrance.z} | ${entrance.width} | ${entrance.face} | ${door?.door.id ?? "—"} | ${door ? `F${door.floor.level}` : "—"} |`;
       }),
       "",
     );
@@ -1791,14 +2045,17 @@ function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
         "|---|---|---:|---:|---:|---:|---:|---|",
         ...floor.stairs.map((stair) => {
           const nodes = plan.routes
-            .flatMap((route) => route.nodes)
-            .filter(
-              (node) =>
-                node.buildingId === building.id &&
-                node.floor === floor.level &&
-                stairAtNode(building, floor, node, stair.kind) === stair,
-            )
-            .map((node) => node.id);
+            .flatMap((route) => route.nodes.map((node, index) => ({ route, node, index })))
+            .filter(({ route, node, index }) => {
+              if (node.buildingId !== building.id || node.floor !== floor.level) return false;
+              if (!["stair", "ladder", "elevator", "ramp"].includes(node.kind)) return false;
+              if (node.kind !== stair.kind) return false;
+              const target = [route.nodes[index - 1], route.nodes[index + 1]].find(
+                (neighbour) => neighbour && neighbour.floor !== node.floor,
+              );
+              return stairAtNode(building, floor, node, stair.kind, target?.floor) === stair;
+            })
+            .map(({ node }) => node.id);
           return `| ${stair.id ?? "—"} | ${stair.kind} | F${stair.to} | ${stair.x} | ${stair.y} | ${stair.width} | ${stair.depth} | ${nodes.join(", ") || "—"} |`;
         }),
         "",
@@ -1809,11 +2066,11 @@ function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
   lines.push(
     "## Gameplay and nav areas",
     "",
-    "| id | kind | label | x | y | width | depth | rotation | note |",
-    "|---|---|---|---:|---:|---:|---:|---:|---|",
+    "| id | kind | floor | building | label | x | y | width | depth | rotation | note |",
+    "|---|---|---:|---|---|---:|---:|---:|---:|---:|---|",
     ...plan.areas.map(
       (area) =>
-        `| ${area.id} | ${area.kind} | ${area.label} | ${area.x} | ${area.y} | ${area.width} | ${area.depth} | ${area.rotation} | ${area.note} |`,
+        `| ${area.id} | ${area.kind} | F${area.floor} | ${area.buildingId ?? "—"} | ${area.label} | ${area.x} | ${area.y} | ${area.width} | ${area.depth} | ${area.rotation} | ${area.note} |`,
     ),
     "",
     "## Beats",
@@ -1894,7 +2151,7 @@ export function renderMapPlan(path: string, plan: MapPlan, outDir?: string): Ren
       const suffix = floor ? `-f${floor.level}` : "";
       write(`05-floor-${building.id}${suffix}.svg`, floorPlan(plan, building, floor));
     }
-    write(`06-section-${building.id}.svg`, section(building));
+    write(`06-section-${building.id}.svg`, section(plan, building));
   }
   write("plan.md", planMarkdown(plan, check, files));
   write("build-sheet.md", buildSheet(plan, check, files));

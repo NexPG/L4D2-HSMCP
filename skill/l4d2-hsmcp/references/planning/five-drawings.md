@@ -13,7 +13,7 @@ law. The common layers that match a game level are:
 
 | Drawing | Real-world job | Game translation |
 |---|---|---|
-| **Site / master plan** | building footprints, property lines, distances, access, orientation, setbacks | every building's X/Y, size, rotation, spacing, site bounds, no-build zones |
+| **Site / master plan** | building footprints, property lines, distances, access, orientation, setbacks | every visible building/structure's X/Y, size, rotation, spacing, **role**, site bounds, no-build zones |
 | **Grading / vertical plan** | existing and proposed contours, spot elevations, drainage, cut and fill | terrain heightfield, water, building base and entrance Z, roof heights |
 | **Circulation / flow plan** | streets, paths, widths, accessibility, transit stops, parking, flows | critical path and branches, clear width, stops/beats, entrances, forbidden zones, **spawn/cover/holdout/crescendo/finale areas** |
 | **Building and height schedule** | table of uses, floors, heights, areas, occupancy | building id, floors, base/roof Z, footprint area, enterable, entrances |
@@ -62,7 +62,9 @@ VDC *Checkpoints* and *Nav Flow* (five-level flow, Director goal); the project's
 - `site` — bounds, north, grid, water, no-build rectangles.
 - `terrain` — a grid: cell size, origin, cols, rows, heights.
 - `buildings` — id, centre X/Y, width/depth, rotation, floors, floor height, base/roof Z,
-  enterable, entrances, and per-floor rooms, doors and vertical connections.
+  enterable, **role** (`route`, `safe-room`, `context`, `facade`, `landmark`), entrances, and
+  per-floor rooms, doors and vertical connections. Every visible building/structure in the
+  playable area is listed, not only the route boxes.
 - `stage` — `brief`, `skeleton`, `site`, `vertical`, `schedule`, `floors`, `flow`, `approved`;
   the authoring gate the JSON is at.
 - `experience`, `pillars` — the one-sentence promise and the three decision rules.
@@ -108,6 +110,12 @@ sit near a real door on its floor, every `stair`/`ladder`/`elevator`/`ramp` node
 connection of the same kind, every stair target floor must exist, and every door must name two
 real sides. A door that opens outside needs an entrance within 96 u; a stair without a matching
 landing on the target floor is a warning.
+
+The site is not allowed to be a corridor with three boxes. Every visible building or structure in
+the playable area gets a footprint and a `role`. `site-too-sparse` fails approval with fewer than
+three `context`/`facade`/`landmark` buildings; `building-role-mismatch` fails a building that
+carries route nodes but is labelled context. The site plan draws route buildings brown, landmarks
+tan and context/facade grey, so a missing streetscape is visible at a glance.
 
 `render_map_plan` writes, under `plan/drawings/` by default:
 

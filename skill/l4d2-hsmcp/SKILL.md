@@ -259,6 +259,9 @@ material; the instructions live in one place.
   commit an addon's source or history.
 - **One campaign in the game.** Deploy the latest under a fixed name and remove older
   archives.
+- **A site plan is the whole street, not the route boxes.** Every visible building or structure
+  in the playable area is in `buildings[]` with a role (`route`, `safe-room`, `context`,
+  `facade`, `landmark`); fewer than three context/facade/landmark buildings fails approval.
 - **No number without a source.** A limit, size or flag comes from a tool result, a dump or
   the game's files, not from memory.
 - **Runtime claims need runtime evidence.** `-condebug` console log, nav dump, compile log.

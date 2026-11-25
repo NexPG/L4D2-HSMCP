@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.294-alpha - 2026-11-25
+
+- **Every building/structure is part of the plan.** `buildings[].role` is `route`, `safe-room`,
+  `context`, `facade` or `landmark`; the site plan colours by role and the schedule/build sheet
+  carry it. `site-too-sparse` fails approval with fewer than three context/facade/landmark
+  buildings; `building-role-mismatch` fails a route building labelled context.
+- **Areas know their level.** `areas[]` gain `floor` and `buildingId`; the area checks resolve the
+  route node on that level, and the area tables/render show the level and building.
+- **Doors and stairs map correctly.** A stair node matches the connection to the route's next
+  floor, not just the nearest stair; the build-sheet entrance table searches every floor; an
+  interior route is allowed inside a building it actually visits; a floor jump compares z, not
+  only per-building floor labels.
+- **Renderer:** content/building bounds for circulation and floor plans, wrapped legend, numbered
+  circulation nodes with a route-index panel, and doors/stairs/route dots in sections.
+- **No Mercy C1 test plan (local, ignored):** 19 buildings, 4 districts, 5 routes (critical,
+  skylight, storage, office, warehouse), 0 findings; it exercises the richer-site rule.
+- Tests: 260 files, 2,032 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.293-alpha - 2026-11-25
 
 - **The brief and route gate is cumulative.** The experience, three pillars, three beats,

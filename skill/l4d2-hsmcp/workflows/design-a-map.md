@@ -26,7 +26,7 @@ the dependency order; each stage freezes the layer above it.
 |---|---|---|---|
 | 0. Brief | `brief` | experience, three pillars, beats, acceptance; no geometry | experience, three pillars, ≥3 beats, acceptance |
 | 1. Skeleton | `skeleton` | districts (motif + landmark), the critical route as **nodes** (X/Y/Z, floor, building, named space, kind, enclosure, intensity, landmark, gate, beat), branches, start/goal | every critical route has ≥3 nodes, ≥3 named spaces, ≥2 turns, ≥1 vertical node; ≥2 districts with landmarks; a peak and two rests; a gate; no branch without an anchor |
-| 2. Site | `site` | building footprints around the skeleton; entrances; no-build/water | route stays in the site, does not cross a building except at an entrance |
+| 2. Site | `site` | **every visible building/structure** around the skeleton, including context/facade/landmark massing; entrances; no-build/water | route stays in the site, does not cross a building except at an entrance; at least three context buildings |
 | 3. Vertical | `vertical` | terrain grid, base/roof Z, entrance Z, stairs/ladders/drops | every floor change is a node; entrance Z matches the terrain |
 | 4. Schedule | `schedule` | roles (`facade`/`enterable`/`safe-room`), floors, heights, areas | every enterable building has an entrance on the route |
 | 5. Floors | `floors` | per-floor rooms, **doors with two sides**, stairs/ladders with `kind` and target floor; sections; route nodes in rooms | every route door sits on a real door; every vertical node matches a connection; every stair target floor exists |

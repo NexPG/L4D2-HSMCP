@@ -50,6 +50,7 @@ function plan(): Record<string, unknown> {
         floorHeight: 128,
         baseZ: 0,
         enterable: true,
+        role: "route",
         entrances: [{ x: 1056, y: 800, z: 0, width: 64, face: "east" }],
         floorsPlan: [
           {
@@ -94,6 +95,7 @@ function plan(): Record<string, unknown> {
         floorHeight: 160,
         baseZ: 0,
         enterable: true,
+        role: "route",
         entrances: [{ x: 1980, y: 1400, z: 0, width: 96, face: "west" }],
         floorsPlan: [
           {
@@ -117,6 +119,39 @@ function plan(): Record<string, unknown> {
         floorHeight: 128,
         baseZ: 0,
         enterable: false,
+        role: "context",
+        entrances: [],
+        floorsPlan: [],
+      },
+      {
+        id: "block_a",
+        name: "Context block A",
+        x: 300,
+        y: 2200,
+        width: 300,
+        depth: 300,
+        rotation: 0,
+        floors: 1,
+        floorHeight: 128,
+        baseZ: 0,
+        enterable: false,
+        role: "context",
+        entrances: [],
+        floorsPlan: [],
+      },
+      {
+        id: "block_b",
+        name: "Context block B",
+        x: 3300,
+        y: 700,
+        width: 400,
+        depth: 400,
+        rotation: 0,
+        floors: 2,
+        floorHeight: 128,
+        baseZ: 0,
+        enterable: false,
+        role: "facade",
         entrances: [],
         floorsPlan: [],
       },
@@ -307,6 +342,31 @@ describe("map plan drawings", () => {
       const check = checkMapPlan(`${stage}.json`, MapPlanSchema.parse(candidate));
       expect(check.ok, `${stage}: ${check.findings.map((finding) => finding.message).join(" | ")}`).toBe(true);
     }
+  });
+
+  it("allows a route to cross a building it actually visits", () => {
+    const interior = plan();
+    const route = (interior.routes as Array<Record<string, unknown>>)[0]!;
+    route.points = [...(route.points as number[][]), [2200, 1400, 0]];
+    (route.nodes as Array<Record<string, unknown>>).push({
+      id: "n_inside",
+      label: "warehouse interior",
+      x: 2200,
+      y: 1400,
+      z: 0,
+      floor: 1,
+      buildingId: "warehouse",
+      space: "warehouse",
+      district: "pier",
+      kind: "room",
+      enclosure: "covered",
+      intensity: 2,
+      landmark: "crane",
+      gate: "none",
+      beat: "b3",
+    });
+    const check = checkMapPlan("interior.json", MapPlanSchema.parse(interior));
+    expect(check.findings.map((finding) => finding.rule)).not.toContain("route-through-building");
   });
 
   it("checks route doors and stairs against the floor graph", () => {
@@ -502,7 +562,7 @@ describe("map plan drawings", () => {
     routes[0]!.width = 32;
     routes[0]!.points = [
       [200, 300, 0],
-      [800, 800, 0],
+      [800, 2300, 0],
       [1980, 1400, 0],
     ];
     const buildings = bad.buildings as Array<Record<string, unknown>>;

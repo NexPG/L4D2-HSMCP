@@ -41,6 +41,15 @@ starts only when every line is true. This is a design checklist, not a build che
 - [ ] The finale type is chosen and justified; the arena, holdout, stages and escape are
       described.
 
+## Site and context
+
+- [ ] Every visible building or structure in the playable area has a footprint and a role
+      (`route`, `safe-room`, `context`, `facade`, `landmark`), not only the route boxes.
+- [ ] At least three context/facade/landmark buildings exist; `site-too-sparse` is an error at
+      `approved`.
+- [ ] `building-role-mismatch` is clean: a building with route nodes is `route` or `safe-room`.
+- [ ] The site plan shows the whole streetscape, with route/landmark/context colours.
+
 ## Rooms and verticality
 
 - [ ] Every space has size, floors, entrances, exits, cover, light, purpose and nav notes.
