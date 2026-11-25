@@ -54,6 +54,12 @@ const AREAS: Area[] = [
     groups: { "Audit and rules": ["report", "review", "rules", "deps", "entitycoverage"] },
   },
   {
+    slug: "planning",
+    title: "Map planning",
+    covers: "the five pass-1 drawings: site, terrain, circulation, schedule and floor plans",
+    groups: { "Design drawings": ["mapplan"] },
+  },
+  {
     slug: "bsp",
     title: "Compiled maps (BSP)",
     covers: "BSP lumps, entity lumps, pakfile, static props, map rename and compiled-map reports",

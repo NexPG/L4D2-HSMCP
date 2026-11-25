@@ -14,6 +14,7 @@ answers "where is the test for this file" without a search.
 | [`vmf/`](vmf/) | source maps: create, edit, splice, brushes, faces, displacements, fittings, wiring, lint |
 | [`space/`](space/) | offline measurement: traces, rooms, clearance, visibility, dimensions |
 | [`render/`](render/) | offline views, plans, tours |
+| [`plan/`](plan/) | the five plan drawings: site, terrain, circulation, schedule, floor/section |
 | [`compile/`](compile/) | compilers, logs, leaks, toolchains, rename |
 | [`nav/`](nav/) | navigation mesh: area attributes, L4D2 spawn attributes, in-place patching, directional connections |
 | [`models/`](models/) | model sources: SMD read/write, DMX?SMD, QC, deep `read_model_info`, the QC and MDL readers |

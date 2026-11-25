@@ -5,6 +5,22 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.287-alpha - 2026-11-25
+
+- **Pass 1 now produces a plan JSON and five drawings.** `check_map_plan` validates the
+  source; `render_map_plan` writes the site plan, vertical/terrain plan, circulation plan,
+  building/height schedule, and floor plans/sections for every enterable building, plus
+  `plan.md`. The drawings are plain SVG, so no CAD install is needed and the source stays
+  diffable.
+- **The checks are the contract:** footprints inside the site, route width and
+  route-through-building, entrance distance and terrain height, overlaps, duplicate ids,
+  floor levels, beats/palette/acceptance. A 3-building fixture renders seven files; a 32-unit
+  route, a route through a building and a duplicate id fail.
+- **`write_addon_workspace` ships `plan/plan.example.json`** and the workspace README links
+  the five drawing tools. The new `references/planning/five-drawings.md` records the
+  real-world drawing research and the chosen SVG-over-CAD reasoning.
+- **Tool count: 311.** Tests: 260 files, 2,026 passed, 32 skipped.
+
 ## 0.0.286-alpha - 2026-11-25
 
 - **One workspace per addon.** `write_addon_workspace(name, kind)` creates

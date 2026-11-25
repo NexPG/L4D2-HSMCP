@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { writeAddonWorkspaceTool } from "../../src/core/typescript/tools/workspace.js";
+import { MapPlanSchema, checkMapPlan } from "../../src/plan/typescript/tools/mapplan.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
@@ -32,6 +33,7 @@ describe("write_addon_workspace", () => {
     for (const relative of [
       "plan/DESIGN.md",
       "plan/ASSETS.md",
+      "plan/plan.example.json",
       "templates/addoninfo.txt",
       "templates/mission.txt",
       "logs/errors.md",
@@ -52,6 +54,10 @@ describe("write_addon_workspace", () => {
     expect(addoninfo).toContain('"addonSteamAppID"\t\t"550"');
     expect(addoninfo).toContain('"addonContent_Campaign"\t\t"1"');
     expect(addoninfo).toContain('"Tester"');
+
+    const example = JSON.parse(readFileSync(join(root, "plan", "plan.example.json"), "utf8"));
+    const parsed = MapPlanSchema.parse(example);
+    expect(checkMapPlan("example", parsed).ok).toBe(true);
   });
 
   it("refuses a non-empty workspace without overwrite, and fills only missing files with it", async () => {

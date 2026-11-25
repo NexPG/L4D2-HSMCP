@@ -36,7 +36,7 @@ function readme(name: string, title: string, kind: string, author: string, creat
 
 | Folder | What belongs here |
 |---|---|
-| \`plan/\` | \`DESIGN.md\` and \`ASSETS.md\`; the pass-1 route, rooms, beats, palette and budget |
+| \`plan/\` | \`plan.json\`, \`DESIGN.md\`, \`ASSETS.md\` and \`drawings/\` |
 | \`templates/\` | \`addoninfo.txt\`, \`mission.txt\`; copy, replace the placeholders, do not edit in place |
 | \`logs/\` | \`errors.md\` and \`gate.json\`; symptom -> cause -> fix, and the last gate result |
 | \`src/\` | source \`.vmf\`, \`.qc\`, \`.nut\`, \`.txt\` — the files that are compiled |
@@ -165,6 +165,95 @@ function mission(title: string, author: string, name: string): string {
 `;
 }
 
+function planExample(title: string): string {
+  return JSON.stringify(
+    {
+      version: 1,
+      name: title,
+      kind: "map",
+      site: {
+        bounds: { x0: 0, y0: 0, x1: 3072, y1: 3072 },
+        north: 0,
+        grid: 512,
+        water: [],
+        noBuild: [],
+      },
+      terrain: {
+        cell: 1024,
+        origin: [0, 0],
+        cols: 3,
+        rows: 3,
+        heights: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      },
+      buildings: [
+        {
+          id: "house_a",
+          name: "Start house",
+          x: 800,
+          y: 800,
+          width: 512,
+          depth: 384,
+          rotation: 0,
+          floors: 2,
+          floorHeight: 128,
+          baseZ: 0,
+          enterable: true,
+          entrances: [{ x: 1056, y: 800, z: 0, width: 64, face: "east" }],
+          floorsPlan: [
+            {
+              level: 1,
+              z: 0,
+              height: 128,
+              rooms: [{ name: "room", x: 0, y: 0, width: 280, depth: 200 }],
+              stairs: [],
+            },
+          ],
+        },
+      ],
+      routes: [
+        {
+          id: "critical",
+          kind: "critical",
+          width: 96,
+          points: [
+            [200, 300, 0],
+            [300, 1100, 0],
+            [900, 1100, 0],
+            [1200, 1100, 0],
+            [1200, 700, 0],
+            [1056, 800, 0],
+          ],
+          stops: [
+            { id: "start", label: "start", x: 200, y: 300, z: 0, kind: "start" },
+            { id: "door", label: "house", x: 1056, y: 800, z: 0, kind: "checkpoint" },
+          ],
+        },
+      ],
+      beats: [
+        {
+          id: "b1",
+          chapter: 1,
+          type: "quiet",
+          space: "house",
+          what: "the sea is visible",
+          proof: "screenshot",
+        },
+      ],
+      budget: { weapon_item_spawn: 8 },
+      palette: {
+        sky: "sky_l4d_c1_1_hdr",
+        motifs: ["wood", "stucco", "metal"],
+        materials: [],
+        models: [],
+      },
+      variability: [],
+      acceptance: ["gate pass"],
+    },
+    null,
+    2,
+  );
+}
+
 export const writeAddonWorkspaceTool = defineTool({
   name: "write_addon_workspace",
   description:
@@ -226,6 +315,7 @@ export const writeAddonWorkspaceTool = defineTool({
       ["README.md", readme(args.name, title, args.kind, author, new Date().toISOString().slice(0, 10))],
       ["plan/DESIGN.md", designStub(title)],
       ["plan/ASSETS.md", assetsStub()],
+      ["plan/plan.example.json", planExample(title)],
       ["templates/README.md", `# Templates\n\nCopy these into \`addon/\` and replace the placeholders. The design and the build decide the values.\n`],
       [
         "templates/addoninfo.txt",

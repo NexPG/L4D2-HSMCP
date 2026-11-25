@@ -29,11 +29,14 @@ checks still need a person or a second client. Read
 
 **A new addon or campaign is one workspace and two passes.** `write_addon_workspace(name)` creates
 `workspaces/<addon-name>/` with `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and
-`evidence/`. Pass 1 writes plan/DESIGN.md: the full route, rooms, floors, beats, events,
-finale, palette, variability and budget, using read-only tools. It writes no `.vmf` and stops
-for approval. Pass 2 builds that design; it chooses exact assets within the palette but may not
-silently change the route, a room's purpose or a beat. See `workflows/addon-workspace.md`,
-`workflows/design-a-map.md`, `workflows/new-campaign.md` and `workflows/from-a-wish.md`.
+`evidence/`. Pass 1 writes `plan/plan.json` and renders the five drawings (site, terrain,
+circulation, building/height schedule, floor plans/sections) plus plan/DESIGN.md: the route,
+rooms, floors, beats, events, finale, palette, variability and budget, using read-only tools.
+It writes no `.vmf` and stops for approval. Pass 2 builds that plan; it chooses exact assets
+within the palette but may not silently change the route, a room's purpose or a beat. See
+`workflows/addon-workspace.md`, `workflows/design-a-map.md`,
+`references/planning/five-drawings.md`, `workflows/new-campaign.md` and
+`workflows/from-a-wish.md`.
 
 **Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
 `edit_vmf`, `write_brush_entity`, `write_point_entity`, `set_worldspawn`, `transform_solids`,
@@ -133,6 +136,7 @@ material; the instructions live in one place.
 |---|---|
 | `workflows/addon-workspace.md` | one workspace per addon: plan, templates, logs, src, addon, dist, evidence |
 | `workflows/design-a-map.md` | pass 1: the design file, route, rooms, floors, beats, palette, variability |
+| `references/planning/five-drawings.md` | the five drawings, the plan JSON, the checks and why SVG |
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
 | `workflows/from-a-wish.md` | the two passes in one view |
 | `workflows/make-a-prop.md` | a model or prop from glTF/FBX or a brush, through StudioMDL |

@@ -17,6 +17,22 @@ write_addon_workspace(name: "<addon-name>", title: "<title>", kind: "campaign")
 It creates `workspaces/<addon-name>/` with the plan, templates, logs, src, addon, dist and
 evidence folders. See [`addon-workspace.md`](addon-workspace.md).
 
+## The plan is a JSON source and five drawings
+
+Do not write the design as prose first and derive the geometry later. Write
+`plan/plan.json`, then render and check it:
+
+```text
+check_map_plan(path: "workspaces/<addon-name>/plan/plan.json")
+render_map_plan(path: "workspaces/<addon-name>/plan/plan.json", confirm: true)
+```
+
+The five drawings are the site plan, vertical/terrain plan, circulation plan,
+building/height schedule, and floor plans/sections. The schema and the exact checks are in
+[`../references/planning/five-drawings.md`](../references/planning/five-drawings.md). The
+JSON is the contract; the SVGs are its views. A plan that exists only as prose is not a
+handoff.
+
 ## Rules for pass 1
 
 - **Read-only tools only.** `health`, `read_game_content`, `read_asset_catalog`,
@@ -36,6 +52,8 @@ evidence folders. See [`addon-workspace.md`](addon-workspace.md).
 ## The file
 
 Path: `workspaces/<addon-name>/plan/DESIGN.md` (local; `workspaces/` is never committed).
+The machine-readable source is `plan/plan.json`; `plan/drawings/` holds the rendered five
+drawings and `plan.md`.
 
 ```markdown
 # <Campaign or map name> — design
@@ -185,10 +203,13 @@ must not quietly resolve an open question by picking the easiest geometry.
 
 ## When the design is done
 
-1. Read it once as the builder: can you build chapter 1 without asking a creative question?
-2. Check every asset name with `read_game_content`; check every class with `read_fgd_class`.
-3. Set `Status: approved` only after the user has seen it (or explicitly delegated approval).
-4. Report the path and stop. The next message is pass 2: `workflows/new-campaign.md`.
+1. Run `check_map_plan` on `plan/plan.json`; fix every error.
+2. Run `render_map_plan`; look at all five drawings and every enterable floor/section.
+3. Read it once as the builder: can you build chapter 1 without asking a creative question?
+4. Check every asset name with `read_game_content`; check every class with `read_fgd_class`.
+5. Set `Status: approved` only after the user has seen it (or explicitly delegated approval).
+6. Report the JSON, the drawing directory and the findings, and stop. The next message is pass
+   2: `workflows/new-campaign.md`.
 
 A design with a missing route, an empty beat sheet, unnamed assets or no acceptance list is a
 draft, not a handoff. The build pass will refuse it.
