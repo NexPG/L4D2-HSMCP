@@ -257,6 +257,10 @@ material; the instructions live in one place.
   following.
 - **Workspaces are local.** `campaigns/` and `workspaces/` are ignored on purpose; never
   commit an addon's source or history.
+- **Error logs are for skill and MCP defects.** The workspace error log records errors,
+  omissions and holes in this skill, the MCP server, its tools or our pipeline. It does not
+  record limitations of the user's content, source photos, reference material or creative
+  brief; those are design facts and belong in the design/assumptions.
 - **One campaign in the game.** Deploy the latest under a fixed name and remove older
   archives.
 - **A site plan is the whole street, not the route boxes.** Every visible building or structure

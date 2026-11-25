@@ -41,6 +41,9 @@ The root `README.md` records the addon's name, kind, status, author and date.
 - `logs/gate.json` is the last full gate result. When an attempt is kept, rename it
   `gate-<date>.json`; the newest is the one the next pass reads.
 - A build log or console tail goes in `logs/` or `evidence/`, not in the plan.
+- The log is for **skill, MCP, tool and pipeline defects**. Content facts — source photos,
+  pose, resolution, nudity, missing reference views — belong in `plan/DESIGN.md` or its
+  assumptions, not in `errors.md`.
 
 ## The passes
 

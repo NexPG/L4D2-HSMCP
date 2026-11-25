@@ -1,5 +1,9 @@
 # Agent rules
 
+> **Scope.** This file governs changes to **this repository** by a coding agent: library use,
+> tests, docs, commits and build gates. The L4D2 runtime agent's instructions live in
+> `skill/l4d2-hsmcp/`; product behaviour belongs there, not here. Do not duplicate those rules.
+
 ## Never write a second implementation — library or project
 
 Before writing a parser, converter, packer, editor or helper, ask **two** questions:
