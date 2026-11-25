@@ -5,6 +5,29 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.289-alpha - 2026-11-25
+
+- **Pass 1 is now an 8-stage dependency chain, not five drawings at once:** brief → route
+  skeleton → site → vertical → schedule → floors → flow → approved. Each stage has a
+  `stage` value and a gate; a later layer never starts before the earlier one passes.
+- **Multi-level route model.** `routes[].nodes` carry X/Y/Z, floor, building id and kind
+  (`stair`, `ladder`, `elevator`, `ramp`, `drop`, `door`, `room`, …). The renderer draws nodes
+  with floor labels; `check_map_plan` fails a route node on an enterable building with no
+  floor plan from the `floors` stage and warns when a vertical node does not change floor.
+- **Per-floor drawings.** `05-floor-<building>-f<level>.svg` is one plan per level, with its
+  stairs and route nodes; sections still show the whole stack.
+- **Interest checks:** a critical route with fewer than three spaces, fewer than two turns, or
+  no vertical node is a warning; the stage needs at least three beats and three palette motifs
+  by `flow`.
+- **Research recorded:** `references/planning/pipeline-research.md` covers Dormans' mission/space
+  split, graph-based floor plans, the Level Design Book's flow/pacing, space-syntax/isovist
+  measures, the WoLD L4D2 guide and VDC checkpoint/nav flow. The adopted model is mission
+  graph → space graph → floor-plan graph; ML floor-plan generation and full graph grammars are
+  deliberately not adopted.
+- **Local/listen servers:** full shutdown, ~60 s off, boot fixed the local-lobby joins on this
+  machine; Steam/game restart did not. Recorded in `troubleshooting/local-server-connection.md`.
+- **Tool count: 311.** Tests: 260 files, 2,027 passed, 32 skipped.
+
 ## 0.0.288-alpha - 2026-11-25
 
 - **The five drawings are now L4D2-first, not architecture-only.** The circulation sheet

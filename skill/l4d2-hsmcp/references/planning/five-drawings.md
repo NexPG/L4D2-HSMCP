@@ -2,7 +2,8 @@
 
 Pass 1 is not prose. It is a **plan**: a JSON source plus five drawings. The drawings are
 views of the JSON, not the source, so a disagreement is a bug in the renderer, not a design
-decision to guess at.
+decision to guess at. The research behind the authoring order — mission graph, space graph,
+floor-plan graph — is in [`pipeline-research.md`](pipeline-research.md).
 
 ## What real projects draw
 
@@ -61,8 +62,11 @@ VDC *Checkpoints* and *Nav Flow* (five-level flow, Director goal); the project's
 - `terrain` — a grid: cell size, origin, cols, rows, heights.
 - `buildings` — id, centre X/Y, width/depth, rotation, floors, floor height, base/roof Z,
   enterable, entrances, per-floor rooms and stairs.
-- `routes` — kind, clear width, points (X/Y/Z), stops with a kind (`start`, `checkpoint`,
-  `safe-room`, `crescendo`, `tank`, `witch`, `finale`, `escape`, `branch`).
+- `stage` — `brief`, `skeleton`, `site`, `vertical`, `schedule`, `floors`, `flow`, `approved`;
+  the authoring gate the JSON is at.
+- `routes` — kind, clear width, points (X/Y/Z), **nodes** with `floor`/`buildingId`/kind, and
+  stops with a kind (`start`, `checkpoint`, `safe-room`, `crescendo`, `tank`, `witch`,
+  `finale`, `escape`, `branch`).
 - `areas` — gameplay/nav overlays: spawn, cover, holdout, crescendo, tank, witch, one-way,
   no-mob, checkpoint, safe-room, finale, battlefield, item-cluster.
 - `beats` — chapter, type, space, what changes, proof.
@@ -115,14 +119,49 @@ needs true polygon buffering/boolean operations; the current rectangles and 32-u
 samples do not. A DXF export can be added later as a second view of the same JSON, not as a
 second source.
 
+## Authoring order (do not draw them all at once)
+
+The five sheets are dependency-ordered views, not five independent tasks:
+
+1. **Brief** (`stage: "brief"`) — beats, acceptance, no geometry.
+2. **Skeleton** (`stage: "skeleton"`) — the critical route as **nodes**: X/Y/Z, floor, building
+   id, node kind (`street`, `door`, `room`, `stair`, `drop`, `finale`, …). Decide the turns,
+   the vertical beats and the side rooms here; this is the route, not the site.
+3. **Site** (`stage: "site"`) — footprints around the skeleton, entrances, no-build/water.
+4. **Vertical** (`stage: "vertical"`) — terrain, base/roof Z, entrance Z, stairs/ladders/drops.
+5. **Schedule** (`stage: "schedule"`) — role (`facade`/`enterable`/`safe-room`), floors, height.
+6. **Floors** (`stage: "floors"`) — one floor plan per level; sections; route nodes in rooms.
+7. **Flow** (`stage: "flow"`) — splines, branches, cover/spawn/holdout/crescendo/finale, items.
+8. **Approved** — frozen JSON + all drawings.
+
+A site plan drawn before the route is buildings looking for a reason; a route drawn after the
+buildings is a corridor forced through them. The skeleton is where "interesting" is decided.
+If a later stage needs an earlier layer changed, change the JSON, re-run the earlier stage
+check, then regenerate the later drawings. Do not patch around it.
+
+## Multi-level
+
+A floor change is a **route node**, not a hidden Z value: `stair`, `ladder`, `elevator`, `ramp`
+or `drop`, with `floor` and `buildingId`. The building has a `floorsPlan` entry per level, and
+that floor's plan marks the stair and the route node. `check_map_plan`:
+
+- fails a route node on an enterable building that has no floor plan for that level (from the
+  `floors` stage);
+- warns when a `stair`/`drop` node's neighbours stay on the same floor;
+- warns when a critical route has no vertical node, fewer than three spaces or fewer than two
+  turns (a corridor);
+- renders `05-floor-<building>-f<level>.svg` for every level, not one plan with all rooms
+  stacked.
+
+Only `enterable` buildings get floor plans. A row of 30 houses is massing; the safe room, the
+through-house and the set piece are interiors.
+
 ## Pass 1, exactly
 
-1. Create the plan JSON in `plan/plan.json`.
-2. Run `check_map_plan`; fix every error.
-3. Run `render_map_plan`; look at all five drawings (and every enterable floor/section).
-4. Write `DESIGN.md` with the prose that the drawings cannot carry: pitch, pillars, beat
-   intent, palette reasoning, assumptions.
-5. Set `Status: draft`, report the JSON + drawings + findings, and stop.
-
-Pass 2 reads the JSON and the drawings. It may choose exact assets within the palette; a
-change to a footprint, route, floor count or entrance is an amendment, not a build decision.
+1. Write the brief/beats in `plan/DESIGN.md` and the route skeleton in `plan.json` (`stage:
+   "skeleton"`).
+2. `check_map_plan` at each stage; fix errors before the next.
+3. `render_map_plan` after site/vertical/schedule/floors/flow; look at every sheet and every
+   per-floor plan.
+4. Set `Status: approved` only after the user has seen the JSON and drawings.
+5. Report the JSON, drawing directory and findings; stop. Pass 2 reads them.

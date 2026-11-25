@@ -95,11 +95,39 @@ const Stop = z.object({
   ]),
 });
 
+const RouteNode = z.object({
+  id: z.string(),
+  label: z.string().default(""),
+  x: z.number(),
+  y: z.number(),
+  z: z.number(),
+  floor: z.number().int().min(1),
+  buildingId: z.string().optional(),
+  kind: z.enum([
+    "start",
+    "street",
+    "door",
+    "room",
+    "stair",
+    "ladder",
+    "elevator",
+    "ramp",
+    "drop",
+    "roof",
+    "checkpoint",
+    "finale",
+    "escape",
+  ]),
+});
+
+const VERTICAL_KINDS = new Set(["stair", "ladder", "elevator", "ramp", "drop"]);
+
 const Route = z.object({
   id: z.string(),
   kind: z.enum(["critical", "branch", "escape"]),
   width: z.number().positive().describe("Clear width in Hammer units; 64 is the hull."),
   points: z.array(XYZ).min(2),
+  nodes: z.array(RouteNode).default([]),
   stops: z.array(Stop).default([]),
 });
 
@@ -155,22 +183,48 @@ const Beat = z.object({
   proof: z.string(),
 });
 
+const STAGES = [
+  "brief",
+  "skeleton",
+  "site",
+  "vertical",
+  "schedule",
+  "floors",
+  "flow",
+  "approved",
+] as const;
+
 const Plan = z.object({
   version: z.literal(1),
   name: z.string(),
   kind: z.enum(["campaign", "map"]),
-  site: z.object({
-    bounds: z.object({ x0: z.number(), y0: z.number(), x1: z.number(), y1: z.number() }),
-    north: z.number().default(0),
-    grid: z.number().positive().default(256),
-    water: z.array(Rect).default([]),
-    noBuild: z.array(Rect).default([]),
+  stage: z.enum(STAGES).default("approved"),
+  site: z
+    .object({
+      bounds: z.object({ x0: z.number(), y0: z.number(), x1: z.number(), y1: z.number() }),
+      north: z.number().default(0),
+      grid: z.number().positive().default(256),
+      water: z.array(Rect).default([]),
+      noBuild: z.array(Rect).default([]),
+    })
+    .default({
+      bounds: { x0: -4096, y0: -4096, x1: 4096, y1: 4096 },
+      north: 0,
+      grid: 256,
+      water: [],
+      noBuild: [],
+    }),
+  terrain: Terrain.default({
+    cell: 256,
+    origin: [0, 0],
+    cols: 3,
+    rows: 3,
+    heights: [0, 0, 0, 0, 0, 0, 0, 0, 0],
   }),
-  terrain: Terrain,
-  buildings: z.array(Building).min(1),
-  routes: z.array(Route).min(1),
+  buildings: z.array(Building).default([]),
+  routes: z.array(Route).default([]),
   areas: z.array(Area).default([]),
-  beats: z.array(Beat).min(1),
+  beats: z.array(Beat).default([]),
   finale: z
     .object({
       type: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(4)]),
@@ -180,14 +234,16 @@ const Plan = z.object({
     })
     .optional(),
   budget: z.record(z.number()).default({}),
-  palette: z.object({
-    sky: z.string(),
-    motifs: z.array(z.string()).min(3),
-    materials: z.array(z.string()).default([]),
-    models: z.array(z.string()).default([]),
-  }),
+  palette: z
+    .object({
+      sky: z.string().default(""),
+      motifs: z.array(z.string()).default([]),
+      materials: z.array(z.string()).default([]),
+      models: z.array(z.string()).default([]),
+    })
+    .default({ sky: "", motifs: [], materials: [], models: [] }),
   variability: z.array(z.string()).default([]),
-  acceptance: z.array(z.string()).min(1),
+  acceptance: z.array(z.string()).default([]),
 });
 
 export const MapPlanSchema = Plan;
@@ -300,6 +356,49 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
   const add = (severity: Finding["severity"], rule: string, message: string): void => {
     findings.push({ severity, rule, message });
   };
+  const counts = {
+    buildings: plan.buildings.length,
+    enterable: plan.buildings.filter((building) => building.enterable).length,
+    routes: plan.routes.length,
+    beats: plan.beats.length,
+  };
+
+  // The authoring stages. `brief` and `skeleton` intentionally run before geometry exists;
+  // site and later stages run the full geometric checks below.
+  if (plan.stage === "brief" || plan.stage === "skeleton") {
+    if (plan.beats.length === 0) add("error", "brief-no-beats", "write at least one beat before geometry");
+    if (plan.acceptance.length === 0) {
+      add("error", "brief-no-acceptance", "write the acceptance evidence before geometry");
+    }
+    if (plan.stage === "skeleton") {
+      if (plan.routes.length === 0) add("error", "skeleton-no-route", "the skeleton needs at least one route");
+      for (const route of plan.routes) {
+        if (route.kind === "critical" && route.nodes.length < 2) {
+          add("error", "skeleton-route-too-short", `${route.id} needs at least two route nodes`);
+        }
+      }
+    }
+    return {
+      path,
+      ok: findings.every((finding) => finding.severity !== "error"),
+      findings,
+      counts,
+    };
+  }
+
+  if (plan.stage === "site" && plan.buildings.length === 0) {
+    add("error", "site-no-buildings", "the site stage needs at least one building footprint");
+  }
+  if (plan.stage === "flow" && plan.areas.length === 0) {
+    add("warning", "flow-no-areas", "the flow stage needs spawn/cover/holdout/crescendo/finale areas");
+  }
+  if (plan.stage === "flow" && plan.beats.length < 3) {
+    add("warning", "flow-few-beats", "a chapter with fewer than three beats is a corridor");
+  }
+  if (plan.stage === "flow" && plan.palette.motifs.length < 3) {
+    add("warning", "flow-few-motifs", "name at least three repeated motifs");
+  }
+
   const ids = new Set<string>();
   for (const building of plan.buildings) {
     if (ids.has(building.id)) add("error", "duplicate-id", `building id ${building.id} is repeated`);
@@ -330,7 +429,8 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       add("error", "enterable-no-entrance", `${building.id} is enterable but has no entrance`);
     }
     if (building.enterable && building.floorsPlan.length === 0) {
-      add("warning", "no-floor-plan", `${building.id} is enterable but has no floor plan`);
+      const severity = ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning";
+      add(severity, "no-floor-plan", `${building.id} is enterable but has no floor plan`);
     }
     const levels = new Set<number>();
     for (const floor of building.floorsPlan) {
@@ -378,6 +478,81 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       }
       if (!last || !["safe-room", "finale", "escape", "checkpoint"].includes(last.kind)) {
         add("error", "route-no-goal", `${route.id} must end at a safe-room/finale/checkpoint stop`);
+      }
+    }
+    const nodeIds = new Set<string>();
+    const vertical = route.nodes.filter((node) => VERTICAL_KINDS.has(node.kind));
+    for (let index = 0; index < route.nodes.length; index += 1) {
+      const node = route.nodes[index]!;
+      if (nodeIds.has(node.id)) add("error", "duplicate-node-id", `route ${route.id} repeats node ${node.id}`);
+      nodeIds.add(node.id);
+      const building = node.buildingId
+        ? plan.buildings.find((candidate) => candidate.id === node.buildingId)
+        : null;
+      if (node.buildingId && !building) {
+        add("error", "node-unknown-building", `${node.id} names building ${node.buildingId}, which does not exist`);
+      }
+      if (building) {
+        if (
+          !pointInPolygon(
+            [node.x, node.y],
+            corners(building.x, building.y, building.width, building.depth, building.rotation),
+          )
+        ) {
+          add("warning", "node-outside-building", `${node.id} is outside ${building.id}`);
+        }
+        if (building.enterable) {
+          const floor = building.floorsPlan.find((candidate) => candidate.level === node.floor);
+          const severity = ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning";
+          if (!floor) {
+            add(severity, "node-no-floor-plan", `${building.id} has no floor plan for node ${node.id} at F${node.floor}`);
+          } else {
+            const c = Math.cos(rad(building.rotation));
+            const s = Math.sin(rad(building.rotation));
+            const dx = node.x - building.x;
+            const dy = node.y - building.y;
+            const lx = dx * c + dy * s;
+            const ly = -dx * s + dy * c;
+            const inRoom = floor.rooms.some(
+              (room) =>
+                Math.abs(lx - room.x) <= room.width / 2 && Math.abs(ly - room.y) <= room.depth / 2,
+            );
+            if (!inRoom) add("warning", "node-not-in-room", `${node.id} is not inside a room on ${building.id} F${node.floor}`);
+          }
+        }
+      }
+      if (VERTICAL_KINDS.has(node.kind)) {
+        const prev = route.nodes[index - 1];
+        const next = route.nodes[index + 1];
+        if (prev && next && prev.floor === node.floor && next.floor === node.floor) {
+          add("warning", "vertical-no-change", `${node.id} is a ${node.kind} but the route stays on F${node.floor}`);
+        }
+      }
+    }
+    if (route.kind === "critical") {
+      if (route.nodes.length > 0 && route.nodes.length < 2) {
+        add("error", "route-nodes-too-short", `${route.id} needs at least two route nodes`);
+      }
+      if (route.nodes.length >= 2 && vertical.length === 0) {
+        add("warning", "route-no-verticality", `${route.id} has no floor change; a multi-level map needs at least one`);
+      }
+      if (route.nodes.length > 0) {
+        const spaces = new Set(route.nodes.map((node) => node.buildingId ?? "street"));
+        if (spaces.size < 3) {
+          add("warning", "route-few-spaces", `${route.id} visits ${spaces.size} space(s); three is the minimum for a chapter`);
+        }
+        let turns = 0;
+        for (let index = 1; index + 1 < route.points.length; index += 1) {
+          const a = route.points[index - 1]!;
+          const b = route.points[index]!;
+          const c = route.points[index + 1]!;
+          const ab = Math.atan2(b[1] - a[1], b[0] - a[0]);
+          const bc = Math.atan2(c[1] - b[1], c[0] - b[0]);
+          let delta = Math.abs(bc - ab);
+          if (delta > Math.PI) delta = Math.PI * 2 - delta;
+          if (delta > Math.PI / 6) turns += 1;
+        }
+        if (turns < 2) add("warning", "route-straight", `${route.id} has fewer than two turns; it reads as a corridor`);
       }
     }
     const samples = routeSamples(route);
@@ -494,12 +669,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     path,
     ok: findings.every((finding) => finding.severity !== "error"),
     findings,
-    counts: {
-      buildings: plan.buildings.length,
-      enterable: plan.buildings.filter((building) => building.enterable).length,
-      routes: plan.routes.length,
-      beats: plan.beats.length,
-    },
+    counts,
   };
 }
 
@@ -724,6 +894,13 @@ function circulationPlan(plan: MapPlan): string {
         `<text x="${(t.sx(stop.x) + 9).toFixed(1)}" y="${(t.sy(stop.y) - 6).toFixed(1)}" font-family="sans-serif" font-size="11" fill="#1b2631">${esc(stop.label)}</text>`,
       );
     }
+    for (const node of route.nodes) {
+      const vertical = VERTICAL_KINDS.has(node.kind);
+      body.push(
+        `<circle cx="${t.sx(node.x).toFixed(1)}" cy="${t.sy(node.y).toFixed(1)}" r="${vertical ? 7 : 4}" fill="${vertical ? "#8e44ad" : "#b03a2e"}" stroke="#fff" stroke-width="1"/>`,
+        `<text x="${(t.sx(node.x) + 9).toFixed(1)}" y="${(t.sy(node.y) - 7).toFixed(1)}" font-family="sans-serif" font-size="9" fill="${vertical ? "#8e44ad" : "#b03a2e"}">${esc(node.kind)} F${node.floor}</text>`,
+      );
+    }
     const first = route.points[0]!;
     body.push(
       `<text x="${t.sx(first[0]).toFixed(1)}" y="${(t.sy(first[1]) - 18).toFixed(1)}" font-family="sans-serif" font-size="11" fill="#b03a2e">${esc(route.id)} · ${route.width}u</text>`,
@@ -746,6 +923,7 @@ function circulationPlan(plan: MapPlan): string {
       "green: building entrance",
       "band width = clear width",
       "coloured dashed: spawn/cover/holdout/crescendo/finale",
+      "dots: route nodes with floor; purple = stair/ladder/drop",
     ]),
   );
 }
@@ -801,12 +979,17 @@ function buildingSchedule(plan: MapPlan): string {
   return svg("Building and height schedule", width, height, body.join("\n"));
 }
 
-function floorPlan(plan: MapPlan, building: PlanBuilding): string {
+function floorPlan(
+  plan: MapPlan,
+  building: PlanBuilding,
+  floor?: PlanBuilding["floorsPlan"][number],
+): string {
   const t = fit(plan);
   const body: string[] = [];
   body.push(rectSvg(building, t, "#fdfbf6", "#1b2631"));
-  for (const floor of building.floorsPlan) {
-    for (const room of floor.rooms) {
+  const levels = floor ? [floor] : building.floorsPlan;
+  for (const level of levels) {
+    for (const room of level.rooms) {
       const wx = building.x + room.x * Math.cos(rad(building.rotation)) - room.y * Math.sin(rad(building.rotation));
       const wy = building.y + room.x * Math.sin(rad(building.rotation)) + room.y * Math.cos(rad(building.rotation));
       body.push(
@@ -814,11 +997,22 @@ function floorPlan(plan: MapPlan, building: PlanBuilding): string {
         `<text x="${t.sx(wx).toFixed(1)}" y="${t.sy(wy).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1b2631">${esc(room.name)}</text>`,
       );
     }
-    for (const stair of floor.stairs) {
+    for (const stair of level.stairs) {
       const wx = building.x + stair.x * Math.cos(rad(building.rotation)) - stair.y * Math.sin(rad(building.rotation));
       const wy = building.y + stair.x * Math.sin(rad(building.rotation)) + stair.y * Math.cos(rad(building.rotation));
       body.push(
         `<polygon points="${polygonPoints(corners(wx, wy, stair.width, stair.depth, building.rotation), t)}" fill="#d5dbdb" stroke="#5d6d7e"/>`,
+        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) + 4).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#2c3e50">→F${stair.to}</text>`,
+      );
+    }
+  }
+  for (const route of plan.routes) {
+    for (const node of route.nodes) {
+      if (node.buildingId !== building.id) continue;
+      if (floor && node.floor !== floor.level) continue;
+      body.push(
+        `<circle cx="${t.sx(node.x).toFixed(1)}" cy="${t.sy(node.y).toFixed(1)}" r="5" fill="#b03a2e"/>`,
+        `<text x="${(t.sx(node.x) + 8).toFixed(1)}" y="${(t.sy(node.y) - 5).toFixed(1)}" font-family="sans-serif" font-size="9" fill="#b03a2e">${esc(node.kind)} F${node.floor}</text>`,
       );
     }
   }
@@ -827,13 +1021,17 @@ function floorPlan(plan: MapPlan, building: PlanBuilding): string {
       `<rect x="${(t.sx(entrance.x) - 5).toFixed(1)}" y="${(t.sy(entrance.y) - 5).toFixed(1)}" width="10" height="10" fill="#1e8449"/>`,
     );
   }
+  const title = floor
+    ? `5 · Floor plan — ${building.id} F${floor.level} (z=${floor.z})`
+    : `5 · Floor plan — ${building.id}`;
   return svg(
-    `Floor plan — ${building.name}`,
+    title,
     t.width,
     t.height,
-    frame(`5 · Floor plan — ${building.id}`, plan, t, body.join("\n"), [
-      "rooms: floor plan, local coordinates",
-      "grey: stair",
+    frame(title, plan, t, body.join("\n"), [
+      "rooms: this floor only",
+      "grey: stair with target floor",
+      "red: route node on this floor",
       "green: entrance",
     ]),
   );
@@ -871,6 +1069,7 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
     "",
     `Source: \`plan.json\``,
     `Kind: ${plan.kind}`,
+    `Stage: ${plan.stage}`,
     `Validation: **${check.ok ? "pass" : "fail"}** (${check.findings.length} findings)`,
     "",
     "## Drawings",
@@ -939,7 +1138,11 @@ export function renderMapPlan(path: string, plan: MapPlan, outDir?: string): Ren
   write("04-building-schedule.svg", buildingSchedule(plan));
   for (const building of plan.buildings) {
     if (!building.enterable) continue;
-    write(`05-floor-${building.id}.svg`, floorPlan(plan, building));
+    const floors = building.floorsPlan.length > 0 ? building.floorsPlan : [undefined];
+    for (const floor of floors) {
+      const suffix = floor ? `-f${floor.level}` : "";
+      write(`05-floor-${building.id}${suffix}.svg`, floorPlan(plan, building, floor));
+    }
     write(`06-section-${building.id}.svg`, section(building));
   }
   write("plan.md", planMarkdown(plan, check, files));

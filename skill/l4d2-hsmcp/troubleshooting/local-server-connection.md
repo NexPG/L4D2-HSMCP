@@ -5,6 +5,13 @@
 and set `sv_allow_lobby_connect_only 0`. Before blaming Steam, check the game's own
 `Network: IP` line and whether the server answers A2S.
 
+**Measured 2026-11-25 — full power cycle.** On this machine, local/listen-server joins
+failed while official servers worked. Restarting Steam and the game did not fix it; a **full
+shutdown, about 60 seconds off, then boot** did. When the adapter, firewall and `-ip` all look
+right and every local lobby still fails, a full power cycle is the cheap first test: it clears
+OS/Steam network state that a process restart leaves behind. It is a workaround, not a
+diagnosis; record what changed in the Windows/Steam event log if it recurs.
+
 ## Symptom
 
 - Official/Valve and public dedicated servers work.
@@ -56,6 +63,7 @@ and set `sv_allow_lobby_connect_only 0`. Before blaming Steam, check the game's 
 | `sv_allow_lobby_connect_only 1` | Host sets `0` for direct joins; otherwise use the lobby |
 | `No Steam logon` | Remove `-insecure`; restart Steam; check Steam is online; check `steam_appid.txt` = 550 |
 | Official works, local lobby fails | Check Steam P2P/SDR and VPN/router NAT; the game is fine |
+| Official works, every local lobby fails, restarting Steam/game does not help | Full shutdown, ~60 s off, boot (measured 2026-11-25); then re-check `Network: IP` and the firewall |
 
 ## Windows itself: the inbound firewall
 

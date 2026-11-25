@@ -171,6 +171,7 @@ function planExample(title: string): string {
       version: 1,
       name: title,
       kind: "map",
+      stage: "flow",
       site: {
         bounds: { x0: 0, y0: 0, x1: 3072, y1: 3072 },
         north: 0,
@@ -205,6 +206,13 @@ function planExample(title: string): string {
               z: 0,
               height: 128,
               rooms: [{ name: "room", x: 0, y: 0, width: 280, depth: 200 }],
+              stairs: [{ x: 100, y: 0, width: 48, depth: 96, to: 2 }],
+            },
+            {
+              level: 2,
+              z: 128,
+              height: 128,
+              rooms: [{ name: "upstairs", x: 0, y: 0, width: 220, depth: 160 }],
               stairs: [],
             },
           ],
@@ -226,6 +234,15 @@ function planExample(title: string): string {
           stops: [
             { id: "start", label: "start", x: 200, y: 300, z: 0, kind: "start" },
             { id: "door", label: "house", x: 1056, y: 800, z: 0, kind: "checkpoint" },
+          ],
+          nodes: [
+            { id: "n_start", label: "start", x: 200, y: 300, z: 0, floor: 1, kind: "start" },
+            { id: "n_street", label: "street", x: 700, y: 1100, z: 0, floor: 1, kind: "street" },
+            { id: "n_door", label: "door", x: 1056, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "door" },
+            { id: "n_stair", label: "stair", x: 900, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "stair" },
+            { id: "n_up", label: "upstairs", x: 900, y: 800, z: 128, floor: 2, buildingId: "house_a", kind: "room" },
+            { id: "n_drop", label: "drop", x: 900, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "drop" },
+            { id: "n_end", label: "exit", x: 1056, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "checkpoint" },
           ],
         },
       ],

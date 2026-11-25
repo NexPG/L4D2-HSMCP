@@ -137,6 +137,7 @@ material; the instructions live in one place.
 | `workflows/addon-workspace.md` | one workspace per addon: plan, templates, logs, src, addon, dist, evidence |
 | `workflows/design-a-map.md` | pass 1: the design file, route, rooms, floors, beats, palette, variability |
 | `references/planning/five-drawings.md` | the five drawings, the plan JSON, the checks and why SVG |
+| `references/planning/pipeline-research.md` | mission graph, space graph and floor-plan graph; what the research says |
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
 | `workflows/from-a-wish.md` | the two passes in one view |
 | `workflows/make-a-prop.md` | a model or prop from glTF/FBX or a brush, through StudioMDL |

@@ -17,6 +17,53 @@ write_addon_workspace(name: "<addon-name>", title: "<title>", kind: "campaign")
 It creates `workspaces/<addon-name>/` with the plan, templates, logs, src, addon, dist and
 evidence folders. See [`addon-workspace.md`](addon-workspace.md).
 
+## The authoring order: flow skeleton first, sheets later
+
+The five drawings are views of one JSON, not a sequence to fill in at once. The order below is
+the dependency order; each stage freezes the layer above it.
+
+| Stage | `stage` | The agent writes | Gate before the next stage |
+|---|---|---|---|
+| 0. Brief | `brief` | pitch, beats, acceptance; no geometry | beats and acceptance exist |
+| 1. Skeleton | `skeleton` | the critical route as **nodes**: X/Y/Z, floor, building id, node kind; branches; the start/goal | every critical route has ≥2 nodes, ≥3 spaces and at least one vertical node |
+| 2. Site | `site` | building footprints around the skeleton; entrances; no-build/water | route stays in the site, does not cross a building except at an entrance |
+| 3. Vertical | `vertical` | terrain grid, base/roof Z, entrance Z, stairs/ladders/drops | every floor change is a node; entrance Z matches the terrain |
+| 4. Schedule | `schedule` | roles (`facade`/`enterable`/`safe-room`), floors, heights, areas | every enterable building has an entrance on the route |
+| 5. Floors | `floors` | per-floor rooms, doors, stairs, sections; route nodes in rooms | every enterable floor on the route has a floor plan and a vertical connection |
+| 6. Flow | `flow` | splines, branches, cover/spawn/holdout/crescendo/finale areas, item budget, variability | route width, crossings, area proximity and beats pass |
+| 7. Approved | `approved` | the frozen plan + five drawings | full `check_map_plan` pass, then approval |
+
+Why the skeleton comes first: a site plan drawn before the route is a set of buildings looking
+for a reason. A route designed after the buildings is a corridor forced through them. The
+skeleton is the one place where "interesting" is decided: a turn, a floor, a side room, a
+one-way drop, a holdout, a reveal. The site, terrain and floors then have to serve it.
+
+Why not all at once: a footprint change after floor plans invalidates every room; a route
+change after the schedule invalidates the entrances. The stages are a dependency chain, not a
+checklist. If stage 4 needs a footprint moved, go back to stage 2, amend the JSON, re-run the
+stage checks and re-render; do not patch the floors around a broken footprint.
+
+**Multi-level rule.** A floor change is a route node (`stair`, `ladder`, `elevator`, `ramp`,
+`drop`), not a Z value hidden in a spline. The node names the building and both floors; the
+building has a floor plan for each level; the floor plan marks the stair and the route node.
+`check_map_plan` fails a route node on an enterable building with no floor plan (from the
+`floors` stage), and warns when a vertical node does not change floor.
+
+**Facade rule.** Only `enterable` buildings get floor plans. A row of 30 houses is massing;
+the safe room, the through-house and the set piece are interiors. The schedule records the
+role; the build pass must not invent a floor plan for scenery.
+
+**Anti-contradiction rules.**
+
+1. One source: `plan.json`. The SVGs are rendered, never edited back.
+2. Upstream freeze: an approved layer changes only by an amendment and a re-run of the later
+   stages.
+3. A route node carries the semantics (floor, building, kind); the polyline is only its spline.
+4. Every enterable route floor has a plan; every plan has a stair/connection to the next
+   floor on the route.
+5. A stage check must pass before the next stage starts.
+6. If two layers disagree, the earlier one wins and the later one is regenerated.
+
 ## The plan is a JSON source and five drawings
 
 Do not write the design as prose first and derive the geometry later. Write

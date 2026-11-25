@@ -121,6 +121,15 @@ function plan(): Record<string, unknown> {
           { id: "door", label: "house door", x: 1056, y: 800, z: 0, kind: "checkpoint" },
           { id: "end", label: "warehouse", x: 1980, y: 1400, z: 0, kind: "finale" },
         ],
+        nodes: [
+          { id: "n_start", label: "start", x: 200, y: 300, z: 0, floor: 1, kind: "start" },
+          { id: "n_street", label: "street", x: 700, y: 1100, z: 0, floor: 1, kind: "street" },
+          { id: "n_door", label: "house door", x: 1056, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "door" },
+          { id: "n_stair_up", label: "stair up", x: 800, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "stair" },
+          { id: "n_room2", label: "upstairs", x: 800, y: 800, z: 128, floor: 2, buildingId: "house_a", kind: "room" },
+          { id: "n_drop", label: "drop back", x: 800, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "drop" },
+          { id: "n_warehouse", label: "warehouse", x: 1980, y: 1400, z: 0, floor: 1, buildingId: "warehouse", kind: "finale" },
+        ],
       },
     ],
     areas: [
@@ -207,9 +216,10 @@ describe("map plan drawings", () => {
         "02-vertical-plan.svg",
         "03-circulation-plan.svg",
         "04-building-schedule.svg",
-        "05-floor-house_a.svg",
+        "05-floor-house_a-f1.svg",
+        "05-floor-house_a-f2.svg",
         "06-section-house_a.svg",
-        "05-floor-warehouse.svg",
+        "05-floor-warehouse-f1.svg",
         "plan.md",
       ]),
     );
@@ -218,10 +228,33 @@ describe("map plan drawings", () => {
     expect(site).toContain("<svg");
     const circulation = readFileSync(join(root, "drawings", "03-circulation-plan.svg"), "utf8");
     expect(circulation).toContain("holdout");
+    expect(circulation).toContain("F2");
     expect(circulation).toContain("cover");
     const markdown = readFileSync(join(root, "drawings", "plan.md"), "utf8");
     expect(markdown).toContain("Validation: **pass**");
     expect(markdown).toContain("Gameplay and nav areas");
+  });
+
+  it("accepts a brief with no geometry and gates the floors stage", () => {
+    const brief = MapPlanSchema.parse({
+      version: 1,
+      name: "Brief only",
+      kind: "map",
+      stage: "brief",
+      beats: [
+        { id: "b1", chapter: 1, type: "quiet", space: "house", what: "the sea", proof: "screenshot" },
+      ],
+      acceptance: ["gate pass"],
+    });
+    expect(checkMapPlan("brief.json", brief).ok).toBe(true);
+
+    const noFloors = plan();
+    noFloors.stage = "floors";
+    (noFloors.buildings as Array<Record<string, unknown>>)[0]!.floorsPlan = [];
+    const parsed = MapPlanSchema.parse(noFloors);
+    const check = checkMapPlan("floors.json", parsed);
+    expect(check.ok).toBe(false);
+    expect(check.findings.map((finding) => finding.rule)).toContain("no-floor-plan");
   });
 
   it("fails a route that crosses a building, a narrow route and duplicate ids", () => {
