@@ -123,6 +123,52 @@ function plan(): Record<string, unknown> {
         ],
       },
     ],
+    areas: [
+      {
+        id: "spawn",
+        label: "safe spawn",
+        kind: "spawn",
+        x: 200,
+        y: 300,
+        width: 256,
+        depth: 256,
+        rotation: 0,
+        note: "player start",
+      },
+      {
+        id: "cover_street",
+        label: "street cover",
+        kind: "cover",
+        x: 700,
+        y: 1100,
+        width: 160,
+        depth: 96,
+        rotation: 0,
+        note: "waist-high",
+      },
+      {
+        id: "hold_warehouse",
+        label: "warehouse holdout",
+        kind: "holdout",
+        x: 1800,
+        y: 1400,
+        width: 256,
+        depth: 256,
+        rotation: 0,
+        note: "finale hold",
+      },
+      {
+        id: "finale_area",
+        label: "rescue",
+        kind: "finale",
+        x: 1980,
+        y: 1400,
+        width: 256,
+        depth: 256,
+        rotation: 0,
+        note: "escape trigger",
+      },
+    ],
     beats: [
       {
         id: "b1",
@@ -170,8 +216,12 @@ describe("map plan drawings", () => {
     const site = readFileSync(join(root, "drawings", "01-site-plan.svg"), "utf8");
     expect(site).toContain("house_a");
     expect(site).toContain("<svg");
+    const circulation = readFileSync(join(root, "drawings", "03-circulation-plan.svg"), "utf8");
+    expect(circulation).toContain("holdout");
+    expect(circulation).toContain("cover");
     const markdown = readFileSync(join(root, "drawings", "plan.md"), "utf8");
     expect(markdown).toContain("Validation: **pass**");
+    expect(markdown).toContain("Gameplay and nav areas");
   });
 
   it("fails a route that crosses a building, a narrow route and duplicate ids", () => {

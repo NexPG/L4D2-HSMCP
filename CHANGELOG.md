@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.288-alpha - 2026-11-25
+
+- **The five drawings are now L4D2-first, not architecture-only.** The circulation sheet
+  carries a gameplay/nav overlay: `spawn`, `cover`, `holdout`, `crescendo`, `tank`, `witch`,
+  `one-way`, `no-mob`, `checkpoint`, `safe-room`, `finale`, `battlefield` and `item-cluster`
+  areas, each labelled and coloured. The plan table lists them with notes.
+- **Validation gained the gameplay layer:** areas must be inside the site, ids unique, and a
+  crescendo/holdout/finale/checkpoint/safe-room/battlefield area farther than 320 units from
+  the route is a warning; a plan with no gameplay areas warns that it describes the street,
+  not the fight.
+- **Docs:** `references/planning/five-drawings.md` explains why five architectural sheets are
+  not enough for a Director-driven co-op map, and cites the World of Level Design L4D2 guide,
+  the VDC checkpoint/nav-flow flow and the project's own synthesis.
+- **Tool count: 311.** Tests: 260 files, 2,026 passed, 32 skipped.
+
 ## 0.0.287-alpha - 2026-11-25
 
 - **Pass 1 now produces a plan JSON and five drawings.** `check_map_plan` validates the

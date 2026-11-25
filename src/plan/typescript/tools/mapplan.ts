@@ -120,6 +120,32 @@ const Terrain = z
     }
   });
 
+const Area = z.object({
+  id: z.string(),
+  label: z.string(),
+  kind: z.enum([
+    "spawn",
+    "cover",
+    "holdout",
+    "crescendo",
+    "tank",
+    "witch",
+    "one-way",
+    "no-mob",
+    "checkpoint",
+    "safe-room",
+    "finale",
+    "battlefield",
+    "item-cluster",
+  ]),
+  x: z.number(),
+  y: z.number(),
+  width: POSITIVE,
+  depth: POSITIVE,
+  rotation: z.number().default(0),
+  note: z.string().default(""),
+});
+
 const Beat = z.object({
   id: z.string(),
   chapter: z.number().int().min(1),
@@ -143,6 +169,7 @@ const Plan = z.object({
   terrain: Terrain,
   buildings: z.array(Building).min(1),
   routes: z.array(Route).min(1),
+  areas: z.array(Area).default([]),
   beats: z.array(Beat).min(1),
   finale: z
     .object({
@@ -391,6 +418,45 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     }
   }
 
+  const areaIds = new Set<string>();
+  for (const area of plan.areas) {
+    if (areaIds.has(area.id)) {
+      add("error", "duplicate-area-id", `area id ${area.id} is repeated`);
+    }
+    areaIds.add(area.id);
+    for (const [x, y] of corners(area.x, area.y, area.width, area.depth, area.rotation)) {
+      if (x < site.x0 || x > site.x1 || y < site.y0 || y > site.y1) {
+        add(
+          "error",
+          "area-outside-site",
+          `area ${area.id} has a corner (${x.toFixed(0)}, ${y.toFixed(0)}) outside the site`,
+        );
+        break;
+      }
+    }
+    if (
+      ["crescendo", "holdout", "finale", "checkpoint", "safe-room", "battlefield"].includes(area.kind)
+    ) {
+      const nearest = Math.min(
+        ...routeSamplesAll.map((point) => Math.hypot(point[0] - area.x, point[1] - area.y)),
+      );
+      if (Number.isFinite(nearest) && nearest > 320) {
+        add(
+          "warning",
+          "area-off-route",
+          `${area.kind} area ${area.id} is ${nearest.toFixed(0)} units from the route`,
+        );
+      }
+    }
+  }
+  if (plan.areas.length === 0) {
+    add(
+      "warning",
+      "no-gameplay-areas",
+      "no spawn/cover/holdout/crescendo/finale areas: the plan describes the street, not the fight",
+    );
+  }
+
   for (const building of plan.buildings) {
     if (!building.enterable) continue;
     for (const entrance of building.entrances) {
@@ -624,6 +690,28 @@ function circulationPlan(plan: MapPlan): string {
   for (const building of plan.buildings) {
     body.push(rectSvg(building, t, "#e8e2d6", "#8a8175"));
   }
+  const areaColor: Record<string, string> = {
+    spawn: "#e67e22",
+    cover: "#27ae60",
+    holdout: "#8e44ad",
+    crescendo: "#c0392b",
+    tank: "#7f8c8d",
+    witch: "#2c3e50",
+    "one-way": "#d35400",
+    "no-mob": "#95a5a6",
+    checkpoint: "#2980b9",
+    "safe-room": "#1e8449",
+    finale: "#b03a2e",
+    battlefield: "#f39c12",
+    "item-cluster": "#16a085",
+  };
+  for (const area of plan.areas) {
+    const color = areaColor[area.kind] ?? "#7f8c8d";
+    body.push(
+      `<polygon points="${polygonPoints(corners(area.x, area.y, area.width, area.depth, area.rotation), t)}" fill="${color}" fill-opacity="0.14" stroke="${color}" stroke-width="1.5" stroke-dasharray="6 4"/>`,
+      `<text x="${t.sx(area.x).toFixed(1)}" y="${t.sy(area.y).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="${color}">${esc(area.kind)}</text>`,
+    );
+  }
   for (const route of plan.routes) {
     const points = route.points.map(([x, y]) => `${t.sx(x).toFixed(1)},${t.sy(y).toFixed(1)}`).join(" ");
     body.push(
@@ -657,6 +745,7 @@ function circulationPlan(plan: MapPlan): string {
       "blue dashed: branch/escape",
       "green: building entrance",
       "band width = clear width",
+      "coloured dashed: spawn/cover/holdout/crescendo/finale",
     ]),
   );
 }
@@ -803,6 +892,14 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
     "|---|---|---:|---|",
     ...plan.routes.map(
       (route) => `| ${route.id} | ${route.kind} | ${route.width} | ${route.stops.map((stop) => stop.label).join(", ")} |`,
+    ),
+    "",
+    "## Gameplay and nav areas",
+    "",
+    "| id | kind | label | note |",
+    "|---|---|---|---|",
+    ...plan.areas.map(
+      (area) => `| ${area.id} | ${area.kind} | ${area.label} | ${area.note} |`,
     ),
     "",
     "## Findings",
