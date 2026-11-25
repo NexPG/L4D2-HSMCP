@@ -93,8 +93,10 @@ height disagrees with the terrain, ids repeat, or beats/acceptance are empty. Wa
 overlaps, a missing floor plan, an entrance Z mismatch, a route over water and a campaign with
 no finale block.
 
-At `stage: "brief"` it fails until the experience, three pillars, three beats and acceptance
-exist. At `stage: "skeleton"` it adds the route-quality gate: two districts with landmarks and
+The brief and route gates are **cumulative**: they are re-checked at every later stage, so
+setting `stage: "approved"` does not bypass them. `brief` fails until the experience, three
+pillars, three beats and acceptance exist. `skeleton` adds the minimum node count and the
+route-quality gate: two districts with landmarks and
 motifs, named spaces and districts on every node, a beat mapped to a node, three distinct
 spaces, two turns, a vertical node, a peak and two rests, no three high nodes in a row, no four
 identical enclosures, a vista, a landmark every four nodes, a gate, a drop that goes down, and

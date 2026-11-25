@@ -26,6 +26,8 @@ starts only when every line is true. This is a design checklist, not a build che
 - [ ] At least one gate (hard, soft, one-way or lock) shapes the chapter.
 - [ ] Every branch has a `from` on the critical route and either a `to` or a deliberate dead end.
 - [ ] `check_map_plan` at `stage: "skeleton"` has no errors.
+- [ ] `check_map_plan` at `stage: "approved"` has no errors either: the gate is cumulative, not
+      a one-time skeleton check.
 
 ## Route
 

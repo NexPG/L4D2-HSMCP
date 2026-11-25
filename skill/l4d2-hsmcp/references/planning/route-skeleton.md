@@ -226,7 +226,9 @@ skeleton, amend the JSON, re-run the gate, then regenerate the site.
 
 ## The checks
 
-At `stage: "skeleton"`:
+The gate is **cumulative**. The brief checks run at every stage, and the route graph checks run
+at every stage after `brief`. `skeleton` adds the minimum node count. A plan cannot skip the
+gate by setting `stage: "approved"`: the same contract is re-checked there.
 
 | Rule | Severity | Why |
 |---|---|---|
@@ -256,9 +258,8 @@ At `stage: "skeleton"`:
 | `branch-no-anchor`, `branch-unknown-anchor` | error | A branch that does not attach to the critical route. |
 | `node-off-spline` | warning | The node is more than 160 u from the drawn route. |
 
-At later stages the same fields are still checked for references, branch anchors, drop
-direction and floor planes. The skeleton-only quality checks do not repeat, because the route
-is frozen and the later stages must not silently re-litigate it.
+Because the gate is cumulative, a defect found at `skeleton` does not disappear at `approved`.
+Fix it in the JSON; do not skip the stage or silence the warning.
 
 ## Numbers
 

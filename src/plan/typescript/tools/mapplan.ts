@@ -478,14 +478,13 @@ function countTurns(route: PlanRoute): number {
 }
 
 /**
- * The mission/space graph checks. At the skeleton they are the quality gate; at later stages
- * only references, branch anchors, beats, drop direction and floor planes are re-checked,
- * because the route is frozen and the later stages must not silently re-litigate it.
+ * The mission/space graph checks. They are cumulative: once the brief exists, every later
+ * stage is checked against the same route contract, so a plan cannot skip the skeleton gate by
+ * setting `stage: "approved"`.
  */
 function checkRouteGraph(
   plan: MapPlan,
   add: (severity: Finding["severity"], rule: string, message: string) => void,
-  skeleton: boolean,
 ): void {
   const criticalIds = new Set<string>();
   for (const route of plan.routes) {
@@ -500,13 +499,13 @@ function checkRouteGraph(
     }
     districtIds.add(district.id);
     if (!district.landmark.trim()) {
-      add(skeleton ? "error" : "warning", "district-no-landmark", `${district.id} has no landmark`);
+      add("error", "district-no-landmark", `${district.id} has no landmark`);
     }
     if (!district.motif.trim()) {
-      add(skeleton ? "error" : "warning", "district-no-motif", `${district.id} has no motif`);
+      add("error", "district-no-motif", `${district.id} has no motif`);
     }
   }
-  if (skeleton && plan.districts.length < 2) {
+  if (plan.districts.length < 2) {
     add("error", "district-few", "a chapter needs at least two districts");
   }
 
@@ -515,8 +514,11 @@ function checkRouteGraph(
   const usedBeats = new Set<string>();
 
   for (const route of plan.routes) {
-    if (skeleton && route.width < 64) {
+    if (route.width < 64) {
       add("error", "route-too-narrow", `${route.id} is ${route.width} wide; the hull is 64`);
+    }
+    if (route.kind === "critical" && route.nodes.length < 2) {
+      add("error", "route-nodes-too-short", `${route.id} needs at least two route nodes`);
     }
     if (route.kind === "critical" && route.width < 96) {
       add("warning", "route-narrow-critical", `${route.id} is ${route.width} wide; 96 is the comfortable critical width`);
@@ -547,10 +549,10 @@ function checkRouteGraph(
         if (!districtIds.has(node.district)) {
           add("error", "district-unknown", `${node.id} names district ${node.district}, which does not exist`);
         }
-      } else if (skeleton) {
+      } else {
         add("error", "node-no-district", `${node.id} has no district`);
       }
-      if (skeleton && !node.space.trim()) {
+      if (!node.space.trim()) {
         add("error", "node-no-space", `${node.id} has no named space`);
       }
       if (node.beat) {
@@ -559,7 +561,7 @@ function checkRouteGraph(
           add("error", "node-unknown-beat", `${node.id} names beat ${node.beat}, which does not exist`);
         }
       }
-      if (skeleton && node.kind === "drop") {
+      if (node.kind === "drop") {
         const next = route.nodes[index + 1];
         if (next && next.z >= node.z) {
           add("warning", "route-drop-up", `${node.id} is a drop but the next node is not lower`);
@@ -567,7 +569,7 @@ function checkRouteGraph(
       }
     }
 
-    if (!skeleton || route.kind !== "critical") continue;
+    if (route.kind !== "critical") continue;
 
     const spaces = new Set(route.nodes.map(routeSpace));
     if (spaces.size < 3) {
@@ -667,14 +669,12 @@ function checkRouteGraph(
 
   for (const district of plan.districts) {
     if (!usedDistricts.has(district.id)) {
-      add(skeleton ? "error" : "warning", "district-unused", `${district.id} is not visited by any route node`);
+      add("error", "district-unused", `${district.id} is not visited by any route node`);
     }
   }
-  if (skeleton) {
-    for (const beat of plan.beats) {
-      if (!usedBeats.has(beat.id)) {
-        add("warning", "beat-not-on-route", `beat ${beat.id} is not mapped to a route node`);
-      }
+  for (const beat of plan.beats) {
+    if (!usedBeats.has(beat.id)) {
+      add("warning", "beat-not-on-route", `beat ${beat.id} is not mapped to a route node`);
     }
   }
 }
@@ -692,30 +692,33 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     districts: plan.districts.length,
   };
 
-  // The authoring stages. `brief` and `skeleton` intentionally run before geometry exists;
-  // site and later stages run the full geometric checks below.
+  // The brief is cumulative too: an approved plan cannot drop the experience, the pillars or
+  // the beats by jumping over the early stages.
+  if (!plan.experience.trim()) {
+    add("error", "brief-no-experience", "write the one-sentence experience");
+  }
+  if (plan.pillars.length < 3) {
+    add("error", "brief-few-pillars", "write three pillars; they are the build pass's decision rules");
+  }
+  if (plan.beats.length === 0) {
+    add("error", "brief-no-beats", "write at least one beat");
+  } else if (plan.beats.length < 3) {
+    add("error", "brief-few-beats", "a chapter needs at least three beats");
+  }
+  if (plan.acceptance.length === 0) {
+    add("error", "brief-no-acceptance", "write at least one acceptance criterion");
+  }
+  if (plan.beats.length > 0) {
+    const hasPeak = plan.beats.some((beat) => beat.intensity >= 4);
+    const hasRest = plan.beats.some((beat) => beat.intensity <= 2);
+    if (!hasPeak || !hasRest) {
+      add("warning", "brief-flat-pacing", "the beats need at least one peak (4-5) and one rest (0-2)");
+    }
+  }
+
+  // `brief` and `skeleton` intentionally run before geometry exists; the later stages run the
+  // full geometric checks below.
   if (plan.stage === "brief" || plan.stage === "skeleton") {
-    if (!plan.experience.trim()) {
-      add("error", "brief-no-experience", "write the one-sentence experience before geometry");
-    }
-    if (plan.pillars.length < 3) {
-      add("error", "brief-few-pillars", "write three pillars; they are the build pass's decision rules");
-    }
-    if (plan.beats.length === 0) {
-      add("error", "brief-no-beats", "write at least one beat before geometry");
-    } else if (plan.beats.length < 3) {
-      add("error", "brief-few-beats", "a chapter needs at least three beats");
-    }
-    if (plan.acceptance.length === 0) {
-      add("error", "brief-no-acceptance", "write the acceptance evidence before geometry");
-    }
-    if (plan.beats.length > 0) {
-      const hasPeak = plan.beats.some((beat) => beat.intensity >= 4);
-      const hasRest = plan.beats.some((beat) => beat.intensity <= 2);
-      if (!hasPeak || !hasRest) {
-        add("warning", "brief-flat-pacing", "the beats need at least one peak (4-5) and one rest (0-2)");
-      }
-    }
     if (plan.stage === "skeleton") {
       if (plan.routes.length === 0) add("error", "skeleton-no-route", "the skeleton needs at least one route");
       for (const route of plan.routes) {
@@ -723,7 +726,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
           add("error", "skeleton-route-too-short", `${route.id} needs at least three route nodes`);
         }
       }
-      checkRouteGraph(plan, add, true);
+      checkRouteGraph(plan, add);
     }
     return {
       path,
@@ -733,16 +736,13 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     };
   }
 
-  checkRouteGraph(plan, add, false);
+  checkRouteGraph(plan, add);
 
   if (plan.stage === "site" && plan.buildings.length === 0) {
     add("error", "site-no-buildings", "the site stage needs at least one building footprint");
   }
   if (plan.stage === "flow" && plan.areas.length === 0) {
     add("warning", "flow-no-areas", "the flow stage needs spawn/cover/holdout/crescendo/finale areas");
-  }
-  if (plan.stage === "flow" && plan.beats.length < 3) {
-    add("warning", "flow-few-beats", "a chapter with fewer than three beats is a corridor");
   }
   if (plan.stage === "flow" && plan.palette.motifs.length < 3) {
     add("warning", "flow-few-motifs", "name at least three repeated motifs");
@@ -875,9 +875,6 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
 
   const routeSamplesAll: Vec2[] = [];
   for (const route of plan.routes) {
-    if (route.width < 64) {
-      add("error", "route-too-narrow", `${route.id} is ${route.width} wide; the hull is 64`);
-    }
     for (const point of route.points) {
       if (point[0] < site.x0 || point[0] > site.x1 || point[1] < site.y0 || point[1] > site.y1) {
         add("error", "route-outside-site", `${route.id} leaves the site at (${point[0]}, ${point[1]})`);
@@ -895,7 +892,6 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       }
     }
     const nodeIds = new Set<string>();
-    const vertical = route.nodes.filter((node) => VERTICAL_KINDS.has(node.kind));
     for (let index = 0; index < route.nodes.length; index += 1) {
       const node = route.nodes[index]!;
       if (nodeIds.has(node.id)) add("error", "duplicate-node-id", `route ${route.id} repeats node ${node.id}`);
@@ -959,23 +955,6 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
         const next = route.nodes[index + 1];
         if (prev && next && prev.floor === node.floor && next.floor === node.floor) {
           add("warning", "vertical-no-change", `${node.id} is a ${node.kind} but the route stays on F${node.floor}`);
-        }
-      }
-    }
-    if (route.kind === "critical") {
-      if (route.nodes.length > 0 && route.nodes.length < 2) {
-        add("error", "route-nodes-too-short", `${route.id} needs at least two route nodes`);
-      }
-      if (route.nodes.length >= 2 && vertical.length === 0) {
-        add("warning", "route-no-verticality", `${route.id} has no floor change; a multi-level map needs at least one`);
-      }
-      if (route.nodes.length > 0) {
-        const spaces = new Set(route.nodes.map(routeSpace));
-        if (spaces.size < 3) {
-          add("warning", "route-few-spaces", `${route.id} visits ${spaces.size} space(s); three is the minimum for a chapter`);
-        }
-        if (countTurns(route) < 2) {
-          add("warning", "route-straight", `${route.id} has fewer than two turns; it reads as a corridor`);
         }
       }
     }
@@ -1080,8 +1059,6 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     }
   }
 
-  if (plan.beats.length === 0) add("error", "no-beats", "the plan has no beats");
-  if (plan.acceptance.length === 0) add("error", "no-acceptance", "the plan has no acceptance criteria");
   if (plan.palette.motifs.length < 3) {
     add("warning", "palette-motifs", "give at least three repeated motifs");
   }

@@ -16,6 +16,13 @@ function plan(): Record<string, unknown> {
     version: 1,
     name: "Plan test",
     kind: "campaign",
+    experience: "cross the beach, climb the house and hold the warehouse",
+    pillars: ["the sea stays on the left", "every fight has a way around", "climb before you drop"],
+    districts: [
+      { id: "beach", name: "Beach", mood: "exposed", motif: "sand and bleached wood", landmark: "lifeguard tower" },
+      { id: "town", name: "Town", mood: "tight", motif: "stucco and canvas", landmark: "clock tower" },
+      { id: "pier", name: "Pier", mood: "industrial", motif: "tarred timber", landmark: "crane" },
+    ],
     site: {
       bounds: { x0: 0, y0: 0, x1: 4096, y1: 3072 },
       north: 0,
@@ -118,6 +125,7 @@ function plan(): Record<string, unknown> {
       {
         id: "critical",
         kind: "critical",
+        typology: "string-of-pearls",
         width: 96,
         points: [
           [200, 300, 0],
@@ -136,13 +144,13 @@ function plan(): Record<string, unknown> {
           { id: "end", label: "warehouse", x: 1980, y: 1400, z: 0, kind: "finale" },
         ],
         nodes: [
-          { id: "n_start", label: "start", x: 200, y: 300, z: 0, floor: 1, kind: "start" },
-          { id: "n_street", label: "street", x: 700, y: 1100, z: 0, floor: 1, kind: "street" },
-          { id: "n_door", label: "house door", x: 1056, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "door" },
-          { id: "n_stair_up", label: "stair up", x: 800, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "stair" },
-          { id: "n_room2", label: "upstairs", x: 800, y: 800, z: 128, floor: 2, buildingId: "house_a", kind: "room" },
-          { id: "n_drop", label: "drop back", x: 800, y: 800, z: 0, floor: 1, buildingId: "house_a", kind: "drop" },
-          { id: "n_warehouse", label: "warehouse", x: 1980, y: 1400, z: 0, floor: 1, buildingId: "warehouse", kind: "finale" },
+          { id: "n_start", label: "start", x: 200, y: 300, z: 0, floor: 1, space: "beach", district: "beach", kind: "start", enclosure: "open", intensity: 1, landmark: "lifeguard tower", gate: "none", beat: "b1" },
+          { id: "n_street", label: "street", x: 700, y: 1100, z: 0, floor: 1, space: "street", district: "beach", kind: "street", enclosure: "open", intensity: 3, landmark: "", gate: "none", beat: "b1" },
+          { id: "n_door", label: "house door", x: 1056, y: 800, z: 0, floor: 1, buildingId: "house_a", space: "house", district: "town", kind: "door", enclosure: "covered", intensity: 3, landmark: "", gate: "hard", beat: "b2" },
+          { id: "n_stair_up", label: "stair up", x: 800, y: 800, z: 0, floor: 1, buildingId: "house_a", space: "house", district: "town", kind: "stair", enclosure: "tight", intensity: 4, landmark: "", gate: "none", beat: "b2" },
+          { id: "n_room2", label: "upstairs", x: 800, y: 800, z: 128, floor: 2, buildingId: "house_a", space: "upstairs", district: "town", kind: "room", enclosure: "vista", intensity: 2, landmark: "clock tower", gate: "none", beat: "b3" },
+          { id: "n_drop", label: "drop back", x: 800, y: 800, z: 128, floor: 2, buildingId: "house_a", space: "upstairs", district: "town", kind: "drop", enclosure: "vista", intensity: 2, landmark: "clock tower", gate: "one-way", beat: "b3" },
+          { id: "n_warehouse", label: "warehouse", x: 1980, y: 1400, z: 0, floor: 1, buildingId: "warehouse", space: "warehouse", district: "pier", kind: "finale", enclosure: "covered", intensity: 3, landmark: "crane", gate: "none", beat: "b3" },
         ],
       },
     ],
@@ -197,9 +205,28 @@ function plan(): Record<string, unknown> {
         id: "b1",
         chapter: 1,
         type: "quiet",
-        space: "beach house",
-        what: "the sea is visible from the porch",
+        space: "beach",
+        what: "the sea and the house",
         proof: "screenshot",
+        intensity: 1,
+      },
+      {
+        id: "b2",
+        chapter: 1,
+        type: "fight",
+        space: "house",
+        what: "the stair fight",
+        proof: "spawn count",
+        intensity: 3,
+      },
+      {
+        id: "b3",
+        chapter: 1,
+        type: "crescendo",
+        space: "upstairs",
+        what: "the drop and the holdout",
+        proof: "STAGE_DONE",
+        intensity: 5,
       },
     ],
     finale: { type: 2, arena: "warehouse", stages: ["PANIC", "DELAY"], escape: "helicopter" },
@@ -257,6 +284,20 @@ describe("map plan drawings", () => {
     expect(sheet).toContain("front");
     expect(sheet).toContain("outside");
     expect(sheet).not.toContain("| MISSING |");
+  });
+
+  it("applies the route contract at approved, not only at skeleton", () => {
+    const approved = MapPlanSchema.parse(plan());
+    const check = checkMapPlan("approved.json", approved);
+    expect(check.ok, check.findings.map((finding) => finding.message).join(" | ")).toBe(true);
+
+    const skipped = plan();
+    skipped.districts = [];
+    const skippedCheck = checkMapPlan("approved-no-districts.json", MapPlanSchema.parse(skipped));
+    expect(skippedCheck.ok).toBe(false);
+    const rules = skippedCheck.findings.map((finding) => finding.rule);
+    expect(rules).toContain("district-few");
+    expect(rules).toContain("district-unknown");
   });
 
   it("checks route doors and stairs against the floor graph", () => {

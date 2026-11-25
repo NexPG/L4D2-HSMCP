@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.293-alpha - 2026-11-25
+
+- **The brief and route gate is cumulative.** The experience, three pillars, three beats,
+  acceptance, districts, named spaces, intensity curve, landmarks, gates, branch anchors and
+  floor-plane checks are re-run at every stage after `brief`; `stage: "approved"` can no longer
+  bypass the skeleton gate. `skeleton` only adds the minimum node count.
+- **The approved fixture now carries the full contract** (districts, beats, node semantics and a
+  real drop), and a new test proves that an approved plan without districts fails with
+  `district-few` and `district-unknown`.
+- Tests: 260 files, 2,030 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.292-alpha - 2026-11-25
 
 - **Floor graph edges.** A floor plan now carries `doors[]` (two sides, kind, lock hint) and

@@ -81,6 +81,8 @@ role; the build pass must not invent a floor plan for scenery.
    floor on the route.
 5. A stage check must pass before the next stage starts.
 6. If two layers disagree, the earlier one wins and the later one is regenerated.
+7. The checks are cumulative: `stage: "approved"` does not skip the brief or route gate. A
+   warning found at `skeleton` is still a warning at `approved`; fix it in the JSON.
 
 ## The plan is a JSON source and five drawings
 
