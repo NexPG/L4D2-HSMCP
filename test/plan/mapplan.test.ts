@@ -300,6 +300,15 @@ describe("map plan drawings", () => {
     expect(rules).toContain("district-unknown");
   });
 
+  it("passes the same plan through every stage from brief to approved", () => {
+    for (const stage of ["brief", "skeleton", "site", "vertical", "schedule", "floors", "flow", "approved"]) {
+      const candidate = plan();
+      candidate.stage = stage;
+      const check = checkMapPlan(`${stage}.json`, MapPlanSchema.parse(candidate));
+      expect(check.ok, `${stage}: ${check.findings.map((finding) => finding.message).join(" | ")}`).toBe(true);
+    }
+  });
+
   it("checks route doors and stairs against the floor graph", () => {
     const floors = plan();
     floors.stage = "floors";

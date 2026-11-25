@@ -13,8 +13,9 @@ with a line here.
   bypass the skeleton gate. `skeleton` only adds the minimum node count.
 - **The approved fixture now carries the full contract** (districts, beats, node semantics and a
   real drop), and a new test proves that an approved plan without districts fails with
-  `district-few` and `district-unknown`.
-- Tests: 260 files, 2,030 passed, 32 skipped. Tool count: 311.
+  `district-few` and `district-unknown`. A second test passes the same plan through all eight
+  stages, so a valid plan is not rejected by a later gate.
+- Tests: 260 files, 2,031 passed, 32 skipped. Tool count: 311.
 
 ## 0.0.292-alpha - 2026-11-25
 
