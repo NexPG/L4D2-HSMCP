@@ -1,0 +1,14 @@
+# Optional photo-to-texture stack.
+#
+# The core sidecar only needs srctools (requirements.txt). These packages are for the
+# model-skin workflow: photo masks, landmarks, face/body alignment and inpainting.
+# Install them with:
+#
+#   .\src\core\python\setup.ps1 -Models
+#
+# They are pinned because image/CV model APIs change quickly between minor versions.
+Pillow==13.0.0
+numpy==2.5.5
+opencv-python-headless==5.1.0.95
+mediapipe==1.2.3
+rembg[cpu]==2.0.88

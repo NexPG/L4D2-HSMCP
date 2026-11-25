@@ -48,11 +48,18 @@ See the [tool catalogue](docs/tools/README.md).
 | **Node.js 22+** and **pnpm 10+** | build and run the MCP server (tested on Node 22 and 24) |
 | **Python 3.10+** | the `srctools` sidecar behind FGD, VPK, particles and parts of the VMF reader |
 | **VTFEdit++ / VTFCmd** | texture conversion and the cubemap/skybox utilities |
+| **Blender 4.2 LTS or 5.x** | only the model-skin workflow: pose, camera projection and UV bake. Maps, VMTs and VTF edits do not need it |
+| **Blender Source Tools** | only the model-skin workflow: imports/exports decompiled Source SMD/DMX into Blender |
+| **Crowbar / Crowbar CLI** | only the model-skin workflow: decompiles a stock `.mdl` to QC/SMD/DMX before Blender |
+| **HLMV++** | optional fast model/material preview; ships with Hammer++ or the game tools. The game itself is the final check |
 
 Tools++ and VTFEdit++ unlock what they name rather than gate the project: without Tools++ the
 compiler falls back to the stock chain and says so, and without VTFCmd texture conversion is
 simply unavailable. The Authoring Tools, Node.js, pnpm and Python are needed for the server to
-run at all.
+run at all. Blender, Blender Source Tools and Crowbar are needed only for the photo-to-texture
+model-skin workflow; a map, VMT or existing-VTF task must not ask the user to install them.
+The optional Python CV/inpainting stack installs itself through
+`src/core/python/setup.ps1 -Models`; it is not a README requirement.
 
 ## Credits
 

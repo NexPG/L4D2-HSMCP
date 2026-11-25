@@ -35,7 +35,8 @@ rooms, floors, beats, events, finale, palette, variability and budget, using rea
 It writes no `.vmf` and stops for approval. Pass 2 builds that plan; it chooses exact assets
 within the palette but may not silently change the route, a room's purpose or a beat. See
 `workflows/addon-workspace.md`, `workflows/design-a-map.md`,
-`references/planning/five-drawings.md`, `workflows/new-campaign.md` and
+`references/planning/five-drawings.md`, `workflows/new-campaign.md`,
+`workflows/model-skin.md` and
 `workflows/from-a-wish.md`.
 
 **Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
@@ -140,6 +141,9 @@ material; the instructions live in one place.
 | `references/planning/route-skeleton.md` | first layer: districts, route nodes, pacing, landmarks, gates, the research and the checks |
 | `references/planning/pipeline-research.md` | mission graph, space graph and floor-plan graph; what the research says |
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
+| `workflows/model-skin.md` | texture-only model skin: photo -> landmarks -> projection -> bake -> VTF |
+| `references/models/photo-texture.md` | the tools and the professional photo-to-texture pipeline |
+| `references/tools/photo-texture-toolchain.md` | which external tools and optional Python packages the user needs, and which they do not |
 | `workflows/from-a-wish.md` | the two passes in one view |
 | `workflows/make-a-prop.md` | a model or prop from glTF/FBX or a brush, through StudioMDL |
 | `workflows/hud-override.md` | reading a stock `.res`, shifting controls and writing an add-on copy |

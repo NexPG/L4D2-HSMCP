@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.295-alpha - 2026-11-25
+
+- **Model-skin toolchain documented.** The README Requirements table now names the external
+  tools the photo-to-texture workflow needs: Blender (verified 4.2.9 LTS), Blender Source Tools
+  and Crowbar. They are marked as model-skin-only, so a VMT/VTF task does not ask for them.
+- **Optional Python CV stack.** `src/core/python/requirements-models.txt` pins Pillow, numpy,
+  OpenCV, MediaPipe and rembg; `setup.ps1 -Models` installs them. The core sidecar stays small.
+- **New skill pages:** `references/models/photo-texture.md` (the professional projection/bake
+  pipeline and tools), `references/tools/photo-texture-toolchain.md` (what the user needs vs what
+  the MCP does not do) and `workflows/model-skin.md` (the agent steps).
+- **Finding recorded:** a raw Blender camera-coordinate bake fragments the stock Witch head UV
+  shells; the next pass needs the UV Project modifier with selected-to-active baking or a
+  per-shell bake. `face-projection` is incompatible with Python 3.12; use MediaPipe directly.
+- Tests: 260 files, 2,032 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.294-alpha - 2026-11-25
 
 - **Every building/structure is part of the plan.** `buildings[].role` is `route`, `safe-room`,

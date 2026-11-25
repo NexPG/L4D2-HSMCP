@@ -5,6 +5,12 @@
 # build output and the state directory is already ignored by git.
 #
 # Safe to re-run: it recreates nothing that already matches.
+#
+# -Models adds the optional photo-to-texture stack (Pillow, OpenCV, MediaPipe, rembg).
+# It is not installed by default because it is several hundred MB and only needed for
+# model-skin work.
+param([switch]$Models)
+
 $ErrorActionPreference = "Stop"
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -24,6 +30,10 @@ if (-not (Test-Path $python)) {
 
 & $python -m pip install --quiet --upgrade pip
 & $python -m pip install --quiet -r (Join-Path $here "requirements.txt")
+if ($Models) {
+  Write-Host "installing optional photo-to-texture stack"
+  & $python -m pip install --quiet -r (Join-Path $here "requirements-models.txt")
+}
 
 Write-Host -NoNewline "sidecar ready: "
 & $python (Join-Path $here "main.py") health
