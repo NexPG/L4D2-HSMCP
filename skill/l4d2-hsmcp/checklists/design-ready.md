@@ -10,6 +10,22 @@ starts only when every line is true. This is a design checklist, not a build che
 - [ ] Chapter count, campaign vs single map, and mode are decided (asked if identity-changing).
 - [ ] Every asset, class and pricey number is queried or marked as a target with its source.
 - [ ] Anything the environment cannot prove is named now (a two-team round, a live audio mix).
+- [ ] The experience is one sentence and the three pillars are decision rules, not adjectives.
+- [ ] The beats carry an intensity and show at least one peak and one rest.
+
+## Skeleton
+
+- [ ] The chapter has 2-5 districts; each has a motif, a mood and a landmark.
+- [ ] Every route node names its space, district, floor and kind; consecutive nodes in one
+      space share the name.
+- [ ] The critical route has at least three named spaces, two turns and one vertical node.
+- [ ] Every floor change is a `stair`/`ladder`/`elevator`/`ramp`/`drop` node; a drop goes down.
+- [ ] Every beat is mapped to a node; no node points at a beat that does not exist.
+- [ ] The intensity curve has a peak (4-5), two rests (0-2) and no three high nodes in a row.
+- [ ] There is a vista and a landmark at least every four nodes; no four identical enclosures.
+- [ ] At least one gate (hard, soft, one-way or lock) shapes the chapter.
+- [ ] Every branch has a `from` on the critical route and either a `to` or a deliberate dead end.
+- [ ] `check_map_plan` at `stage: "skeleton"` has no errors.
 
 ## Route
 

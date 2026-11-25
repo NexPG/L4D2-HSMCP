@@ -137,6 +137,7 @@ material; the instructions live in one place.
 | `workflows/addon-workspace.md` | one workspace per addon: plan, templates, logs, src, addon, dist, evidence |
 | `workflows/design-a-map.md` | pass 1: the design file, route, rooms, floors, beats, palette, variability |
 | `references/planning/five-drawings.md` | the five drawings, the plan JSON, the checks and why SVG |
+| `references/planning/route-skeleton.md` | first layer: districts, route nodes, pacing, landmarks, gates, the research and the checks |
 | `references/planning/pipeline-research.md` | mission graph, space graph and floor-plan graph; what the research says |
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
 | `workflows/from-a-wish.md` | the two passes in one view |
@@ -218,8 +219,10 @@ material; the instructions live in one place.
    and tool count. Missing pieces are named with their cost; do not guess around them.
 2. **Workspace.** `write_addon_workspace(name)` creates `workspaces/<addon-name>/` with
    `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and `evidence/`.
-3. **Design.** `workflows/design-a-map.md`: the route, rooms, floors, beats, events, finale,
-   palette, variability and budget in plan/DESIGN.md. Read-only; no `.vmf`; stop for approval.
+3. **Design.** `workflows/design-a-map.md`: the brief (experience, pillars, beats), the route
+   skeleton (districts, nodes, intensity, landmarks, gates), then rooms, floors, events, finale,
+   palette, variability and budget in the design file and the plan JSON. Read-only; no `.vmf`;
+   stop for approval. The first layer is `references/planning/route-skeleton.md`.
 4. **Source map.** `workflows/new-campaign.md`: create or open a `.vmf`, build the sealed
    shell, then lint and check for leaks *before* a compile that can take minutes.
 5. **Compile.** `run_compile` with the stock chain or Tools++, and read the per-stage

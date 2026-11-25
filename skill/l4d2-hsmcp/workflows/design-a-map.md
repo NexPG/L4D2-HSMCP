@@ -24,8 +24,8 @@ the dependency order; each stage freezes the layer above it.
 
 | Stage | `stage` | The agent writes | Gate before the next stage |
 |---|---|---|---|
-| 0. Brief | `brief` | pitch, beats, acceptance; no geometry | beats and acceptance exist |
-| 1. Skeleton | `skeleton` | the critical route as **nodes**: X/Y/Z, floor, building id, node kind; branches; the start/goal | every critical route has ≥2 nodes, ≥3 spaces and at least one vertical node |
+| 0. Brief | `brief` | experience, three pillars, beats, acceptance; no geometry | experience, three pillars, ≥3 beats, acceptance |
+| 1. Skeleton | `skeleton` | districts (motif + landmark), the critical route as **nodes** (X/Y/Z, floor, building, named space, kind, enclosure, intensity, landmark, gate, beat), branches, start/goal | every critical route has ≥3 nodes, ≥3 named spaces, ≥2 turns, ≥1 vertical node; ≥2 districts with landmarks; a peak and two rests; a gate; no branch without an anchor |
 | 2. Site | `site` | building footprints around the skeleton; entrances; no-build/water | route stays in the site, does not cross a building except at an entrance |
 | 3. Vertical | `vertical` | terrain grid, base/roof Z, entrance Z, stairs/ladders/drops | every floor change is a node; entrance Z matches the terrain |
 | 4. Schedule | `schedule` | roles (`facade`/`enterable`/`safe-room`), floors, heights, areas | every enterable building has an entrance on the route |
@@ -37,6 +37,24 @@ Why the skeleton comes first: a site plan drawn before the route is a set of bui
 for a reason. A route designed after the buildings is a corridor forced through them. The
 skeleton is the one place where "interesting" is decided: a turn, a floor, a side room, a
 one-way drop, a holdout, a reveal. The site, terrain and floors then have to serve it.
+
+### Flow is decided in the skeleton, drawn last
+
+"Flow" has two meanings and they belong at opposite ends of the chain:
+
+- **the flow decision** — the route, its turns, floor changes, landmarks, gates and the
+  Director's peaks and rests. This is authored in the **skeleton**, including the route through
+  a large multi-storey building;
+- **the flow sheet** — splines, cover, spawn/cover/holdout/crescendo/finale areas, item clusters
+  and per-load variation. This is drawn at stage 6, because it needs real rooms and coordinates.
+
+So a building's interior route is not postponed to the flow sheet. Its rooms and stairs are
+skeleton nodes (`buildingId`, `floor`, `space`, `kind: "stair"`/`"drop"`), and the later floor
+plans must contain those nodes. The detailed flow sheet decorates a route that already exists.
+
+The full first-layer playbook, the research it is based on and the authoring procedure are in
+[`../references/planning/route-skeleton.md`](../references/planning/route-skeleton.md). Read it
+before writing the skeleton.
 
 Why not all at once: a footprint change after floor plans invalidates every room; a route
 change after the schedule invalidates the entrances. The stages are a dependency chain, not a
@@ -250,13 +268,16 @@ must not quietly resolve an open question by picking the easiest geometry.
 
 ## When the design is done
 
-1. Run `check_map_plan` on `plan/plan.json`; fix every error.
-2. Run `render_map_plan`; look at all five drawings and every enterable floor/section.
+1. Run `check_map_plan` at `skeleton` first; fix every error before the site exists. Then run it
+   at `approved`.
+2. Run `render_map_plan`; look at all five drawings, every district boundary, the rhythm strip
+   and every enterable floor/section.
 3. Read it once as the builder: can you build chapter 1 without asking a creative question?
 4. Check every asset name with `read_game_content`; check every class with `read_fgd_class`.
 5. Set `Status: approved` only after the user has seen it (or explicitly delegated approval).
 6. Report the JSON, the drawing directory and the findings, and stop. The next message is pass
    2: `workflows/new-campaign.md`.
 
-A design with a missing route, an empty beat sheet, unnamed assets or no acceptance list is a
-draft, not a handoff. The build pass will refuse it.
+A design with a missing route, a flat intensity curve, unnamed districts, an unanchored branch,
+an empty beat sheet, unnamed assets or no acceptance list is a draft, not a handoff. The build
+pass will refuse it.

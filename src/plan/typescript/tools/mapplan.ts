@@ -103,6 +103,8 @@ const RouteNode = z.object({
   z: z.number(),
   floor: z.number().int().min(1),
   buildingId: z.string().optional(),
+  space: z.string().default("").describe("Named space; consecutive nodes in one space share it."),
+  district: z.string().optional(),
   kind: z.enum([
     "start",
     "street",
@@ -118,6 +120,11 @@ const RouteNode = z.object({
     "finale",
     "escape",
   ]),
+  enclosure: z.enum(["open", "covered", "tight", "vista"]).default("open"),
+  intensity: z.number().int().min(0).max(5).default(2),
+  landmark: z.string().default("").describe("What the player sees from here, or empty."),
+  gate: z.enum(["none", "hard", "soft", "one-way", "lock"]).default("none"),
+  beat: z.string().optional().describe("Beat id this node serves."),
 });
 
 const VERTICAL_KINDS = new Set(["stair", "ladder", "elevator", "ramp", "drop"]);
@@ -125,10 +132,24 @@ const VERTICAL_KINDS = new Set(["stair", "ladder", "elevator", "ramp", "drop"]);
 const Route = z.object({
   id: z.string(),
   kind: z.enum(["critical", "branch", "escape"]),
+  typology: z
+    .enum([
+      "corridor",
+      "switchback",
+      "loop",
+      "hub",
+      "arena",
+      "pass-through",
+      "gauntlet",
+      "string-of-pearls",
+    ])
+    .default("corridor"),
   width: z.number().positive().describe("Clear width in Hammer units; 64 is the hull."),
   points: z.array(XYZ).min(2),
   nodes: z.array(RouteNode).default([]),
   stops: z.array(Stop).default([]),
+  from: z.string().optional().describe("Branch anchor: node id on the critical route where it leaves."),
+  to: z.string().optional().describe("Branch anchor: node id where it rejoins; omit for a dead end."),
 });
 
 const Terrain = z
@@ -181,6 +202,15 @@ const Beat = z.object({
   space: z.string(),
   what: z.string(),
   proof: z.string(),
+  intensity: z.number().int().min(0).max(5).default(2),
+});
+
+const District = z.object({
+  id: z.string().regex(/^[a-z0-9][a-z0-9_-]*$/),
+  name: z.string(),
+  mood: z.string().default(""),
+  motif: z.string().default(""),
+  landmark: z.string().default(""),
 });
 
 const STAGES = [
@@ -199,6 +229,9 @@ const Plan = z.object({
   name: z.string(),
   kind: z.enum(["campaign", "map"]),
   stage: z.enum(STAGES).default("approved"),
+  experience: z.string().default(""),
+  pillars: z.array(z.string()).default([]),
+  districts: z.array(District).default([]),
   site: z
     .object({
       bounds: z.object({ x0: z.number(), y0: z.number(), x1: z.number(), y1: z.number() }),
@@ -351,6 +384,229 @@ function routeSamples(route: PlanRoute, step = 32): Vec2[] {
   return out;
 }
 
+type PlanNode = PlanRoute["nodes"][number];
+
+function routeSpace(node: PlanNode): string {
+  return node.space || node.buildingId || node.kind;
+}
+
+function countTurns(route: PlanRoute): number {
+  let turns = 0;
+  for (let index = 1; index + 1 < route.points.length; index += 1) {
+    const a = route.points[index - 1]!;
+    const b = route.points[index]!;
+    const c = route.points[index + 1]!;
+    const ab = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    const bc = Math.atan2(c[1] - b[1], c[0] - b[0]);
+    let delta = Math.abs(bc - ab);
+    if (delta > Math.PI) delta = Math.PI * 2 - delta;
+    if (delta > Math.PI / 6) turns += 1;
+  }
+  return turns;
+}
+
+/**
+ * The mission/space graph checks. At the skeleton they are the quality gate; at later stages
+ * only references, branch anchors, beats, drop direction and floor planes are re-checked,
+ * because the route is frozen and the later stages must not silently re-litigate it.
+ */
+function checkRouteGraph(
+  plan: MapPlan,
+  add: (severity: Finding["severity"], rule: string, message: string) => void,
+  skeleton: boolean,
+): void {
+  const criticalIds = new Set<string>();
+  for (const route of plan.routes) {
+    if (route.kind !== "critical") continue;
+    for (const node of route.nodes) criticalIds.add(node.id);
+  }
+
+  const districtIds = new Set<string>();
+  for (const district of plan.districts) {
+    if (districtIds.has(district.id)) {
+      add("error", "district-duplicate", `district id ${district.id} is repeated`);
+    }
+    districtIds.add(district.id);
+    if (!district.landmark.trim()) {
+      add(skeleton ? "error" : "warning", "district-no-landmark", `${district.id} has no landmark`);
+    }
+    if (!district.motif.trim()) {
+      add(skeleton ? "error" : "warning", "district-no-motif", `${district.id} has no motif`);
+    }
+  }
+  if (skeleton && plan.districts.length < 2) {
+    add("error", "district-few", "a chapter needs at least two districts");
+  }
+
+  const beatIds = new Set(plan.beats.map((beat) => beat.id));
+  const usedDistricts = new Set<string>();
+  const usedBeats = new Set<string>();
+
+  for (const route of plan.routes) {
+    if (skeleton && route.width < 64) {
+      add("error", "route-too-narrow", `${route.id} is ${route.width} wide; the hull is 64`);
+    }
+    if (route.kind === "critical" && route.width < 96) {
+      add("warning", "route-narrow-critical", `${route.id} is ${route.width} wide; 96 is the comfortable critical width`);
+    }
+    if (route.kind === "branch") {
+      if (!route.from) {
+        add("error", "branch-no-anchor", `${route.id} is a branch but has no from node`);
+      } else if (!criticalIds.has(route.from)) {
+        add(
+          "error",
+          "branch-unknown-anchor",
+          `${route.id} leaves from ${route.from}, which is not on a critical route`,
+        );
+      }
+      if (route.to && !criticalIds.has(route.to)) {
+        add(
+          "error",
+          "branch-unknown-anchor",
+          `${route.id} rejoins at ${route.to}, which is not on a critical route`,
+        );
+      }
+    }
+
+    for (let index = 0; index < route.nodes.length; index += 1) {
+      const node = route.nodes[index]!;
+      if (node.district) {
+        usedDistricts.add(node.district);
+        if (!districtIds.has(node.district)) {
+          add("error", "district-unknown", `${node.id} names district ${node.district}, which does not exist`);
+        }
+      } else if (skeleton) {
+        add("error", "node-no-district", `${node.id} has no district`);
+      }
+      if (skeleton && !node.space.trim()) {
+        add("error", "node-no-space", `${node.id} has no named space`);
+      }
+      if (node.beat) {
+        usedBeats.add(node.beat);
+        if (!beatIds.has(node.beat)) {
+          add("error", "node-unknown-beat", `${node.id} names beat ${node.beat}, which does not exist`);
+        }
+      }
+      if (skeleton && node.kind === "drop") {
+        const next = route.nodes[index + 1];
+        if (next && next.z >= node.z) {
+          add("warning", "route-drop-up", `${node.id} is a drop but the next node is not lower`);
+        }
+      }
+    }
+
+    if (!skeleton || route.kind !== "critical") continue;
+
+    const spaces = new Set(route.nodes.map(routeSpace));
+    if (spaces.size < 3) {
+      add("warning", "route-few-spaces", `${route.id} visits ${spaces.size} named space(s); three is the minimum`);
+    }
+    const vertical = route.nodes.filter((node) => VERTICAL_KINDS.has(node.kind));
+    if (route.nodes.length >= 2 && vertical.length === 0) {
+      add("warning", "route-no-verticality", `${route.id} has no floor change; a multi-level map needs at least one`);
+    }
+    if (countTurns(route) < 2) {
+      add("warning", "route-straight", `${route.id} has fewer than two turns; it reads as a corridor`);
+    }
+
+    const intensities = route.nodes.map((node) => node.intensity);
+    if (intensities.length > 0) {
+      const min = Math.min(...intensities);
+      const max = Math.max(...intensities);
+      if (min === max) {
+        add("warning", "route-flat-intensity", `${route.id} has one intensity (${min}); the Director has no curve`);
+      }
+      if (max < 4) {
+        add("warning", "route-no-peak", `${route.id} has no node at intensity 4 or 5`);
+      }
+      if (intensities.filter((value) => value <= 2).length < 2) {
+        add("warning", "route-no-rest", `${route.id} has fewer than two rest nodes (intensity 0-2)`);
+      }
+      let run = 0;
+      for (const value of intensities) {
+        run = value >= 4 ? run + 1 : 0;
+        if (run >= 3) {
+          add("warning", "route-high-run", `${route.id} has three high-intensity nodes in a row`);
+          break;
+        }
+      }
+    }
+
+    let sameEnclosure = 0;
+    let previousEnclosure = "";
+    for (const node of route.nodes) {
+      sameEnclosure = node.enclosure === previousEnclosure ? sameEnclosure + 1 : 1;
+      previousEnclosure = node.enclosure;
+      if (sameEnclosure >= 4) {
+        add("warning", "route-monotone-enclosure", `${route.id} has four ${node.enclosure} nodes in a row`);
+        break;
+      }
+    }
+    if (!route.nodes.some((node) => node.enclosure === "vista")) {
+      add("warning", "route-no-vista", `${route.id} has no vista; add one long view`);
+    }
+    let withoutLandmark = 0;
+    for (const node of route.nodes) {
+      withoutLandmark = node.landmark.trim() ? 0 : withoutLandmark + 1;
+      if (withoutLandmark > 4) {
+        add("warning", "route-landmark-gap", `${route.id} goes more than four nodes without a landmark`);
+        break;
+      }
+    }
+    if (!route.nodes.some((node) => node.landmark.trim())) {
+      add("warning", "route-no-landmark", `${route.id} has no landmark; the player has nothing to aim at`);
+    }
+    if (!route.nodes.some((node) => node.gate !== "none")) {
+      add("warning", "route-no-gate", `${route.id} has no gate; nothing gives the chapter a shape`);
+    }
+    if (route.nodes.length > 6 && route.typology === "corridor") {
+      add(
+        "warning",
+        "route-corridor",
+        `${route.id} has ${route.nodes.length} nodes and is still a corridor; use a typology`,
+      );
+    }
+
+    const floorsBySpace = new Map<string, Set<number>>();
+    for (const node of route.nodes) {
+      const key = routeSpace(node);
+      const floors = floorsBySpace.get(key) ?? new Set<number>();
+      floors.add(node.floor);
+      floorsBySpace.set(key, floors);
+    }
+    for (const [space, floors] of floorsBySpace) {
+      if (floors.size > 3) {
+        add(
+          "warning",
+          "route-too-many-floor-planes",
+          `${space} spans ${floors.size} floor planes; three is the readable maximum`,
+        );
+      }
+    }
+
+    const samples = routeSamples(route);
+    for (const node of route.nodes) {
+      const nearest = Math.min(...samples.map((point) => Math.hypot(point[0] - node.x, point[1] - node.y)));
+      if (Number.isFinite(nearest) && nearest > 160) {
+        add("warning", "node-off-spline", `${node.id} is ${nearest.toFixed(0)} u from the route spline`);
+      }
+    }
+  }
+
+  for (const district of plan.districts) {
+    if (!usedDistricts.has(district.id)) {
+      add(skeleton ? "error" : "warning", "district-unused", `${district.id} is not visited by any route node`);
+    }
+  }
+  if (skeleton) {
+    for (const beat of plan.beats) {
+      if (!usedBeats.has(beat.id)) {
+        add("warning", "beat-not-on-route", `beat ${beat.id} is not mapped to a route node`);
+      }
+    }
+  }
+}
+
 export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
   const findings: Finding[] = [];
   const add = (severity: Finding["severity"], rule: string, message: string): void => {
@@ -361,22 +617,41 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     enterable: plan.buildings.filter((building) => building.enterable).length,
     routes: plan.routes.length,
     beats: plan.beats.length,
+    districts: plan.districts.length,
   };
 
   // The authoring stages. `brief` and `skeleton` intentionally run before geometry exists;
   // site and later stages run the full geometric checks below.
   if (plan.stage === "brief" || plan.stage === "skeleton") {
-    if (plan.beats.length === 0) add("error", "brief-no-beats", "write at least one beat before geometry");
+    if (!plan.experience.trim()) {
+      add("error", "brief-no-experience", "write the one-sentence experience before geometry");
+    }
+    if (plan.pillars.length < 3) {
+      add("error", "brief-few-pillars", "write three pillars; they are the build pass's decision rules");
+    }
+    if (plan.beats.length === 0) {
+      add("error", "brief-no-beats", "write at least one beat before geometry");
+    } else if (plan.beats.length < 3) {
+      add("error", "brief-few-beats", "a chapter needs at least three beats");
+    }
     if (plan.acceptance.length === 0) {
       add("error", "brief-no-acceptance", "write the acceptance evidence before geometry");
+    }
+    if (plan.beats.length > 0) {
+      const hasPeak = plan.beats.some((beat) => beat.intensity >= 4);
+      const hasRest = plan.beats.some((beat) => beat.intensity <= 2);
+      if (!hasPeak || !hasRest) {
+        add("warning", "brief-flat-pacing", "the beats need at least one peak (4-5) and one rest (0-2)");
+      }
     }
     if (plan.stage === "skeleton") {
       if (plan.routes.length === 0) add("error", "skeleton-no-route", "the skeleton needs at least one route");
       for (const route of plan.routes) {
-        if (route.kind === "critical" && route.nodes.length < 2) {
-          add("error", "skeleton-route-too-short", `${route.id} needs at least two route nodes`);
+        if (route.kind === "critical" && route.nodes.length < 3) {
+          add("error", "skeleton-route-too-short", `${route.id} needs at least three route nodes`);
         }
       }
+      checkRouteGraph(plan, add, true);
     }
     return {
       path,
@@ -385,6 +660,8 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       counts,
     };
   }
+
+  checkRouteGraph(plan, add, false);
 
   if (plan.stage === "site" && plan.buildings.length === 0) {
     add("error", "site-no-buildings", "the site stage needs at least one building footprint");
@@ -537,22 +814,13 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
         add("warning", "route-no-verticality", `${route.id} has no floor change; a multi-level map needs at least one`);
       }
       if (route.nodes.length > 0) {
-        const spaces = new Set(route.nodes.map((node) => node.buildingId ?? "street"));
+        const spaces = new Set(route.nodes.map(routeSpace));
         if (spaces.size < 3) {
           add("warning", "route-few-spaces", `${route.id} visits ${spaces.size} space(s); three is the minimum for a chapter`);
         }
-        let turns = 0;
-        for (let index = 1; index + 1 < route.points.length; index += 1) {
-          const a = route.points[index - 1]!;
-          const b = route.points[index]!;
-          const c = route.points[index + 1]!;
-          const ab = Math.atan2(b[1] - a[1], b[0] - a[0]);
-          const bc = Math.atan2(c[1] - b[1], c[0] - b[0]);
-          let delta = Math.abs(bc - ab);
-          if (delta > Math.PI) delta = Math.PI * 2 - delta;
-          if (delta > Math.PI / 6) turns += 1;
+        if (countTurns(route) < 2) {
+          add("warning", "route-straight", `${route.id} has fewer than two turns; it reads as a corridor`);
         }
-        if (turns < 2) add("warning", "route-straight", `${route.id} has fewer than two turns; it reads as a corridor`);
       }
     }
     const samples = routeSamples(route);
@@ -854,12 +1122,71 @@ function terrainPlan(plan: MapPlan): string {
   );
 }
 
+function intensityColor(value: number): string {
+  const colors = ["#2471a3", "#5dade2", "#f4d03f", "#e67e22", "#c0392b", "#7b241c"];
+  return colors[Math.max(0, Math.min(colors.length - 1, Math.round(value)))]!;
+}
+
+function rhythmStrip(plan: MapPlan, t: Transform): string {
+  const route = plan.routes.find((candidate) => candidate.kind === "critical" && candidate.nodes.length > 1);
+  if (!route) return "";
+  const width = 240;
+  const height = 88;
+  const x = t.width - width - 48;
+  const y = t.height - height - 24;
+  const nodes = route.nodes;
+  const step = width / Math.max(1, nodes.length - 1);
+  const py = (value: number): number => y + 20 + (1 - value / 5) * (height - 42);
+  const points = nodes
+    .map((node, index) => `${(x + index * step).toFixed(1)},${py(node.intensity).toFixed(1)}`)
+    .join(" ");
+  const dots = nodes
+    .map(
+      (node, index) =>
+        `<circle cx="${(x + index * step).toFixed(1)}" cy="${py(node.intensity).toFixed(1)}" r="3" fill="${intensityColor(node.intensity)}" stroke="#fffdf7"/>`,
+    )
+    .join("");
+  return `<g>
+<rect x="${(x - 12).toFixed(1)}" y="${y}" width="${width + 24}" height="${height}" fill="#fffdf7" stroke="#8a8175" stroke-width="1" opacity="0.94"/>
+<text x="${x.toFixed(1)}" y="${(y + 14).toFixed(1)}" font-family="sans-serif" font-size="11" fill="#1b2631">Director rhythm · ${esc(route.id)}</text>
+<line x1="${x.toFixed(1)}" y1="${py(0).toFixed(1)}" x2="${(x + width).toFixed(1)}" y2="${py(0).toFixed(1)}" stroke="#d5dbdb"/>
+<line x1="${x.toFixed(1)}" y1="${py(5).toFixed(1)}" x2="${(x + width).toFixed(1)}" y2="${py(5).toFixed(1)}" stroke="#d5dbdb"/>
+<polyline points="${points}" fill="none" stroke="#34495e" stroke-width="1.5"/>
+${dots}
+<text x="${(x - 9).toFixed(1)}" y="${(py(5) + 3).toFixed(1)}" font-family="sans-serif" font-size="9" fill="#5d6d7e">5</text>
+<text x="${(x - 9).toFixed(1)}" y="${(py(0) + 3).toFixed(1)}" font-family="sans-serif" font-size="9" fill="#5d6d7e">0</text>
+</g>`;
+}
+
 function circulationPlan(plan: MapPlan): string {
   const t = fit(plan);
   const body: string[] = [];
   for (const building of plan.buildings) {
     body.push(rectSvg(building, t, "#e8e2d6", "#8a8175"));
   }
+  const districtNodes = new Map<string, PlanNode[]>();
+  for (const route of plan.routes) {
+    for (const node of route.nodes) {
+      if (!node.district) continue;
+      const list = districtNodes.get(node.district) ?? [];
+      list.push(node);
+      districtNodes.set(node.district, list);
+    }
+  }
+  const districtColors = ["#8e44ad", "#16a085", "#d35400", "#2980b9", "#c0392b", "#7d6608"];
+  plan.districts.forEach((district, index) => {
+    const nodes = districtNodes.get(district.id) ?? [];
+    if (nodes.length === 0) return;
+    const color = districtColors[index % districtColors.length]!;
+    const x0 = Math.min(...nodes.map((node) => node.x)) - 96;
+    const x1 = Math.max(...nodes.map((node) => node.x)) + 96;
+    const y0 = Math.min(...nodes.map((node) => node.y)) - 96;
+    const y1 = Math.max(...nodes.map((node) => node.y)) + 96;
+    body.push(
+      `<rect x="${t.sx(x0).toFixed(1)}" y="${t.sy(y1).toFixed(1)}" width="${((x1 - x0) * t.scale).toFixed(1)}" height="${((y1 - y0) * t.scale).toFixed(1)}" fill="${color}" fill-opacity="0.05" stroke="${color}" stroke-width="1.2" stroke-dasharray="10 6"/>`,
+      `<text x="${(t.sx(x0) + 6).toFixed(1)}" y="${(t.sy(y1) + 15).toFixed(1)}" font-family="sans-serif" font-size="11" fill="${color}">${esc(district.name || district.id)} · ${esc(district.landmark)}</text>`,
+    );
+  });
   const areaColor: Record<string, string> = {
     spawn: "#e67e22",
     cover: "#27ae60",
@@ -896,14 +1223,32 @@ function circulationPlan(plan: MapPlan): string {
     }
     for (const node of route.nodes) {
       const vertical = VERTICAL_KINDS.has(node.kind);
+      const fill = intensityColor(node.intensity);
+      const stroke = vertical ? "#8e44ad" : "#ffffff";
+      const cx = t.sx(node.x);
+      const cy = t.sy(node.y);
+      const label = `${node.kind} F${node.floor}${node.landmark ? " ★" : ""}${node.gate !== "none" ? ` ${node.gate}` : ""}`;
+      if (vertical) {
+        body.push(
+          `<polygon points="${cx.toFixed(1)},${(cy - 8).toFixed(1)} ${(cx + 8).toFixed(1)},${cy.toFixed(1)} ${cx.toFixed(1)},${(cy + 8).toFixed(1)} ${(cx - 8).toFixed(1)},${cy.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`,
+        );
+      } else {
+        body.push(
+          `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`,
+        );
+      }
+      if (node.gate !== "none") {
+        body.push(
+          `<rect x="${(cx + 5).toFixed(1)}" y="${(cy - 10).toFixed(1)}" width="7" height="7" fill="#f1c40f" stroke="#7d6608" stroke-width="0.8"/>`,
+        );
+      }
       body.push(
-        `<circle cx="${t.sx(node.x).toFixed(1)}" cy="${t.sy(node.y).toFixed(1)}" r="${vertical ? 7 : 4}" fill="${vertical ? "#8e44ad" : "#b03a2e"}" stroke="#fff" stroke-width="1"/>`,
-        `<text x="${(t.sx(node.x) + 9).toFixed(1)}" y="${(t.sy(node.y) - 7).toFixed(1)}" font-family="sans-serif" font-size="9" fill="${vertical ? "#8e44ad" : "#b03a2e"}">${esc(node.kind)} F${node.floor}</text>`,
+        `<text x="${(cx + 11).toFixed(1)}" y="${(cy - 8).toFixed(1)}" font-family="sans-serif" font-size="9" fill="#1b2631">${esc(label)}</text>`,
       );
     }
     const first = route.points[0]!;
     body.push(
-      `<text x="${t.sx(first[0]).toFixed(1)}" y="${(t.sy(first[1]) - 18).toFixed(1)}" font-family="sans-serif" font-size="11" fill="#b03a2e">${esc(route.id)} · ${route.width}u</text>`,
+      `<text x="${t.sx(first[0]).toFixed(1)}" y="${(t.sy(first[1]) - 18).toFixed(1)}" font-family="sans-serif" font-size="11" fill="#b03a2e">${esc(route.id)} · ${esc(route.typology)} · ${route.width}u</text>`,
     );
   }
   for (const building of plan.buildings) {
@@ -913,6 +1258,7 @@ function circulationPlan(plan: MapPlan): string {
       );
     }
   }
+  body.push(rhythmStrip(plan, t));
   return svg(
     "Circulation plan — critical path, branches, stops and entrances",
     t.width,
@@ -923,7 +1269,10 @@ function circulationPlan(plan: MapPlan): string {
       "green: building entrance",
       "band width = clear width",
       "coloured dashed: spawn/cover/holdout/crescendo/finale",
-      "dots: route nodes with floor; purple = stair/ladder/drop",
+      "dashed boundary: district; label = landmark",
+      "node fill: intensity (blue rest, red peak)",
+      "diamond: stair/ladder/ramp/drop; ★ landmark",
+      "gold square: gate; bottom right: rhythm",
     ]),
   );
 }
@@ -1064,6 +1413,7 @@ function section(building: PlanBuilding): string {
 }
 
 function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string {
+  const critical = plan.routes.find((route) => route.kind === "critical" && route.nodes.length > 0);
   const lines = [
     `# ${plan.name} — plan drawings`,
     "",
@@ -1072,9 +1422,23 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
     `Stage: ${plan.stage}`,
     `Validation: **${check.ok ? "pass" : "fail"}** (${check.findings.length} findings)`,
     "",
+    `Experience: ${plan.experience || "—"}`,
+    "",
+    "Pillars:",
+    ...(plan.pillars.length === 0 ? ["- —"] : plan.pillars.map((pillar) => `- ${pillar}`)),
+    "",
     "## Drawings",
     "",
     ...files.map((file) => `- [${basename(file)}](${basename(file)})`),
+    "",
+    "## Districts",
+    "",
+    "| id | name | mood | motif | landmark |",
+    "|---|---|---|---|---|",
+    ...plan.districts.map(
+      (district) =>
+        `| ${district.id} | ${district.name} | ${district.mood} | ${district.motif} | ${district.landmark} |`,
+    ),
     "",
     "## Buildings",
     "",
@@ -1087,12 +1451,26 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
     "",
     "## Routes",
     "",
-    "| id | kind | width | stops |",
-    "|---|---|---:|---|",
+    "| id | kind | typology | width | from | to | stops |",
+    "|---|---|---|---:|---|---|---|",
     ...plan.routes.map(
-      (route) => `| ${route.id} | ${route.kind} | ${route.width} | ${route.stops.map((stop) => stop.label).join(", ")} |`,
+      (route) =>
+        `| ${route.id} | ${route.kind} | ${route.typology} | ${route.width} | ${route.from ?? ""} | ${route.to ?? ""} | ${route.stops.map((stop) => stop.label).join(", ")} |`,
     ),
     "",
+    ...(critical
+      ? [
+          "## Route rhythm",
+          "",
+          "| # | node | kind | space | floor | intensity | enclosure | landmark | gate |",
+          "|---:|---|---|---|---:|---:|---|---|---|",
+          ...critical.nodes.map(
+            (node, index) =>
+              `| ${index + 1} | ${node.label || node.id} | ${node.kind} | ${node.space || node.buildingId || "—"} | F${node.floor} | ${node.intensity} | ${node.enclosure} | ${node.landmark || "—"} | ${node.gate} |`,
+          ),
+          "",
+        ]
+      : []),
     "## Gameplay and nav areas",
     "",
     "| id | kind | label | note |",
@@ -1157,10 +1535,11 @@ function loadPlan(path: string): MapPlan {
 export const checkMapPlanTool = defineTool({
   name: "check_map_plan",
   description:
-    "Validates a five-drawing map plan (JSON) without building: footprints inside the site, " +
-    "building overlaps, route width and route-through-building, entrances near the route and " +
-    "their terrain height, floors, beats, palette and acceptance. The JSON is the contract; " +
-    "the drawings are its view. Read-only.",
+    "Validates a five-drawing map plan (JSON) without building: the brief (experience, pillars, " +
+    "beats), the route skeleton (districts, named spaces, intensity, landmarks, gates, branch " +
+    "anchors), footprints inside the site, building overlaps, route width and " +
+    "route-through-building, entrances near the route and their terrain height, floors, palette " +
+    "and acceptance. The JSON is the contract; the drawings are its view. Read-only.",
   realm: "local",
   inputSchema: { path: z.string().describe("Path to plan.json, absolute or repo-relative.") },
   outputSchema: {
@@ -1174,6 +1553,7 @@ export const checkMapPlanTool = defineTool({
       enterable: z.number(),
       routes: z.number(),
       beats: z.number(),
+      districts: z.number(),
     }),
   },
   handler: (args, ctx) => {
@@ -1187,9 +1567,10 @@ export const renderMapPlanTool = defineTool({
   name: "render_map_plan",
   description:
     "Renders a map plan JSON as the five pass-1 drawings: site plan, vertical/terrain plan, " +
-    "circulation plan, building/height schedule, and floor plans/sections for every enterable " +
-    "building, plus plan.md. Validates first and reports the same findings. Plain SVG, no CAD " +
-    "install; writes only under the plan directory. Guarded.",
+    "circulation plan with districts, intensity-coloured route nodes, landmarks, gates and a " +
+    "Director rhythm strip, building/height schedule, and floor plans/sections for every " +
+    "enterable building, plus plan.md. Validates first and reports the same findings. Plain SVG, " +
+    "no CAD install; writes only under the plan directory. Guarded.",
   realm: "local",
   guarded: true,
   inputSchema: {
@@ -1215,6 +1596,7 @@ export const renderMapPlanTool = defineTool({
         enterable: z.number(),
         routes: z.number(),
         beats: z.number(),
+        districts: z.number(),
       }),
     }),
   },

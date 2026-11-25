@@ -241,8 +241,12 @@ describe("map plan drawings", () => {
       name: "Brief only",
       kind: "map",
       stage: "brief",
+      experience: "the survivors cross the beach before the horde",
+      pillars: ["the sea stays on the left", "every fight has a way around", "climb before you drop"],
       beats: [
-        { id: "b1", chapter: 1, type: "quiet", space: "house", what: "the sea", proof: "screenshot" },
+        { id: "b1", chapter: 1, type: "quiet", space: "house", what: "the sea", proof: "screenshot", intensity: 1 },
+        { id: "b2", chapter: 1, type: "fight", space: "street", what: "first commons", proof: "spawn count", intensity: 4 },
+        { id: "b3", chapter: 1, type: "quiet", space: "house", what: "restock", proof: "screenshot", intensity: 2 },
       ],
       acceptance: ["gate pass"],
     });
@@ -255,6 +259,119 @@ describe("map plan drawings", () => {
     const check = checkMapPlan("floors.json", parsed);
     expect(check.ok).toBe(false);
     expect(check.findings.map((finding) => finding.rule)).toContain("no-floor-plan");
+  });
+
+  it("checks a multi-level skeleton for districts, pacing, landmarks and gates", () => {
+    const skeleton = MapPlanSchema.parse({
+      version: 1,
+      name: "Skeleton test",
+      kind: "map",
+      stage: "skeleton",
+      experience: "leave the beach, hold the pier shed, climb to the roof and drop into the market",
+      pillars: ["the sea stays on the left", "every fight has a way around", "climb before you drop"],
+      acceptance: ["skeleton gate pass"],
+      districts: [
+        { id: "beach", name: "Beach", mood: "exposed", motif: "sand and bleached wood", landmark: "lifeguard tower" },
+        { id: "pier", name: "Pier", mood: "tight", motif: "tarred timber", landmark: "ferris wheel" },
+        { id: "market", name: "Market", mood: "crowded", motif: "stucco and canvas", landmark: "clock tower" },
+      ],
+      beats: [
+        { id: "b1", chapter: 1, type: "quiet", space: "beach", what: "the sea", proof: "screenshot", intensity: 1 },
+        { id: "b2", chapter: 1, type: "fight", space: "boardwalk", what: "first commons", proof: "spawn count", intensity: 3 },
+        { id: "b3", chapter: 1, type: "crescendo", space: "pier shed", what: "hold the door", proof: "STAGE_DONE", intensity: 5 },
+        { id: "b4", chapter: 1, type: "quiet", space: "market", what: "restock", proof: "screenshot", intensity: 2 },
+      ],
+      routes: [
+        {
+          id: "critical",
+          kind: "critical",
+          typology: "string-of-pearls",
+          width: 96,
+          points: [
+            [200, 300, 0],
+            [700, 300, 0],
+            [700, 900, 0],
+            [1100, 900, 0],
+            [1100, 300, 0],
+            [1500, 300, 0],
+          ],
+          stops: [
+            { id: "start", label: "start", x: 200, y: 300, z: 0, kind: "start" },
+            { id: "end", label: "market", x: 1500, y: 300, z: 0, kind: "safe-room" },
+          ],
+          nodes: [
+            { id: "n_start", label: "start", x: 200, y: 300, z: 0, floor: 1, space: "beach", district: "beach", kind: "start", enclosure: "open", intensity: 1, landmark: "lifeguard tower", gate: "none", beat: "b1" },
+            { id: "n_boardwalk", label: "boardwalk", x: 700, y: 300, z: 0, floor: 1, space: "boardwalk", district: "beach", kind: "street", enclosure: "open", intensity: 3, landmark: "ferris wheel", gate: "none", beat: "b2" },
+            { id: "n_door", label: "pier door", x: 700, y: 900, z: 0, floor: 1, space: "pier shed", district: "pier", kind: "door", enclosure: "covered", intensity: 3, landmark: "", gate: "hard", beat: "b3" },
+            { id: "n_hold", label: "shed hold", x: 700, y: 900, z: 0, floor: 1, space: "pier shed", district: "pier", kind: "room", enclosure: "tight", intensity: 5, landmark: "", gate: "none", beat: "b3" },
+            { id: "n_stair", label: "stair up", x: 1100, y: 900, z: 0, floor: 1, space: "pier shed", district: "pier", kind: "stair", enclosure: "tight", intensity: 4, landmark: "", gate: "none", beat: "b3" },
+            { id: "n_roof", label: "shed roof", x: 1100, y: 900, z: 128, floor: 2, space: "pier shed", district: "pier", kind: "roof", enclosure: "vista", intensity: 2, landmark: "clock tower", gate: "none", beat: "b4" },
+            { id: "n_drop", label: "drop to market", x: 1100, y: 300, z: 128, floor: 2, space: "market roof", district: "market", kind: "drop", enclosure: "vista", intensity: 2, landmark: "clock tower", gate: "one-way", beat: "b4" },
+            { id: "n_market", label: "market", x: 1500, y: 300, z: 0, floor: 1, space: "market", district: "market", kind: "room", enclosure: "covered", intensity: 2, landmark: "", gate: "none", beat: "b4" },
+          ],
+        },
+        {
+          id: "side",
+          kind: "branch",
+          typology: "switchback",
+          width: 64,
+          points: [
+            [700, 900, 0],
+            [600, 900, 0],
+          ],
+          from: "n_door",
+          nodes: [
+            { id: "n_side", label: "side room", x: 600, y: 900, z: 0, floor: 1, space: "side room", district: "pier", kind: "room", enclosure: "tight", intensity: 2, landmark: "", gate: "none" },
+          ],
+        },
+      ],
+    });
+    const check = checkMapPlan("skeleton.json", skeleton);
+    expect(check.ok, check.findings.map((finding) => finding.message).join(" | ")).toBe(true);
+    expect(check.findings.map((finding) => finding.rule)).not.toContain("route-flat-intensity");
+
+    renderMapPlan("skeleton.json", skeleton, join(root, "skeleton-drawings"));
+    const circulation = readFileSync(join(root, "skeleton-drawings", "03-circulation-plan.svg"), "utf8");
+    expect(circulation).toContain("Pier");
+    expect(circulation).toContain("Director rhythm");
+    const markdown = readFileSync(join(root, "skeleton-drawings", "plan.md"), "utf8");
+    expect(markdown).toContain("Route rhythm");
+    expect(markdown).toContain("string-of-pearls");
+
+    const flat = MapPlanSchema.parse({
+      ...skeleton,
+      routes: skeleton.routes.map((route) => ({
+        ...route,
+        nodes: route.nodes.map((node) => ({ ...node, intensity: 2 })),
+      })),
+    });
+    const flatCheck = checkMapPlan("flat.json", flat);
+    const flatRules = flatCheck.findings.map((finding) => finding.rule);
+    expect(flatRules).toContain("route-flat-intensity");
+    expect(flatRules).toContain("route-no-peak");
+
+    const noDistricts = MapPlanSchema.parse({
+      ...skeleton,
+      districts: [],
+      routes: skeleton.routes.map((route) => ({
+        ...route,
+        nodes: route.nodes.map((node) => ({ ...node, district: undefined })),
+      })),
+    });
+    const districtCheck = checkMapPlan("no-districts.json", noDistricts);
+    expect(districtCheck.ok).toBe(false);
+    expect(districtCheck.findings.map((finding) => finding.rule)).toEqual(
+      expect.arrayContaining(["district-few", "node-no-district"]),
+    );
+
+    const badBranch = MapPlanSchema.parse({
+      ...skeleton,
+      routes: skeleton.routes.map((route) =>
+        route.kind === "branch" ? { ...route, from: "n_missing" } : route,
+      ),
+    });
+    const branchCheck = checkMapPlan("bad-branch.json", badBranch);
+    expect(branchCheck.findings.map((finding) => finding.rule)).toContain("branch-unknown-anchor");
   });
 
   it("fails a route that crosses a building, a narrow route and duplicate ids", () => {

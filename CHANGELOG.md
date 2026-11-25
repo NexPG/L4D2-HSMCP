@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.290-alpha - 2026-11-25
+
+- **The route skeleton is now the first quality gate.** The brief carries `experience`, three
+  `pillars` and beats with `intensity`. The skeleton adds `districts[]` (motif + landmark),
+  named `node.space`, `district`, `enclosure`, `intensity`, `landmark`, `gate` and `beat`, plus
+  route `typology` and branch anchors `from`/`to`.
+- **Proven practices become checks, not decoration.** Lynch's districts and landmarks, the
+  Level Design Book's critical path / circulation / verticality / wayfinding / pacing, the
+  Source metrics and the L4D2 Director curve are mapped to fields and checks in
+  `references/planning/route-skeleton.md`: at least two districts, three named spaces, two
+  turns, one vertical node, a peak and two rests, no three high nodes in a row, a vista, a
+  landmark every four nodes, a gate, a drop that goes down, and no unanchored branch.
+- **Flow is split explicitly.** The flow decision belongs to the skeleton, including the route
+  through a multi-storey interior; the detailed flow sheet stays last because it needs real
+  coordinates and rooms.
+- **The circulation drawing** now shows district boundaries, intensity-coloured nodes,
+  landmark stars, gate squares and a Director rhythm strip. `plan.md` adds the districts and the
+  route-rhythm table.
+- Tests: 260 files, 2,028 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.289-alpha - 2026-11-25
 
 - **Pass 1 is now an 8-stage dependency chain, not five drawings at once:** brief → route

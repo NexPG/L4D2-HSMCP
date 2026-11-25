@@ -3,7 +3,8 @@
 Pass 1 is not prose. It is a **plan**: a JSON source plus five drawings. The drawings are
 views of the JSON, not the source, so a disagreement is a bug in the renderer, not a design
 decision to guess at. The research behind the authoring order — mission graph, space graph,
-floor-plan graph — is in [`pipeline-research.md`](pipeline-research.md).
+floor-plan graph — is in [`pipeline-research.md`](pipeline-research.md); the first layer, and the
+proven practices it encodes, is in [`route-skeleton.md`](route-skeleton.md).
 
 ## What real projects draw
 
@@ -64,12 +65,15 @@ VDC *Checkpoints* and *Nav Flow* (five-level flow, Director goal); the project's
   enterable, entrances, per-floor rooms and stairs.
 - `stage` — `brief`, `skeleton`, `site`, `vertical`, `schedule`, `floors`, `flow`, `approved`;
   the authoring gate the JSON is at.
-- `routes` — kind, clear width, points (X/Y/Z), **nodes** with `floor`/`buildingId`/kind, and
-  stops with a kind (`start`, `checkpoint`, `safe-room`, `crescendo`, `tank`, `witch`,
-  `finale`, `escape`, `branch`).
+- `experience`, `pillars` — the one-sentence promise and the three decision rules.
+- `districts` — `id`, `name`, `mood`, `motif`, `landmark`; the mental-map chunks of the chapter.
+- `routes` — kind, typology, clear width, points (X/Y/Z), **nodes** with `floor`/`buildingId`/
+  `space`/`district`/kind/`enclosure`/`intensity`/`landmark`/`gate`/`beat`, branch anchors
+  (`from`/`to`), and stops with a kind (`start`, `checkpoint`, `safe-room`, `crescendo`, `tank`,
+  `witch`, `finale`, `escape`, `branch`).
 - `areas` — gameplay/nav overlays: spawn, cover, holdout, crescendo, tank, witch, one-way,
   no-mob, checkpoint, safe-room, finale, battlefield, item-cluster.
-- `beats` — chapter, type, space, what changes, proof.
+- `beats` — chapter, type, space, what changes, proof, intensity.
 - `finale`, `budget`, `palette`, `variability`, `acceptance` — the rest of the design.
 
 The drawings are rendered from that file; a plan that exists only as a picture is not a
@@ -89,15 +93,24 @@ height disagrees with the terrain, ids repeat, or beats/acceptance are empty. Wa
 overlaps, a missing floor plan, an entrance Z mismatch, a route over water and a campaign with
 no finale block.
 
+At `stage: "brief"` it fails until the experience, three pillars, three beats and acceptance
+exist. At `stage: "skeleton"` it adds the route-quality gate: two districts with landmarks and
+motifs, named spaces and districts on every node, a beat mapped to a node, three distinct
+spaces, two turns, a vertical node, a peak and two rests, no three high nodes in a row, no four
+identical enclosures, a vista, a landmark every four nodes, a gate, a drop that goes down, and
+a branch anchored to the critical route. The errors are structural; the warnings are design
+prompts, not noise.
+
 `render_map_plan` writes, under `plan/drawings/` by default:
 
 1. `01-site-plan.svg` — footprints, ids, sizes, rotation, coordinates, grid, north, scale.
 2. `02-vertical-plan.svg` — terrain cells, heights, water, base/roof labels.
 3. `03-circulation-plan.svg` — critical path (red), branches (blue), width band, stops,
-   entrances, no-build zones.
+   entrances, districts, route nodes coloured by intensity, landmarks and gates, and the
+   Director rhythm strip.
 4. `04-building-schedule.svg` — table of floors, base/roof/height, area, enterable, doors.
-5. `05-floor-<id>.svg` and `06-section-<id>.svg` for every enterable building.
-6. `plan.md` — the index, links, table and findings.
+5. `05-floor-<id>-f<level>.svg` and `06-section-<id>.svg` for every enterable building.
+6. `plan.md` — the index, links, districts, route rhythm, findings.
 
 ## Architectural sources
 
@@ -123,15 +136,20 @@ second source.
 
 The five sheets are dependency-ordered views, not five independent tasks:
 
-1. **Brief** (`stage: "brief"`) — beats, acceptance, no geometry.
-2. **Skeleton** (`stage: "skeleton"`) — the critical route as **nodes**: X/Y/Z, floor, building
-   id, node kind (`street`, `door`, `room`, `stair`, `drop`, `finale`, …). Decide the turns,
-   the vertical beats and the side rooms here; this is the route, not the site.
+1. **Brief** (`stage: "brief"`) — experience, three pillars, beats with intensity, acceptance,
+   no geometry.
+2. **Skeleton** (`stage: "skeleton"`) — districts (motif + landmark), the critical route as
+   **nodes**: X/Y/Z, floor, building id, named space, kind (`street`, `door`, `room`, `stair`,
+   `drop`, `finale`, …), enclosure, intensity, landmark, gate and beat. Decide the turns, the
+   vertical beats, the side rooms, the Director curve and the reveal here; this is the route,
+   not the site. The route through a large multi-storey interior belongs here too.
 3. **Site** (`stage: "site"`) — footprints around the skeleton, entrances, no-build/water.
 4. **Vertical** (`stage: "vertical"`) — terrain, base/roof Z, entrance Z, stairs/ladders/drops.
 5. **Schedule** (`stage: "schedule"`) — role (`facade`/`enterable`/`safe-room`), floors, height.
 6. **Floors** (`stage: "floors"`) — one floor plan per level; sections; route nodes in rooms.
-7. **Flow** (`stage: "flow"`) — splines, branches, cover/spawn/holdout/crescendo/finale, items.
+7. **Flow** (`stage: "flow"`) — the detailed splines, branches, cover/spawn/holdout/crescendo/
+   finale areas and item budget. The flow **decision** was already made in the skeleton; this
+   stage draws it at real coordinates.
 8. **Approved** — frozen JSON + all drawings.
 
 A site plan drawn before the route is buildings looking for a reason; a route drawn after the
@@ -148,8 +166,10 @@ that floor's plan marks the stair and the route node. `check_map_plan`:
 - fails a route node on an enterable building that has no floor plan for that level (from the
   `floors` stage);
 - warns when a `stair`/`drop` node's neighbours stay on the same floor;
-- warns when a critical route has no vertical node, fewer than three spaces or fewer than two
-  turns (a corridor);
+- warns when a critical route has no vertical node, fewer than three named spaces or fewer than
+  two turns (a corridor), no peak/rest, no landmark/vista or no gate;
+- fails when a route node names a district that does not exist, and when a branch has no
+  critical-route anchor;
 - renders `05-floor-<building>-f<level>.svg` for every level, not one plan with all rooms
   stacked.
 
@@ -158,10 +178,12 @@ through-house and the set piece are interiors.
 
 ## Pass 1, exactly
 
-1. Write the brief/beats in `plan/DESIGN.md` and the route skeleton in `plan.json` (`stage:
-   "skeleton"`).
-2. `check_map_plan` at each stage; fix errors before the next.
+1. Write the experience, pillars, beats and acceptance in `plan/DESIGN.md`; write the districts
+   and the route skeleton in `plan.json` (`stage: "brief"`, then `"skeleton"`). Use
+   [`route-skeleton.md`](route-skeleton.md) as the procedure.
+2. `check_map_plan` at each stage; fix errors before the next. Do not leave a flat intensity
+   curve, a missing landmark or an unanchored branch for the build pass to discover.
 3. `render_map_plan` after site/vertical/schedule/floors/flow; look at every sheet and every
-   per-floor plan.
+   per-floor plan, including the district boundaries and the rhythm strip.
 4. Set `Status: approved` only after the user has seen the JSON and drawings.
 5. Report the JSON, drawing directory and findings; stop. Pass 2 reads them.
