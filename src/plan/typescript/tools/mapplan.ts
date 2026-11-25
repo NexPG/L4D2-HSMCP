@@ -34,6 +34,7 @@ const Entrance = z.object({
 });
 
 const Room = z.object({
+  id: z.string().optional().describe("Stable id for door references; defaults to the name."),
   name: z.string(),
   x: z.number().describe("Building-local X from the footprint centre."),
   y: z.number(),
@@ -41,7 +42,22 @@ const Room = z.object({
   depth: POSITIVE,
 });
 
+const Door = z.object({
+  id: z.string().optional(),
+  x: z.number().describe("Building-local X from the footprint centre."),
+  y: z.number(),
+  width: POSITIVE.default(56).describe("Opening width."),
+  depth: POSITIVE.default(16).describe("Wall thickness."),
+  rotation: z.number().default(0).describe("Degrees relative to the building."),
+  from: z.string().describe('Room id/name on one side, or "outside".'),
+  to: z.string().describe('Room id/name on the other side, or "outside".'),
+  kind: z.enum(["door", "opening", "gate"]).default("door"),
+  locked: z.boolean().default(false),
+});
+
 const Stair = z.object({
+  id: z.string().optional(),
+  kind: z.enum(["stair", "ladder", "elevator", "ramp"]).default("stair"),
   x: z.number(),
   y: z.number(),
   width: POSITIVE,
@@ -54,6 +70,7 @@ const Floor = z.object({
   z: z.number(),
   height: z.number().min(96).default(128),
   rooms: z.array(Room).default([]),
+  doors: z.array(Door).default([]),
   stairs: z.array(Stair).default([]),
 });
 
@@ -385,6 +402,61 @@ function routeSamples(route: PlanRoute, step = 32): Vec2[] {
 }
 
 type PlanNode = PlanRoute["nodes"][number];
+type PlanFloor = PlanBuilding["floorsPlan"][number];
+type PlanRoom = PlanFloor["rooms"][number];
+type PlanDoor = PlanFloor["doors"][number];
+type PlanStair = PlanFloor["stairs"][number];
+
+function roomKey(room: PlanRoom): string {
+  return room.id ?? room.name;
+}
+
+function localToWorld(building: PlanBuilding, x: number, y: number): Vec2 {
+  const c = Math.cos(rad(building.rotation));
+  const s = Math.sin(rad(building.rotation));
+  return [building.x + x * c - y * s, building.y + x * s + y * c];
+}
+
+function distanceToRoom(door: PlanDoor, room: PlanRoom): number {
+  const dx = Math.max(Math.abs(door.x - room.x) - room.width / 2, 0);
+  const dy = Math.max(Math.abs(door.y - room.y) - room.depth / 2, 0);
+  return Math.hypot(dx, dy);
+}
+
+function doorAtNode(building: PlanBuilding, floor: PlanFloor, node: PlanNode): PlanDoor | null {
+  for (const door of floor.doors) {
+    const [x, y] = localToWorld(building, door.x, door.y);
+    if (Math.hypot(x - node.x, y - node.y) <= Math.max(64, door.width / 2 + 32)) return door;
+  }
+  return null;
+}
+
+function stairAtNode(
+  building: PlanBuilding,
+  floor: PlanFloor,
+  node: PlanNode,
+  kind: PlanStair["kind"],
+): PlanStair | null {
+  for (const stair of floor.stairs) {
+    if (stair.kind !== kind) continue;
+    const [x, y] = localToWorld(building, stair.x, stair.y);
+    if (Math.hypot(x - node.x, y - node.y) <= Math.max(96, stair.width / 2 + 32)) return stair;
+  }
+  return null;
+}
+
+function nodeLocal(building: PlanBuilding, node: PlanNode): Vec2 {
+  const c = Math.cos(rad(building.rotation));
+  const s = Math.sin(rad(building.rotation));
+  const dx = node.x - building.x;
+  const dy = node.y - building.y;
+  return [dx * c + dy * s, -dx * s + dy * c];
+}
+
+function nodeInRoom(building: PlanBuilding, room: PlanRoom, node: PlanNode): boolean {
+  const [lx, ly] = nodeLocal(building, node);
+  return Math.abs(lx - room.x) <= room.width / 2 && Math.abs(ly - room.y) <= room.depth / 2;
+}
 
 function routeSpace(node: PlanNode): string {
   return node.space || node.buildingId || node.kind;
@@ -709,6 +781,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       const severity = ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning";
       add(severity, "no-floor-plan", `${building.id} is enterable but has no floor plan`);
     }
+    const floorSeverity = ["floors", "flow", "approved"].includes(plan.stage) ? "error" : "warning";
     const levels = new Set<number>();
     for (const floor of building.floorsPlan) {
       if (levels.has(floor.level)) {
@@ -717,6 +790,70 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       levels.add(floor.level);
       if (floor.z < building.baseZ || floor.z >= roof) {
         add("warning", "floor-outside-building", `${building.id} floor ${floor.level} z=${floor.z} is outside the massing`);
+      }
+
+      const rooms = new Map<string, PlanRoom>();
+      for (const room of floor.rooms) {
+        const key = roomKey(room);
+        if (rooms.has(key)) {
+          add("error", "duplicate-room", `${building.id} F${floor.level} has room ${key} twice`);
+        }
+        rooms.set(key, room);
+      }
+
+      for (const door of floor.doors) {
+        if (door.from === door.to) {
+          add("error", "door-same-side", `${building.id} F${floor.level} door ${door.id ?? door.from} has the same room on both sides`);
+        }
+        if (door.from === "outside" && door.to === "outside") {
+          add("error", "door-no-room", `${building.id} F${floor.level} door ${door.id ?? "?"} connects outside to outside`);
+        }
+        for (const side of [door.from, door.to]) {
+          if (side !== "outside" && !rooms.has(side)) {
+            add(floorSeverity, "door-unknown-room", `${building.id} F${floor.level} door ${door.id ?? "?"} names room ${side}, which does not exist`);
+          }
+        }
+        if (Math.abs(door.x) > building.width / 2 + 48 || Math.abs(door.y) > building.depth / 2 + 48) {
+          add("warning", "door-outside-building", `${building.id} F${floor.level} door ${door.id ?? "?"} is outside the footprint`);
+        }
+        for (const side of [door.from, door.to]) {
+          if (side === "outside") continue;
+          const room = rooms.get(side);
+          if (room && distanceToRoom(door, room) > 64) {
+            add("warning", "door-not-near-room", `${building.id} F${floor.level} door ${door.id ?? "?"} is ${distanceToRoom(door, room).toFixed(0)} u from ${side}`);
+          }
+        }
+        if (door.from === "outside" || door.to === "outside") {
+          const [wx, wy] = localToWorld(building, door.x, door.y);
+          const nearEntrance = building.entrances.some(
+            (entrance) => Math.hypot(entrance.x - wx, entrance.y - wy) <= 96,
+          );
+          if (!nearEntrance) {
+            add("warning", "door-no-entrance", `${building.id} F${floor.level} door ${door.id ?? "?"} opens outside but has no entrance nearby`);
+          }
+        }
+      }
+
+      for (const stair of floor.stairs) {
+        if (stair.to === floor.level) {
+          add("error", "stair-same-floor", `${building.id} F${floor.level} stair ${stair.id ?? "?"} targets its own floor`);
+        }
+        if (Math.abs(stair.x) > building.width / 2 + 48 || Math.abs(stair.y) > building.depth / 2 + 48) {
+          add("warning", "stair-outside-building", `${building.id} F${floor.level} stair ${stair.id ?? "?"} is outside the footprint`);
+        }
+        const target = building.floorsPlan.find((candidate) => candidate.level === stair.to);
+        if (!target) {
+          add(floorSeverity, "stair-target-missing", `${building.id} F${floor.level} ${stair.kind} targets F${stair.to}, which has no floor plan`);
+        } else {
+          const hasReturn = target.stairs.some(
+            (candidate) =>
+              candidate.to === floor.level &&
+              Math.hypot(candidate.x - stair.x, candidate.y - stair.y) <= 128,
+          );
+          if (!hasReturn) {
+            add("warning", "stair-no-return", `${building.id} F${floor.level} ${stair.kind} has no matching landing on F${stair.to}`);
+          }
+        }
       }
     }
   }
@@ -784,17 +921,36 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
           if (!floor) {
             add(severity, "node-no-floor-plan", `${building.id} has no floor plan for node ${node.id} at F${node.floor}`);
           } else {
-            const c = Math.cos(rad(building.rotation));
-            const s = Math.sin(rad(building.rotation));
-            const dx = node.x - building.x;
-            const dy = node.y - building.y;
-            const lx = dx * c + dy * s;
-            const ly = -dx * s + dy * c;
-            const inRoom = floor.rooms.some(
-              (room) =>
-                Math.abs(lx - room.x) <= room.width / 2 && Math.abs(ly - room.y) <= room.depth / 2,
-            );
-            if (!inRoom) add("warning", "node-not-in-room", `${node.id} is not inside a room on ${building.id} F${node.floor}`);
+            const verticalKind = ["stair", "ladder", "elevator", "ramp"].includes(node.kind);
+            if (node.kind === "door") {
+              const door = doorAtNode(building, floor, node);
+              if (!door) {
+                add(severity, "node-no-door", `${node.id} is a door on ${building.id} F${node.floor} but no door is within reach`);
+              }
+            } else if (verticalKind) {
+              const stair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"]);
+              if (!stair) {
+                add(
+                  severity,
+                  "node-no-stair",
+                  `${node.id} is a ${node.kind} on ${building.id} F${node.floor} but no matching connection is within reach`,
+                );
+              } else {
+                const target = [route.nodes[index - 1], route.nodes[index + 1]].find(
+                  (neighbour) => neighbour && neighbour.floor !== node.floor,
+                );
+                if (target && stair.to !== target.floor) {
+                  add(
+                    "warning",
+                    "stair-target-mismatch",
+                    `${node.id} uses a ${stair.kind} to F${stair.to} but the route continues on F${target.floor}`,
+                  );
+                }
+              }
+            } else {
+              const inRoom = floor.rooms.some((room) => nodeInRoom(building, room, node));
+              if (!inRoom) add("warning", "node-not-in-room", `${node.id} is not inside a room on ${building.id} F${node.floor}`);
+            }
           }
         }
       }
@@ -1339,19 +1495,24 @@ function floorPlan(
   const levels = floor ? [floor] : building.floorsPlan;
   for (const level of levels) {
     for (const room of level.rooms) {
-      const wx = building.x + room.x * Math.cos(rad(building.rotation)) - room.y * Math.sin(rad(building.rotation));
-      const wy = building.y + room.x * Math.sin(rad(building.rotation)) + room.y * Math.cos(rad(building.rotation));
+      const [wx, wy] = localToWorld(building, room.x, room.y);
       body.push(
         `<polygon points="${polygonPoints(corners(wx, wy, room.width, room.depth, building.rotation), t)}" fill="#f5efe3" stroke="#8a8175"/>`,
         `<text x="${t.sx(wx).toFixed(1)}" y="${t.sy(wy).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1b2631">${esc(room.name)}</text>`,
       );
     }
+    for (const door of level.doors) {
+      const [wx, wy] = localToWorld(building, door.x, door.y);
+      body.push(
+        `<polygon points="${polygonPoints(corners(wx, wy, door.width, door.depth, building.rotation + door.rotation), t)}" fill="#f1c40f" stroke="#7d6608" stroke-width="1"/>`,
+        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) - 6).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7d6608">${esc(door.from)}→${esc(door.to)}</text>`,
+      );
+    }
     for (const stair of level.stairs) {
-      const wx = building.x + stair.x * Math.cos(rad(building.rotation)) - stair.y * Math.sin(rad(building.rotation));
-      const wy = building.y + stair.x * Math.sin(rad(building.rotation)) + stair.y * Math.cos(rad(building.rotation));
+      const [wx, wy] = localToWorld(building, stair.x, stair.y);
       body.push(
         `<polygon points="${polygonPoints(corners(wx, wy, stair.width, stair.depth, building.rotation), t)}" fill="#d5dbdb" stroke="#5d6d7e"/>`,
-        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) + 4).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#2c3e50">→F${stair.to}</text>`,
+        `<text x="${t.sx(wx).toFixed(1)}" y="${(t.sy(wy) + 4).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#2c3e50">${esc(stair.kind)} →F${stair.to}</text>`,
       );
     }
   }
@@ -1379,7 +1540,8 @@ function floorPlan(
     t.height,
     frame(title, plan, t, body.join("\n"), [
       "rooms: this floor only",
-      "grey: stair with target floor",
+      "gold: door/opening/gate (from→to)",
+      "grey: stair/ladder/elevator/ramp with target floor",
       "red: route node on this floor",
       "green: entrance",
     ]),
@@ -1414,6 +1576,18 @@ function section(building: PlanBuilding): string {
 
 function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string {
   const critical = plan.routes.find((route) => route.kind === "critical" && route.nodes.length > 0);
+  const connections = plan.buildings.flatMap((building) =>
+    building.floorsPlan.flatMap((floor) => [
+      ...floor.doors.map(
+        (door) =>
+          `| ${building.id} | F${floor.level} | ${door.kind}${door.locked ? " (locked)" : ""} | ${door.from} → ${door.to} | ${door.x}, ${door.y} | — |`,
+      ),
+      ...floor.stairs.map(
+        (stair) =>
+          `| ${building.id} | F${floor.level} | ${stair.kind} | F${floor.level} | ${stair.x}, ${stair.y} | F${stair.to} |`,
+      ),
+    ]),
+  );
   const lines = [
     `# ${plan.name} — plan drawings`,
     "",
@@ -1471,6 +1645,16 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
           "",
         ]
       : []),
+    ...(connections.length > 0
+      ? [
+          "## Floor connections",
+          "",
+          "| building | floor | kind | sides | at (local) | target |",
+          "|---|---|---|---|---|---|",
+          ...connections,
+          "",
+        ]
+      : []),
     "## Gameplay and nav areas",
     "",
     "| id | kind | label | note |",
@@ -1490,6 +1674,218 @@ function planMarkdown(plan: MapPlan, check: PlanCheck, files: string[]): string 
     "The drawings are a schematic. The JSON is the source; do not measure a build from an SVG.",
     "",
   ];
+  return lines.join("\n");
+}
+
+function buildSheet(plan: MapPlan, check: PlanCheck, files: string[]): string {
+  const critical = plan.routes.find((route) => route.kind === "critical");
+  const connectionFor = (node: PlanNode): string => {
+    if (!node.buildingId) return "—";
+    const building = plan.buildings.find((candidate) => candidate.id === node.buildingId);
+    if (!building?.enterable) return "—";
+    const floor = building.floorsPlan.find((candidate) => candidate.level === node.floor);
+    if (!floor) return "—";
+    if (node.kind === "door") {
+      const door = doorAtNode(building, floor, node);
+      return door ? `door ${door.id ?? `${door.from}→${door.to}`}` : "MISSING";
+    }
+    if (["stair", "ladder", "elevator", "ramp"].includes(node.kind)) {
+      const stair = stairAtNode(building, floor, node, node.kind as PlanStair["kind"]);
+      return stair ? `${stair.kind} ${stair.id ?? `F${floor.level}→F${stair.to}`}` : "MISSING";
+    }
+    if (node.kind === "drop") return "drop";
+    return "—";
+  };
+  const nodesForBeat = (beatId: string): string =>
+    plan.routes
+      .flatMap((route) => route.nodes.filter((node) => node.beat === beatId).map((node) => node.id))
+      .join(", ") || "—";
+  const lines: string[] = [
+    `# ${plan.name} — build sheet`,
+    "",
+    "Generated from `plan.json`. Do not edit; edit the JSON and re-render.",
+    `Stage: ${plan.stage}`,
+    `Validation: **${check.ok ? "pass" : "fail"}** (${check.findings.length} findings)`,
+    "",
+    `Experience: ${plan.experience || "—"}`,
+    "",
+    "Pillars:",
+    ...(plan.pillars.length === 0 ? ["1. —"] : plan.pillars.map((pillar, index) => `${index + 1}. ${pillar}`)),
+    "",
+    "## Read this first",
+    "",
+    "1. `plan.json` is the source of truth. If this sheet and the JSON disagree, the JSON wins and this sheet is stale: re-render.",
+    "2. Build the critical route in the table order. A row is a decision, threshold or floor change, not a distance.",
+    "3. The SVGs are views for a human/visual check. Never measure a build from an SVG.",
+    "4. `MISSING` in a connection column means the route claims a door or stair that the floor plan does not contain. Fix the JSON before building.",
+    "",
+    "## Districts",
+    "",
+    "| id | name | mood | motif | landmark |",
+    "|---|---|---|---|---|",
+    ...plan.districts.map(
+      (district) =>
+        `| ${district.id} | ${district.name} | ${district.mood} | ${district.motif} | ${district.landmark} |`,
+    ),
+    "",
+    "## Critical route",
+    "",
+    "| # | node | kind | space | district | F | building | x | y | z | connection | intensity | enclosure | landmark | gate | beat |",
+    "|---:|---|---|---|---|---:|---|---:|---:|---:|---|---:|---|---|---|---|",
+    ...(critical
+      ? critical.nodes.map(
+          (node, index) =>
+            `| ${index + 1} | ${node.label || node.id} (${node.id}) | ${node.kind} | ${node.space || "—"} | ${node.district ?? "—"} | F${node.floor} | ${node.buildingId ?? "—"} | ${node.x} | ${node.y} | ${node.z} | ${connectionFor(node)} | ${node.intensity} | ${node.enclosure} | ${node.landmark || "—"} | ${node.gate} | ${node.beat ?? "—"} |`,
+        )
+      : ["| — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |"]),
+    "",
+    "## Branches",
+    "",
+    "| route | typology | width | from | to | nodes |",
+    "|---|---|---:|---|---|---|",
+    ...plan.routes
+      .filter((route) => route.kind !== "critical")
+      .map(
+        (route) =>
+          `| ${route.id} | ${route.typology} | ${route.width} | ${route.from ?? "—"} | ${route.to ?? "dead end"} | ${route.nodes.map((node) => node.id).join(", ") || "—"} |`,
+      ),
+    "",
+    "## Buildings",
+    "",
+  ];
+
+  for (const building of plan.buildings) {
+    const roof = building.roofZ ?? building.baseZ + building.floors * building.floorHeight;
+    lines.push(
+      `### ${building.id} — ${building.name}`,
+      "",
+      `- enterable: ${building.enterable ? "yes" : "no"} · floors: ${building.floors} · base: ${building.baseZ} · roof: ${roof} · floor height: ${building.floorHeight}`,
+      `- purpose: ${building.purpose ?? "—"}`,
+      "",
+      "| entrance x | y | z | width | face | door |",
+      "|---:|---:|---:|---:|---|---|",
+      ...building.entrances.map((entrance) => {
+        const floor = building.floorsPlan.find((candidate) => candidate.level === 1);
+        const door = floor?.doors.find((candidate) => {
+          if (candidate.from !== "outside" && candidate.to !== "outside") return false;
+          const [x, y] = localToWorld(building, candidate.x, candidate.y);
+          return Math.hypot(x - entrance.x, y - entrance.y) <= 96;
+        });
+        return `| ${entrance.x} | ${entrance.y} | ${entrance.z} | ${entrance.width} | ${entrance.face} | ${door?.id ?? "—"} |`;
+      }),
+      "",
+    );
+
+    for (const floor of building.floorsPlan) {
+      lines.push(
+        `#### ${building.id} F${floor.level} (z=${floor.z}, height=${floor.height})`,
+        "",
+        "| room | x | y | width | depth | route nodes |",
+        "|---|---:|---:|---:|---:|---|",
+        ...floor.rooms.map((room) => {
+          const nodes = plan.routes
+            .flatMap((route) => route.nodes)
+            .filter(
+              (node) =>
+                node.buildingId === building.id &&
+                node.floor === floor.level &&
+                nodeInRoom(building, room, node),
+            )
+            .map((node) => node.id);
+          return `| ${roomKey(room)} | ${room.x} | ${room.y} | ${room.width} | ${room.depth} | ${nodes.join(", ") || "—"} |`;
+        }),
+        "",
+        "| door | kind | from → to | x | y | width | depth | rot | locked | route node |",
+        "|---|---|---|---:|---:|---:|---:|---:|---|---|",
+        ...floor.doors.map((door) => {
+          const nodes = plan.routes
+            .flatMap((route) => route.nodes)
+            .filter(
+              (node) =>
+                node.buildingId === building.id &&
+                node.floor === floor.level &&
+                doorAtNode(building, floor, node) === door,
+            )
+            .map((node) => node.id);
+          return `| ${door.id ?? "—"} | ${door.kind} | ${door.from} → ${door.to} | ${door.x} | ${door.y} | ${door.width} | ${door.depth} | ${door.rotation} | ${door.locked ? "yes" : "no"} | ${nodes.join(", ") || "—"} |`;
+        }),
+        "",
+        "| vertical | kind | to | x | y | width | depth | route node |",
+        "|---|---|---:|---:|---:|---:|---:|---|",
+        ...floor.stairs.map((stair) => {
+          const nodes = plan.routes
+            .flatMap((route) => route.nodes)
+            .filter(
+              (node) =>
+                node.buildingId === building.id &&
+                node.floor === floor.level &&
+                stairAtNode(building, floor, node, stair.kind) === stair,
+            )
+            .map((node) => node.id);
+          return `| ${stair.id ?? "—"} | ${stair.kind} | F${stair.to} | ${stair.x} | ${stair.y} | ${stair.width} | ${stair.depth} | ${nodes.join(", ") || "—"} |`;
+        }),
+        "",
+      );
+    }
+  }
+
+  lines.push(
+    "## Gameplay and nav areas",
+    "",
+    "| id | kind | label | x | y | width | depth | rotation | note |",
+    "|---|---|---|---:|---:|---:|---:|---:|---|",
+    ...plan.areas.map(
+      (area) =>
+        `| ${area.id} | ${area.kind} | ${area.label} | ${area.x} | ${area.y} | ${area.width} | ${area.depth} | ${area.rotation} | ${area.note} |`,
+    ),
+    "",
+    "## Beats",
+    "",
+    "| id | chapter | type | space | intensity | what | nodes | proof |",
+    "|---|---:|---|---|---:|---|---|---|",
+    ...plan.beats.map(
+      (beat) =>
+        `| ${beat.id} | ${beat.chapter} | ${beat.type} | ${beat.space} | ${beat.intensity} | ${beat.what} | ${nodesForBeat(beat.id)} | ${beat.proof} |`,
+    ),
+    "",
+    "## Finale and budget",
+    "",
+    ...(plan.finale
+      ? [
+          `- finale type: ${plan.finale.type}`,
+          `- arena: ${plan.finale.arena}`,
+          `- stages: ${plan.finale.stages.join(", ") || "—"}`,
+          `- escape: ${plan.finale.escape}`,
+        ]
+      : ["- finale: none"]),
+    ...(Object.keys(plan.budget).length === 0
+      ? ["- budget: —"]
+      : Object.entries(plan.budget).map(([key, value]) => `- ${key}: ${value}`)),
+    "",
+    "## Palette and variability",
+    "",
+    `- sky: ${plan.palette.sky || "—"}`,
+    `- motifs: ${plan.palette.motifs.join(", ") || "—"}`,
+    `- materials: ${plan.palette.materials.join(", ") || "—"}`,
+    `- models: ${plan.palette.models.join(", ") || "—"}`,
+    `- variability: ${plan.variability.join("; ") || "—"}`,
+    "",
+    "## Acceptance",
+    "",
+    ...(plan.acceptance.length === 0 ? ["- —"] : plan.acceptance.map((item, index) => `${index + 1}. ${item}`)),
+    "",
+    "## Drawings",
+    "",
+    ...files.map((file) => `- ${basename(file)}`),
+    "",
+    "## Findings",
+    "",
+    ...(check.findings.length === 0
+      ? ["No findings."]
+      : check.findings.map((finding) => `- **${finding.severity}** \`${finding.rule}\`: ${finding.message}`)),
+    "",
+  );
+
   return lines.join("\n");
 }
 
@@ -1524,6 +1920,7 @@ export function renderMapPlan(path: string, plan: MapPlan, outDir?: string): Ren
     write(`06-section-${building.id}.svg`, section(building));
   }
   write("plan.md", planMarkdown(plan, check, files));
+  write("build-sheet.md", buildSheet(plan, check, files));
   return { path, outDir: dir, files, check };
 }
 
@@ -1537,7 +1934,8 @@ export const checkMapPlanTool = defineTool({
   description:
     "Validates a five-drawing map plan (JSON) without building: the brief (experience, pillars, " +
     "beats), the route skeleton (districts, named spaces, intensity, landmarks, gates, branch " +
-    "anchors), footprints inside the site, building overlaps, route width and " +
+    "anchors), the floor graph (rooms, doors with two sides, stairs with a target floor), " +
+    "footprints inside the site, building overlaps, route width and " +
     "route-through-building, entrances near the route and their terrain height, floors, palette " +
     "and acceptance. The JSON is the contract; the drawings are its view. Read-only.",
   realm: "local",
@@ -1569,8 +1967,9 @@ export const renderMapPlanTool = defineTool({
     "Renders a map plan JSON as the five pass-1 drawings: site plan, vertical/terrain plan, " +
     "circulation plan with districts, intensity-coloured route nodes, landmarks, gates and a " +
     "Director rhythm strip, building/height schedule, and floor plans/sections for every " +
-    "enterable building, plus plan.md. Validates first and reports the same findings. Plain SVG, " +
-    "no CAD install; writes only under the plan directory. Guarded.",
+    "enterable building, plus plan.md and a build-sheet.md ordered handoff for pass 2. Validates " +
+    "first and reports the same findings. Plain SVG, no CAD install; writes only under the plan " +
+    "directory. Guarded.",
   realm: "local",
   guarded: true,
   inputSchema: {

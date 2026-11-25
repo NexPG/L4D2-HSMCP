@@ -222,7 +222,8 @@ material; the instructions live in one place.
 3. **Design.** `workflows/design-a-map.md`: the brief (experience, pillars, beats), the route
    skeleton (districts, nodes, intensity, landmarks, gates), then rooms, floors, events, finale,
    palette, variability and budget in the design file and the plan JSON. Read-only; no `.vmf`;
-   stop for approval. The first layer is `references/planning/route-skeleton.md`.
+   stop for approval. The first layer is `references/planning/route-skeleton.md`. The render
+   writes the build sheet; pass 2 reads it with the JSON, not the SVGs.
 4. **Source map.** `workflows/new-campaign.md`: create or open a `.vmf`, build the sealed
    shell, then lint and check for leaks *before* a compile that can take minutes.
 5. **Compile.** `run_compile` with the stock chain or Tools++, and read the per-stage

@@ -62,7 +62,7 @@ VDC *Checkpoints* and *Nav Flow* (five-level flow, Director goal); the project's
 - `site` — bounds, north, grid, water, no-build rectangles.
 - `terrain` — a grid: cell size, origin, cols, rows, heights.
 - `buildings` — id, centre X/Y, width/depth, rotation, floors, floor height, base/roof Z,
-  enterable, entrances, per-floor rooms and stairs.
+  enterable, entrances, and per-floor rooms, doors and vertical connections.
 - `stage` — `brief`, `skeleton`, `site`, `vertical`, `schedule`, `floors`, `flow`, `approved`;
   the authoring gate the JSON is at.
 - `experience`, `pillars` — the one-sentence promise and the three decision rules.
@@ -101,6 +101,12 @@ identical enclosures, a vista, a landmark every four nodes, a gate, a drop that 
 a branch anchored to the critical route. The errors are structural; the warnings are design
 prompts, not noise.
 
+At `stage: "floors"` and later the floor graph is checked as well: every route `door` node must
+sit near a real door on its floor, every `stair`/`ladder`/`elevator`/`ramp` node must match a
+connection of the same kind, every stair target floor must exist, and every door must name two
+real sides. A door that opens outside needs an entrance within 96 u; a stair without a matching
+landing on the target floor is a warning.
+
 `render_map_plan` writes, under `plan/drawings/` by default:
 
 1. `01-site-plan.svg` — footprints, ids, sizes, rotation, coordinates, grid, north, scale.
@@ -110,9 +116,38 @@ prompts, not noise.
    Director rhythm strip.
 4. `04-building-schedule.svg` — table of floors, base/roof/height, area, enterable, doors.
 5. `05-floor-<id>-f<level>.svg` and `06-section-<id>.svg` for every enterable building.
-6. `plan.md` — the index, links, districts, route rhythm, findings.
+6. `plan.md` — the human index: links, districts, route rhythm, findings.
+7. `build-sheet.md` — the pass-2 handoff: ordered critical route, branch anchors, per-floor
+   rooms/doors/stairs, gameplay areas, beats, palette, budget, acceptance. Generated, never
+   edited.
 
-## Architectural sources
+## The handoff: JSON, build sheet, SVG, PNG
+
+The order of trust is:
+
+1. **`plan.json` — source of truth.** Structured, exact, machine-readable. Every ID, dimension,
+   floor, door side and stair target is here. Pass 2 must read this first.
+2. **`build-sheet.md` — the ordered handoff.** Generated from the JSON: the critical route in
+   build order, each node's space/floor/building/connection, per-floor rooms with their route
+   nodes, each door's two sides, each stair's target floor, the gameplay areas, beats, palette,
+   budget and acceptance. The agent can build from this sheet and use the JSON to resolve a
+   detail. It is a view, so a disagreement means the sheet is stale: re-render.
+3. **SVG — the visual view.** Text, vector, zoomable, diffable, no CAD install. Good for a human
+   checking the shape and for an agent's visual sanity check. Not a measurement source.
+4. **PNG — optional preview only.** A raster is for a quick look in chat or a screenshot; it
+   loses IDs, dimensions and text fidelity. Never make pass 2 reconstruct the plan from a PNG.
+
+The agent should not "read the drawing" to recover data. It should read the JSON and the build
+sheet, then open the SVG only to check that the drawing agrees. A vision-capable model can look
+at a PNG, but exact geometry from an image is a guess; the JSON is not.
+
+The current renderer is plain SVG strings in `src/plan/typescript/tools/mapplan.ts`: no CAD, no
+drawing framework, no browser. `svgwrite`/`d3-shape`/`roughjs` would add a dependency without
+changing the output. If a PNG is ever needed, the cheapest route is `sharp` or
+`@resvg/resvg-js` converting the existing SVG, not a second renderer. That dependency is not
+added while the SVG and the build sheet carry the handoff.
+
+
 
 Wikipedia, [Architectural drawing](https://en.wikipedia.org/wiki/Architectural_drawing)
 (floor plan, site plan, elevation, section, working drawings), [Site plan](https://en.wikipedia.org/wiki/Site_plan)
@@ -175,6 +210,35 @@ that floor's plan marks the stair and the route node. `check_map_plan`:
 
 Only `enterable` buildings get floor plans. A row of 30 houses is massing; the safe room, the
 through-house and the set piece are interiors.
+
+## Floor graph: rooms, doors and stairs
+
+A floor plan is a graph, not a picture. The JSON represents it directly:
+
+- **Rooms are nodes.** `Room.id` is optional and defaults to `name`; it is the key a door uses.
+  Room keys must be unique on a floor (`duplicate-room`).
+- **Doors are edges with two sides.** `Door.from` and `Door.to` are room ids/names or
+  `"outside"`; `kind` is `door`, `opening` or `gate`; `locked` is a gate hint. The door has a
+  building-local `x`/`y`, opening `width`, wall `depth` and `rotation`.
+- **Vertical connections are edges between floors.** `Stair.kind` is `stair`, `ladder`,
+  `elevator` or `ramp`; the floor it is on is the `from`, and `to` is the target floor. A stair
+  is building-local like a room.
+
+The route is validated against this graph:
+
+| Rule | What it proves |
+|---|---|
+| `node-no-door` | A route node of kind `door` sits within reach of a real door on its floor. |
+| `node-no-stair` | A `stair`/`ladder`/`elevator`/`ramp` node matches a connection of the same kind on its floor. |
+| `stair-target-missing`, `stair-same-floor` | The stair reaches a floor that exists, and not its own. |
+| `stair-no-return` | The target floor has a matching stair/landing within 128 u; a warning, because a landing can be modelled as a room. |
+| `door-unknown-room`, `door-same-side`, `door-no-room` | Both sides are real rooms or `outside`, and the door is not a hole into nowhere. |
+| `door-no-entrance` | A door that opens outside has a building entrance within 96 u. |
+| `door-not-near-room` | The door is within 64 u of each room it names; a warning, because a wall/corridor may sit between. |
+
+The floor drawing shows doors in gold with `from→to`, stairs in grey with `kind →F<level>`, and
+`plan.md` adds a `Floor connections` table. This is the edge the earlier plan was missing: a
+route can now be checked against the rooms and stairs it claims to use.
 
 ## Pass 1, exactly
 

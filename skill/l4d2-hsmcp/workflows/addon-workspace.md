@@ -24,7 +24,7 @@ file.
 
 | Folder | What belongs here | Created as |
 |---|---|---|
-| `plan/` | `plan.json` (the five-drawing source), `DESIGN.md` (pass 1 prose), `ASSETS.md`, `drawings/` (rendered) | `DESIGN.md`, `ASSETS.md` |
+| `plan/` | `plan.json` (the five-drawing source), `DESIGN.md` (pass 1 prose), `ASSETS.md`, `drawings/` (rendered SVG + `build-sheet.md`) | `DESIGN.md`, `ASSETS.md` |
 | `templates/` | `addoninfo.txt`, `mission.txt` (campaign/map), `README.md`; copy, do not edit in place | templates |
 | `logs/` | `errors.md` (symptom → cause → fix), `gate.json` (last `run_campaign_gate`), build logs | `errors.md`, `README.md` |
 | `src/` | source `.vmf`, `.qc`, `.nut`, `.txt`; the files that are compiled | `README.md` |
@@ -48,9 +48,10 @@ The root `README.md` records the addon's name, kind, status, author and date.
    and `render_map_plan`, fill `plan/DESIGN.md` from `workflows/design-a-map.md`, record every
    asset query in `plan/ASSETS.md`, set `Status: draft`, report the path and stop for approval.
    **No `.vmf`.**
-2. **Pass 2 — build.** Copy `templates/addoninfo.txt` and `templates/mission.txt` into
+2. **Pass 2 - build.** Read `plan/plan.json` and `plan/drawings/build-sheet.md`; open the
+   SVGs for the visual check. Copy `templates/addoninfo.txt` and `templates/mission.txt` into
    `addon/`, build into `src/`, stage into `addon/`, compile, nav, gate, pack into `dist/`.
-   The plan's JSON and drawings are fixed; `## 15. Amendments` is the only place a route/beat
+   The plan's JSON and build sheet are fixed; `## 15. Amendments` is the only place a route/beat
    change is allowed.
 
 ## Rules

@@ -5,6 +5,33 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.292-alpha - 2026-11-25
+
+- **Floor graph edges.** A floor plan now carries `doors[]` (two sides, kind, lock hint) and
+  `stairs[]` with `kind` (stair/ladder/elevator/ramp) and a target `to` floor; rooms have
+  optional stable ids. A door names two rooms or `outside`; a stair lives on its from floor and
+  names the floor it reaches.
+- **The route is checked against the floor graph.** `node-no-door` fails a route `door` node
+  that is not near a real door; `node-no-stair` fails a `stair`/`ladder`/`elevator`/`ramp` node
+  that does not match a connection of the same kind. `stair-target-missing`, `stair-same-floor`,
+  `door-unknown-room`, `door-same-side` and `door-no-room` are errors at `floors` and later.
+  `stair-no-return`, `door-not-near-room`, `door-no-entrance` and `door-outside-building` are
+  warnings, because a landing can be a room and a wall or corridor can sit between a door and a
+  room.
+- **The pass-2 handoff is a build sheet, not a drawing.** `render_map_plan` now writes
+  `build-sheet.md`: the critical route in build order with each node's space, floor, building and
+  door/stair connection; branch anchors; per-floor rooms with their route nodes; doors with two
+  sides; stairs with target floors; gameplay areas; beats; finale/budget; palette; acceptance and
+  findings. It is generated from `plan.json` and never edited.
+- **The trust order is explicit:** JSON source > build sheet > SVG view > PNG preview. The SVGs
+  remain the human/visual check; a raster is a preview only, never the data source.
+- **Drawings and index.** Floor plans draw doors in gold with `from→to` and stairs with
+  `kind →F<level>`; `plan.md` adds a `Floor connections` table. No drawing framework is used:
+  the renderer is plain SVG strings; `svgwrite`, `d3-shape` or `roughjs` would add a dependency
+  without changing the output. `sharp` or `@resvg/resvg-js` are the sensible converters if a PNG
+  preview is ever needed.
+- Tests: 260 files, 2,029 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.290-alpha - 2026-11-25
 
 - **The route skeleton is now the first quality gate.** The brief carries `experience`, three

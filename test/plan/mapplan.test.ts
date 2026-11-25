@@ -49,15 +49,29 @@ function plan(): Record<string, unknown> {
             level: 1,
             z: 0,
             height: 128,
-            rooms: [{ name: "living", x: 0, y: 0, width: 280, depth: 200 }],
-            stairs: [{ x: 140, y: 100, width: 48, depth: 96, to: 2 }],
+            rooms: [{ id: "living", name: "Living", x: 56, y: 0, width: 400, depth: 200 }],
+            doors: [
+              {
+                id: "front",
+                x: 256,
+                y: 0,
+                width: 56,
+                depth: 16,
+                rotation: 90,
+                from: "outside",
+                to: "living",
+                kind: "door",
+              },
+            ],
+            stairs: [{ id: "up", kind: "stair", x: 0, y: 0, width: 48, depth: 96, to: 2 }],
           },
           {
             level: 2,
             z: 128,
             height: 128,
-            rooms: [{ name: "bed", x: 0, y: 0, width: 200, depth: 160 }],
-            stairs: [],
+            rooms: [{ id: "bed", name: "Bedroom", x: 0, y: 0, width: 220, depth: 160 }],
+            doors: [],
+            stairs: [{ id: "down", kind: "stair", x: 0, y: 0, width: 48, depth: 96, to: 1 }],
           },
         ],
       },
@@ -221,6 +235,7 @@ describe("map plan drawings", () => {
         "06-section-house_a.svg",
         "05-floor-warehouse-f1.svg",
         "plan.md",
+        "build-sheet.md",
       ]),
     );
     const site = readFileSync(join(root, "drawings", "01-site-plan.svg"), "utf8");
@@ -230,9 +245,66 @@ describe("map plan drawings", () => {
     expect(circulation).toContain("holdout");
     expect(circulation).toContain("F2");
     expect(circulation).toContain("cover");
+    const floorPlanSvg = readFileSync(join(root, "drawings", "05-floor-house_a-f1.svg"), "utf8");
+    expect(floorPlanSvg).toContain("outside");
+    expect(floorPlanSvg).toContain("stair");
     const markdown = readFileSync(join(root, "drawings", "plan.md"), "utf8");
     expect(markdown).toContain("Validation: **pass**");
     expect(markdown).toContain("Gameplay and nav areas");
+    expect(markdown).toContain("Floor connections");
+    const sheet = readFileSync(join(root, "drawings", "build-sheet.md"), "utf8");
+    expect(sheet).toContain("Critical route");
+    expect(sheet).toContain("front");
+    expect(sheet).toContain("outside");
+    expect(sheet).not.toContain("| MISSING |");
+  });
+
+  it("checks route doors and stairs against the floor graph", () => {
+    const floors = plan();
+    floors.stage = "floors";
+    const valid = MapPlanSchema.parse(floors);
+    const check = checkMapPlan("floors-ok.json", valid);
+    expect(check.ok, check.findings.map((finding) => finding.message).join(" | ")).toBe(true);
+
+    const noDoor = plan();
+    noDoor.stage = "floors";
+    const noDoorHouse = (noDoor.buildings as Array<Record<string, unknown>>)[0]!;
+    (noDoorHouse.floorsPlan as Array<Record<string, unknown>>)[0]!.doors = [];
+    const noDoorRules = checkMapPlan("no-door.json", MapPlanSchema.parse(noDoor)).findings.map(
+      (finding) => finding.rule,
+    );
+    expect(noDoorRules).toContain("node-no-door");
+
+    const noStair = plan();
+    noStair.stage = "floors";
+    const noStairHouse = (noStair.buildings as Array<Record<string, unknown>>)[0]!;
+    (noStairHouse.floorsPlan as Array<Record<string, unknown>>)[0]!.stairs = [];
+    const noStairRules = checkMapPlan("no-stair.json", MapPlanSchema.parse(noStair)).findings.map(
+      (finding) => finding.rule,
+    );
+    expect(noStairRules).toContain("node-no-stair");
+
+    const badDoor = plan();
+    badDoor.stage = "floors";
+    const badDoorHouse = (badDoor.buildings as Array<Record<string, unknown>>)[0]!;
+    const firstFloor = (badDoorHouse.floorsPlan as Array<Record<string, unknown>>)[0]!;
+    const door = (firstFloor.doors as Array<Record<string, unknown>>)[0]!;
+    door.from = "missing";
+    const badDoorRules = checkMapPlan("bad-door.json", MapPlanSchema.parse(badDoor)).findings.map(
+      (finding) => finding.rule,
+    );
+    expect(badDoorRules).toContain("door-unknown-room");
+
+    const badStair = plan();
+    badStair.stage = "floors";
+    const badStairHouse = (badStair.buildings as Array<Record<string, unknown>>)[0]!;
+    const badStairFloor = (badStairHouse.floorsPlan as Array<Record<string, unknown>>)[0]!;
+    const stair = (badStairFloor.stairs as Array<Record<string, unknown>>)[0]!;
+    stair.to = 9;
+    const badStairRules = checkMapPlan("bad-stair.json", MapPlanSchema.parse(badStair)).findings.map(
+      (finding) => finding.rule,
+    );
+    expect(badStairRules).toContain("stair-target-missing");
   });
 
   it("accepts a brief with no geometry and gates the floors stage", () => {

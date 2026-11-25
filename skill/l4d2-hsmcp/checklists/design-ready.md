@@ -42,6 +42,12 @@ starts only when every line is true. This is a design checklist, not a build che
 ## Rooms and verticality
 
 - [ ] Every space has size, floors, entrances, exits, cover, light, purpose and nav notes.
+- [ ] Every floor plan has unique room keys; every door names two real sides (`outside`
+      allowed) and sits near both rooms.
+- [ ] Every route `door` node sits on a real door; every route stair/ladder/elevator/ramp node
+      matches a connection of the same kind.
+- [ ] Every stair/ladder/elevator/ramp names a target floor that exists, and the target floor
+      has a matching landing or return.
 - [ ] Every floor change is stairs/ramp/ladder/drop, with the one-way direction and what stops
       walking back.
 - [ ] Door and corridor sizes use the measured player hull, not a guess.

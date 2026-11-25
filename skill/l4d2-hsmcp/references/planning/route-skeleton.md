@@ -344,7 +344,9 @@ door, a vertical node, a drop that goes down, and no three high nodes in a row.
 
 The skeleton is frozen when `check_map_plan` passes. The site stage then places footprints
 around it; the vertical stage sets terrain and base/roof Z; the schedule assigns roles and
-floors; the floors stage draws one plan per level and puts the route nodes in rooms; the flow
-sheet adds cover, spawns, holdouts, crescendos, the finale and the item budget. If a later stage
-needs a route change, it goes back to the skeleton, amends the JSON, re-runs the gate and
-regenerates the later drawings. The earlier layer wins.
+floors; the floors stage draws one plan per level and puts the route nodes in rooms, with doors
+that name both sides and stairs that name their target floor; the flow sheet adds cover, spawns,
+holdouts, crescendos, the finale and the item budget. `render_map_plan` also writes
+`build-sheet.md`, the ordered handoff pass 2 reads with the JSON. If a later stage needs a route
+change, it goes back to the skeleton, amends the JSON, re-runs the gate and regenerates the later
+drawings. The earlier layer wins.

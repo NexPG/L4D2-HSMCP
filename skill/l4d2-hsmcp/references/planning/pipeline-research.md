@@ -48,6 +48,9 @@ approved. The detailed flow sheet is last because it needs the space to exist; t
   peak and two rests, no three high nodes in a row, a vista, a landmark every four nodes, a
   gate, a drop that goes down, and no unanchored branch.
 - Per-floor `05-floor-<id>-f<level>.svg` — one view per floor, not all floors stacked.
+- Floor graph: rooms (unique keys), doors with `from`/`to`, and stairs/ladders/elevators/ramps
+  with `kind` and target floor. Route `door` nodes must sit on a real door; route vertical
+  nodes must match a connection; a stair target must exist and should have a return/landing.
 - `areas[]` for spawn/cover/holdout/crescendo/finale — the gameplay overlay.
 
 The full practice → field → check mapping and the authoring procedure are in
@@ -66,7 +69,8 @@ playbook the agent follows.
 
 ## The next implementation step
 
-Add `doors`/`connections` to the floor-plan graph (a door has two sides, a stair has `from` and
-`to`), so a room adjacency check can prove that a route node `door` sits on a real door and that
-every stair is reachable from both floors. That is the missing edge in the multi-level model;
-the route/stage layer and its quality gate are already in place.
+The floor graph now has its missing edges: a door has two sides, a stair has a target floor, and
+the route is checked against both. The next step is measurement, not more schema: use the route
+length, floor changes, space count and intensity curve as the interest score, add visibility or
+isovist only if a real chapter still reads flat, and run the next new design through the eight
+stages to prove the gate is usable rather than merely complete.

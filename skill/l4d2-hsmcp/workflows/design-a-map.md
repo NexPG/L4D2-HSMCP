@@ -29,7 +29,7 @@ the dependency order; each stage freezes the layer above it.
 | 2. Site | `site` | building footprints around the skeleton; entrances; no-build/water | route stays in the site, does not cross a building except at an entrance |
 | 3. Vertical | `vertical` | terrain grid, base/roof Z, entrance Z, stairs/ladders/drops | every floor change is a node; entrance Z matches the terrain |
 | 4. Schedule | `schedule` | roles (`facade`/`enterable`/`safe-room`), floors, heights, areas | every enterable building has an entrance on the route |
-| 5. Floors | `floors` | per-floor rooms, doors, stairs, sections; route nodes in rooms | every enterable floor on the route has a floor plan and a vertical connection |
+| 5. Floors | `floors` | per-floor rooms, **doors with two sides**, stairs/ladders with `kind` and target floor; sections; route nodes in rooms | every route door sits on a real door; every vertical node matches a connection; every stair target floor exists |
 | 6. Flow | `flow` | splines, branches, cover/spawn/holdout/crescendo/finale areas, item budget, variability | route width, crossings, area proximity and beats pass |
 | 7. Approved | `approved` | the frozen plan + five drawings | full `check_map_plan` pass, then approval |
 
@@ -275,8 +275,9 @@ must not quietly resolve an open question by picking the easiest geometry.
 3. Read it once as the builder: can you build chapter 1 without asking a creative question?
 4. Check every asset name with `read_game_content`; check every class with `read_fgd_class`.
 5. Set `Status: approved` only after the user has seen it (or explicitly delegated approval).
-6. Report the JSON, the drawing directory and the findings, and stop. The next message is pass
-   2: `workflows/new-campaign.md`.
+6. Report the JSON, the drawing directory, `build-sheet.md` and the findings, and stop. The next
+   message is pass 2: `workflows/new-campaign.md`. Pass 2 reads `plan.json` and
+   `build-sheet.md`; the SVGs are the visual check, not the data source.
 
 A design with a missing route, a flat intensity curve, unnamed districts, an unanchored branch,
 an empty beat sheet, unnamed assets or no acceptance list is a draft, not a handoff. The build
