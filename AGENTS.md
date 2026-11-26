@@ -66,6 +66,10 @@ next agent will pay for the same mistake again.
 
 ## Repository facts
 
+- **Every project gets its own directory under `workspaces/`.** A map, campaign, model or
+  addon is a project: `workspaces/<project>/` holds its `plan/`, `logs/`, `src/` and outputs.
+  `workspaces/` is ignored by git; nothing a project produces belongs in `src/`, `test/` or
+  the repository root.
 - Windows only, GPL-3.0-only, Node 22+, pnpm. `packageManager` in `package.json` pins the
   pnpm version and CI reads the same field, so use `pnpm`, not `npm`; the lockfile is
   `pnpm-lock.yaml`.
