@@ -314,11 +314,17 @@ through the whole plan.
 
 ## Real campaign as the test
 
-The installed first chapter is Dead Center `c1m1_hotel` (No Mercy `c8m1` is not installed in
-this copy). Its nav mesh is the authoritative route: 48 steps from the hotel room
-`(600, 5963, 2851)` to the safe room `(2238, 4350, 1184)`, with bounds
-`x -700..3575, y 4075..8300`. `test/plan/fixtures/dead-center-c1m1.json` is that route as a
-plan and must pass with zero findings; it is the regression that keeps the four height rules
-honest against real geometry, not a hand-made toy.
+The L4D1 campaigns (No Mercy, Death Toll, Dead Air, Blood Harvest) ship under
+`Left 4 Dead 2/left4dead2_dlc2/maps/`, **not** under `left4dead2/maps`; searching only the
+base folder concludes wrongly that `c8m1` is missing. `c8m1_apartment.nav` gives the real
+first chapter: 107 steps from the apartment `(1988, 913, 432)` down to the safe room
+`(2888, 3338, -240)`, bounds `x -246..4200, y -250..6106, z -240..647`. The installed Dead
+Center `c1m1_hotel` is a second real route: 48 steps from `(600, 5963, 2851)` to
+`(2238, 4350, 1184)`.
+
+Two fixtures keep the checker honest against real geometry:
+`test/plan/fixtures/nomercy-c8m1.json` and `dead-center-c1m1.json`. Both must pass with zero
+findings; a plan that only passes on a hand-made toy is not evidence.
+
 
 

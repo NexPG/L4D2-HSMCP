@@ -1,0 +1,695 @@
+{
+  "version": 1,
+  "name": "No Mercy c8m1 — Apartment",
+  "kind": "map",
+  "stage": "approved",
+  "experience": "leave the apartment, descend three floors, cross the street and reach the safe room",
+  "pillars": [
+    "the street is visible from the apartment windows before it is reachable",
+    "every floor of the block teaches the next threat",
+    "the safe room is the only lit door at street level"
+  ],
+  "districts": [
+    {
+      "id": "apartment",
+      "name": "Apartment",
+      "mood": "domestic wreck",
+      "motif": "wallpaper and suitcases",
+      "landmark": "window wall"
+    },
+    {
+      "id": "block",
+      "name": "Stairwell",
+      "mood": "vertical",
+      "motif": "tiles and pipes",
+      "landmark": "broken lift"
+    },
+    {
+      "id": "street",
+      "name": "Street",
+      "mood": "exposed",
+      "motif": "cars and awnings",
+      "landmark": "safe-room light"
+    }
+  ],
+  "site": {
+    "bounds": {
+      "x0": -512,
+      "y0": -512,
+      "x1": 4352,
+      "y1": 6272
+    },
+    "north": 0,
+    "grid": 256,
+    "water": [],
+    "noBuild": []
+  },
+  "terrain": {
+    "cell": 1024,
+    "origin": [
+      0,
+      -512
+    ],
+    "cols": 5,
+    "rows": 7,
+    "heights": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "buildings": [
+    {
+      "id": "apartment",
+      "name": "Apartment block",
+      "x": 1900,
+      "y": 900,
+      "width": 800,
+      "depth": 800,
+      "rotation": 0,
+      "floors": 3,
+      "floorHeight": 136,
+      "baseZ": 160,
+      "enterable": true,
+      "role": "route",
+      "entrances": [
+        {
+          "x": 1738,
+          "y": 1300,
+          "z": 160,
+          "width": 96,
+          "face": "south"
+        }
+      ],
+      "floorsPlan": [
+        {
+          "level": 0,
+          "z": 160,
+          "height": 136,
+          "rooms": [
+            {
+              "id": "ground",
+              "name": "Ground floor",
+              "x": 0,
+              "y": 0,
+              "width": 740,
+              "depth": 740
+            }
+          ],
+          "doors": [
+            {
+              "id": "street-door",
+              "x": -162,
+              "y": 400,
+              "width": 96,
+              "depth": 16,
+              "from": "outside",
+              "to": "ground"
+            }
+          ],
+          "stairs": [
+            {
+              "id": "g-up",
+              "kind": "stair",
+              "x": 125,
+              "y": 138,
+              "width": 64,
+              "depth": 120,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "level": 1,
+          "z": 296,
+          "height": 136,
+          "rooms": [
+            {
+              "id": "first",
+              "name": "First floor",
+              "x": 0,
+              "y": 0,
+              "width": 740,
+              "depth": 740
+            }
+          ],
+          "doors": [],
+          "stairs": [
+            {
+              "id": "f-down",
+              "kind": "stair",
+              "x": 125,
+              "y": 138,
+              "width": 64,
+              "depth": 120,
+              "to": 0
+            },
+            {
+              "id": "f-up",
+              "kind": "stair",
+              "x": 88,
+              "y": -87,
+              "width": 64,
+              "depth": 120,
+              "to": 2
+            }
+          ]
+        },
+        {
+          "level": 2,
+          "z": 432,
+          "height": 136,
+          "rooms": [
+            {
+              "id": "apt",
+              "name": "Apartment",
+              "x": 0,
+              "y": 0,
+              "width": 740,
+              "depth": 740
+            }
+          ],
+          "doors": [],
+          "stairs": [
+            {
+              "id": "a-down",
+              "kind": "stair",
+              "x": 88,
+              "y": -87,
+              "width": 64,
+              "depth": 120,
+              "to": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "safe_block",
+      "name": "Safe room block",
+      "x": 2988,
+      "y": 3438,
+      "width": 400,
+      "depth": 300,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": -240,
+      "role": "safe-room",
+      "enterable": true,
+      "entrances": [
+        {
+          "x": 2988,
+          "y": 3588,
+          "z": -240,
+          "width": 96,
+          "face": "north"
+        }
+      ],
+      "floorsPlan": [
+        {
+          "level": 1,
+          "z": -240,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "safe_in",
+              "name": "Safe room",
+              "x": 0,
+              "y": 0,
+              "width": 340,
+              "depth": 240
+            }
+          ],
+          "doors": [
+            {
+              "id": "safe-door-in",
+              "x": 0,
+              "y": 150,
+              "width": 64,
+              "depth": 16,
+              "from": "outside",
+              "to": "safe_in"
+            }
+          ],
+          "stairs": []
+        }
+      ],
+      "excavated": true
+    },
+    {
+      "id": "facade_w",
+      "name": "West tenement",
+      "x": 900,
+      "y": 2400,
+      "width": 600,
+      "depth": 900,
+      "rotation": 0,
+      "floors": 4,
+      "floorHeight": 128,
+      "baseZ": 16,
+      "role": "facade",
+      "enterable": false
+    },
+    {
+      "id": "facade_e",
+      "name": "East tenement",
+      "x": 3400,
+      "y": 2200,
+      "width": 600,
+      "depth": 900,
+      "rotation": 0,
+      "floors": 4,
+      "floorHeight": 128,
+      "baseZ": 16,
+      "role": "facade",
+      "enterable": false
+    },
+    {
+      "id": "landmark_shop",
+      "name": "Corner shop",
+      "x": 2600,
+      "y": 3800,
+      "width": 400,
+      "depth": 300,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 0,
+      "role": "landmark",
+      "enterable": false
+    }
+  ],
+  "routes": [
+    {
+      "id": "critical",
+      "kind": "critical",
+      "typology": "string-of-pearls",
+      "width": 128,
+      "points": [
+        [
+          1988,
+          913,
+          432
+        ],
+        [
+          1988,
+          813,
+          296
+        ],
+        [
+          2025,
+          1038,
+          160
+        ],
+        [
+          1738,
+          1300,
+          160
+        ],
+        [
+          1850,
+          1280,
+          88
+        ],
+        [
+          2013,
+          1288,
+          16
+        ],
+        [
+          2513,
+          1500,
+          16
+        ],
+        [
+          1675,
+          3250,
+          16
+        ],
+        [
+          2163,
+          3813,
+          8
+        ],
+        [
+          2663,
+          4175,
+          8
+        ],
+        [
+          3025,
+          4188,
+          -115
+        ],
+        [
+          2888,
+          3338,
+          -240
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "label": "Apartment",
+          "x": 1988,
+          "y": 913,
+          "z": 432,
+          "floor": 2,
+          "buildingId": "apartment",
+          "district": "apartment",
+          "space": "apt",
+          "kind": "start",
+          "enclosure": "covered",
+          "intensity": 0,
+          "landmark": "window wall",
+          "gate": "none",
+          "beat": "b1"
+        },
+        {
+          "id": "stair1",
+          "label": "First stair",
+          "x": 1988,
+          "y": 813,
+          "z": 296,
+          "floor": 1,
+          "buildingId": "apartment",
+          "district": "block",
+          "space": "first",
+          "kind": "stair",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none",
+          "beat": "b2"
+        },
+        {
+          "id": "stair2",
+          "label": "Second stair",
+          "x": 2025,
+          "y": 1038,
+          "z": 160,
+          "floor": 0,
+          "buildingId": "apartment",
+          "district": "block",
+          "space": "ground",
+          "kind": "stair",
+          "enclosure": "tight",
+          "intensity": 3,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "exit",
+          "label": "Street door",
+          "x": 1738,
+          "y": 1290,
+          "z": 160,
+          "floor": 0,
+          "buildingId": "apartment",
+          "district": "block",
+          "space": "ground",
+          "kind": "door",
+          "enclosure": "covered",
+          "intensity": 3,
+          "landmark": "safe-room light",
+          "gate": "soft",
+          "beat": "b3"
+        },
+        {
+          "id": "stoop",
+          "label": "Stoop",
+          "x": 1850,
+          "y": 1280,
+          "z": 88,
+          "floor": 0,
+          "district": "street",
+          "space": "street",
+          "kind": "stair",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "street1",
+          "label": "Street",
+          "x": 2013,
+          "y": 1288,
+          "z": 16,
+          "floor": 1,
+          "district": "street",
+          "space": "street",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 4,
+          "landmark": "safe-room light",
+          "gate": "none"
+        },
+        {
+          "id": "street2",
+          "label": "Crossing",
+          "x": 2513,
+          "y": 1500,
+          "z": 16,
+          "floor": 1,
+          "district": "street",
+          "space": "street",
+          "kind": "street",
+          "enclosure": "vista",
+          "intensity": 2,
+          "landmark": "safe-room light",
+          "gate": "none"
+        },
+        {
+          "id": "street3",
+          "label": "Alley",
+          "x": 1675,
+          "y": 3250,
+          "z": 16,
+          "floor": 1,
+          "district": "street",
+          "space": "street",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 4,
+          "landmark": "",
+          "gate": "none",
+          "beat": "b4"
+        },
+        {
+          "id": "drop",
+          "label": "Underpass drop",
+          "x": 2663,
+          "y": 4175,
+          "z": 8,
+          "floor": 1,
+          "district": "street",
+          "space": "underpass",
+          "kind": "drop",
+          "enclosure": "tight",
+          "intensity": 3,
+          "landmark": "",
+          "gate": "one-way"
+        },
+        {
+          "id": "safe-door",
+          "label": "Safe room",
+          "x": 2888,
+          "y": 3338,
+          "z": -240,
+          "floor": 1,
+          "buildingId": "safe_block",
+          "district": "street",
+          "space": "safe_in",
+          "kind": "checkpoint",
+          "enclosure": "covered",
+          "intensity": 0,
+          "landmark": "",
+          "gate": "lock",
+          "beat": "b5"
+        }
+      ],
+      "stops": [
+        {
+          "id": "s-start",
+          "label": "Start",
+          "x": 1988,
+          "y": 913,
+          "z": 432,
+          "kind": "start"
+        },
+        {
+          "id": "s-safe",
+          "label": "Safe room",
+          "x": 2888,
+          "y": 3338,
+          "z": -240,
+          "kind": "safe-room"
+        }
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "id": "spawn",
+      "label": "Apartment spawn",
+      "kind": "spawn",
+      "floor": 2,
+      "buildingId": "apartment",
+      "x": 1988,
+      "y": 913,
+      "width": 300,
+      "depth": 260
+    },
+    {
+      "id": "stair-hold",
+      "label": "Stairwell holdout",
+      "kind": "holdout",
+      "floor": 1,
+      "buildingId": "apartment",
+      "x": 1950,
+      "y": 950,
+      "width": 400,
+      "depth": 400
+    },
+    {
+      "id": "street-cover",
+      "label": "Street cover",
+      "kind": "cover",
+      "floor": 1,
+      "x": 2200,
+      "y": 2000,
+      "width": 600,
+      "depth": 500
+    },
+    {
+      "id": "safe",
+      "label": "Safe room",
+      "kind": "safe-room",
+      "floor": 1,
+      "buildingId": "safe_block",
+      "x": 2988,
+      "y": 3438,
+      "width": 320,
+      "depth": 240
+    },
+    {
+      "id": "safe-items",
+      "label": "Safe room items",
+      "kind": "item-cluster",
+      "floor": 1,
+      "buildingId": "safe_block",
+      "x": 2988,
+      "y": 3438,
+      "width": 200,
+      "depth": 160
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "chapter": 1,
+      "type": "orientation",
+      "space": "apt",
+      "what": "the apartment and the street below set the goal",
+      "proof": "the safe-room light is visible from the window",
+      "intensity": 0
+    },
+    {
+      "id": "b2",
+      "chapter": 1,
+      "type": "descent",
+      "space": "first",
+      "what": "the stairwell is the first choke",
+      "proof": "one stair per floor",
+      "intensity": 2
+    },
+    {
+      "id": "b3",
+      "chapter": 1,
+      "type": "exit",
+      "space": "ground",
+      "what": "the street door opens the map",
+      "proof": "the door is on the route between two rooms",
+      "intensity": 3
+    },
+    {
+      "id": "b4",
+      "chapter": 1,
+      "type": "crossing",
+      "space": "street",
+      "what": "cross the street under fire",
+      "proof": "the safe-room light is the landmark",
+      "intensity": 5
+    },
+    {
+      "id": "b5",
+      "chapter": 1,
+      "type": "rest",
+      "space": "safe_in",
+      "what": "the safe room closes the chapter",
+      "proof": "the door locks",
+      "intensity": 0
+    }
+  ],
+  "budget": {
+    "triangles": 400000
+  },
+  "palette": {
+    "sky": "c8m1_night",
+    "motifs": [
+      "wallpaper",
+      "cars",
+      "awnings"
+    ],
+    "materials": [
+      "plaster_worn",
+      "asphalt",
+      "tile"
+    ],
+    "models": [
+      "car_wreck",
+      "suitcase"
+    ]
+  },
+  "variability": [
+    "left or right around the block"
+  ],
+  "acceptance": [
+    "the street is visible before the descent",
+    "the underpass cannot be climbed back"
+  ]
+}

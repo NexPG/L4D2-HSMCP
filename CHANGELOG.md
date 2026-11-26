@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.299-alpha - 2026-11-26
+
+- **No Mercy is installed, under DLC2.** left4dead2_dlc2/maps/c8m1_apartment.bsp/.nav is
+  the real first chapter; searching left4dead2/maps alone wrongly reports it missing.
+- **Real No Mercy route.** 107 nav steps from the apartment (1988, 913, 432) to the safe
+  room (2888, 3338, -240), bounds x -246..4200, y -250..6106, z -240..647. The plan is
+  	est/plan/fixtures/nomercy-c8m1.json and passes with zero findings, including a basement
+  level (0) and an outdoor stoop.
+- Tests: 259 files, 2,044 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.298-alpha - 2026-11-26
 
 - **Plan checks stop lying about heights.** entrance-z accepts an entrance at the building
