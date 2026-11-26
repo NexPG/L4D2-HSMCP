@@ -159,7 +159,8 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     return b;
   };
   const seenAreas = new Set<number>();
-  const rooms: Box[] = [];
+  const rooms: Array<{ box: Box; areaIds: number[] }> = [];
+  const areaRoom = new Map<number, number>();
   for (const start of nav.areas) {
     if (seenAreas.has(start.id)) continue;
     if ((start.spawnAttributes & DOOR_TAG) !== 0) continue;
@@ -180,30 +181,32 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       }
     }
     if (component.length < 3) continue;
-    rooms.push(boxOf(component));
+    const index = rooms.length;
+    rooms.push({ box: boxOf(component), areaIds: component.map((area) => area.id) });
+    for (const area of component) areaRoom.set(area.id, index);
   }
-  // spatial cluster: rooms within 192 u horizontally and 96 u vertically share a building
+  // Two rooms belong to the same building when a door area joins them. Space alone is not
+  // enough: a street touches every facade, a building is what you can walk into.
   const parent: number[] = rooms.map((_, i) => i);
   const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i]!)));
-  for (let i = 0; i < rooms.length; i += 1) {
-    for (let j = i + 1; j < rooms.length; j += 1) {
-      const a = rooms[i]!, b = rooms[j]!;
-      const dx = Math.max(0, a.minX - b.maxX, b.minX - a.maxX);
-      const dy = Math.max(0, a.minY - b.maxY, b.minY - a.maxY);
-      const dz = Math.max(0, a.minZ - b.maxZ, b.minZ - a.maxZ);
-      if (dx <= 192 && dy <= 192 && dz <= 96) parent[find(i)] = find(j);
-    }
+  for (const area of nav.areas) {
+    if ((area.spawnAttributes & DOOR_TAG) === 0) continue;
+    const joined = (graph.neighbors.get(area.id) ?? [])
+      .map((id) => areaRoom.get(id))
+      .filter((room): room is number => room !== undefined);
+    for (const room of joined.slice(1)) parent[find(room)] = find(joined[0]!);
   }
+  // A room with no door neighbour is still a space (the street): keep it only when it is large.
   const clusters = new Map<number, number[]>();
   for (let i = 0; i < rooms.length; i += 1) {
     const root = find(i);
     clusters.set(root, [...(clusters.get(root) ?? []), i]);
   }
   const buildings = [...clusters.values()]
-    .filter((indices) => indices.length >= 2)
+    .filter((indices) => indices.length >= 2 || indices.reduce((n, i) => n + rooms[i]!.areaIds.length, 0) >= 20)
     .slice(0, 24)
     .map((indices, index) => {
-      const group = indices.map((i) => rooms[i]!);
+      const group = indices.map((i) => rooms[i]!.box);
       // bounding box of the group
       const box = { minX: Infinity, minY: Infinity, minZ: Infinity, maxX: -Infinity, maxY: -Infinity, maxZ: -Infinity };
       for (const r of group) {
@@ -221,6 +224,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         bands.set(band, [...(bands.get(band) ?? []), group.indexOf(r)]);
       }
       const levels = [...bands.entries()].sort((a, b) => a[0] - b[0]);
+      const floorZ = levels.map(([, members]) => Math.round(Math.min(...members.map((m) => group[m]!.minZ))));
       return {
         id: `b${index}`,
         name: `Building ${index + 1}`,
@@ -239,7 +243,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
 
         floorsPlan: levels.map(([, members], level) => ({
           level: level + 1,
-          z: Math.round(group[members[0]!]!.minZ),
+          z: floorZ[level]!,
           height: 128,
           rooms: members.map((member, roomIndex) => {
             const r = group[member]!;

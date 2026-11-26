@@ -3,6 +3,12 @@
 For a campaign that already exists. The goal is a reproducible build: same source, same
 archive, verified after packing.
 
+Pass 2 reads the approved `plan.json` and never edits it. The plan is the contract; if a wall
+cannot be placed as written, stop and return to pass 1 (`design-a-map.md`) — do not "fix" the
+plan from here, or the next run will build from a different plan than the one that was
+reviewed. An `origin: "imported"` plan is a survey: it can seed or check a build, but it is not
+a design and its numbers are the map's, not a decision.
+
 ## The build script
 
 Keep the ordering in one script so nobody has to remember it:

@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.302-alpha - 2026-11-26
+
+- **Pass 1 / pass 2 boundary stated.** workflows/design-a-map.md now opens with the two tool
+  sets and the rule that pass 1 never writes a .vmf and pass 2 never edits plan.json;
+  uild-and-deploy.md says a plan error sends the agent back, not into a local edit.
+- **Buildings follow doors, not distance.** plan_from_map unions rooms only when a door area
+  joins them, so a street that touches every facade no longer welds the whole map into one
+  building. Small undoor-ed spaces are kept only when they are large; fixtures updated.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.301-alpha - 2026-11-26
 
 - **Imported plans get rooms, buildings and floor plans.** plan_from_map groups the nav

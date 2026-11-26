@@ -8,6 +8,24 @@ assets and evidence.
 **Stop at the end of this page.** Do not "just start a box" to see whether the idea works.
 A box built before the design is a decision made by accident.
 
+## Two passes, two tool sets
+
+Keep the passes apart in your head and in your hands; mixing them is how a plan starts
+describing geometry that does not exist yet.
+
+|  | Pass 1 — plan | Pass 2 — build |
+|---|---|---|
+| Question | what is this level, and why? | where is every wall? |
+| Input | a wish, photos, or an existing map | the approved `plan.json` |
+| Output | `plan.json` + the drawings | `.vmf` → `.bsp` → `.nav` → `.vpk` |
+| Tools | `plan_from_map`, `check_map_plan`, `render_map_plan` | `write_vmf_*`, `compile_*`, `nav_*`, `run_vpk_pack` |
+| Must not | write, compile or open a `.vmf`/`.bsp` | edit `plan.json` |
+
+If pass 2 discovers that the plan is wrong, stop and return to pass 1. Editing the plan from
+inside the build is how two sources of truth appear. `plan_from_map` is the only tool that
+starts from a map, and it produces a *survey* (`origin: "imported"`): useful to seed a plan or
+to compare with a built one, never a substitute for the design.
+
 Create the workspace first if it does not exist:
 
 ```text

@@ -66,16 +66,52 @@
     {
       "id": "b0",
       "name": "Building 1",
-      "x": 2113,
-      "y": 2928,
-      "width": 4224,
-      "depth": 6400,
+      "x": 1732,
+      "y": 3315,
+      "width": 3456,
+      "depth": 5632,
       "rotation": 0,
-      "floors": 6,
+      "floors": 1,
       "floorHeight": 128,
       "baseZ": -240,
       "excavated": true,
-      "roofZ": 647,
+      "roofZ": 560,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
+        {
+          "level": 1,
+          "z": -240,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r0_0",
+              "name": "Room 1",
+              "x": 0,
+              "y": 0,
+              "width": 3392,
+              "depth": 5568
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        }
+      ]
+    },
+    {
+      "id": "b1",
+      "name": "Building 2",
+      "x": 3720,
+      "y": 4348,
+      "width": 960,
+      "depth": 1856,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 8,
+      "excavated": false,
+      "roofZ": 155,
       "enterable": false,
       "role": "context",
       "entrances": [],
@@ -86,153 +122,192 @@
           "height": 128,
           "rooms": [
             {
-              "id": "r1_0",
+              "id": "r0_0",
               "name": "Room 1",
-              "x": 1608,
-              "y": 1420,
+              "x": 0,
+              "y": 0,
               "width": 960,
               "depth": 1792
-            },
-            {
-              "id": "r2_1",
-              "name": "Room 2",
-              "x": 710,
-              "y": -2678,
-              "width": 896,
-              "depth": 1024
-            },
-            {
-              "id": "r5_2",
-              "name": "Room 3",
-              "x": -1822,
-              "y": -581,
-              "width": 448,
-              "depth": 576
-            },
-            {
-              "id": "r10_3",
-              "name": "Room 4",
-              "x": -612,
-              "y": -1990,
-              "width": 128,
-              "depth": 192
             }
           ],
           "doors": [],
           "stairs": []
-        },
+        }
+      ]
+    },
+    {
+      "id": "b2",
+      "name": "Building 3",
+      "x": 2822,
+      "y": 250,
+      "width": 960,
+      "depth": 1024,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 16,
+      "excavated": false,
+      "roofZ": 165,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
         {
-          "level": 2,
-          "z": -240,
+          "level": 1,
+          "z": 16,
           "height": 128,
           "rooms": [
             {
               "id": "r0_0",
               "name": "Room 1",
-              "x": -381,
-              "y": 388,
-              "width": 3392,
-              "depth": 5568
-            },
-            {
-              "id": "r3_1",
-              "name": "Room 2",
-              "x": -75,
-              "y": -328,
-              "width": 960,
-              "depth": 384
-            },
-            {
-              "id": "r4_2",
-              "name": "Room 3",
-              "x": -62,
-              "y": 72,
-              "width": 960,
-              "depth": 384
-            },
-            {
-              "id": "r12_3",
-              "name": "Room 4",
-              "x": 813,
-              "y": 1260,
-              "width": 384,
-              "depth": 192
+              "x": 0,
+              "y": 0,
+              "width": 896,
+              "depth": 1024
             }
           ],
           "doors": [],
           "stairs": []
-        },
+        }
+      ]
+    },
+    {
+      "id": "b3",
+      "name": "Building 4",
+      "x": 350,
+      "y": 2983,
+      "width": 704,
+      "depth": 640,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 352,
+      "excavated": false,
+      "roofZ": 458,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
         {
-          "level": 3,
+          "level": 1,
           "z": 352,
           "height": 128,
           "rooms": [
             {
-              "id": "r6_0",
+              "id": "r0_0",
               "name": "Room 1",
-              "x": -1762,
-              "y": 55,
+              "x": 0,
+              "y": 0,
               "width": 640,
               "depth": 640
-            },
-            {
-              "id": "r9_1",
-              "name": "Room 2",
-              "x": -125,
-              "y": -98,
-              "width": 1088,
-              "depth": 896
             }
           ],
           "doors": [],
           "stairs": []
-        },
+        }
+      ]
+    },
+    {
+      "id": "b4",
+      "name": "Building 5",
+      "x": 2013,
+      "y": 1825,
+      "width": 1088,
+      "depth": 832,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 272,
+      "excavated": false,
+      "roofZ": 647,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
         {
-          "level": 4,
+          "level": 1,
           "z": 272,
           "height": 128,
           "rooms": [
             {
-              "id": "r8_0",
+              "id": "r0_0",
               "name": "Room 1",
-              "x": -100,
-              "y": -1103,
+              "x": 0,
+              "y": 0,
               "width": 1088,
               "depth": 832
             }
           ],
           "doors": [],
           "stairs": []
-        },
+        }
+      ]
+    },
+    {
+      "id": "b5",
+      "name": "Building 6",
+      "x": 1988,
+      "y": 2830,
+      "width": 1088,
+      "depth": 896,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 193,
+      "excavated": false,
+      "roofZ": 579,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
         {
-          "level": 5,
-          "z": 477,
+          "level": 1,
+          "z": 193,
           "height": 128,
           "rooms": [
             {
-              "id": "r11_0",
+              "id": "r0_0",
               "name": "Room 1",
-              "x": -1725,
-              "y": 1347,
-              "width": 704,
-              "depth": 1600
+              "x": 0,
+              "y": 0,
+              "width": 1088,
+              "depth": 896
             }
           ],
           "doors": [],
           "stairs": []
-        },
+        }
+      ]
+    },
+    {
+      "id": "b6",
+      "name": "Building 7",
+      "x": 388,
+      "y": 4275,
+      "width": 768,
+      "depth": 1600,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 477,
+      "excavated": false,
+      "roofZ": 593,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
         {
-          "level": 6,
-          "z": 612,
+          "level": 1,
+          "z": 477,
           "height": 128,
           "rooms": [
             {
-              "id": "r7_0",
+              "id": "r0_0",
               "name": "Room 1",
-              "x": -1612,
-              "y": -528,
-              "width": 448,
-              "depth": 448
+              "x": 0,
+              "y": 0,
+              "width": 704,
+              "depth": 1600
             }
           ],
           "doors": [],

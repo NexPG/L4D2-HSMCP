@@ -1235,7 +1235,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     "route-monotone-enclosure", "route-few-spaces", "route-straight", "route-no-verticality",
     "beat-not-on-route", "flow-few-motifs", "palette-motifs", "campaign-no-finale",
     "district-no-landmark", "district-no-motif", "district-few",
-    "site-too-sparse", "flow-no-areas", "route-through-building", "entrance-z",
+    "site-too-sparse", "flow-no-areas", "route-through-building", "entrance-z", "footprints-overlap",
   ]);
   const reported =
     plan.origin === "imported" ? findings.filter((finding) => !DESIGN_RULES.has(finding.rule)) : findings;
