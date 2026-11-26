@@ -55,6 +55,13 @@ tool gap; do not re-unwrap a stock L4D2 model for a texture-only mod.
 - **The stock Witch head UV is split into several shells.** A raw camera-coordinate bake
   fragments them; use the UV Project modifier with a dedicated head UV map, or bake each shell
   separately and composite. Do not treat the head as one rectangular island.
+- **The Witch mouth is open geometry.** A closed-mouth photo texture cannot close it; the teeth
+  and inner mouth remain. Decide explicitly: keep the Witch mouth and fit the face around it,
+  use an open-mouth source, or allow a shape-key/geometry change. A texture-only mod cannot do
+  the last two.
+- The reliable artist path is **projection painting** (Blender stencil/clone, Substance Painter
+  projection) or a **per-shell projection** with seam cleanup; a single selected-to-active bake
+  is not enough for a stock multi-shell head.
 - Bake the diffuse colour to the model's stock UV at 2048², margin 8–16 px.
 - Mask out the dress/underwear/hair islands; keep the stock clothing.
 
@@ -95,3 +102,24 @@ tiling strip and a real alpha mask. A brown tint of the stock grey hair is not a
 - Do not use a generative model as the source of the face; use it only for missing organic fill
   after projection.
 - Do not write content limitations into `logs/errors.md`; that log is for skill/MCP/tool defects.
+
+## Known limit (2026-11, recorded honestly)
+
+The toolchain can now build a **clothed base** from photos and put her face on it, but it
+cannot yet produce a model that reads as the person:
+
+| Attempt | Result |
+|---|---|
+| Projection onto the Witch's atlas | UV split, sampled bake, and a closed-mouth photo on open-mouth geometry; remains a Witch with a photo face |
+| MPFB base + measured proportions + rigid photo face | correct height (167 cm), fitted clothes, hair and glasses, but a low-poly mannequin on close inspection |
+| Eyes | the basemesh has closed eyelids and no edge loops around the eye; inserting eyeballs needs retopology, cutting the low-poly mesh tears it |
+| Poly budget | 5 665 tris (the Witch's) leaves about 1 000 for the head, so a 1:1 face is impossible at that budget |
+
+What actually moved the needle: a **rigid** (not TPS) face transfer from the original photo
+kept her features undistorted, and the planar head UV (`u = x/0.32 + 0.5`,
+`v = (z - 1.545)/0.32 + 0.5`) gave the face 1024 px instead of the tiny body-atlas island.
+
+What is still missing: retopology of the head with eye loops, hand-authored hair cards, and a
+proper clothes loft that survives decimation. Until those land, say "blockout", not "model",
+and do not promise a 1:1 likeness from a 140 px face.
+
