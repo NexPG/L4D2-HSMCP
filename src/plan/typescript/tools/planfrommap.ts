@@ -260,6 +260,43 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       };
     });
 
+  // ---- heightfield from the nav mesh -----------------------------------------
+  // Each cell takes the lowest nav surface over its centre: that is the ground. Upper floors
+  // belong to the buildings, not to the terrain, or a roof would flatten the street.
+  const CELL = 256;
+  const cols = Math.ceil((site.bounds.x1 - site.bounds.x0) / CELL) + 1;
+  const rows = Math.ceil((site.bounds.y1 - site.bounds.y0) / CELL) + 1;
+  const heights = new Array<number>(cols * rows).fill(Number.POSITIVE_INFINITY);
+  for (const area of nav.areas) {
+    const z = (area.minZ + area.maxZ) / 2;
+    const c0 = Math.max(0, Math.floor((area.minX - site.bounds.x0) / CELL));
+    const c1 = Math.min(cols - 1, Math.ceil((area.maxX - site.bounds.x0) / CELL));
+    const r0 = Math.max(0, Math.floor((area.minY - site.bounds.y0) / CELL));
+    const r1 = Math.min(rows - 1, Math.ceil((area.maxY - site.bounds.y0) / CELL));
+    for (let row = r0; row <= r1; row += 1) {
+      for (let col = c0; col <= c1; col += 1) {
+        const cx = site.bounds.x0 + (col + 0.5) * CELL;
+        const cy = site.bounds.y0 + (row + 0.5) * CELL;
+        if (cx < area.minX || cx > area.maxX || cy < area.minY || cy > area.maxY) continue;
+        const index = row * cols + col;
+        if (z < heights[index]!) heights[index] = z;
+      }
+    }
+  }
+  const terrain = {
+    cell: CELL,
+    origin: [site.bounds.x0, site.bounds.y0] as [number, number],
+    cols,
+    rows,
+    heights: heights.map((value) => (Number.isFinite(value) ? Math.round(value) : 0)),
+  };
+  for (const building of buildings) {
+    const col = Math.max(0, Math.min(cols - 1, Math.floor((building.x - site.bounds.x0) / CELL)));
+    const row = Math.max(0, Math.min(rows - 1, Math.floor((building.y - site.bounds.y0) / CELL)));
+    const ground = terrain.heights[row * cols + col]!;
+    if (building.baseZ < ground - 16) building.excavated = true;
+  }
+
   const plan = {
     version: 1 as const,
     name: name ?? bspPath.replace(/\\/g, "/").split("/").pop()!.replace(/\.bsp$/i, ""),
@@ -271,7 +308,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     pillars: [],
     districts,
     site,
-    terrain: { cell: 1024, origin: [site.bounds.x0, site.bounds.y0], cols: 2, rows: 2, heights: [0, 0, 0, 0] },
+    terrain,
     buildings,
     routes: [{
       id: "critical", kind: "critical" as const, typology: "string-of-pearls" as const, width: 128,

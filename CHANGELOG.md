@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.303-alpha - 2026-11-26
+
+- **Real heightfield for imported plans.** plan_from_map fills 	errain from the nav mesh:
+  256-unit cells, each taking the lowest nav surface over its centre, so the vertical plan
+  shows the map's own heights (c8m1: -240..640, 36 distinct levels) instead of the flat
+  [0,0,0,0] placeholder. Floors stay with the buildings; the terrain is the ground.
+- **Survey height rules.** uilding-below-terrain and excavation-not-below are skipped for
+  imported plans: a nav-derived heightfield is coarse, and a building floor can sit above a
+  cell whose only nav sample is elsewhere.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.302-alpha - 2026-11-26
 
 - **Pass 1 / pass 2 boundary stated.** workflows/design-a-map.md now opens with the two tool
