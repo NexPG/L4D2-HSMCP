@@ -683,4 +683,40 @@ describe("map plan drawings", () => {
     expect(miss?.message).toContain("local (");
     expect(miss?.message).toContain("rooms:");
   });
+
+  it("accepts an entrance at the building base on elevated terrain", () => {
+    const raised = plan();
+    const buildings = raised.buildings as Array<Record<string, unknown>>;
+    const house = buildings[0]!;
+    house.baseZ = 512;
+    const entrances = house.entrances as Array<Record<string, unknown>>;
+    entrances[0]!.z = 512;
+    const parsed = MapPlanSchema.parse(raised);
+    const check = checkMapPlan("raised.json", parsed);
+    expect(check.findings.map((finding) => finding.rule)).not.toContain("entrance-z");
+  });
+
+  it("warns about a drop that changes neither the floor nor the height", () => {
+    const flat = plan();
+    const routes = flat.routes as Array<Record<string, unknown>>;
+    const nodes = routes[0]!.nodes as Array<Record<string, unknown>>;
+    for (const node of nodes) {
+      node.z = 0;
+      node.floor = 1;
+      delete node.buildingId;
+    }
+    nodes.splice(1, 0, { id: "fake-drop", label: "Drop", x: 220, y: 400, z: 0, floor: 1,
+      kind: "drop", enclosure: "tight", intensity: 2, landmark: "", gate: "none" });
+    routes[0]!.points = [[200, 300, 0], [300, 1100, 0], [900, 1100, 0], [1200, 800, 0]];
+    const parsed = MapPlanSchema.parse(flat);
+    const check = checkMapPlan("drop.json", parsed);
+    expect(check.findings.map((finding) => finding.rule)).toContain("vertical-no-change");
+  });
+
+  it("accepts a real campaign plan built from the game's nav: Dead Center c1m1", () => {
+    const source = join(__dirname, "fixtures", "dead-center-c1m1.json");
+    const parsed = MapPlanSchema.parse(JSON.parse(readFileSync(source, "utf8")));
+    const check = checkMapPlan(source, parsed);
+    expect(check.findings.map((finding) => `${finding.rule}: ${finding.message}`)).toEqual([]);
+  });
 });

@@ -1,0 +1,623 @@
+{
+  "version": 1,
+  "name": "Dead Center c1m1 — Hotel",
+  "kind": "map",
+  "stage": "approved",
+  "experience": "wake in the hotel room, cross the floor, drop to the street and reach the safe room",
+  "pillars": [
+    "the street is visible from the hotel windows before it is reachable",
+    "every drop is one way",
+    "the safe room is the only lit door on the street"
+  ],
+  "districts": [
+    {
+      "id": "hotel",
+      "name": "Hotel floor",
+      "mood": "wrecked comfort",
+      "motif": "carpet and suitcases",
+      "landmark": "window wall"
+    },
+    {
+      "id": "descent",
+      "name": "Service drop",
+      "mood": "vertical",
+      "motif": "scaffolding and pipes",
+      "landmark": "broken lift"
+    },
+    {
+      "id": "street",
+      "name": "Street",
+      "mood": "exposed",
+      "motif": "cars and awnings",
+      "landmark": "safe-room light"
+    }
+  ],
+  "site": {
+    "bounds": {
+      "x0": -1024,
+      "y0": 3840,
+      "x1": 4096,
+      "y1": 8448
+    },
+    "north": 0,
+    "grid": 256,
+    "water": [],
+    "noBuild": []
+  },
+  "terrain": {
+    "cell": 1024,
+    "origin": [
+      0,
+      4096
+    ],
+    "cols": 6,
+    "rows": 6,
+    "heights": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "buildings": [
+    {
+      "id": "hotel",
+      "name": "Hotel",
+      "x": 750,
+      "y": 5450,
+      "width": 1100,
+      "depth": 1500,
+      "rotation": 0,
+      "floors": 2,
+      "floorHeight": 160,
+      "baseZ": 2660,
+      "enterable": true,
+      "role": "route",
+      "entrances": [
+        {
+          "x": 1188,
+          "y": 4700,
+          "z": 2660,
+          "width": 96,
+          "face": "south"
+        }
+      ],
+      "floorsPlan": [
+        {
+          "level": 1,
+          "z": 2660,
+          "height": 200,
+          "rooms": [
+            {
+              "id": "floor1",
+              "name": "Hotel floor",
+              "x": 0,
+              "y": 0,
+              "width": 1040,
+              "depth": 1440
+            }
+          ],
+          "doors": [
+            {
+              "id": "street-door",
+              "x": 438,
+              "y": -750,
+              "width": 96,
+              "depth": 16,
+              "from": "outside",
+              "to": "floor1"
+            }
+          ],
+          "stairs": [
+            {
+              "id": "up",
+              "kind": "stair",
+              "x": -500,
+              "y": 388,
+              "width": 64,
+              "depth": 120,
+              "to": 2
+            }
+          ]
+        },
+        {
+          "level": 2,
+          "z": 2851,
+          "height": 160,
+          "rooms": [
+            {
+              "id": "room2",
+              "name": "Upper rooms",
+              "x": -300,
+              "y": 300,
+              "width": 500,
+              "depth": 600
+            }
+          ],
+          "doors": [],
+          "stairs": [
+            {
+              "id": "down",
+              "kind": "stair",
+              "x": -500,
+              "y": 388,
+              "width": 64,
+              "depth": 120,
+              "to": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "safe_block",
+      "name": "Safe room block",
+      "x": 2400,
+      "y": 4300,
+      "width": 400,
+      "depth": 300,
+      "rotation": 0,
+      "floors": 1,
+      "floorHeight": 128,
+      "baseZ": 1184,
+      "enterable": true,
+      "role": "safe-room",
+      "entrances": [
+        {
+          "x": 2238,
+          "y": 4350,
+          "z": 1184,
+          "width": 96,
+          "face": "west"
+        }
+      ],
+      "floorsPlan": [
+        {
+          "level": 1,
+          "z": 1184,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "safe_in",
+              "name": "Safe room",
+              "x": 0,
+              "y": 0,
+              "width": 340,
+              "depth": 240
+            }
+          ],
+          "doors": [
+            {
+              "id": "safe-door-in",
+              "x": -170,
+              "y": 0,
+              "width": 64,
+              "depth": 16,
+              "from": "outside",
+              "to": "safe_in"
+            }
+          ],
+          "stairs": []
+        }
+      ]
+    },
+    {
+      "id": "facade_1",
+      "name": "Facade 1",
+      "x": 300,
+      "y": 4200,
+      "width": 350,
+      "depth": 300,
+      "rotation": 0,
+      "floors": 3,
+      "floorHeight": 128,
+      "baseZ": 1184,
+      "role": "facade",
+      "enterable": false
+    },
+    {
+      "id": "facade_2",
+      "name": "Facade 2",
+      "x": 900,
+      "y": 4100,
+      "width": 350,
+      "depth": 300,
+      "rotation": 0,
+      "floors": 3,
+      "floorHeight": 128,
+      "baseZ": 1184,
+      "role": "facade",
+      "enterable": false
+    },
+    {
+      "id": "facade_3",
+      "name": "Facade 3",
+      "x": 1700,
+      "y": 5200,
+      "width": 350,
+      "depth": 300,
+      "rotation": 0,
+      "floors": 3,
+      "floorHeight": 128,
+      "baseZ": 1184,
+      "role": "facade",
+      "enterable": false
+    }
+  ],
+  "routes": [
+    {
+      "id": "critical",
+      "kind": "critical",
+      "typology": "string-of-pearls",
+      "width": 128,
+      "points": [
+        [
+          600,
+          5963,
+          2851
+        ],
+        [
+          250,
+          5838,
+          2756
+        ],
+        [
+          350,
+          5688,
+          2660
+        ],
+        [
+          663,
+          5610,
+          2656
+        ],
+        [
+          1188,
+          5038,
+          2656
+        ],
+        [
+          1188,
+          4700,
+          2656
+        ],
+        [
+          1135,
+          4650,
+          1570
+        ],
+        [
+          1238,
+          4593,
+          1184
+        ],
+        [
+          1738,
+          4600,
+          1184
+        ],
+        [
+          2025,
+          4425,
+          1184
+        ],
+        [
+          2238,
+          4350,
+          1184
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "label": "Hotel room",
+          "x": 600,
+          "y": 5963,
+          "z": 2851,
+          "floor": 2,
+          "buildingId": "hotel",
+          "district": "hotel",
+          "space": "hotel_room",
+          "kind": "room",
+          "enclosure": "covered",
+          "intensity": 0,
+          "landmark": "window wall",
+          "gate": "none",
+          "beat": "b1"
+        },
+        {
+          "id": "stair-down",
+          "label": "Hotel stair",
+          "x": 250,
+          "y": 5838,
+          "z": 2756,
+          "floor": 2,
+          "buildingId": "hotel",
+          "district": "hotel",
+          "space": "hotel_stair",
+          "kind": "stair",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "corridor",
+          "label": "Hotel corridor",
+          "x": 350,
+          "y": 5688,
+          "z": 2660,
+          "floor": 1,
+          "buildingId": "hotel",
+          "district": "hotel",
+          "space": "hotel_corridor",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none",
+          "beat": "b2"
+        },
+        {
+          "id": "window",
+          "label": "Window wall",
+          "x": 663,
+          "y": 5610,
+          "z": 2656,
+          "floor": 1,
+          "buildingId": "hotel",
+          "district": "hotel",
+          "space": "hotel_corridor",
+          "kind": "room",
+          "enclosure": "vista",
+          "intensity": 1,
+          "landmark": "safe-room light",
+          "gate": "none"
+        },
+        {
+          "id": "exit-door",
+          "label": "Street door",
+          "x": 1188,
+          "y": 4700,
+          "z": 2656,
+          "floor": 1,
+          "buildingId": "hotel",
+          "district": "hotel",
+          "space": "hotel_corridor",
+          "kind": "door",
+          "enclosure": "covered",
+          "intensity": 3,
+          "landmark": "safe-room light",
+          "gate": "soft",
+          "beat": "b3"
+        },
+        {
+          "id": "drop",
+          "label": "Service drop",
+          "x": 1135,
+          "y": 4650,
+          "z": 1570,
+          "floor": 1,
+          "district": "descent",
+          "space": "service_drop",
+          "kind": "drop",
+          "enclosure": "tight",
+          "intensity": 4,
+          "landmark": "broken lift",
+          "gate": "one-way",
+          "beat": "b4"
+        },
+        {
+          "id": "street",
+          "label": "Street",
+          "x": 1238,
+          "y": 4593,
+          "z": 1184,
+          "floor": 1,
+          "district": "street",
+          "space": "street",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 4,
+          "landmark": "safe-room light",
+          "gate": "none"
+        },
+        {
+          "id": "safe-door",
+          "label": "Safe room door",
+          "x": 2238,
+          "y": 4350,
+          "z": 1184,
+          "floor": 1,
+          "district": "street",
+          "space": "safe_in",
+          "kind": "checkpoint",
+          "enclosure": "covered",
+          "intensity": 0,
+          "landmark": "",
+          "gate": "lock",
+          "beat": "b5",
+          "buildingId": "safe_block"
+        }
+      ],
+      "stops": [
+        {
+          "id": "s-start",
+          "label": "Start",
+          "x": 600,
+          "y": 5963,
+          "z": 2851,
+          "kind": "start"
+        },
+        {
+          "id": "s-safe",
+          "label": "Safe room",
+          "x": 2238,
+          "y": 4350,
+          "z": 1184,
+          "kind": "safe-room"
+        }
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "id": "spawn",
+      "label": "Hotel room spawn",
+      "kind": "spawn",
+      "floor": 1,
+      "buildingId": "hotel",
+      "x": 600,
+      "y": 5963,
+      "width": 300,
+      "depth": 260
+    },
+    {
+      "id": "corridor-hold",
+      "label": "Corridor holdout",
+      "kind": "holdout",
+      "floor": 1,
+      "buildingId": "hotel",
+      "x": 650,
+      "y": 5600,
+      "width": 700,
+      "depth": 400
+    },
+    {
+      "id": "street-cover",
+      "label": "Street cover",
+      "kind": "cover",
+      "floor": 1,
+      "x": 1650,
+      "y": 4500,
+      "width": 500,
+      "depth": 300
+    },
+    {
+      "id": "safe",
+      "label": "Safe room",
+      "kind": "safe-room",
+      "floor": 1,
+      "x": 2400,
+      "y": 4300,
+      "width": 320,
+      "depth": 240
+    },
+    {
+      "id": "safe-items",
+      "label": "Safe room items",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 2400,
+      "y": 4300,
+      "width": 200,
+      "depth": 160
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "chapter": 1,
+      "type": "orientation",
+      "space": "hotel_room",
+      "what": "the room and the street below set the goal",
+      "proof": "the safe-room light is visible from the window",
+      "intensity": 0
+    },
+    {
+      "id": "b2",
+      "chapter": 1,
+      "type": "first fight",
+      "space": "hotel_corridor",
+      "what": "the corridor is the first choke",
+      "proof": "one door at each end",
+      "intensity": 2
+    },
+    {
+      "id": "b3",
+      "chapter": 1,
+      "type": "exit",
+      "space": "hotel_corridor",
+      "what": "the street door opens the map",
+      "proof": "the door is on the route between two rooms",
+      "intensity": 3
+    },
+    {
+      "id": "b4",
+      "chapter": 1,
+      "type": "drop",
+      "space": "service_drop",
+      "what": "the drop is one way",
+      "proof": "no stair back up",
+      "intensity": 4
+    },
+    {
+      "id": "b5",
+      "chapter": 1,
+      "type": "rest",
+      "space": "safe_room",
+      "what": "the safe room closes the chapter",
+      "proof": "the door locks",
+      "intensity": 0
+    }
+  ],
+  "budget": {
+    "triangles": 400000
+  },
+  "palette": {
+    "sky": "c1m1_night",
+    "motifs": [
+      "carpet",
+      "cars",
+      "awnings"
+    ],
+    "materials": [
+      "plaster_worn",
+      "carpet_red",
+      "asphalt"
+    ],
+    "models": [
+      "car_wreck",
+      "suitcase"
+    ]
+  },
+  "variability": [
+    "left or right around the corridor"
+  ],
+  "acceptance": [
+    "the safe-room light is visible before the drop",
+    "the drop cannot be climbed back"
+  ]
+}

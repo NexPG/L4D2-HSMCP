@@ -964,7 +964,8 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
           if (!floor) {
             add(severity, "node-no-floor-plan", `${building.id} has no floor plan for node ${node.id} at F${node.floor}`);
           } else {
-            if (Math.abs(node.z - floor.z) > 32) {
+            const atFloorLevel = !["stair", "ladder", "elevator", "ramp", "drop"].includes(node.kind);
+            if (atFloorLevel && Math.abs(node.z - floor.z) > 32) {
               add("warning", "node-z-mismatch", `${node.id} z=${node.z} but ${building.id} F${node.floor} is z=${floor.z}`);
             }
             const verticalKind = ["stair", "ladder", "elevator", "ramp"].includes(node.kind);
@@ -1014,8 +1015,18 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       if (VERTICAL_KINDS.has(node.kind)) {
         const prev = route.nodes[index - 1];
         const next = route.nodes[index + 1];
-        if (prev && next && prev.floor === node.floor && next.floor === node.floor) {
-          add("warning", "vertical-no-change", `${node.id} is a ${node.kind} but the route stays on F${node.floor}`);
+        if (
+          prev &&
+          next &&
+          prev.floor === node.floor &&
+          next.floor === node.floor &&
+          Math.abs(next.z - node.z) <= 16
+        ) {
+          add(
+            "warning",
+            "vertical-no-change",
+            `${node.id} is a ${node.kind} but neither the floor nor the height changes (F${node.floor}, z=${node.z})`,
+          );
         }
       }
       const nextNode = route.nodes[index + 1];
@@ -1180,11 +1191,13 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
         );
       }
       const ground = terrainAt(plan, entrance.x, entrance.y);
-      if (Math.abs(ground - entrance.z) > 48) {
+      const atBase = Math.abs(entrance.z - building.baseZ) <= 48;
+      const atTerrain = Math.abs(entrance.z - ground) <= 48;
+      if (!atBase && !atTerrain) {
         add(
           "warning",
           "entrance-z",
-          `${building.id} entrance z=${entrance.z} but the terrain is ${ground.toFixed(0)}`,
+          `${building.id} entrance z=${entrance.z} matches neither the building base ${building.baseZ.toFixed(0)} nor the terrain ${ground.toFixed(0)}`,
         );
       }
     }

@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.298-alpha - 2026-11-26
+
+- **Plan checks stop lying about heights.** entrance-z accepts an entrance at the building
+  base as well as at the terrain (elevated buildings no longer warn); 
+ode-z-mismatch exempts
+  vertical nodes, whose z is mid-flight by definition; ertical-no-change now requires the
+  height to stand still too, so an outdoor drop is not flagged.
+- **Real-route fixture.** 	est/plan/fixtures/dead-center-c1m1.json is built from the game's
+  own c1m1_hotel.nav: the route is 48 nav steps from the hotel room (z 2851) to the safe room
+  (z 1184), with the real bounds. It passes with zero findings.
+- Tests: 259 files, 2,043 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.297-alpha - 2026-11-26
 
 - **Plan schema: four contradictions removed.** A route point may be [x, y] and gets z = 0
