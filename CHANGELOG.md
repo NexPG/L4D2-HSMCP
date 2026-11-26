@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.307-alpha - 2026-11-26
+
+- **Branches, materials, water and props in the survey.** plan_from_map anchors a branch
+  route for every room the critical path never enters (c8m1: 6), reads the 16 most-used BSP
+  materials into palette.materials, records water and nav-blocker volumes, and places props
+  within 320 u of the route as prop areas (40). The imported c8m1 plan now carries 103 areas
+  over 7 routes.
+- New area kind prop, drawn on the circulation sheet.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.306-alpha - 2026-11-26
 
 - **Doors, stairs, Director zones and the palette come from the map.** plan_from_map now

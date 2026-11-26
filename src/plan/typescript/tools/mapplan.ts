@@ -218,6 +218,7 @@ const Area = z.object({
     "item-cluster",
     "door",
     "stair",
+    "prop",
   ]),
   floor: z.number().int().min(-8).max(64).default(1).describe("Floor level; 0 and below are basements."),
   buildingId: z.string().optional().describe("Building this area belongs to, when interior."),
@@ -1651,6 +1652,7 @@ function circulationPlan(plan: MapPlan): string {
     "item-cluster": "#16a085",
     door: "#7f8c8d",
     stair: "#8e44ad",
+    prop: "#a04000",
   };
   for (const area of plan.areas) {
     const color = areaColor[area.kind] ?? "#7f8c8d";

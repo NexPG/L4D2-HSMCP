@@ -12,6 +12,7 @@ import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import { readDisplacements } from "../../../maps/typescript/bsp/displacements.js";
+import { readMaterials } from "../../../maps/typescript/bsp/materials.js";
 import { readStaticProps } from "../../../maps/typescript/bsp/staticprops.js";
 import { groundSample, readTree } from "../../../maps/typescript/bsp/trace.js";
 import type { MapEntity } from "../../../maps/typescript/entity/model.js";
@@ -187,13 +188,52 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   // Palette from the map: skybox from worldspawn, prop models from the static props.
   const world = entities.find((entity) => entity.classname === "worldspawn");
   const skyName = world?.keyvalues?.find(([key]) => key.toLowerCase() === "skyname")?.[1] ?? "";
+  let materials: string[] = [];
+  try {
+    const report = readMaterials(bspPath);
+    materials = report.materials
+      .slice()
+      .sort((a, b) => b.usageCount - a.usageCount)
+      .slice(0, 16)
+      .map((material) => material.name);
+  } catch {
+    materials = [];
+  }
+  // Water and no-build volumes are entities in an L4D2 map; a survey records their footprint.
+  const water: Array<Record<string, unknown>> = [];
+  const noBuild: Array<Record<string, unknown>> = [];
+  for (const entity of entities) {
+    const cls = entity.classname ?? "";
+    if (/water/i.test(cls)) {
+      const [x, y] = origin(entity);
+      water.push({ x: Math.round(x), y: Math.round(y), width: 512, depth: 512, rotation: 0 });
+    } else if (/nav_blocker|navblocker/i.test(cls)) {
+      const [x, y] = origin(entity);
+      noBuild.push({ x: Math.round(x), y: Math.round(y), width: 256, depth: 256, rotation: 0 });
+    }
+    if (water.length >= 12 && noBuild.length >= 12) break;
+  }
+  // Props near the route become `prop` areas; a survey cannot guess cover quality.
+  const propsNearRoute: Array<Record<string, unknown>> = [];
   let propCount = 0;
   let propModels: string[] = [];
   try {
     const lumpProps = readStaticProps(bspPath);
     propCount = lumpProps.props.length;
     propModels = [...new Set(lumpProps.props.map((prop) => prop.model))].sort().slice(0, 32);
+    let propIndex = 0;
+    for (const prop of lumpProps.props) {
+      const near = steps.some((step) => Math.hypot(step.x - prop.origin[0], step.y - prop.origin[1]) <= 320);
+      if (!near) continue;
+      propsNearRoute.push({
+        id: `prop_${propIndex++}`, label: prop.model.split("/").pop() ?? "prop", kind: "prop", floor: 1,
+        x: Math.round(prop.origin[0]), y: Math.round(prop.origin[1]), width: 64, depth: 64,
+        note: prop.model,
+      });
+      if (propIndex >= 40) break;
+    }
   } catch {
+    propsNearRoute.length = 0;
     propCount = 0;
   }
 
@@ -402,6 +442,42 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     if (building.baseZ < ground - 16) building.excavated = true;
   }
 
+  // ---- side branches ----------------------------------------------------------
+  // Rooms the critical route never enters become branch routes anchored at the nearest node.
+  const branches: Array<Record<string, unknown>> = [];
+  let branchIndex = 0;
+  for (const room of rooms) {
+    const cx = Math.round((room.box.minX + room.box.maxX) / 2);
+    const cy = Math.round((room.box.minY + room.box.maxY) / 2);
+    const cz = Math.round((room.box.minZ + room.box.maxZ) / 2);
+    const onRoute = steps.some((step) => Math.hypot(step.x - cx, step.y - cy) <= 256);
+    if (onRoute) continue;
+    const nearest = routeNodes
+      .map((node) => ({ node, distance: Math.hypot(node.x - cx, node.y - cy) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (!nearest || nearest.distance < 256) continue;
+    branchIndex += 1;
+    const anchor = nearest.node;
+    branches.push({
+      id: `branch_${branchIndex}`,
+      kind: "branch",
+      typology: "pass-through",
+      width: 96,
+      from: anchor.id,
+      points: [[anchor.x, anchor.y, anchor.z], [cx, cy, cz]],
+      nodes: [
+        { id: `branch_${branchIndex}_a`, label: "Branch", x: anchor.x, y: anchor.y, z: anchor.z,
+          floor: 1, district: anchor.district, space: anchor.space, kind: "street",
+          enclosure: "tight", intensity: 2, landmark: "", gate: "none" },
+        { id: `branch_${branchIndex}_end`, label: `Side room ${branchIndex}`, x: cx, y: cy, z: cz,
+          floor: 1, district: bandOf(cz), space: `side_${bandOf(cz)}`, kind: "room",
+          enclosure: "tight", intensity: 2, landmark: "", gate: "none" },
+      ],
+      stops: [],
+    });
+    if (branchIndex >= 6) break;
+  }
+
   const plan = {
     version: 1 as const,
     name: name ?? bspPath.replace(/\\/g, "/").split("/").pop()!.replace(/\.bsp$/i, ""),
@@ -423,11 +499,11 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         { id: "s-start", label: "Start", x: Math.round(startCenter.x), y: Math.round(startCenter.y), z: spawnZ, kind: "start" as const },
         { id: "s-safe", label: "Safe room", x: Math.round(areaCenter(goalArea).x), y: Math.round(areaCenter(goalArea).y), z: Math.round(areaCenter(goalArea).z), kind: "safe-room" as const },
       ],
-    }],
-    areas,
+    }, ...branches],
+    areas: [...areas, ...propsNearRoute],
     beats: [],
     budget: {},
-    palette: { sky: skyName, motifs: [], materials: [], models: propModels },
+    palette: { sky: skyName, motifs: [], materials, models: propModels },
     variability: [],
     acceptance: [],
   };

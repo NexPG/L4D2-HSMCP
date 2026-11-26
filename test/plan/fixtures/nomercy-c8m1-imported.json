@@ -3232,6 +3232,318 @@
           "kind": "safe-room"
         }
       ]
+    },
+    {
+      "id": "branch_1",
+      "kind": "branch",
+      "typology": "pass-through",
+      "width": 96,
+      "points": [
+        [
+          1913,
+          3563,
+          8
+        ],
+        [
+          1732,
+          3315,
+          160
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "branch_1_a",
+          "label": "Branch",
+          "x": 1913,
+          "y": 3563,
+          "z": 8,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "branch_1_end",
+          "label": "Side room 1",
+          "x": 1732,
+          "y": 3315,
+          "z": 160,
+          "floor": 1,
+          "space": "side_middle",
+          "district": "middle",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [],
+      "from": "n10"
+    },
+    {
+      "id": "branch_2",
+      "kind": "branch",
+      "typology": "pass-through",
+      "width": 96,
+      "points": [
+        [
+          3163,
+          4113,
+          -215
+        ],
+        [
+          3720,
+          4348,
+          81
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "branch_2_a",
+          "label": "Branch",
+          "x": 3163,
+          "y": 4113,
+          "z": -215,
+          "floor": 1,
+          "space": "space_lower",
+          "district": "lower",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "branch_2_end",
+          "label": "Side room 2",
+          "x": 3720,
+          "y": 4348,
+          "z": 81,
+          "floor": 1,
+          "space": "side_middle",
+          "district": "middle",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [],
+      "from": "n12"
+    },
+    {
+      "id": "branch_3",
+      "kind": "branch",
+      "typology": "pass-through",
+      "width": 96,
+      "points": [
+        [
+          2100,
+          1025,
+          24
+        ],
+        [
+          2822,
+          250,
+          91
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "branch_3_a",
+          "label": "Branch",
+          "x": 2100,
+          "y": 1025,
+          "z": 24,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "branch_3_end",
+          "label": "Side room 3",
+          "x": 2822,
+          "y": 250,
+          "z": 91,
+          "floor": 1,
+          "space": "side_middle",
+          "district": "middle",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [],
+      "from": "n5"
+    },
+    {
+      "id": "branch_4",
+      "kind": "branch",
+      "typology": "pass-through",
+      "width": 96,
+      "points": [
+        [
+          2338,
+          2275,
+          16
+        ],
+        [
+          2038,
+          2600,
+          208
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "branch_4_a",
+          "label": "Branch",
+          "x": 2338,
+          "y": 2275,
+          "z": 16,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "branch_4_end",
+          "label": "Side room 4",
+          "x": 2038,
+          "y": 2600,
+          "z": 208,
+          "floor": 1,
+          "space": "side_middle",
+          "district": "middle",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [],
+      "from": "n7"
+    },
+    {
+      "id": "branch_5",
+      "kind": "branch",
+      "typology": "pass-through",
+      "width": 96,
+      "points": [
+        [
+          1913,
+          3563,
+          8
+        ],
+        [
+          2050,
+          3000,
+          216
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "branch_5_a",
+          "label": "Branch",
+          "x": 1913,
+          "y": 3563,
+          "z": 8,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "branch_5_end",
+          "label": "Side room 5",
+          "x": 2050,
+          "y": 3000,
+          "z": 216,
+          "floor": 1,
+          "space": "side_upper",
+          "district": "upper",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [],
+      "from": "n10"
+    },
+    {
+      "id": "branch_6",
+      "kind": "branch",
+      "typology": "pass-through",
+      "width": 96,
+      "points": [
+        [
+          1500,
+          2288,
+          14
+        ],
+        [
+          290,
+          2347,
+          72
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "branch_6_a",
+          "label": "Branch",
+          "x": 1500,
+          "y": 2288,
+          "z": 14,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "branch_6_end",
+          "label": "Side room 6",
+          "x": 290,
+          "y": 2347,
+          "z": 72,
+          "floor": 1,
+          "space": "side_middle",
+          "district": "middle",
+          "kind": "room",
+          "enclosure": "tight",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [],
+      "from": "n8"
     }
   ],
   "areas": [
@@ -3990,6 +4302,486 @@
       "depth": 192,
       "rotation": 0,
       "note": ""
+    },
+    {
+      "id": "prop_0",
+      "label": "Light_ceiling.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1672,
+      "y": 880,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Light_ceiling.mdl"
+    },
+    {
+      "id": "prop_1",
+      "label": "barrel_fire.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2651,
+      "y": 1847,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_junk/barrel_fire.mdl"
+    },
+    {
+      "id": "prop_2",
+      "label": "barrel_fire.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 3087,
+      "y": 4078,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_junk/barrel_fire.mdl"
+    },
+    {
+      "id": "prop_3",
+      "label": "Gutter_Pipe_256.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1536,
+      "y": 2570,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_rooftop/Gutter_Pipe_256.mdl"
+    },
+    {
+      "id": "prop_4",
+      "label": "Gutter_Pipe_256.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1536,
+      "y": 2570,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_rooftop/Gutter_Pipe_256.mdl"
+    },
+    {
+      "id": "prop_5",
+      "label": "Light_ceiling.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2152,
+      "y": 1244,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Light_ceiling.mdl"
+    },
+    {
+      "id": "prop_6",
+      "label": "phonepole1_tall.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2041,
+      "y": 3806,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_street/phonepole1_tall.mdl"
+    },
+    {
+      "id": "prop_7",
+      "label": "phonepole1_tall.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2686,
+      "y": 4473,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_street/phonepole1_tall.mdl"
+    },
+    {
+      "id": "prop_8",
+      "label": "light_domelight02_on.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1620,
+      "y": 831,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_c17/light_domelight02_on.mdl"
+    },
+    {
+      "id": "prop_9",
+      "label": "ceiling_fan.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1871,
+      "y": 643,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/de_inferno/ceiling_fan.mdl"
+    },
+    {
+      "id": "prop_10",
+      "label": "Light_ceiling.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1680,
+      "y": 2832,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Light_ceiling.mdl"
+    },
+    {
+      "id": "prop_11",
+      "label": "Light_ceiling.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1688,
+      "y": 1080,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Light_ceiling.mdl"
+    },
+    {
+      "id": "prop_12",
+      "label": "Light_ceiling.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1688,
+      "y": 888,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Light_ceiling.mdl"
+    },
+    {
+      "id": "prop_13",
+      "label": "dumpster.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2274,
+      "y": 1764,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_junk/dumpster.mdl"
+    },
+    {
+      "id": "prop_14",
+      "label": "chimneycluster01.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1881,
+      "y": 1186,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/de_nuke/chimneycluster01.mdl"
+    },
+    {
+      "id": "prop_15",
+      "label": "acunit2.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1740,
+      "y": 1310,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_rooftop/acunit2.mdl"
+    },
+    {
+      "id": "prop_16",
+      "label": "acunit2.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1643,
+      "y": 1310,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_rooftop/acunit2.mdl"
+    },
+    {
+      "id": "prop_17",
+      "label": "roof_vent001.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2185,
+      "y": 1189,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_rooftop/roof_vent001.mdl"
+    },
+    {
+      "id": "prop_18",
+      "label": "table_kitchen.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2011,
+      "y": 1151,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/table_kitchen.mdl"
+    },
+    {
+      "id": "prop_19",
+      "label": "desk_metal.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2041,
+      "y": 1129,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/desk_metal.mdl"
+    },
+    {
+      "id": "prop_20",
+      "label": "concrete_debris128Pile001a.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2083,
+      "y": 1300,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_debris/concrete_debris128Pile001a.mdl"
+    },
+    {
+      "id": "prop_21",
+      "label": "Shelves_metal.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1889,
+      "y": 1071,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Shelves_metal.mdl"
+    },
+    {
+      "id": "prop_22",
+      "label": "Shelves_metal.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1981,
+      "y": 1072,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/cs_office/Shelves_metal.mdl"
+    },
+    {
+      "id": "prop_23",
+      "label": "light_red1.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1873,
+      "y": 776,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props/de_nuke/light_red1.mdl"
+    },
+    {
+      "id": "prop_24",
+      "label": "billboard06.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1612,
+      "y": 668,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_rooftop/billboard06.mdl"
+    },
+    {
+      "id": "prop_25",
+      "label": "refrigerator02_lowerdoor.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2090,
+      "y": 1343,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/refrigerator02_lowerdoor.mdl"
+    },
+    {
+      "id": "prop_26",
+      "label": "refrigerator02_main.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2265,
+      "y": 1238,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/refrigerator02_main.mdl"
+    },
+    {
+      "id": "prop_27",
+      "label": "refrigerator02_freezerdoor.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2263,
+      "y": 1240,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/refrigerator02_freezerdoor.mdl"
+    },
+    {
+      "id": "prop_28",
+      "label": "refrigerator02_main.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1832,
+      "y": 1392,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/refrigerator02_main.mdl"
+    },
+    {
+      "id": "prop_29",
+      "label": "concrete_debris128Pile001a.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1587,
+      "y": 1010,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_debris/concrete_debris128Pile001a.mdl"
+    },
+    {
+      "id": "prop_30",
+      "label": "entertainment_unit.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1748,
+      "y": 1112,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/entertainment_unit.mdl"
+    },
+    {
+      "id": "prop_31",
+      "label": "entertainment_unit.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1880,
+      "y": 1214,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/entertainment_unit.mdl"
+    },
+    {
+      "id": "prop_32",
+      "label": "sink_kitchen.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2077,
+      "y": 1330,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/sink_kitchen.mdl"
+    },
+    {
+      "id": "prop_33",
+      "label": "sink_kitchen.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1654,
+      "y": 799,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/sink_kitchen.mdl"
+    },
+    {
+      "id": "prop_34",
+      "label": "sink_kitchen.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1973,
+      "y": 1356,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/sink_kitchen.mdl"
+    },
+    {
+      "id": "prop_35",
+      "label": "toilet.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1576,
+      "y": 823,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/toilet.mdl"
+    },
+    {
+      "id": "prop_36",
+      "label": "toilet.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 2248,
+      "y": 776,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/toilet.mdl"
+    },
+    {
+      "id": "prop_37",
+      "label": "bathtub01.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1752,
+      "y": 838,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/bathtub01.mdl"
+    },
+    {
+      "id": "prop_38",
+      "label": "bathtub01.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1622,
+      "y": 1228,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/bathtub01.mdl"
+    },
+    {
+      "id": "prop_39",
+      "label": "toilet.mdl",
+      "kind": "prop",
+      "floor": 1,
+      "x": 1608,
+      "y": 1362,
+      "width": 64,
+      "depth": 64,
+      "rotation": 0,
+      "note": "models/props_interiors/toilet.mdl"
     }
   ],
   "beats": [],
@@ -3997,7 +4789,24 @@
   "palette": {
     "sky": "sky_l4d_urban01_hdr",
     "motifs": [],
-    "materials": [],
+    "materials": [
+      "CONCRETE/CONCRETEWALL001",
+      "WOOD/URBAN_WOODCABINETS02B",
+      "TOOLS/TOOLSTRIGGER",
+      "WOOD/PLYWOOD01",
+      "SIGNS/URBAN_SIGN001",
+      "EFFECTS/BLACK",
+      "CONCRETE/CONCRETEFLOOR018A",
+      "METAL/DRTRIMC",
+      "BRICK/URBAN_BRICKWALL_03A",
+      "CONCRETE/CINDERWALL03C",
+      "WOOD/URBAN_CROWNMOLDING_01A",
+      "BUILDINGS/URBAN_COMPOSITE_01B",
+      "maps/c8m1_apartment/wood/urban_woodstair01a_1904_924_321",
+      "WOOD/DOOR_WHITE01",
+      "CONCRETE/CINDERWALL03B",
+      "CONCRETE/CONCRETECEILING003A"
+    ],
     "models": [
       "models/deadbodies/bodies128_a.mdl",
       "models/deadbodies/bodies128_b.mdl",
