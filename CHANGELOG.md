@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.310-alpha - 2026-11-26
+
+- **Landscape, water and volumes in the survey.** A new sp/models.ts reads brush-model bounds
+  (48-byte records), so unc_nav_blocker volumes become site.noBuild (447 across the stock
+  maps) instead of vanishing with no origin. Water is read from upward-facing water-material
+  polygons *and* unc_water_analog brushes: 29 maps, 613 footprints. The site is the union of
+  the world brush box and the nav footprint, so volumes outside the nav are not clipped.
+- **The heightfield covers the playable area.** The grid is anchored to the nav footprint, not
+  the world box (a skybox makes the world tens of times larger): the median share of empty
+  cells fell from about 80% to 38%.
+- **Survey rules.** 
+oute-over-water and 
+oute-in-no-build are design guards and are skipped
+  for imported plans, where the nav's own route is the authority.
+- All 55 official chapters import with zero findings.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.309-alpha - 2026-11-26
 
 - **Every official chapter imports.** All 55 chapter maps across the installed campaigns pass

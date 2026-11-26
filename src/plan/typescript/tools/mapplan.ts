@@ -1255,7 +1255,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     "building-below-terrain", "excavation-not-below", "terrain-flat-relief",
     "node-in-facade", "node-z-mismatch", "node-no-stair", "node-no-door",
     "node-not-in-room", "building-role-unused", "enterable-no-entrance",
-    "district-unused", "area-off-route",
+    "district-unused", "area-off-route", "route-in-no-build", "route-over-water",
   ]);
   const reported =
     plan.origin === "imported" ? findings.filter((finding) => !DESIGN_RULES.has(finding.rule)) : findings;

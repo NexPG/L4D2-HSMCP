@@ -13,6 +13,8 @@ import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import { readDisplacements } from "../../../maps/typescript/bsp/displacements.js";
 import { readMaterials } from "../../../maps/typescript/bsp/materials.js";
+import { readModels } from "../../../maps/typescript/bsp/models.js";
+import { readBspPolygons } from "../../../maps/typescript/bsp/polygons.js";
 import { readStaticProps } from "../../../maps/typescript/bsp/staticprops.js";
 import { groundSample, readTree } from "../../../maps/typescript/bsp/trace.js";
 import type { MapEntity } from "../../../maps/typescript/entity/model.js";
@@ -151,12 +153,38 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   const xs = nav.areas.flatMap((area) => [area.minX, area.maxX]);
   const ys = nav.areas.flatMap((area) => [area.minY, area.maxY]);
   const pad = 512;
+  // The site is the world, not the walkable patch: nav blockers and water volumes sit outside
+  // the nav on purpose, and a nav-sized site would clip them. The world model carries the box.
+  let bounds = {
+    x0: Math.floor(Math.min(...xs) - pad), y0: Math.floor(Math.min(...ys) - pad),
+    x1: Math.ceil(Math.max(...xs) + pad), y1: Math.ceil(Math.max(...ys) + pad),
+  };
+  try {
+    const world = readModels(bspPath).models[0];
+    if (world && world.maxs[0] > world.mins[0] && world.maxs[1] > world.mins[1]) {
+      bounds = {
+        x0: Math.floor(world.mins[0]), y0: Math.floor(world.mins[1]),
+        x1: Math.ceil(world.maxs[0]), y1: Math.ceil(world.maxs[1]),
+      };
+    }
+  } catch {
+    /* keep the nav bounds */
+  }
+  // The nav can poke past the brush box (ledge areas, ceilings); the site is the union, so no
+  // area or building is reported outside it.
+  bounds = {
+    x0: Math.min(bounds.x0, Math.floor(Math.min(...xs) - pad)),
+    y0: Math.min(bounds.y0, Math.floor(Math.min(...ys) - pad)),
+    x1: Math.max(bounds.x1, Math.ceil(Math.max(...xs) + pad)),
+    y1: Math.max(bounds.y1, Math.ceil(Math.max(...ys) + pad)),
+  };
+  // Declared before the site so the site can hold the same arrays; the volumes are filled
+  // once the brush models are read.
+  const water: Array<Record<string, unknown>> = [];
+  const noBuild: Array<Record<string, unknown>> = [];
   const site = {
-    bounds: {
-      x0: Math.floor(Math.min(...xs) - pad), y0: Math.floor(Math.min(...ys) - pad),
-      x1: Math.ceil(Math.max(...xs) + pad), y1: Math.ceil(Math.max(...ys) + pad),
-    },
-    north: 0, grid: 256, water: [], noBuild: [],
+    bounds,
+    north: 0, grid: 256, water, noBuild,
   };
 
   const areas: Array<Record<string, unknown>> = [
@@ -238,19 +266,65 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   } catch {
     materials = [];
   }
-  // Water and no-build volumes are entities in an L4D2 map; a survey records their footprint.
-  const water: Array<Record<string, unknown>> = [];
-  const noBuild: Array<Record<string, unknown>> = [];
+  // Water and no-build volumes are brush entities: their area comes from the *N model, not
+  // from an origin they do not have.
+  let models: ReturnType<typeof readModels> | undefined;
+  try {
+    models = readModels(bspPath);
+  } catch {
+    models = undefined;
+  }
+  const boundsOf = (entity: MapEntity): { x: number; y: number; width: number; depth: number } | undefined => {
+    const key = entity.keyvalues?.find(([name]) => name.toLowerCase() === "model")?.[1];
+    const match = key?.match(/^\*(\d+)$/);
+    if (match && models) {
+      const model = models.models[Number(match[1])];
+      if (model) {
+        return {
+          x: Math.round((model.mins[0] + model.maxs[0]) / 2),
+          y: Math.round((model.mins[1] + model.maxs[1]) / 2),
+          width: Math.max(64, Math.round(model.maxs[0] - model.mins[0])),
+          depth: Math.max(64, Math.round(model.maxs[1] - model.mins[1])),
+        };
+      }
+    }
+    if (entity.origin) {
+      return { x: Math.round(entity.origin[0]), y: Math.round(entity.origin[1]), width: 512, depth: 512 };
+    }
+    return undefined;
+  };
   for (const entity of entities) {
     const cls = entity.classname ?? "";
-    if (/water/i.test(cls)) {
-      const [x, y] = origin(entity);
-      water.push({ x: Math.round(x), y: Math.round(y), width: 512, depth: 512, rotation: 0 });
+    if (/water/i.test(cls) && !/lod/i.test(cls)) {
+      const rect = boundsOf(entity);
+      if (rect) water.push({ ...rect, rotation: 0 });
     } else if (/nav_blocker|navblocker/i.test(cls)) {
-      const [x, y] = origin(entity);
-      noBuild.push({ x: Math.round(x), y: Math.round(y), width: 256, depth: 256, rotation: 0 });
+      const rect = boundsOf(entity);
+      if (rect) noBuild.push({ ...rect, rotation: 0 });
     }
-    if (water.length >= 12 && noBuild.length >= 12) break;
+    if (water.length >= 24 && noBuild.length >= 24) break;
+  }
+  // Water is usually world geometry with a water material, not an entity: a survey reads the
+  // upward-facing water polygons and records their footprint.
+  try {
+    const polygons = readBspPolygons(bspPath);
+    for (const polygon of polygons.faces) {
+      if (!/water|swamp|canal/i.test(polygon.material)) continue;
+      if (polygon.normal[2] < 0.7) continue;
+      const xsFace = polygon.points.map((point) => point[0]);
+      const ysFace = polygon.points.map((point) => point[1]);
+      const width = Math.max(...xsFace) - Math.min(...xsFace);
+      const depth = Math.max(...ysFace) - Math.min(...ysFace);
+      if (width < 64 || depth < 64) continue;
+      water.push({
+        x: Math.round((Math.min(...xsFace) + Math.max(...xsFace)) / 2),
+        y: Math.round((Math.min(...ysFace) + Math.max(...ysFace)) / 2),
+        width: Math.round(width), depth: Math.round(depth), rotation: 0,
+      });
+      if (water.length >= 24) break;
+    }
+  } catch {
+    /* no polygon reader; the entity water above still applies */
   }
   // Props near the route become `prop` areas; a survey cannot guess cover quality.
   const propsNearRoute: Array<Record<string, unknown>> = [];
@@ -405,19 +479,24 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   // is the ground, so bumps, kerbs and pits survive. The nav surface is only the fallback for
   // cells the trace cannot reach, and displacement patches fill the rest.
   const CELL = 128;
-  const cols = Math.ceil((site.bounds.x1 - site.bounds.x0) / CELL) + 1;
-  const rows = Math.ceil((site.bounds.y1 - site.bounds.y0) / CELL) + 1;
+  // The grid covers the walkable footprint, not the world box: a skybox can make the world
+  // tens of times larger than the playable area, and every extra cell is a wasted trace.
+  const GRID_PAD = 256;
+  const gridX0 = Math.floor(Math.min(...xs) - GRID_PAD);
+  const gridY0 = Math.floor(Math.min(...ys) - GRID_PAD);
+  const cols = Math.ceil((Math.max(...xs) + GRID_PAD - gridX0) / CELL) + 1;
+  const rows = Math.ceil((Math.max(...ys) + GRID_PAD - gridY0) / CELL) + 1;
   const heights = new Array<number>(cols * rows).fill(Number.POSITIVE_INFINITY);
   for (const area of nav.areas) {
     const z = (area.minZ + area.maxZ) / 2;
-    const c0 = Math.max(0, Math.floor((area.minX - site.bounds.x0) / CELL));
-    const c1 = Math.min(cols - 1, Math.ceil((area.maxX - site.bounds.x0) / CELL));
-    const r0 = Math.max(0, Math.floor((area.minY - site.bounds.y0) / CELL));
-    const r1 = Math.min(rows - 1, Math.ceil((area.maxY - site.bounds.y0) / CELL));
+    const c0 = Math.max(0, Math.floor((area.minX - gridX0) / CELL));
+    const c1 = Math.min(cols - 1, Math.ceil((area.maxX - gridX0) / CELL));
+    const r0 = Math.max(0, Math.floor((area.minY - gridY0) / CELL));
+    const r1 = Math.min(rows - 1, Math.ceil((area.maxY - gridY0) / CELL));
     for (let row = r0; row <= r1; row += 1) {
       for (let col = c0; col <= c1; col += 1) {
-        const cx = site.bounds.x0 + (col + 0.5) * CELL;
-        const cy = site.bounds.y0 + (row + 0.5) * CELL;
+        const cx = gridX0 + (col + 0.5) * CELL;
+        const cy = gridY0 + (row + 0.5) * CELL;
         if (cx < area.minX || cx > area.maxX || cy < area.minY || cy > area.maxY) continue;
         const index = row * cols + col;
         if (z < heights[index]!) heights[index] = z;
@@ -433,8 +512,8 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     const bottomZ = Math.floor(Math.min(...nav.areas.map((area) => area.minZ))) - 512;
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
-        const cx = site.bounds.x0 + (col + 0.5) * CELL;
-        const cy = site.bounds.y0 + (row + 0.5) * CELL;
+        const cx = gridX0 + (col + 0.5) * CELL;
+        const cy = gridY0 + (row + 0.5) * CELL;
         const ground = groundSample(tree, cx, cy, topZ, bottomZ, 36, 32);
         if (!ground) continue;
         heights[row * cols + col] = ground.groundZ;
@@ -450,8 +529,8 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     displacementCount = displacements.count;
     for (const patch of displacements.displacements) {
       const z = Math.round(patch.start[2]);
-      const col = Math.max(0, Math.min(cols - 1, Math.floor((patch.start[0] - site.bounds.x0) / CELL)));
-      const row = Math.max(0, Math.min(rows - 1, Math.floor((patch.start[1] - site.bounds.y0) / CELL)));
+      const col = Math.max(0, Math.min(cols - 1, Math.floor((patch.start[0] - gridX0) / CELL)));
+      const row = Math.max(0, Math.min(rows - 1, Math.floor((patch.start[1] - gridY0) / CELL)));
       const index = row * cols + col;
       if (!Number.isFinite(heights[index]!) || z > heights[index]!) heights[index] = z;
     }
@@ -460,7 +539,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   }
   const terrain = {
     cell: CELL,
-    origin: [site.bounds.x0, site.bounds.y0] as [number, number],
+    origin: [gridX0, gridY0] as [number, number],
     cols,
     rows,
     heights: heights.map((value) => (Number.isFinite(value) ? Math.round(value) : 0)),
@@ -478,8 +557,8 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     }
   }
   for (const building of buildings) {
-    const col = Math.max(0, Math.min(cols - 1, Math.floor((building.x - site.bounds.x0) / CELL)));
-    const row = Math.max(0, Math.min(rows - 1, Math.floor((building.y - site.bounds.y0) / CELL)));
+    const col = Math.max(0, Math.min(cols - 1, Math.floor((building.x - gridX0) / CELL)));
+    const row = Math.max(0, Math.min(rows - 1, Math.floor((building.y - gridY0) / CELL)));
     const ground = terrain.heights[row * cols + col]!;
     if (building.baseZ < ground - 16) building.excavated = true;
   }
