@@ -296,3 +296,29 @@ doors and stairs on the same local coordinates on both floors, then the route no
 doors/stairs/rooms, and only then the route spline. A node 300 u from its door is the most
 common self-inflicted error.
 
+## Heights: one rule per question
+
+Four checks were answering "is this height right?" with the wrong reference, which made
+elevated maps unwritable:
+
+| Rule | Wrong question | Right question |
+|---|---|---|
+| `entrance-z` | does the entrance match the **terrain**? | does it match the **building base** *or* the terrain? An entrance on a podium or a raised ground floor is normal. |
+| `node-z-mismatch` | does the node match the floor z? | yes — except for `stair`, `ladder`, `elevator`, `ramp`, `drop`, whose z is mid-flight by definition. |
+| `vertical-no-change` | does the floor change? | no — it must be "neither the floor **nor** the height changes"; an outdoor drop from z 2656 to 1570 changes height without changing the floor number. |
+| `floor-count-mismatch` | is the floor count plausible? | is it the same as `floorsPlan.length`? Two sources of truth must agree. |
+
+The same principle applies to references: when a check can name the coordinate it expected
+(`stair-no-return`, `node-not-in-room`), it must, because "not found" sends the agent hunting
+through the whole plan.
+
+## Real campaign as the test
+
+The installed first chapter is Dead Center `c1m1_hotel` (No Mercy `c8m1` is not installed in
+this copy). Its nav mesh is the authoritative route: 48 steps from the hotel room
+`(600, 5963, 2851)` to the safe room `(2238, 4350, 1184)`, with bounds
+`x -700..3575, y 4075..8300`. `test/plan/fixtures/dead-center-c1m1.json` is that route as a
+plan and must pass with zero findings; it is the regression that keeps the four height rules
+honest against real geometry, not a hand-made toy.
+
+
