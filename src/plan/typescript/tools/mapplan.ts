@@ -66,7 +66,7 @@ const Stair = z.object({
 });
 
 const Floor = z.object({
-  level: z.number().int().min(1),
+  level: z.number().int().min(-8).max(64).describe("Floor level; 0 and below are basements."),
   z: z.number(),
   height: z.number().min(96).default(128),
   rooms: z.array(Room).default([]),
@@ -123,7 +123,7 @@ const RouteNode = z.object({
   x: z.number(),
   y: z.number(),
   z: z.number(),
-  floor: z.number().int().min(1),
+  floor: z.number().int().min(-8).max(64),
   buildingId: z.string().optional(),
   space: z.string().default("").describe("Named space; consecutive nodes in one space share it."),
   district: z.string().optional(),
@@ -167,7 +167,14 @@ const Route = z.object({
     ])
     .default("corridor"),
   width: z.number().positive().describe("Clear width in Hammer units; 64 is the hull."),
-  points: z.array(XYZ).min(2),
+  points: z
+    .array(z.union([XY, XYZ]))
+    .min(2)
+    .transform((points) =>
+      points.map((point): [number, number, number] =>
+        point.length === 3 ? [point[0], point[1], point[2]] : [point[0], point[1], 0],
+      ),
+    ),
   nodes: z.array(RouteNode).default([]),
   stops: z.array(Stop).default([]),
   from: z.string().optional().describe("Branch anchor: node id on the critical route where it leaves."),
@@ -209,7 +216,7 @@ const Area = z.object({
     "battlefield",
     "item-cluster",
   ]),
-  floor: z.number().int().min(1).default(1).describe("Floor plane; 1 is the lowest."),
+  floor: z.number().int().min(-8).max(64).default(1).describe("Floor level; 0 and below are basements."),
   buildingId: z.string().optional().describe("Building this area belongs to, when interior."),
   x: z.number(),
   y: z.number(),
@@ -765,6 +772,13 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
   for (const building of plan.buildings) {
     if (ids.has(building.id)) add("error", "duplicate-id", `building id ${building.id} is repeated`);
     ids.add(building.id);
+    if (building.floorsPlan.length > 0 && building.floors !== building.floorsPlan.length) {
+      add(
+        "error",
+        "floor-count-mismatch",
+        `${building.id} declares ${building.floors} floors but the plan describes ${building.floorsPlan.length}`,
+      );
+    }
   }
 
   const site = plan.site.bounds;
@@ -982,7 +996,17 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
               }
             } else {
               const inRoom = floor.rooms.some((room) => nodeInRoom(building, room, node));
-              if (!inRoom) add("warning", "node-not-in-room", `${node.id} is not inside a room on ${building.id} F${node.floor}`);
+              if (!inRoom) {
+                const local = nodeLocal(building, node);
+                const rooms = floor.rooms
+                  .map((room) => `${room.id ?? room.name} @ (${room.x}, ${room.y})`)
+                  .join(", ");
+                add(
+                  "warning",
+                  "node-not-in-room",
+                  `${node.id} at local (${local[0].toFixed(0)}, ${local[1].toFixed(0)}) is not inside a room on ${building.id} F${node.floor}; rooms: ${rooms || "none"}`,
+                );
+              }
             }
           }
         }

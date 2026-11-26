@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.297-alpha - 2026-11-26
+
+- **Plan schema: four contradictions removed.** A route point may be [x, y] and gets z = 0
+  instead of being rejected while every node already carries a height; a building whose
+  loors count and loorsPlan length disagree is now an error (loor-count-mismatch);
+  basement levels are legal (level/loor accept 0 and below, matching excavated);
+  
+ode-not-in-room prints the node's local position and the rooms on that floor, like the
+  stair warning, so the fix is a coordinate, not a search.
+- **Real campaign data.** c1m1_hotel.nav is read by the existing nav tooling: the real route
+  is 48 nav steps from the hotel room (z 2851) down to the safe room (z 1184), with the map
+  bounds x -700..3575, y 4075..8300. No Mercy (c8m1) is not installed in this copy, so the
+  installed first chapter is Dead Center c1m1.
+- Tests: 259 files, 2,040 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.296-alpha - 2026-11-26
 
 - **Plan schema contract.** `references/planning/five-drawings.md` now states one source of

@@ -623,4 +623,64 @@ describe("map plan drawings", () => {
     const check = checkMapPlan(source, parsed);
     expect(check.findings.map((finding) => `${finding.rule}: ${finding.message}`)).toEqual([]);
   });
+
+  it("accepts a 2D route point and fills its height", () => {
+    const flat = plan();
+    const routes = flat.routes as Array<Record<string, unknown>>;
+    routes[0]!.points = [
+      [200, 200],
+      [900, 800],
+    ];
+    const parsed = MapPlanSchema.parse(flat);
+    expect(parsed.routes[0]!.points[0]).toEqual([200, 200, 0]);
+    expect(() => checkMapPlan("flat.json", parsed)).not.toThrow();
+  });
+
+  it("rejects a building whose floor count and floor plan disagree", () => {
+    const bad = plan();
+    const buildings = bad.buildings as Array<Record<string, unknown>>;
+    buildings[0]!.floors = 3;
+    const parsed = MapPlanSchema.parse(bad);
+    const check = checkMapPlan("floors.json", parsed);
+    expect(check.ok).toBe(false);
+    expect(check.findings.map((finding) => finding.rule)).toContain("floor-count-mismatch");
+  });
+
+  it("allows a basement floor below level 1", () => {
+    const base = plan();
+    const buildings = base.buildings as Array<Record<string, unknown>>;
+    const floors = buildings[0]!.floorsPlan as Array<Record<string, unknown>>;
+    floors.unshift({
+      level: 0,
+      z: -160,
+      height: 128,
+      rooms: [{ id: "cellar", name: "Cellar", x: 0, y: 0, width: 400, depth: 300 }],
+      doors: [],
+      stairs: [{ id: "cellar-up", kind: "stair", x: 0, y: 0, width: 64, depth: 120, to: 1 }],
+    });
+    buildings[0]!.floors = 3;
+    buildings[0]!.baseZ = -160;
+    buildings[0]!.excavated = true;
+    const parsed = MapPlanSchema.parse(base);
+    const check = checkMapPlan("cellar.json", parsed);
+    const basement = check.findings.filter((finding) => finding.message.includes("F0"));
+    expect(basement.every((finding) => finding.rule !== "floor-count-mismatch")).toBe(true);
+    expect(check.findings.some((finding) => finding.rule === "duplicate-floor")).toBe(false);
+  });
+
+  it("names the node's local position and the rooms when it misses them", () => {
+    const bad = plan();
+    const routes = bad.routes as Array<Record<string, unknown>>;
+    const nodes = routes[0]!.nodes as Array<Record<string, unknown>>;
+    const inside = nodes.find((node) => node.buildingId === "house_a" && node.kind === "room");
+    if (inside) {
+      inside.x = 800 + 1000;
+      inside.y = 800 + 1000;
+    }
+    const parsed = MapPlanSchema.parse(bad);
+    const check = checkMapPlan("room.json", parsed);
+    const miss = check.findings.find((finding) => finding.rule === "node-not-in-room");
+    expect(miss?.message).toContain("local (");
+    expect(miss?.message).toContain("rooms:");
+  });
 });
