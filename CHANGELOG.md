@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.296-alpha - 2026-11-26
+
+- **Plan schema contract.** `references/planning/five-drawings.md` now states one source of
+  truth per concept (floorsPlan, rooms, vertical links, doors, beats) and the rules the
+  checker enforces, with No Mercy `c1m1` as the worked case that must pass with zero findings.
+- **`route-through-building` reports once.** A crossing was emitted for every 32 u sample,
+  producing ten identical errors for one mistake; it now reports the first crossing per
+  building per route and names the fix (reroute or add an entrance).
+- **Beats map by space.** A beat used to require `node.beat` even when a node already visited
+  its space. A beat is mapped when any node visits `beat.space`; only a beat whose space no
+  node visits is reported.
+- **`stair-no-return` names the position.** The warning now prints the local `(x, y)` and the
+  target floor, so the fix is "place the landing here" instead of "find the mismatch".
+- **Regression fixture.** `test/plan/fixtures/nomercy-c1m1.json` (alley, street, hotel lobby,
+  two flights, safe room) passes with zero findings.
+- Tests: 259 files, 2,036 passed, 32 skipped. Tool count: 311.
+
 ## 0.0.295-alpha - 2026-11-25
 
 - **Model-skin toolchain documented.** The README Requirements table now names the external

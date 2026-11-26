@@ -261,3 +261,38 @@ route can now be checked against the rooms and stairs it claims to use.
    per-floor plan, including the district boundaries and the rhythm strip.
 4. Set `Status: approved` only after the user has seen the JSON and drawings.
 5. Report the JSON, drawing directory and findings; stop. Pass 2 reads them.
+
+## Schema contract (what one field means)
+
+A first real attempt — No Mercy `c1m1` (alley → street → hotel lobby → two flights → safe
+room) — is the test case for this contract. It must pass `check_map_plan` with **zero**
+findings; anything the checker reports is either a plan bug or a contract bug worth fixing in
+the validator.
+
+One source of truth per concept:
+
+| Concept | Source | Not a source |
+|---|---|---|
+| A building's floors | `floorsPlan[]` (`level`, `z`, `height`) | `building.floors` is a count for the schedule only; when both exist they must agree |
+| A room | `floorsPlan[].rooms[]` with `id` or `name` as the reference key | `areas[]` and route nodes reference rooms by placement, not by id |
+| A vertical link | `floorsPlan[].stairs[]` with `to` | a route node of kind `stair` must sit within reach of a real stair |
+| A door | `floorsPlan[].doors[]` with `from`/`to` | a route node of kind `door` must sit within reach of a real door |
+| A beat | `beats[]` with `space` | a node may set `beat`, but a beat is mapped when any node visits its `space` |
+
+Rules that catch the expensive mistakes:
+
+- **One finding per building and route** for `route-through-building`: a crossing is reported
+  once, at the first sampled point, not once per 32 u. Ten identical errors train the agent to
+  ignore the rule.
+- **Stair returns are named by position.** `stair-no-return` prints the local `(x, y)` and the
+  target floor, so the fix is "put the landing here", not "find the mismatch".
+- **Beats map by space.** Requiring `node.beat` on every node duplicates `space`; a beat whose
+  space no node visits is the real error, and that is what is reported.
+- **Route points are 3D** (`[x, y, z]`), because the same route changes floor; a 2D point is
+  rejected rather than silently placed at z=0.
+
+Authoring order that keeps the checker quiet: place the building and its rooms first, then the
+doors and stairs on the same local coordinates on both floors, then the route nodes on those
+doors/stairs/rooms, and only then the route spline. A node 300 u from its door is the most
+common self-inflicted error.
+

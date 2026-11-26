@@ -521,6 +521,7 @@ function checkRouteGraph(
   const beatIds = new Set(plan.beats.map((beat) => beat.id));
   const usedDistricts = new Set<string>();
   const usedBeats = new Set<string>();
+  const usedSpaces = new Set<string>();
 
   for (const route of plan.routes) {
     if (route.width < 64) {
@@ -563,6 +564,9 @@ function checkRouteGraph(
       }
       if (!node.space.trim()) {
         add("error", "node-no-space", `${node.id} has no named space`);
+      }
+      if (node.space) {
+        usedSpaces.add(node.space);
       }
       if (node.beat) {
         usedBeats.add(node.beat);
@@ -682,8 +686,8 @@ function checkRouteGraph(
     }
   }
   for (const beat of plan.beats) {
-    if (!usedBeats.has(beat.id)) {
-      add("warning", "beat-not-on-route", `beat ${beat.id} is not mapped to a route node`);
+    if (!usedBeats.has(beat.id) && !usedSpaces.has(beat.space)) {
+      add("warning", "beat-not-on-route", `beat ${beat.id} is in space ${beat.space}, which no route node visits`);
     }
   }
 }
@@ -873,7 +877,11 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
               Math.hypot(candidate.x - stair.x, candidate.y - stair.y) <= 128,
           );
           if (!hasReturn) {
-            add("warning", "stair-no-return", `${building.id} F${floor.level} ${stair.kind} has no matching landing on F${stair.to}`);
+            add(
+              "warning",
+              "stair-no-return",
+              `${building.id} F${floor.level} ${stair.kind} at local (${stair.x}, ${stair.y}) has no landing on F${stair.to} within 128 u; add a matching ${stair.kind} there`,
+            );
           }
         }
       }
@@ -1006,6 +1014,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
       route.nodes.map((node) => node.buildingId).filter((id): id is string => Boolean(id)),
     );
     routeSamplesAll.push(...samples);
+    const crossedBuildings = new Set<string>();
     for (const sample of samples) {
       for (const building of plan.buildings) {
         if (!pointInPolygon(sample, corners(building.x, building.y, building.width, building.depth, building.rotation))) {
@@ -1015,11 +1024,12 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
         const nearEntrance = building.entrances.some(
           (entrance) => Math.hypot(entrance.x - sample[0], entrance.y - sample[1]) <= 96,
         );
-        if (!nearEntrance) {
+        if (!nearEntrance && !crossedBuildings.has(building.id)) {
+          crossedBuildings.add(building.id);
           add(
             "error",
             "route-through-building",
-            `${route.id} crosses ${building.id} at (${sample[0].toFixed(0)}, ${sample[1].toFixed(0)}) away from an entrance`,
+            `${route.id} crosses ${building.id} at (${sample[0].toFixed(0)}, ${sample[1].toFixed(0)}) away from an entrance; reroute it or add an entrance there`,
           );
         }
       }

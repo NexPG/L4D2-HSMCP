@@ -575,4 +575,52 @@ describe("map plan drawings", () => {
     expect(rules).toContain("route-through-building");
     expect(rules).toContain("duplicate-id");
   });
+
+  it("reports one crossing per building, not one per sample point", () => {
+    const bad = plan();
+    const routes = bad.routes as Array<Record<string, unknown>>;
+    routes[0]!.points = [
+      [200, 200, 0],
+      [3800, 2600, 0],
+    ];
+    const parsed = MapPlanSchema.parse(bad);
+    const check = checkMapPlan("cross.json", parsed);
+    const crossings = check.findings.filter((finding) => finding.rule === "route-through-building");
+    const buildings = new Set(
+      crossings.map((finding) => finding.message.split(" crosses ")[1]?.split(" at ")[0]),
+    );
+    expect(crossings.length).toBe(buildings.size);
+  });
+
+  it("maps a beat to a route through its space, without an explicit node.beat", () => {
+    const ok = plan();
+    const routes = ok.routes as Array<Record<string, unknown>>;
+    const nodes = routes[0]!.nodes as Array<Record<string, unknown>>;
+    for (const node of nodes) delete node.beat;
+    const parsed = MapPlanSchema.parse(ok);
+    const check = checkMapPlan("spaces.json", parsed);
+    const orphans = check.findings.filter((finding) => finding.rule === "beat-not-on-route");
+    expect(orphans).toHaveLength(0);
+  });
+
+  it("names the local position of a stair with no landing on the target floor", () => {
+    const bad = plan();
+    const buildings = bad.buildings as Array<Record<string, unknown>>;
+    const house = buildings[0]!;
+    const floors = house.floorsPlan as Array<Record<string, unknown>>;
+    const second = floors[1]!;
+    second.stairs = [];
+    const parsed = MapPlanSchema.parse(bad);
+    const check = checkMapPlan("stairs.json", parsed);
+    const stair = check.findings.find((finding) => finding.rule === "stair-no-return");
+    expect(stair?.message).toContain("local (");
+    expect(stair?.message).toContain("F2");
+  });
+
+  it("accepts a real chapter plan: No Mercy c1m1 alley, street, hotel, safe room", () => {
+    const source = join(__dirname, "fixtures", "nomercy-c1m1.json");
+    const parsed = MapPlanSchema.parse(JSON.parse(readFileSync(source, "utf8")));
+    const check = checkMapPlan(source, parsed);
+    expect(check.findings.map((finding) => `${finding.rule}: ${finding.message}`)).toEqual([]);
+  });
 });
