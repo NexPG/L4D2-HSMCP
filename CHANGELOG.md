@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.301-alpha - 2026-11-26
+
+- **Imported plans get rooms, buildings and floor plans.** plan_from_map groups the nav
+  areas into rooms (connected components that do not cross a door area), clusters rooms into
+  buildings by proximity and height, and emits floors with rooms, base and roof heights, and
+  excavated for basements. The drawings now include per-building floor plans and a section,
+  not just the route.
+- **Survey-specific rules.** For origin: imported, 
+oute-through-building and
+  entrance-z are design prescriptions and are skipped: a nav survey cannot invent entrances,
+  and the route legitimately goes through the buildings it describes.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.300-alpha - 2026-11-26
 
 - **plan_from_map: a survey plan from a finished map.** Reads the BSP entity lump and the

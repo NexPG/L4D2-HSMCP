@@ -143,6 +143,119 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   const spawnEntity = entities.find((entity) => entity.classname === "info_player_start");
   const spawnZ = spawnEntity ? Math.round(origin(spawnEntity)[2]) : Math.round(startCenter.z);
 
+  // ---- rooms and buildings from the nav graph ---------------------------------
+  // A room is a connected group of nav areas that does not cross a door area; a building is a
+  // spatial cluster of rooms whose heights overlap. This is the level of detail the nav mesh
+  // actually carries; brush-perfect architecture needs the BSP solids, which is a later layer.
+  const DOOR_TAG = 0x40000;
+  const BLOCKED = 0x80000000 | 0x10000000;
+  type Box = { minX: number; minY: number; minZ: number; maxX: number; maxY: number; maxZ: number; areas: number };
+  const boxOf = (list: typeof nav.areas): Box => {
+    const b = { minX: Infinity, minY: Infinity, minZ: Infinity, maxX: -Infinity, maxY: -Infinity, maxZ: -Infinity, areas: list.length };
+    for (const a of list) {
+      b.minX = Math.min(b.minX, a.minX); b.minY = Math.min(b.minY, a.minY); b.minZ = Math.min(b.minZ, a.minZ);
+      b.maxX = Math.max(b.maxX, a.maxX); b.maxY = Math.max(b.maxY, a.maxY); b.maxZ = Math.max(b.maxZ, a.maxZ);
+    }
+    return b;
+  };
+  const seenAreas = new Set<number>();
+  const rooms: Box[] = [];
+  for (const start of nav.areas) {
+    if (seenAreas.has(start.id)) continue;
+    if ((start.spawnAttributes & DOOR_TAG) !== 0) continue;
+    if ((start.flags & BLOCKED) !== 0) continue;
+    const stack = [start.id];
+    const component: typeof nav.areas = [];
+    while (stack.length > 0) {
+      const id = stack.pop()!;
+      if (seenAreas.has(id)) continue;
+      const area = graph.byId.get(id);
+      if (!area) continue;
+      if ((area.spawnAttributes & DOOR_TAG) !== 0) continue;
+      if ((area.flags & BLOCKED) !== 0) continue;
+      seenAreas.add(id);
+      component.push(area);
+      for (const neighbour of graph.neighbors.get(id) ?? []) {
+        if (!seenAreas.has(neighbour)) stack.push(neighbour);
+      }
+    }
+    if (component.length < 3) continue;
+    rooms.push(boxOf(component));
+  }
+  // spatial cluster: rooms within 192 u horizontally and 96 u vertically share a building
+  const parent: number[] = rooms.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i]!)));
+  for (let i = 0; i < rooms.length; i += 1) {
+    for (let j = i + 1; j < rooms.length; j += 1) {
+      const a = rooms[i]!, b = rooms[j]!;
+      const dx = Math.max(0, a.minX - b.maxX, b.minX - a.maxX);
+      const dy = Math.max(0, a.minY - b.maxY, b.minY - a.maxY);
+      const dz = Math.max(0, a.minZ - b.maxZ, b.minZ - a.maxZ);
+      if (dx <= 192 && dy <= 192 && dz <= 96) parent[find(i)] = find(j);
+    }
+  }
+  const clusters = new Map<number, number[]>();
+  for (let i = 0; i < rooms.length; i += 1) {
+    const root = find(i);
+    clusters.set(root, [...(clusters.get(root) ?? []), i]);
+  }
+  const buildings = [...clusters.values()]
+    .filter((indices) => indices.length >= 2)
+    .slice(0, 24)
+    .map((indices, index) => {
+      const group = indices.map((i) => rooms[i]!);
+      // bounding box of the group
+      const box = { minX: Infinity, minY: Infinity, minZ: Infinity, maxX: -Infinity, maxY: -Infinity, maxZ: -Infinity };
+      for (const r of group) {
+        box.minX = Math.min(box.minX, r.minX); box.minY = Math.min(box.minY, r.minY); box.minZ = Math.min(box.minZ, r.minZ);
+        box.maxX = Math.max(box.maxX, r.maxX); box.maxY = Math.max(box.maxY, r.maxY); box.maxZ = Math.max(box.maxZ, r.maxZ);
+      }
+      const width = Math.max(128, Math.ceil((box.maxX - box.minX) / 64) * 64);
+      const depth = Math.max(128, Math.ceil((box.maxY - box.minY) / 64) * 64);
+      const cx = (box.minX + box.maxX) / 2;
+      const cy = (box.minY + box.maxY) / 2;
+      // floors: rooms grouped by 64 u height bands
+      const bands = new Map<number, number[]>();
+      for (const r of group) {
+        const band = Math.round((r.minZ + r.maxZ) / 2 / 64);
+        bands.set(band, [...(bands.get(band) ?? []), group.indexOf(r)]);
+      }
+      const levels = [...bands.entries()].sort((a, b) => a[0] - b[0]);
+      return {
+        id: `b${index}`,
+        name: `Building ${index + 1}`,
+        x: Math.round(cx),
+        y: Math.round(cy),
+        width,
+        depth,
+        rotation: 0,
+        floors: levels.length,
+        floorHeight: 128,
+        baseZ: Math.round(box.minZ),
+        roofZ: Math.round(box.maxZ),
+        excavated: box.minZ < -16,
+        enterable: false,
+        role: "context" as const,
+
+        floorsPlan: levels.map(([, members], level) => ({
+          level: level + 1,
+          z: Math.round(group[members[0]!]!.minZ),
+          height: 128,
+          rooms: members.map((member, roomIndex) => {
+            const r = group[member]!;
+            return {
+              id: `r${member}_${roomIndex}`,
+              name: `Room ${roomIndex + 1}`,
+              x: Math.round((r.minX + r.maxX) / 2 - cx),
+              y: Math.round((r.minY + r.maxY) / 2 - cy),
+              width: Math.max(64, Math.round((r.maxX - r.minX) / 64) * 64),
+              depth: Math.max(64, Math.round((r.maxY - r.minY) / 64) * 64),
+            };
+          }),
+        })),
+      };
+    });
+
   const plan = {
     version: 1 as const,
     name: name ?? bspPath.replace(/\\/g, "/").split("/").pop()!.replace(/\.bsp$/i, ""),
@@ -155,7 +268,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     districts,
     site,
     terrain: { cell: 1024, origin: [site.bounds.x0, site.bounds.y0], cols: 2, rows: 2, heights: [0, 0, 0, 0] },
-    buildings: [],
+    buildings,
     routes: [{
       id: "critical", kind: "critical" as const, typology: "string-of-pearls" as const, width: 128,
       points: steps.map((step) => [Math.round(step.x), Math.round(step.y), Math.round(step.z)]),
@@ -177,7 +290,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   writeFileSync(destination, JSON.stringify(parsed, null, 2), "utf8");
   return {
     path: destination, name: plan.name, areas: areas.length, nodes: routeNodes.length,
-    buildings: 0, districts: districts.length,
+    buildings: buildings.length, districts: districts.length,
   };
 }
 

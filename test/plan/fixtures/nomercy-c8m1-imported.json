@@ -62,7 +62,185 @@
       0
     ]
   },
-  "buildings": [],
+  "buildings": [
+    {
+      "id": "b0",
+      "name": "Building 1",
+      "x": 2113,
+      "y": 2928,
+      "width": 4224,
+      "depth": 6400,
+      "rotation": 0,
+      "floors": 6,
+      "floorHeight": 128,
+      "baseZ": -240,
+      "excavated": true,
+      "roofZ": 647,
+      "enterable": false,
+      "role": "context",
+      "entrances": [],
+      "floorsPlan": [
+        {
+          "level": 1,
+          "z": 8,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r1_0",
+              "name": "Room 1",
+              "x": 1608,
+              "y": 1420,
+              "width": 960,
+              "depth": 1792
+            },
+            {
+              "id": "r2_1",
+              "name": "Room 2",
+              "x": 710,
+              "y": -2678,
+              "width": 896,
+              "depth": 1024
+            },
+            {
+              "id": "r5_2",
+              "name": "Room 3",
+              "x": -1822,
+              "y": -581,
+              "width": 448,
+              "depth": 576
+            },
+            {
+              "id": "r10_3",
+              "name": "Room 4",
+              "x": -612,
+              "y": -1990,
+              "width": 128,
+              "depth": 192
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        },
+        {
+          "level": 2,
+          "z": -240,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r0_0",
+              "name": "Room 1",
+              "x": -381,
+              "y": 388,
+              "width": 3392,
+              "depth": 5568
+            },
+            {
+              "id": "r3_1",
+              "name": "Room 2",
+              "x": -75,
+              "y": -328,
+              "width": 960,
+              "depth": 384
+            },
+            {
+              "id": "r4_2",
+              "name": "Room 3",
+              "x": -62,
+              "y": 72,
+              "width": 960,
+              "depth": 384
+            },
+            {
+              "id": "r12_3",
+              "name": "Room 4",
+              "x": 813,
+              "y": 1260,
+              "width": 384,
+              "depth": 192
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        },
+        {
+          "level": 3,
+          "z": 352,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r6_0",
+              "name": "Room 1",
+              "x": -1762,
+              "y": 55,
+              "width": 640,
+              "depth": 640
+            },
+            {
+              "id": "r9_1",
+              "name": "Room 2",
+              "x": -125,
+              "y": -98,
+              "width": 1088,
+              "depth": 896
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        },
+        {
+          "level": 4,
+          "z": 272,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r8_0",
+              "name": "Room 1",
+              "x": -100,
+              "y": -1103,
+              "width": 1088,
+              "depth": 832
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        },
+        {
+          "level": 5,
+          "z": 477,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r11_0",
+              "name": "Room 1",
+              "x": -1725,
+              "y": 1347,
+              "width": 704,
+              "depth": 1600
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        },
+        {
+          "level": 6,
+          "z": 612,
+          "height": 128,
+          "rooms": [
+            {
+              "id": "r7_0",
+              "name": "Room 1",
+              "x": -1612,
+              "y": -528,
+              "width": 448,
+              "depth": 448
+            }
+          ],
+          "doors": [],
+          "stairs": []
+        }
+      ]
+    }
+  ],
   "routes": [
     {
       "id": "critical",
