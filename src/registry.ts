@@ -67,6 +67,7 @@ import { gameStateTools } from "./core/typescript/tools/gamestate.js";
 import { authorTools } from "./core/typescript/tools/author.js";
 import { workspaceTools } from "./core/typescript/tools/workspace.js";
 import { mapPlanTools } from "./plan/typescript/tools/mapplan.js";
+import { planFromMapTool } from "./plan/typescript/tools/planfrommap.js";
 import { hlmvTools } from "./hammer/typescript/tools/hlmv.js";
 import { inputTools } from "./hammer/typescript/tools/input.js";
 import { liveQueueTools } from "./hammer/typescript/tools/livequeue.js";
@@ -173,6 +174,7 @@ export const allTools: AnyToolDef[] = [
   ...authorTools,
   ...workspaceTools,
   ...mapPlanTools,
+  planFromMapTool,
   ...hammerTools,
   ...hammerLiveTools,
   ...windowTools,

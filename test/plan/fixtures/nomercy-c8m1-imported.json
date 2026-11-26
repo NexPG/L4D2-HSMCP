@@ -1,0 +1,556 @@
+{
+  "version": 1,
+  "name": "c8m1_apartment",
+  "kind": "map",
+  "stage": "approved",
+  "origin": "imported",
+  "source": {
+    "bsp": "D:\\SteamLibrary\\steamapps\\common\\Left 4 Dead 2\\left4dead2_dlc2\\maps\\c8m1_apartment.bsp",
+    "nav": "D:\\SteamLibrary\\steamapps\\common\\Left 4 Dead 2\\left4dead2_dlc2\\maps\\c8m1_apartment.nav",
+    "entities": 1318,
+    "navAreas": 1690
+  },
+  "experience": "survey of D:\\SteamLibrary\\steamapps\\common\\Left 4 Dead 2\\left4dead2_dlc2\\maps\\c8m1_apartment.bsp",
+  "pillars": [],
+  "districts": [
+    {
+      "id": "lower",
+      "name": "Lower level",
+      "mood": "",
+      "motif": "",
+      "landmark": ""
+    },
+    {
+      "id": "middle",
+      "name": "Middle level",
+      "mood": "",
+      "motif": "",
+      "landmark": ""
+    },
+    {
+      "id": "upper",
+      "name": "Upper level",
+      "mood": "",
+      "motif": "",
+      "landmark": ""
+    }
+  ],
+  "site": {
+    "bounds": {
+      "x0": -758,
+      "y0": -762,
+      "x1": 4712,
+      "y1": 6618
+    },
+    "north": 0,
+    "grid": 256,
+    "water": [],
+    "noBuild": []
+  },
+  "terrain": {
+    "cell": 1024,
+    "origin": [
+      -758,
+      -762
+    ],
+    "cols": 2,
+    "rows": 2,
+    "heights": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "buildings": [],
+  "routes": [
+    {
+      "id": "critical",
+      "kind": "critical",
+      "typology": "string-of-pearls",
+      "width": 128,
+      "points": [
+        [
+          1988,
+          913,
+          432
+        ],
+        [
+          1913,
+          850,
+          296
+        ],
+        [
+          1845,
+          1038,
+          260
+        ],
+        [
+          1775,
+          725,
+          160
+        ],
+        [
+          1850,
+          1275,
+          160
+        ],
+        [
+          2100,
+          1025,
+          24
+        ],
+        [
+          2513,
+          1650,
+          16
+        ],
+        [
+          2338,
+          2275,
+          16
+        ],
+        [
+          1500,
+          2288,
+          14
+        ],
+        [
+          1463,
+          2950,
+          16
+        ],
+        [
+          1913,
+          3563,
+          8
+        ],
+        [
+          2663,
+          4175,
+          8
+        ],
+        [
+          3163,
+          4113,
+          -215
+        ],
+        [
+          2888,
+          3338,
+          -240
+        ]
+      ],
+      "nodes": [
+        {
+          "id": "n0",
+          "label": "Start",
+          "x": 1988,
+          "y": 913,
+          "z": 432,
+          "floor": 1,
+          "space": "space_upper",
+          "district": "upper",
+          "kind": "start",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n1",
+          "label": "Node 1",
+          "x": 1913,
+          "y": 850,
+          "z": 296,
+          "floor": 1,
+          "space": "space_upper",
+          "district": "upper",
+          "kind": "stair",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n2",
+          "label": "Node 2",
+          "x": 1845,
+          "y": 1038,
+          "z": 260,
+          "floor": 1,
+          "space": "space_upper",
+          "district": "upper",
+          "kind": "drop",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n3",
+          "label": "Node 3",
+          "x": 1775,
+          "y": 725,
+          "z": 160,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n4",
+          "label": "Node 4",
+          "x": 1850,
+          "y": 1275,
+          "z": 160,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "drop",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n5",
+          "label": "Node 5",
+          "x": 2100,
+          "y": 1025,
+          "z": 24,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n6",
+          "label": "Node 6",
+          "x": 2513,
+          "y": 1650,
+          "z": 16,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n7",
+          "label": "Node 7",
+          "x": 2338,
+          "y": 2275,
+          "z": 16,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n8",
+          "label": "Node 8",
+          "x": 1500,
+          "y": 2288,
+          "z": 14,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n9",
+          "label": "Node 9",
+          "x": 1463,
+          "y": 2950,
+          "z": 16,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n10",
+          "label": "Node 10",
+          "x": 1913,
+          "y": 3563,
+          "z": 8,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "street",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n11",
+          "label": "Node 11",
+          "x": 2663,
+          "y": 4175,
+          "z": 8,
+          "floor": 1,
+          "space": "space_middle",
+          "district": "middle",
+          "kind": "drop",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n12",
+          "label": "Node 12",
+          "x": 3163,
+          "y": 4113,
+          "z": -215,
+          "floor": 1,
+          "space": "space_lower",
+          "district": "lower",
+          "kind": "stair",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        },
+        {
+          "id": "n13",
+          "label": "Safe room",
+          "x": 2888,
+          "y": 3338,
+          "z": -240,
+          "floor": 1,
+          "space": "space_lower",
+          "district": "lower",
+          "kind": "checkpoint",
+          "enclosure": "open",
+          "intensity": 2,
+          "landmark": "",
+          "gate": "none"
+        }
+      ],
+      "stops": [
+        {
+          "id": "s-start",
+          "label": "Start",
+          "x": 1988,
+          "y": 913,
+          "z": 432,
+          "kind": "start"
+        },
+        {
+          "id": "s-safe",
+          "label": "Safe room",
+          "x": 2888,
+          "y": 3338,
+          "z": -240,
+          "kind": "safe-room"
+        }
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "id": "spawn",
+      "label": "Player start",
+      "kind": "spawn",
+      "floor": 1,
+      "x": 1988,
+      "y": 913,
+      "width": 256,
+      "depth": 256,
+      "rotation": 0,
+      "note": ""
+    },
+    {
+      "id": "safe",
+      "label": "Safe room",
+      "kind": "safe-room",
+      "floor": 1,
+      "x": 2888,
+      "y": 3338,
+      "width": 256,
+      "depth": 256,
+      "rotation": 0,
+      "note": ""
+    },
+    {
+      "id": "checkpoint_0",
+      "label": "Checkpoint",
+      "kind": "checkpoint",
+      "floor": 1,
+      "x": 1638,
+      "y": 1100,
+      "width": 256,
+      "depth": 256,
+      "rotation": 0,
+      "note": ""
+    },
+    {
+      "id": "checkpoint_1",
+      "label": "Checkpoint",
+      "kind": "checkpoint",
+      "floor": 1,
+      "x": 1675,
+      "y": 1200,
+      "width": 256,
+      "depth": 256,
+      "rotation": 0,
+      "note": ""
+    },
+    {
+      "id": "checkpoint_2",
+      "label": "Checkpoint",
+      "kind": "checkpoint",
+      "floor": 1,
+      "x": 1600,
+      "y": 1325,
+      "width": 256,
+      "depth": 256,
+      "rotation": 0,
+      "note": ""
+    },
+    {
+      "id": "checkpoint_3",
+      "label": "Checkpoint",
+      "kind": "checkpoint",
+      "floor": 1,
+      "x": 1688,
+      "y": 1325,
+      "width": 256,
+      "depth": 256,
+      "rotation": 0,
+      "note": ""
+    },
+    {
+      "id": "item_0",
+      "label": "weapon_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1887,
+      "y": 816,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 474"
+    },
+    {
+      "id": "item_1",
+      "label": "weapon_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1878,
+      "y": 873,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 476"
+    },
+    {
+      "id": "item_2",
+      "label": "weapon_first_aid_kit_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1878,
+      "y": 910,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 475"
+    },
+    {
+      "id": "item_3",
+      "label": "weapon_first_aid_kit_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1888,
+      "y": 916,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 475"
+    },
+    {
+      "id": "item_4",
+      "label": "weapon_first_aid_kit_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1902,
+      "y": 916,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 477"
+    },
+    {
+      "id": "item_5",
+      "label": "weapon_first_aid_kit_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1910,
+      "y": 938,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 477"
+    },
+    {
+      "id": "item_6",
+      "label": "weapon_ammo_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 1905,
+      "y": 876,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z 475"
+    },
+    {
+      "id": "item_7",
+      "label": "weapon_pistol_spawn",
+      "kind": "item-cluster",
+      "floor": 1,
+      "x": 3110,
+      "y": 3618,
+      "width": 96,
+      "depth": 96,
+      "rotation": 0,
+      "note": "z -207"
+    }
+  ],
+  "beats": [],
+  "budget": {},
+  "palette": {
+    "sky": "",
+    "motifs": [],
+    "materials": [],
+    "models": []
+  },
+  "variability": [],
+  "acceptance": []
+}

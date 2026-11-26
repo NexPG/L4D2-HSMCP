@@ -57,7 +57,7 @@ const AREAS: Area[] = [
     slug: "planning",
     title: "Map planning",
     covers: "the five pass-1 drawings: site, terrain, circulation, schedule and floor plans",
-    groups: { "Design drawings": ["mapplan"] },
+    groups: { "Design drawings": ["mapplan", "planfrommap"] },
   },
   {
     slug: "bsp",

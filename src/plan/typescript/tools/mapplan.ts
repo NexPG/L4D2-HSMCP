@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
+import { readNavFile } from "../../../nav/typescript/formats/navfile.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 
 const XY = z.tuple([z.number(), z.number()]);
@@ -260,6 +261,19 @@ const Plan = z.object({
   name: z.string(),
   kind: z.enum(["campaign", "map"]),
   stage: z.enum(STAGES).default("approved"),
+  origin: z
+    .enum(["authored", "imported"])
+    .default("authored")
+    .describe("authored: a design to build. imported: a survey of an existing map; authoring prescriptions do not apply."),
+  source: z
+    .object({
+      bsp: z.string(),
+      nav: z.string().optional(),
+      entities: z.number().int().optional(),
+      navAreas: z.number().int().optional(),
+    })
+    .optional()
+    .describe("Where an imported plan came from."),
   experience: z.string().default(""),
   pillars: z.array(z.string()).default([]),
   districts: z.array(District).default([]),
@@ -1210,10 +1224,26 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     add("warning", "campaign-no-finale", "a campaign plan normally has a finale block");
   }
 
+  // An imported plan is a survey of an existing map. Structural rules still apply; the
+  // authoring prescriptions (pillars, pacing, landmarks, gates, streetscape) describe a map
+  // being designed, and are wrong to demand from one being measured.
+  const DESIGN_RULES = new Set([
+    "brief-no-experience", "brief-few-pillars", "brief-no-beats", "brief-few-beats",
+    "brief-no-acceptance", "brief-flat-pacing",
+    "route-no-vista", "route-no-landmark", "route-landmark-gap", "route-no-gate",
+    "route-no-peak", "route-no-rest", "route-flat-intensity", "route-high-run",
+    "route-monotone-enclosure", "route-few-spaces", "route-straight", "route-no-verticality",
+    "beat-not-on-route", "flow-few-motifs", "palette-motifs", "campaign-no-finale",
+    "district-no-landmark", "district-no-motif", "district-few",
+    "site-too-sparse", "flow-no-areas",
+  ]);
+  const reported =
+    plan.origin === "imported" ? findings.filter((finding) => !DESIGN_RULES.has(finding.rule)) : findings;
+
   return {
     path,
-    ok: findings.every((finding) => finding.severity !== "error"),
-    findings,
+    ok: reported.every((finding) => finding.severity !== "error"),
+    findings: reported,
     counts,
   };
 }
@@ -1404,9 +1434,27 @@ function rectSvg(building: PlanBuilding, t: Transform, fill: string, stroke: str
   return `<polygon points="${polygonPoints(corners(building.x, building.y, building.width, building.depth, building.rotation), t)}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
 }
 
+
+/** Real walkable layout of an imported plan, drawn under the schematic. */
+function navLayer(plan: MapPlan, t: Transform): string {
+  const source = plan.source?.nav;
+  if (!source || !existsSync(source)) return "";
+  const nav = readNavFile(readFileSync(source), source);
+  const out: string[] = [];
+  for (const area of nav.areas) {
+    const w = Math.max(1, (area.maxX - area.minX) * t.scale);
+    const h = Math.max(1, (area.maxY - area.minY) * t.scale);
+    if (w < 1.5 || h < 1.5) continue;
+    out.push(
+      `<rect x="${t.sx(area.minX).toFixed(1)}" y="${t.sy(area.maxY).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="#7f8c8d" fill-opacity="0.18" stroke="#95a5a6" stroke-width="0.3"/>`,
+    );
+  }
+  return out.join("\n");
+}
+
 function sitePlan(plan: MapPlan): string {
   const t = fit(plan);
-  const body: string[] = [];
+  const body: string[] = [navLayer(plan, t)];
   for (const water of plan.site.water) {
     body.push(
       `<polygon points="${polygonPoints(corners(water.x, water.y, water.width, water.depth, water.rotation), t)}" fill="#a9cce3" opacity="0.6"/>`,
@@ -1542,7 +1590,7 @@ ${dots}
 function circulationPlan(plan: MapPlan): string {
   const bounds = contentBounds(plan);
   const t = fitBounds(bounds);
-  const body: string[] = [];
+  const body: string[] = [navLayer(plan, t)];
   for (const building of plan.buildings) {
     body.push(rectSvg(building, t, "#e8e2d6", "#8a8175"));
   }

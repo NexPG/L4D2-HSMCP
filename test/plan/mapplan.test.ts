@@ -720,6 +720,13 @@ describe("map plan drawings", () => {
     expect(check.findings.map((finding) => `${finding.rule}: ${finding.message}`)).toEqual([]);
   });
 
+  it("accepts an imported survey plan: No Mercy c8m1 from plan_from_map", () => {
+    const source = join(__dirname, "fixtures", "nomercy-c8m1-imported.json");
+    const parsed = MapPlanSchema.parse(JSON.parse(readFileSync(source, "utf8")));
+    const check = checkMapPlan(source, parsed);
+    expect(check.findings.map((finding) => `${finding.rule}: ${finding.message}`)).toEqual([]);
+  });
+
   it("accepts a real campaign plan built from the game's nav: Dead Center c1m1", () => {
     const source = join(__dirname, "fixtures", "dead-center-c1m1.json");
     const parsed = MapPlanSchema.parse(JSON.parse(readFileSync(source, "utf8")));

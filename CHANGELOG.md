@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.300-alpha - 2026-11-26
+
+- **plan_from_map: a survey plan from a finished map.** Reads the BSP entity lump and the
+  .nav beside it, takes the nav mesh's own path from PLAYER_START to the far CHECKPOINT,
+  and records the player start, safe room, checkpoints and item spawns as areas. The plan is
+  origin: imported, so the checker keeps structural rules and skips authoring
+  prescriptions (pillars, pacing, landmarks, streetscape) that describe a map being designed,
+  not one being measured.
+- **Drawings show the real map.** 
+ender_map_plan draws the imported nav mesh under the
+  schematic when source.nav is set; the circulation sheet is now the real walkable layout
+  with the route and zones over it.
+- **No Mercy c8m1 imported fixture** (	est/plan/fixtures/nomercy-c8m1-imported.json) passes
+  with zero findings. Known holes are documented in ive-drawings.md: buildings/rooms/doors/
+  stairs still come from brushes, not from the BSP, and props are not imported yet.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.299-alpha - 2026-11-26
 
 - **No Mercy is installed, under DLC2.** left4dead2_dlc2/maps/c8m1_apartment.bsp/.nav is

@@ -326,5 +326,23 @@ Two fixtures keep the checker honest against real geometry:
 `test/plan/fixtures/nomercy-c8m1.json` and `dead-center-c1m1.json`. Both must pass with zero
 findings; a plan that only passes on a hand-made toy is not evidence.
 
+## The inverse: a plan from an existing map
+
+`plan_from_map` takes a `.bsp` and the `.nav` beside it and writes a survey plan
+(`origin: "imported"`): the nav mesh's own path from `PLAYER_START` to the far `CHECKPOINT`,
+the player start, safe room, checkpoints and item spawns as areas, districts by height band,
+and a `source.nav` reference that the drawings render as the real walkable layout. An imported
+plan keeps every structural check and skips the authoring prescriptions, because a survey is
+measured, not designed.
+
+Covered today: route, start, safe room, checkpoints, item spawns, the nav layout as the
+drawing base, heights.
+
+Still holes, found by comparing the drawings with the map: buildings, rooms, floors, doors and
+stairs are not extracted from the BSP brushes; static props and cover are not imported; the
+stock L4D2 nav has an empty place table, so district names are generic. Until those land, an
+imported plan is a route survey over the real nav, not a full architectural plan.
+
+
 
 
