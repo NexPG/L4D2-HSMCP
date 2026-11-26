@@ -216,6 +216,8 @@ const Area = z.object({
     "finale",
     "battlefield",
     "item-cluster",
+    "door",
+    "stair",
   ]),
   floor: z.number().int().min(-8).max(64).default(1).describe("Floor level; 0 and below are basements."),
   buildingId: z.string().optional().describe("Building this area belongs to, when interior."),
@@ -272,6 +274,7 @@ const Plan = z.object({
       entities: z.number().int().optional(),
       navAreas: z.number().int().optional(),
       displacements: z.number().int().optional(),
+      props: z.number().int().optional(),
     })
     .optional()
     .describe("Where an imported plan came from."),
@@ -1249,6 +1252,8 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     "district-no-landmark", "district-no-motif", "district-few",
     "site-too-sparse", "flow-no-areas", "route-through-building", "entrance-z", "footprints-overlap",
     "building-below-terrain", "excavation-not-below", "terrain-flat-relief",
+    "node-in-facade", "node-z-mismatch", "node-no-stair", "node-no-door",
+    "node-not-in-room", "building-role-unused", "enterable-no-entrance",
   ]);
   const reported =
     plan.origin === "imported" ? findings.filter((finding) => !DESIGN_RULES.has(finding.rule)) : findings;
@@ -1644,6 +1649,8 @@ function circulationPlan(plan: MapPlan): string {
     finale: "#b03a2e",
     battlefield: "#f39c12",
     "item-cluster": "#16a085",
+    door: "#7f8c8d",
+    stair: "#8e44ad",
   };
   for (const area of plan.areas) {
     const color = areaColor[area.kind] ?? "#7f8c8d";

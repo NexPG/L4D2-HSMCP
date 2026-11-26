@@ -12,6 +12,7 @@ import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import { readDisplacements } from "../../../maps/typescript/bsp/displacements.js";
+import { readStaticProps } from "../../../maps/typescript/bsp/staticprops.js";
 import { groundSample, readTree } from "../../../maps/typescript/bsp/trace.js";
 import type { MapEntity } from "../../../maps/typescript/entity/model.js";
 import { readNavFile } from "../../../nav/typescript/formats/navfile.js";
@@ -96,6 +97,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       y: Math.round(step.y),
       z: Math.round(step.z),
       floor: 1,
+      buildingId: undefined as string | undefined,
       district: bandOf(step.z),
       space: `space_${bandOf(step.z)}`,
       kind,
@@ -140,6 +142,59 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     areas.push({ id: `item_${itemIndex++}`, label: entity.classname ?? "item", kind: "item-cluster", floor: 1,
       x: Math.round(x), y: Math.round(y), width: 96, depth: 96, note: `z ${Math.round(z)}` });
     if (itemIndex >= 8) break;
+  }
+
+  // Doors are entities in the map; a survey records where they are, the build pass decides
+  // which two rooms they join.
+  let doorIndex = 0;
+  for (const entity of entities) {
+    const cls = entity.classname ?? "";
+    if (!/door/i.test(cls) || /door_area/i.test(cls)) continue;
+    const [x, y, z] = origin(entity);
+    areas.push({ id: `door_${doorIndex++}`, label: cls, kind: "door", floor: 1,
+      x: Math.round(x), y: Math.round(y), width: 64, depth: 16, note: `z ${Math.round(z)}` });
+    if (doorIndex >= 96) break;
+  }
+
+  // Stairs are the route's short drops: bigger ones are drops, not stairs.
+  let stairIndex = 0;
+  for (let index = 1; index < steps.length; index += 1) {
+    const dz = steps[index]!.z - steps[index - 1]!.z;
+    if (dz <= -16 && dz > -64) {
+      areas.push({ id: `stair_${stairIndex++}`, label: "Stair", kind: "stair", floor: 1,
+        x: Math.round(steps[index - 1]!.x), y: Math.round(steps[index - 1]!.y),
+        width: 96, depth: 96, note: `drop ${Math.round(dz)}` });
+    }
+  }
+
+  // Director zones live in the nav flags; a survey can read them back.
+  const ZONES: Array<[number, string]> = [[0x100, "battlefield"], [0x40, "finale"], [0x2000, "no-mob"]];
+  for (const [bit, kind] of ZONES) {
+    let count = 0;
+    for (const area of nav.areas) {
+      if ((area.spawnAttributes & bit) === 0) continue;
+      const centre = areaCenter(area);
+      areas.push({
+        id: `${kind}_${count++}`, label: kind, kind: kind as "battlefield" | "finale" | "no-mob", floor: 1,
+        x: Math.round(centre.x), y: Math.round(centre.y),
+        width: Math.max(64, Math.round((area.maxX - area.minX) / 64) * 64),
+        depth: Math.max(64, Math.round((area.maxY - area.minY) / 64) * 64),
+      });
+      if (count >= 12) break;
+    }
+  }
+
+  // Palette from the map: skybox from worldspawn, prop models from the static props.
+  const world = entities.find((entity) => entity.classname === "worldspawn");
+  const skyName = world?.keyvalues?.find(([key]) => key.toLowerCase() === "skyname")?.[1] ?? "";
+  let propCount = 0;
+  let propModels: string[] = [];
+  try {
+    const lumpProps = readStaticProps(bspPath);
+    propCount = lumpProps.props.length;
+    propModels = [...new Set(lumpProps.props.map((prop) => prop.model))].sort().slice(0, 32);
+  } catch {
+    propCount = 0;
   }
 
   const spawnEntity = entities.find((entity) => entity.classname === "info_player_start");
@@ -241,7 +296,11 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         roofZ: Math.round(box.maxZ),
         excavated: box.minZ < -16,
         enterable: false,
-        role: "context" as const,
+        role: (Math.abs(startCenter.x - cx) <= width / 2 && Math.abs(startCenter.y - cy) <= depth / 2)
+          ? "route" as const
+          : (Math.abs(areaCenter(goalArea).x - cx) <= width / 2 && Math.abs(areaCenter(goalArea).y - cy) <= depth / 2)
+            ? "safe-room" as const
+            : "context" as const,
 
         floorsPlan: levels.map(([, members], level) => ({
           level: level + 1,
@@ -327,6 +386,15 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     rows,
     heights: heights.map((value) => (Number.isFinite(value) ? Math.round(value) : 0)),
   };
+  for (const node of routeNodes) {
+    const host = buildings.find(
+      (building) =>
+        Math.abs(node.x - building.x) <= building.width / 2 &&
+        Math.abs(node.y - building.y) <= building.depth / 2,
+    );
+    if (host) node.buildingId = host.id;
+    if (host) host.enterable = true;
+  }
   for (const building of buildings) {
     const col = Math.max(0, Math.min(cols - 1, Math.floor((building.x - site.bounds.x0) / CELL)));
     const row = Math.max(0, Math.min(rows - 1, Math.floor((building.y - site.bounds.y0) / CELL)));
@@ -340,7 +408,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     kind: "map" as const,
     stage: "approved" as const,
     origin: "imported" as const,
-    source: { bsp: bspPath, nav: navPath, entities: entities.length, navAreas: nav.areas.length, displacements: displacementCount },
+    source: { bsp: bspPath, nav: navPath, entities: entities.length, navAreas: nav.areas.length, displacements: displacementCount, props: propCount },
     experience: `survey of ${bspPath}`,
     pillars: [],
     districts,
@@ -359,7 +427,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     areas,
     beats: [],
     budget: {},
-    palette: { sky: "", motifs: [], materials: [], models: [] },
+    palette: { sky: skyName, motifs: [], materials: [], models: propModels },
     variability: [],
     acceptance: [],
   };

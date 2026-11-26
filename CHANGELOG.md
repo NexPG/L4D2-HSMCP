@@ -5,6 +5,23 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.306-alpha - 2026-11-26
+
+- **Doors, stairs, Director zones and the palette come from the map.** plan_from_map now
+  records door entities as door areas (35 on c8m1), the route's short drops as stair areas,
+  the nav's battlefield/finale/no-mob flags as zones, the skybox from worldspawn and 692 static
+  props by model (32 models in palette.models). Two new area kinds, door and stair, are
+  drawn on the circulation sheet.
+- **Survey plans skip floor-graph rules.** 
+ode-in-facade, 
+ode-z-mismatch, 
+ode-no-stair,
+  
+ode-no-door, 
+ode-not-in-room, uilding-role-unused and enterable-no-entrance require
+  a modelled building; a nav survey records positions, not connectivity.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.305-alpha - 2026-11-26
 
 - **The heightfield comes from the map's collision, not from the nav levels.** plan_from_map
