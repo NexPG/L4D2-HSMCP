@@ -12,6 +12,7 @@ import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
 import { readDisplacements } from "../../../maps/typescript/bsp/displacements.js";
+import { groundSample, readTree } from "../../../maps/typescript/bsp/trace.js";
 import type { MapEntity } from "../../../maps/typescript/entity/model.js";
 import { readNavFile } from "../../../nav/typescript/formats/navfile.js";
 import { NavGraph, areaCenter } from "../../../nav/typescript/formats/navpath.js";
@@ -261,10 +262,11 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       };
     });
 
-  // ---- heightfield from the nav mesh -----------------------------------------
-  // Each cell takes the lowest nav surface over its centre: that is the ground. Upper floors
-  // belong to the buildings, not to the terrain, or a roof would flatten the street.
-  const CELL = 256;
+  // ---- heightfield from the map's own collision ---------------------------------
+  // A 128 u grid, each cell sampled by a downward column trace: the lowest standable surface
+  // is the ground, so bumps, kerbs and pits survive. The nav surface is only the fallback for
+  // cells the trace cannot reach, and displacement patches fill the rest.
+  const CELL = 128;
   const cols = Math.ceil((site.bounds.x1 - site.bounds.x0) / CELL) + 1;
   const rows = Math.ceil((site.bounds.y1 - site.bounds.y0) / CELL) + 1;
   const heights = new Array<number>(cols * rows).fill(Number.POSITIVE_INFINITY);
@@ -284,10 +286,27 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       }
     }
   }
-  // Displacements carry the designed relief (hills, banks) that the nav surface flattens.
-  // The reader exposes each patch\'s start, power and box, not the interpolated grid, so a
-  // patch stamps its elevation over its footprint; that is a relief survey, not a mesh.
+
+  let sampled = 0;
   let displacementCount = 0;
+  try {
+    const tree = readTree(bspPath);
+    const topZ = Math.ceil(Math.max(...nav.areas.map((area) => area.maxZ))) + 512;
+    const bottomZ = Math.floor(Math.min(...nav.areas.map((area) => area.minZ))) - 512;
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const cx = site.bounds.x0 + (col + 0.5) * CELL;
+        const cy = site.bounds.y0 + (row + 0.5) * CELL;
+        const ground = groundSample(tree, cx, cy, topZ, bottomZ, 36, 32);
+        if (!ground) continue;
+        heights[row * cols + col] = ground.groundZ;
+        sampled += 1;
+      }
+    }
+  } catch {
+    sampled = 0;
+  }
+  // Displacement patches carry designed banks and hills the column trace may miss at power 2.
   try {
     const displacements = readDisplacements(bspPath, 4096);
     displacementCount = displacements.count;
@@ -296,7 +315,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       const col = Math.max(0, Math.min(cols - 1, Math.floor((patch.start[0] - site.bounds.x0) / CELL)));
       const row = Math.max(0, Math.min(rows - 1, Math.floor((patch.start[1] - site.bounds.y0) / CELL)));
       const index = row * cols + col;
-      if (z > (heights[index] ?? Number.NEGATIVE_INFINITY)) heights[index] = z;
+      if (!Number.isFinite(heights[index]!) || z > heights[index]!) heights[index] = z;
     }
   } catch {
     displacementCount = 0;

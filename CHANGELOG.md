@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.305-alpha - 2026-11-26
+
+- **The heightfield comes from the map's collision, not from the nav levels.** plan_from_map
+  samples a 128 u grid with a downward column trace and keeps the lowest standable surface, so
+  kerbs, bumps, ramps and pits survive; the nav surface is the fallback and displacement
+  patches fill what the trace cannot reach. c8m1: 44x59 cells, -360..1072, and the vertical
+  plan shows the actual cell values the build pass will shape from.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.304-alpha - 2026-11-26
 
 - **Terrain is a plan field.** check_map_plan reports 	errain-flat-relief when buildings
