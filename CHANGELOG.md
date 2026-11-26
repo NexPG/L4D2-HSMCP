@@ -5,6 +5,25 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.309-alpha - 2026-11-26
+
+- **Every official chapter imports.** All 55 chapter maps across the installed campaigns pass
+  plan_from_map + check_map_plan with zero findings. The sweep found five holes, fixed at
+  the root:
+  - only a campaign's first map has a PLAYER_START nav flag, so 35 maps failed; the start is
+    now the nav area nearest the map's info_player_start, with the flags as fallback;
+  - two maps start in a nav component disconnected from the far checkpoint; the goal is now
+    the farthest **reachable** checkpoint, not simply the farthest;
+  - door/item entities outside the nav footprint escaped the site (two maps); areas are
+    clipped to site.bounds;
+  - buildings carrying route nodes kept role context (one map); they are marked 
+oute;
+  - stair nodes were created for 16 u steps, which the height rule rejects; a vertical node
+    now needs a real flight (48 u).
+- A soundscape test map (c5m1_waterfront_sndscape) has no nav and is not a chapter; the
+  sweep skips it.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.308-alpha - 2026-11-26
 
 - **The Sacrifice is the test bed.** All three chapters (c7m1_docks, c7m2_barge,

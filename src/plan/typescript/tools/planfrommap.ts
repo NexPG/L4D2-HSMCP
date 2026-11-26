@@ -54,18 +54,57 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   const entities = lump.entities;
   const graph = new NavGraph(nav);
 
-  const startArea = nav.areas.find((area) => (area.spawnAttributes & PLAYER_START) !== 0);
-  if (!startArea) throw new Error("the nav mesh has no PLAYER_START area");
+  // The start of a chapter after the first is a safe room, not a PLAYER_START area: L4D2 only
+  // flags the campaign's first map. The spawn entity is placed on every map, so resolve the
+  // start from it and fall back to the nav flags only when the entity is missing.
+  const distanceTo = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  const spawnEntities = entities.filter((entity) => entity.classname === "info_player_start");
+  let startArea: (typeof nav.areas)[number] | undefined;
+  if (spawnEntities.length > 0) {
+    const point = origin(spawnEntities[0]!);
+    let best = Number.POSITIVE_INFINITY;
+    for (const area of nav.areas) {
+      const d = distanceTo(areaCenter(area), { x: point[0], y: point[1], z: point[2] });
+      if (d < best) {
+        best = d;
+        startArea = area;
+      }
+    }
+  }
+  startArea ??= nav.areas.find((area) => (area.spawnAttributes & PLAYER_START) !== 0);
+  startArea ??= nav.areas.find((area) => (area.spawnAttributes & CHECKPOINT) !== 0);
+  startArea ??= nav.areas[0];
+  if (!startArea) throw new Error("the nav mesh has no areas");
   const startCenter = areaCenter(startArea);
   const checkpoints = nav.areas.filter((area) => (area.spawnAttributes & CHECKPOINT) !== 0);
-  const goalArea = checkpoints
+  const goals = nav.areas.filter((area) => (area.spawnAttributes & (CHECKPOINT | 0x10000)) !== 0);
+  const goalArea = goals
     .map((area) => ({ area, c: areaCenter(area) }))
-    .sort((a, b) =>
-      Math.hypot(b.c.x - startCenter.x, b.c.y - startCenter.y) -
-      Math.hypot(a.c.x - startCenter.x, a.c.y - startCenter.y))[0]?.area;
-  if (!goalArea) throw new Error("the nav mesh has no second CHECKPOINT area to aim at");
-  const path = graph.findPath(startArea, goalArea);
-  if (!path.found) throw new Error("no nav path from PLAYER_START to the far CHECKPOINT");
+    .filter((entry) => distanceTo(entry.c, startCenter) > 256)
+    .sort((a, b) => distanceTo(b.c, startCenter) - distanceTo(a.c, startCenter))[0]?.area
+    ?? goals
+      .map((area) => ({ area, c: areaCenter(area) }))
+      .sort((a, b) => distanceTo(b.c, startCenter) - distanceTo(a.c, startCenter))[0]?.area;
+  if (!goalArea) throw new Error("the nav mesh has no checkpoint to aim at");
+  const candidates = goals
+    .map((area) => ({ area, c: areaCenter(area) }))
+    .filter((entry) => entry.area.id !== startArea!.id)
+    .sort((a, b) => distanceTo(b.c, startCenter) - distanceTo(a.c, startCenter));
+  let path = graph.findPath(startArea, goalArea);
+  let reached = goalArea;
+  if (!path.found) {
+    for (const candidate of candidates) {
+      const attempt = graph.findPath(startArea, candidate.area);
+      if (attempt.found) {
+        path = attempt;
+        reached = candidate.area;
+        break;
+      }
+    }
+  }
+  if (!path.found) throw new Error("no nav path from the spawn to any checkpoint");
+  const goalCenter = areaCenter(reached);
 
   const steps = simplify(path.steps.map((step) => ({ ...step.center, flags: (graph.byId.get(step.areaId)?.spawnAttributes ?? 0) })), 14);
   const zs = steps.map((step) => step.z);
@@ -89,7 +128,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       index === 0 ? "start"
       : index === steps.length - 1 ? "checkpoint"
       : dz <= -64 ? "drop"
-      : dz <= -16 ? "stair"
+      : dz <= -48 ? "stair"
       : "street";
     return {
       id: `n${index}`,
@@ -124,12 +163,12 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     { id: "spawn", label: "Player start", kind: "spawn", floor: 1,
       x: Math.round(startCenter.x), y: Math.round(startCenter.y), width: 256, depth: 256 },
     { id: "safe", label: "Safe room", kind: "safe-room", floor: 1,
-      x: Math.round(areaCenter(goalArea).x), y: Math.round(areaCenter(goalArea).y), width: 256, depth: 256 },
+      x: Math.round(goalCenter.x), y: Math.round(goalCenter.y), width: 256, depth: 256 },
   ];
   let checkpointIndex = 0;
   for (const area of checkpoints) {
     const c = areaCenter(area);
-    if (Math.hypot(c.x - areaCenter(goalArea).x, c.y - areaCenter(goalArea).y) < 64) continue;
+    if (Math.hypot(c.x - goalCenter.x, c.y - goalCenter.y) < 64) continue;
     if (Math.hypot(c.x - startCenter.x, c.y - startCenter.y) < 64) continue;
     areas.push({ id: `checkpoint_${checkpointIndex++}`, label: "Checkpoint", kind: "checkpoint", floor: 1,
       x: Math.round(c.x), y: Math.round(c.y), width: 256, depth: 256 });
@@ -161,7 +200,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   let stairIndex = 0;
   for (let index = 1; index < steps.length; index += 1) {
     const dz = steps[index]!.z - steps[index - 1]!.z;
-    if (dz <= -16 && dz > -64) {
+    if (dz <= -48 && dz > -64) {
       areas.push({ id: `stair_${stairIndex++}`, label: "Stair", kind: "stair", floor: 1,
         x: Math.round(steps[index - 1]!.x), y: Math.round(steps[index - 1]!.y),
         width: 96, depth: 96, note: `drop ${Math.round(dz)}` });
@@ -338,7 +377,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         enterable: false,
         role: (Math.abs(startCenter.x - cx) <= width / 2 && Math.abs(startCenter.y - cy) <= depth / 2)
           ? "route" as const
-          : (Math.abs(areaCenter(goalArea).x - cx) <= width / 2 && Math.abs(areaCenter(goalArea).y - cy) <= depth / 2)
+          : (Math.abs(goalCenter.x - cx) <= width / 2 && Math.abs(goalCenter.y - cy) <= depth / 2)
             ? "safe-room" as const
             : "context" as const,
 
@@ -433,7 +472,10 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         Math.abs(node.y - building.y) <= building.depth / 2,
     );
     if (host) node.buildingId = host.id;
-    if (host) host.enterable = true;
+    if (host) {
+      host.enterable = true;
+      host.role = "route";
+    }
   }
   for (const building of buildings) {
     const col = Math.max(0, Math.min(cols - 1, Math.floor((building.x - site.bounds.x0) / CELL)));
@@ -497,10 +539,14 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       nodes: routeNodes,
       stops: [
         { id: "s-start", label: "Start", x: Math.round(startCenter.x), y: Math.round(startCenter.y), z: spawnZ, kind: "start" as const },
-        { id: "s-safe", label: "Safe room", x: Math.round(areaCenter(goalArea).x), y: Math.round(areaCenter(goalArea).y), z: Math.round(areaCenter(goalArea).z), kind: "safe-room" as const },
+        { id: "s-safe", label: "Safe room", x: Math.round(goalCenter.x), y: Math.round(goalCenter.y), z: Math.round(goalCenter.z), kind: "safe-room" as const },
       ],
     }, ...branches],
-    areas: [...areas, ...propsNearRoute],
+    areas: [...areas, ...propsNearRoute].filter(
+      (area) =>
+        Number(area.x) >= site.bounds.x0 && Number(area.x) <= site.bounds.x1 &&
+        Number(area.y) >= site.bounds.y0 && Number(area.y) <= site.bounds.y1,
+    ),
     beats: [],
     budget: {},
     palette: { sky: skyName, motifs: [], materials, models: propModels },
