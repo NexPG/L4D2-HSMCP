@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { readEntityLump } from "../../../maps/typescript/bsp/entities.js";
+import { readDisplacements } from "../../../maps/typescript/bsp/displacements.js";
 import type { MapEntity } from "../../../maps/typescript/entity/model.js";
 import { readNavFile } from "../../../nav/typescript/formats/navfile.js";
 import { NavGraph, areaCenter } from "../../../nav/typescript/formats/navpath.js";
@@ -283,6 +284,23 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       }
     }
   }
+  // Displacements carry the designed relief (hills, banks) that the nav surface flattens.
+  // The reader exposes each patch\'s start, power and box, not the interpolated grid, so a
+  // patch stamps its elevation over its footprint; that is a relief survey, not a mesh.
+  let displacementCount = 0;
+  try {
+    const displacements = readDisplacements(bspPath, 4096);
+    displacementCount = displacements.count;
+    for (const patch of displacements.displacements) {
+      const z = Math.round(patch.start[2]);
+      const col = Math.max(0, Math.min(cols - 1, Math.floor((patch.start[0] - site.bounds.x0) / CELL)));
+      const row = Math.max(0, Math.min(rows - 1, Math.floor((patch.start[1] - site.bounds.y0) / CELL)));
+      const index = row * cols + col;
+      if (z > (heights[index] ?? Number.NEGATIVE_INFINITY)) heights[index] = z;
+    }
+  } catch {
+    displacementCount = 0;
+  }
   const terrain = {
     cell: CELL,
     origin: [site.bounds.x0, site.bounds.y0] as [number, number],
@@ -303,7 +321,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     kind: "map" as const,
     stage: "approved" as const,
     origin: "imported" as const,
-    source: { bsp: bspPath, nav: navPath, entities: entities.length, navAreas: nav.areas.length },
+    source: { bsp: bspPath, nav: navPath, entities: entities.length, navAreas: nav.areas.length, displacements: displacementCount },
     experience: `survey of ${bspPath}`,
     pillars: [],
     districts,

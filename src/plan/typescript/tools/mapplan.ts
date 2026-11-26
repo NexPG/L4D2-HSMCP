@@ -271,6 +271,7 @@ const Plan = z.object({
       nav: z.string().optional(),
       entities: z.number().int().optional(),
       navAreas: z.number().int().optional(),
+      displacements: z.number().int().optional(),
     })
     .optional()
     .describe("Where an imported plan came from."),
@@ -778,8 +779,19 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
   if (plan.stage === "flow" && plan.areas.length === 0) {
     add("warning", "flow-no-areas", "the flow stage needs spawn/cover/holdout/crescendo/finale areas");
   }
-  if (plan.stage === "flow" && plan.palette.motifs.length < 3) {
-    add("warning", "flow-few-motifs", "name at least three repeated motifs");
+  const relief = plan.terrain.heights;
+  const flatSite = relief.length > 0 && relief.every((value) => value === relief[0]);
+  const groundZs = plan.buildings.map((building) => building.baseZ);
+  const spread = groundZs.length > 1 ? Math.max(...groundZs) - Math.min(...groundZs) : 0;
+  if (flatSite && spread > 128) {
+    add(
+      "warning",
+      "terrain-flat-relief",
+      `buildings stand on ${spread} u of height difference but the terrain is flat; give it a heightfield`,
+    );
+  }
+
+  if (plan.stage === "flow" && plan.palette.motifs.length < 3) {    add("warning", "flow-few-motifs", "name at least three repeated motifs");
   }
 
   const ids = new Set<string>();
@@ -1236,7 +1248,7 @@ export function checkMapPlan(path: string, plan: MapPlan): PlanCheck {
     "beat-not-on-route", "flow-few-motifs", "palette-motifs", "campaign-no-finale",
     "district-no-landmark", "district-no-motif", "district-few",
     "site-too-sparse", "flow-no-areas", "route-through-building", "entrance-z", "footprints-overlap",
-    "building-below-terrain", "excavation-not-below",
+    "building-below-terrain", "excavation-not-below", "terrain-flat-relief",
   ]);
   const reported =
     plan.origin === "imported" ? findings.filter((finding) => !DESIGN_RULES.has(finding.rule)) : findings;

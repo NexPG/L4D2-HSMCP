@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.304-alpha - 2026-11-26
+
+- **Terrain is a plan field.** check_map_plan reports 	errain-flat-relief when buildings
+  stand on more than 128 u of height difference over a flat heightfield: the relief has to be
+  decided in pass 1, not invented by the first brush.
+- **Displacements join the imported heightfield.** plan_from_map stamps each BSP displacement
+  over the nav-derived ground, because the nav flattens designed banks and hills (c8m1: 33
+  patches). source.displacements records the count.
+- Fixtures now carry real relief instead of an all-zero terrain.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.303-alpha - 2026-11-26
 
 - **Real heightfield for imported plans.** plan_from_map fills 	errain from the nav mesh:

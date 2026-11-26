@@ -343,6 +343,16 @@ stairs are not extracted from the BSP brushes; static props and cover are not im
 stock L4D2 nav has an empty place table, so district names are generic. Until those land, an
 imported plan is a route survey over the real nav, not a full architectural plan.
 
+## Terrain is a plan field, not a build detail
+
+A plan without a heightfield describes a flat world. When buildings stand at different
+`baseZ` and the terrain is all zeros, `check_map_plan` reports `terrain-flat-relief`: the
+level's relief has to be decided in pass 1 and written into `terrain.heights`, not invented by
+whoever places the first brush. `plan_from_map` fills it from the nav surface (the ground,
+lowest sample per cell) and stamps the BSP displacements over it, because the nav alone
+flattens the designed banks and hills.
+
+
 
 
 
