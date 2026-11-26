@@ -333,7 +333,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         floors: levels.length,
         floorHeight: 128,
         baseZ: Math.round(box.minZ),
-        roofZ: Math.round(box.maxZ),
+        roofZ: Math.max(Math.round(box.maxZ), Math.round(box.minZ) + 128),
         excavated: box.minZ < -16,
         enterable: false,
         role: (Math.abs(startCenter.x - cx) <= width / 2 && Math.abs(startCenter.y - cy) <= depth / 2)

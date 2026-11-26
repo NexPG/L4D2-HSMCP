@@ -31,3 +31,6 @@ scratchpad/
 /addons/
 .3d-projects/
 
+# Rendered drawings are review output, not test data: a fixture keeps its JSON, not its SVGs.
+test/**/*-out/
+

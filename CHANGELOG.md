@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.308-alpha - 2026-11-26
+
+- **The Sacrifice is the test bed.** All three chapters (c7m1_docks, c7m2_barge,
+  c7m3_port) now import with zero findings. The run exposed four holes, fixed at the root:
+  district-unused and rea-off-route are design rules and are skipped for a survey; a
+  single-level building had 
+oof == base and failed 
+oof-height (roof is now at least one
+  floor above the base), which also removed the paired loor-outside-building warning.
+- **No drawings under 	est/.** Rendered SVGs are review output; 	est/**/*-out/ is ignored
+  and the fixture keeps only its JSON.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.307-alpha - 2026-11-26
 
 - **Branches, materials, water and props in the survey.** plan_from_map anchors a branch
