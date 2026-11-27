@@ -71,5 +71,6 @@ an opinion. The per-map build order is
 ## Housekeeping
 
 - [ ] Campaign README updated: date, project version, attempt, result, status.
-- [ ] Diary entry written for anything learned.
+- [ ] Workspace log updated for anything learned; the skill or `docs/` page updated if a rule
+      changed.
 - [ ] Skill and `docs/` updated if a rule changed.

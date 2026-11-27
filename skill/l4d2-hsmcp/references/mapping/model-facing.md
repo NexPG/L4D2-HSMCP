@@ -40,7 +40,7 @@ measure the exact `.mdl` you place. `read_model_info` names the model, and `prev
 the look. If one view is ambiguous, use `preview_model` `view: "back"|"left"|"right"`; the
 table was measured from `view: "front"` (the camera on world -X, looking +X).
 
-**A full catalogue is future work** (workstream G in the diary): bounds, `.phy`,
+**A full catalogue is future work**: bounds, `.phy`,
 `$staticprop`, forward axis and confidence for every model. Until it exists, an unlisted model
 is measured on the spot with the four views and its row is appended here; never default to
 `x+` without looking.

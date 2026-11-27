@@ -43,6 +43,9 @@ with a line here.
 - **Stale "launch is paused" notes removed.** Six pages said a screenshot was deferred while
   the game launch was paused; the pause is no longer the state, so they now say the check is
   still live and name the tool, instead of dating the page.
+- **Internal references removed from the shipped skill.** Pages no longer point at the private
+  diary, a workstream, an issue number or a task list; a reader gets the tool, the page or the
+  measurement, not a pointer into a log it cannot open.
 - All relative links in the skill resolve, and a new structure test fails when a skill page is
   not routed from `SKILL.md` (one index, no orphan pages).
 - Tests: 259 files, 2,046 passed, 32 skipped. Tool count: 312.
