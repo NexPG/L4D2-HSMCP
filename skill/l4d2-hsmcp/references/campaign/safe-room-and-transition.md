@@ -14,10 +14,10 @@ built map.
 2. **`prop_door_rotating_checkpoint`** - the checkpoint door. Without one near the
    transition's `info_landmark`, `info_changelevel` does not spawn at all. A plain
    `prop_door_rotating` does not count. The engine resolves the **class near the landmark**;
-   20 of the 57 stock chapters leave it unnamed. `checkpoint_exit` /
-   `checkpoint_entrance` are the canonical names, but a name is advice, not the lookup key.
-   `check_transition` fails a safe room with no class within 1024 units of the landmark and
-   reports the name as info.
+   `checkpoint_exit` / `checkpoint_entrance` are canonical names, but a name is advice, not
+   the lookup key. `check_transition` fails a safe room with no class within 1024 units of the
+   landmark and reports the name as info. The door's own rules are in
+   [`../mapping/doors.md`](../mapping/doors.md).
 3. **Landmark pair** — `info_landmark` with the same `targetname` in both maps. On the map
    being left it sits in the exit safe room; on the map being entered it sits where survivors
    should appear. Store the position relative to the landmark; the engine uses it to place

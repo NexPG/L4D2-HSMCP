@@ -39,7 +39,7 @@ when:
 |---|---|---|
 | before compile | `read_vmf_lint` | entity/model/brush headroom in the source |
 | after compile | `read_map_geometry` | every lump against its ceiling; `lumps` carries used/max |
-| after compile | `read_nav` | nav areas are **not** `MAX_MAP_AREAS`; 1,000–1,700 is normal |
+| after compile | `read_nav` | nav areas are **not** `MAX_MAP_AREAS` (the limits page explains the distinction) |
 | before pack | `run_vpk_pack` result | archive under 2 GB, BSP under ~300 MB |
 
 A failed ceiling is not a warning to ignore and not something a rebuild fixes: the stock

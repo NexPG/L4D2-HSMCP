@@ -206,7 +206,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_vmf_solid` | brushes from box, wedge, cylinder, convex; also into a brush entity by id |
 | `write_vmf_terrain` | floor grid + displacement + noise + sew in one call |
 | `write_vmf_water` | `func_water_analog` + `water_lod_control`, Water shader checked |
-| `place_door` | rotating door with the origin on the hinge; checkpoint names checked |
+| `place_door` | rotating door with the origin on the hinge; checkpoint class and name reported |
 | `write_vmf_fitting` | door casing, counter, skirting, cornice |
 | `transform_solids` | move, turn, scale, mirror brushes |
 | `merge_solids` | merge convex brushes into the one brush around them |

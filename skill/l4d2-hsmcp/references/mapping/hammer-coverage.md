@@ -109,7 +109,7 @@ The class decision table, the seal trap and the runtime cost of each: `detail-an
 
 | Feature | Tool | Status |
 |---|---|---|
-| Safe room | `write_safe_room` | verified by vbsp: checkpoint door on its hinge, player start, four ordered survivor positions and a director; the door names are the ones the engine looks up |
+| Safe room | `write_safe_room` | verified by vbsp: checkpoint door on its hinge, player start, four ordered survivor positions and a director; the door is the checkpoint class near the landmark, the name is advice |
 | Chapter change | `write_changelevel` | verified by vbsp: an `info_changelevel` brush volume with map and landmark, plus the matching `info_landmark`; departure and arrival (`spawnflags 2`) |
 | Finale | `write_finale_setup` | verified by vbsp: type 0/1/2/4, custom refuses no script and starts disabled, four escape positions |
 | Spawn areas | `write_spawn_points` | verified by vbsp: one `info_player_start`, ordered survivor positions, zombie spawns with population/offer_tank, rescue |

@@ -340,7 +340,7 @@ flattens the designed banks and hills.
 
 The plan and the build share one ceiling table, so it has one home:
 [`../mapping/engine-limits.md`](../mapping/engine-limits.md) (short) and
-`docs/reference/engine-limits-l4d2.md` (full, with the `bspfile.h` citation). The three that
-bite a plan: **entities 8192** (runtime edicts 2048), **brush models 1024**, **brushes 8192**.
-A plan that exceeds them cannot be built by the stock compilers, however good the drawings look.
+`docs/reference/engine-limits-l4d2.md` (full, with the `bspfile.h` citation). A plan that
+exceeds the entity, brush-model or brush ceiling cannot be built by the stock compilers,
+however good the drawings look.
 
