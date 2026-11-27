@@ -27,6 +27,25 @@ The legacy reference implementation is `campaigns/001-hsmcp-test/build.mjs`; rea
 writing another. A new addon's build script lives in its workspace
 (`workspaces/<name>/build.mjs`).
 
+## Ceilings belong to pass 2 too
+
+The plan must not promise more than the compiler can take, and the build must prove it did not
+cross a line. The numbers live in one place:
+[`../references/mapping/engine-limits.md`](../references/mapping/engine-limits.md) (short) and
+`docs/reference/engine-limits-l4d2.md` (full, with the `bspfile.h` citation). What to check and
+when:
+
+| Stage | Tool | Watches |
+|---|---|---|
+| before compile | `read_vmf_lint` | entity/model/brush headroom in the source |
+| after compile | `read_map_geometry` | every lump against its ceiling; `lumps` carries used/max |
+| after compile | `read_nav` | nav areas are **not** `MAX_MAP_AREAS`; 1,000–1,700 is normal |
+| before pack | `run_vpk_pack` result | archive under 2 GB, BSP under ~300 MB |
+
+A failed ceiling is not a warning to ignore and not something a rebuild fixes: the stock
+compilers cannot be raised, so the map has to lose geometry or entities. Return to pass 1 with
+the measured number, because the excess was designed there.
+
 ## Fixed name, one campaign
 
 The game keeps one campaign. The project keeps the numbered history. Deploying under a new

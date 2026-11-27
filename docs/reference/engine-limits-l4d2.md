@@ -10,6 +10,23 @@ to compile, fails to load, or crashes the client.
 `read_vmf_lint` measures the source before it. Neither can raise a ceiling -- L4D2 ships
 stock compilers, and a map built for a raised ceiling is a map other players cannot load.
 
+## Record sizes a reader must get right
+
+These are format facts rather than ceilings: a reader that assumes the wrong size decodes
+garbage from every record after the first.
+
+| Record | Bytes | Fields (from `bspfile.h`) |
+|---|---:|---|
+| `dmodel_t` (lump 14) | **48** | `Vector mins, maxs, origin; int headnode; int firstface, numfaces` |
+
+`dmodel_t` was read as 64 bytes once and every model after the world came out as denormal
+floats; brush entities then had no bounds and their volumes vanished from the survey. Treat the
+header as the oracle, not a recollection.
+
+**Nav areas are not `MAX_MAP_AREAS`.** That 256 limit counts BSP vis areas/portals. A nav mesh
+is a separate file with its own area count; stock chapters routinely hold 1,000–1,700 areas
+(`c8m1_apartment`: 1,690) and load fine.
+
 ## Hard ceilings
 
 | What | Limit | Where it fails |
@@ -83,6 +100,23 @@ stock compilers, and a map built for a raised ceiling is a map other players can
 1. `read_vmf_lint` -- source ceilings and the L4D2 contracts above.
 2. `run_compile` -- it refuses a sky with no faces for the mode, then reports vbsp/vvis/vrad.
 3. `read_map_geometry` -- lump usage against the table above; `nearLimitOnly: true` shows
-   what is above 50% of a ceiling.
+   what is above 80% of a ceiling.
 4. `run_nav_generate` -- returns `fresh` and whether the dictionary is present.
 5. `run_map_test` with the exact BSP/nav pair -- loads the map, not the archive beside it.
+
+## Where these numbers come from
+
+- `ValveSoftware/source-sdk-2013`, `src/public/bspfile.h` (branch `master`), read 2026-11-27:
+  every `MAX_MAP_*` value in the hard-ceilings table, and `struct dmodel_t`.
+- `ValveSoftware/source-sdk-2013`, `src/public/const.h`, same date: `MAX_EDICT_BITS` is 11, so
+  `MAX_EDICTS` is 2048.
+- The practical ceilings (BSP/VPK size, texture dimensions, dynamic lights) are engine and
+  32-bit-process behaviour, not header constants. They are marked as practical above because no
+  single number in a header states them.
+
+L4D2 ships its own 2009 branch and its own copies of these headers; the SDK header is used as
+the reference because it is public and because the ceilings it declares are the ones the stock
+L4D2 compilers enforce. If a game update ever changes one, the compile log is the final oracle:
+`read_map_geometry` reports the ceiling it compares against and where that number came from
+(`limitSource`).
+

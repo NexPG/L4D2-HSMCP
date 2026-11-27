@@ -1,7 +1,16 @@
 # Engine limits and the stock asset browser
 
 Full table: `docs/reference/engine-limits-l4d2.md`. This page is the short version an agent
-needs while choosing geometry.
+needs while choosing geometry, and the same numbers serve both passes: pass 1 must not plan
+more entities, models or brushes than pass 2 can compile.
+
+## Format facts before limits
+
+- **`dmodel_t` is 48 bytes** (`Vector mins, maxs, origin; int headnode; int firstface,
+  numfaces`, `bspfile.h`). A reader that assumes 64 decodes garbage after the world model; that
+  is how brush entities lost their bounds and water/nav-blocker volumes disappeared.
+- **Nav areas are not `MAX_MAP_AREAS`.** That 256 counts BSP vis areas. A nav file carries its
+  own area count; stock chapters hold 1,000–1,700 and load fine.
 
 ## The numbers that stop a map
 

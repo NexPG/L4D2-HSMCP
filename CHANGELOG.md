@@ -5,15 +5,32 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.314-alpha - 2026-11-27
+
+- **Engine limits have one home.** The full ceiling table is `docs/reference/engine-limits-l4d2.md`
+  and the short agent page is `references/mapping/engine-limits.md`; the plan reference and
+  `workflows/build-and-deploy.md` now point there instead of repeating rows. Pass 2 gained its own
+  check table (`read_vmf_lint` before, `read_map_geometry` after, `read_nav`, pack size), because
+  a ceiling the plan fits is still a ceiling the build can cross.
+- The full page now carries its provenance (`source-sdk-2013` `bspfile.h`/`const.h`, read
+  2026-11-27) and the record-size facts: `dmodel_t` is 48 bytes, and nav areas are not
+  `MAX_MAP_AREAS` (256).
+- The survey docs list the layers now imported (rooms, buildings, doors, stairs, props with roles,
+  water, no-build, terrain, finale) and the remaining data limits: empty nav `places[]`,
+  no-collision terrain cells, and the per-map caps.
+- **`landmark` is an area kind**, drawn on the circulation sheet; survey props use it.
+- Repaired backtick escape damage in earlier changelog entries (0.0.297–0.0.313).
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.313-alpha - 2026-11-27
 
-- **The survey closes its last three gaps.** inale is filled from 	rigger_finale entities
+- **The survey closes its last three gaps.** `finale` is filled from `trigger_finale` entities
   (14 of 55 chapters) with its own type and host building; props are classified by model into
   cover, landmark, item-cluster or prop (606 cover, 41 landmark, 441 item clusters);
   stairs are the route's own flights plus the nav ladders, not every 16 u step — the previous
   graph scan reported 128 per map, which is a step inventory, not stairs.
 - **Caps raised:** roofs 48, water 48, props 80 per map.
-- **Engine limits recorded.** The Source SDK spfile.h is now the cited oracle in the skill:
+- **Engine limits recorded.** The Source SDK `bspfile.h` is now the cited oracle in the skill:
   MAX_MAP_MODELS 1024, MAX_MAP_ENTITIES 8192 (runtime 2048), MAX_MAP_BRUSHES 8192,
   MAX_MAP_DISPINFO 2048, and dmodel_t is 48 bytes — the 64-byte assumption was the bug that
   zeroed every nav-blocker volume.
@@ -39,17 +56,15 @@ with a line here.
 
 ## 0.0.310-alpha - 2026-11-26
 
-- **Landscape, water and volumes in the survey.** A new sp/models.ts reads brush-model bounds
-  (48-byte records), so unc_nav_blocker volumes become site.noBuild (447 across the stock
+- **Landscape, water and volumes in the survey.** A new `bsp/models.ts` reads brush-model bounds
+  (48-byte records), so `func_nav_blocker` volumes become site.noBuild (447 across the stock
   maps) instead of vanishing with no origin. Water is read from upward-facing water-material
-  polygons *and* unc_water_analog brushes: 29 maps, 613 footprints. The site is the union of
+  polygons *and* `func_water_analog` brushes: 29 maps, 613 footprints. The site is the union of
   the world brush box and the nav footprint, so volumes outside the nav are not clipped.
 - **The heightfield covers the playable area.** The grid is anchored to the nav footprint, not
   the world box (a skybox makes the world tens of times larger): the median share of empty
   cells fell from about 80% to 38%.
-- **Survey rules.** 
-oute-over-water and 
-oute-in-no-build are design guards and are skipped
+- **Survey rules.** `route-over-water` and `route-in-no-build` are design guards and are skipped
   for imported plans, where the nav's own route is the authority.
 - All 55 official chapters import with zero findings.
 - Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
@@ -65,8 +80,7 @@ oute-in-no-build are design guards and are skipped
     the farthest **reachable** checkpoint, not simply the farthest;
   - door/item entities outside the nav footprint escaped the site (two maps); areas are
     clipped to site.bounds;
-  - buildings carrying route nodes kept role context (one map); they are marked 
-oute;
+  - buildings carrying route nodes kept role context (one map); they are marked `route`;
   - stair nodes were created for 16 u steps, which the height rule rejects; a vertical node
     now needs a real flight (48 u).
 - A soundscape test map (c5m1_waterfront_sndscape) has no nav and is not a chapter; the
@@ -77,12 +91,10 @@ oute;
 
 - **The Sacrifice is the test bed.** All three chapters (c7m1_docks, c7m2_barge,
   c7m3_port) now import with zero findings. The run exposed four holes, fixed at the root:
-  district-unused and rea-off-route are design rules and are skipped for a survey; a
-  single-level building had 
-oof == base and failed 
-oof-height (roof is now at least one
-  floor above the base), which also removed the paired loor-outside-building warning.
-- **No drawings under 	est/.** Rendered SVGs are review output; 	est/**/*-out/ is ignored
+  district-unused and `area-off-route` are design rules and are skipped for a survey; a
+  single-level building had `roof == base` and failed `roof-height` (roof is now at least one
+  floor above the base), which also removed the paired `floor-outside-building` warning.
+- **No drawings under `test/`.** Rendered SVGs are review output; `test/**/*-out/` is ignored
   and the fixture keeps only its JSON.
 - Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
 
@@ -103,13 +115,8 @@ oof-height (roof is now at least one
   the nav's battlefield/finale/no-mob flags as zones, the skybox from worldspawn and 692 static
   props by model (32 models in palette.models). Two new area kinds, door and stair, are
   drawn on the circulation sheet.
-- **Survey plans skip floor-graph rules.** 
-ode-in-facade, 
-ode-z-mismatch, 
-ode-no-stair,
-  
-ode-no-door, 
-ode-not-in-room, uilding-role-unused and enterable-no-entrance require
+- **Survey plans skip floor-graph rules.** `node-in-facade`, `node-z-mismatch`, `node-no-stair`,
+  `node-no-door`, `node-not-in-room`, `building-role-unused` and `enterable-no-entrance` require
   a modelled building; a nav survey records positions, not connectivity.
 - Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
 
@@ -124,7 +131,7 @@ ode-not-in-room, uilding-role-unused and enterable-no-entrance require
 
 ## 0.0.304-alpha - 2026-11-26
 
-- **Terrain is a plan field.** check_map_plan reports 	errain-flat-relief when buildings
+- **Terrain is a plan field.** check_map_plan reports `terrain-flat-relief` when buildings
   stand on more than 128 u of height difference over a flat heightfield: the relief has to be
   decided in pass 1, not invented by the first brush.
 - **Displacements join the imported heightfield.** plan_from_map stamps each BSP displacement
@@ -135,11 +142,11 @@ ode-not-in-room, uilding-role-unused and enterable-no-entrance require
 
 ## 0.0.303-alpha - 2026-11-26
 
-- **Real heightfield for imported plans.** plan_from_map fills 	errain from the nav mesh:
+- **Real heightfield for imported plans.** plan_from_map fills `terrain` from the nav mesh:
   256-unit cells, each taking the lowest nav surface over its centre, so the vertical plan
   shows the map's own heights (c8m1: -240..640, 36 distinct levels) instead of the flat
   [0,0,0,0] placeholder. Floors stay with the buildings; the terrain is the ground.
-- **Survey height rules.** uilding-below-terrain and excavation-not-below are skipped for
+- **Survey height rules.** `building-below-terrain` and excavation-not-below are skipped for
   imported plans: a nav-derived heightfield is coarse, and a building floor can sit above a
   cell whose only nav sample is elsewhere.
 - Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
@@ -148,7 +155,7 @@ ode-not-in-room, uilding-role-unused and enterable-no-entrance require
 
 - **Pass 1 / pass 2 boundary stated.** workflows/design-a-map.md now opens with the two tool
   sets and the rule that pass 1 never writes a .vmf and pass 2 never edits plan.json;
-  uild-and-deploy.md says a plan error sends the agent back, not into a local edit.
+  `build-and-deploy.md` says a plan error sends the agent back, not into a local edit.
 - **Buildings follow doors, not distance.** plan_from_map unions rooms only when a door area
   joins them, so a street that touches every facade no longer welds the whole map into one
   building. Small undoor-ed spaces are kept only when they are large; fixtures updated.
@@ -161,8 +168,7 @@ ode-not-in-room, uilding-role-unused and enterable-no-entrance require
   buildings by proximity and height, and emits floors with rooms, base and roof heights, and
   excavated for basements. The drawings now include per-building floor plans and a section,
   not just the route.
-- **Survey-specific rules.** For origin: imported, 
-oute-through-building and
+- **Survey-specific rules.** For origin: imported, `route-through-building` and
   entrance-z are design prescriptions and are skipped: a nav survey cannot invent entrances,
   and the route legitimately goes through the buildings it describes.
 - Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
@@ -175,12 +181,11 @@ oute-through-building and
   origin: imported, so the checker keeps structural rules and skips authoring
   prescriptions (pillars, pacing, landmarks, streetscape) that describe a map being designed,
   not one being measured.
-- **Drawings show the real map.** 
-ender_map_plan draws the imported nav mesh under the
+- **Drawings show the real map.** `render_map_plan` draws the imported nav mesh under the
   schematic when source.nav is set; the circulation sheet is now the real walkable layout
   with the route and zones over it.
-- **No Mercy c8m1 imported fixture** (	est/plan/fixtures/nomercy-c8m1-imported.json) passes
-  with zero findings. Known holes are documented in ive-drawings.md: buildings/rooms/doors/
+- **No Mercy c8m1 imported fixture** (`test/plan/fixtures/nomercy-c8m1-imported.json) passes
+  with zero findings. Known holes are documented in `five-drawings.md`: buildings/rooms/doors/
   stairs still come from brushes, not from the BSP, and props are not imported yet.
 - Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
 
@@ -197,11 +202,10 @@ ender_map_plan draws the imported nav mesh under the
 ## 0.0.298-alpha - 2026-11-26
 
 - **Plan checks stop lying about heights.** entrance-z accepts an entrance at the building
-  base as well as at the terrain (elevated buildings no longer warn); 
-ode-z-mismatch exempts
-  vertical nodes, whose z is mid-flight by definition; ertical-no-change now requires the
+  base as well as at the terrain (elevated buildings no longer warn); `node-z-mismatch` exempts
+  vertical nodes, whose z is mid-flight by definition; `vertical-no-change` now requires the
   height to stand still too, so an outdoor drop is not flagged.
-- **Real-route fixture.** 	est/plan/fixtures/dead-center-c1m1.json is built from the game's
+- **Real-route fixture.** `test/plan/fixtures/dead-center-c1m1.json` is built from the game's
   own c1m1_hotel.nav: the route is 48 nav steps from the hotel room (z 2851) to the safe room
   (z 1184), with the real bounds. It passes with zero findings.
 - Tests: 259 files, 2,043 passed, 32 skipped. Tool count: 311.
@@ -210,10 +214,9 @@ ode-z-mismatch exempts
 
 - **Plan schema: four contradictions removed.** A route point may be [x, y] and gets z = 0
   instead of being rejected while every node already carries a height; a building whose
-  loors count and loorsPlan length disagree is now an error (loor-count-mismatch);
-  basement levels are legal (level/loor accept 0 and below, matching excavated);
-  
-ode-not-in-room prints the node's local position and the rooms on that floor, like the
+  `floors` count and `floorsPlan` length disagree is now an error (`floor-count-mismatch`);
+  basement levels are legal (level/`floor` accept 0 and below, matching excavated);
+  `node-not-in-room` prints the node's local position and the rooms on that floor, like the
   stair warning, so the fix is a coordinate, not a search.
 - **Real campaign data.** c1m1_hotel.nav is read by the existing nav tooling: the real route
   is 48 nav steps from the hotel room (z 2851) down to the safe room (z 1184), with the map

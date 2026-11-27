@@ -335,15 +335,23 @@ and a `source.nav` reference that the drawings render as the real walkable layou
 plan keeps every structural check and skips the authoring prescriptions, because a survey is
 measured, not designed.
 
-Covered today: route, start, safe room, checkpoints, item spawns, the nav layout as the
-drawing base, heights.
+Covered today, all read from the compiled map rather than guessed: route and side branches from
+the nav graph; start, safe room, checkpoints and item spawns; rooms as nav components, and
+buildings as rooms joined **through door areas**; floors, sections and a basement level;
+doors from entities; stairs as the route's own flights plus nav ladders; static props with a
+role (cover, landmark, item cluster, prop); water polygons and `func_nav_blocker` volumes;
+the terrain heightfield from collision plus the BSP displacements; districts by height band;
+the palette (sky, materials, models); and the `finale` block from `trigger_finale`.
 
-Still holes, found by comparing the drawings with the map: buildings, rooms, floors, doors and
-stairs are not extracted from the BSP brushes; static props and cover are not imported; the
-stock L4D2 nav has an empty place table, so district names are generic. Until those land, an
-imported plan is a route survey over the real nav, not a full architectural plan.
+Still holes, and why they are not tool bugs: the stock nav `places[]` table is empty, so rooms
+are "Room 1" and "Middle level", not "Stairwell"; terrain cells with no collision (roofs, sky,
+void) stay 0, which is 38% of the grid on a median chapter; the per-map caps (48 roof
+buildings, 48 water contours, 80 props, 32 stairs) truncate the densest chapters; and beats are
+a design decision, so a survey does not invent them.
 
-## Terrain is a plan field, not a build detailA plan without a heightfield describes a flat world. When buildings stand at different
+## Terrain is a plan field, not a build detail
+
+A plan without a heightfield describes a flat world. When buildings stand at different
 `baseZ` and the terrain is all zeros, `check_map_plan` reports `terrain-flat-relief`: the
 level's relief has to be decided in pass 1 and written into `terrain.heights`, not invented by
 whoever places the first brush. `plan_from_map` fills it from the nav surface (the ground,
@@ -353,17 +361,9 @@ flattens the designed banks and hills.
 
 ## Engine limits the plan must respect
 
-The numbers are in the Source SDK header, not in a forum post:
-source-sdk-2013/src/public/bspfile.h, read 2026-11-27.
+The plan and the build share one ceiling table, so it has one home:
+[`../mapping/engine-limits.md`](../mapping/engine-limits.md) (short) and
+`docs/reference/engine-limits-l4d2.md` (full, with the `bspfile.h` citation). The three that
+bite a plan: **entities 8192** (runtime edicts 2048), **brush models 1024**, **brushes 8192**.
+A plan that exceeds them cannot be built by the stock compilers, however good the drawings look.
 
-| Limit | Value | Why the plan cares |
-|---|---|---|
-| MAX_MAP_ENTITIES | 8192 | every point entity and brush entity in the level; the runtime edict budget is lower (2048), so a plan with more entities than that is already suspect |
-| MAX_MAP_MODELS | 1024 | one model per brush entity: water, blockers, doors, movers. A survey that reads *N models must stay under it, and an imported map that is near it cannot take many new brush entities |
-| MAX_MAP_BRUSHES | 8192 | solids; the build pass adds one per wall, floor and detail volume |
-| MAX_MAP_DISPINFO | 2048 | terrain patches; a heightfield finer than the map's own displacements does not add relief, it adds patches |
-| dmodel_t | 48 bytes | mins, maxs, origin, headnode, firstface, numfaces; reading it as 64 yields garbage after the world model |
-
-The nav mesh is a separate format with its own limits (area count, ladder count) and is not
-bounded by MAX_MAP_AREAS, which counts BSP vis areas (256). Do not confuse the two when a
-survey reports 1690 nav areas: that is normal and legal.

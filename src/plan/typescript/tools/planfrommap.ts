@@ -738,11 +738,15 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
 export const planFromMapTool = defineTool({
   name: "plan_from_map",
   description:
-    "Builds a plan.json survey from an existing map: reads the BSP entity lump and the NAV " +
-    "mesh beside it, takes the nav mesh's own path from PLAYER_START to the far CHECKPOINT, " +
-    "and records the player start, safe room, checkpoints and item spawns as areas. The plan " +
-    "is marked origin=imported, so the checker keeps structural rules and skips authoring " +
-    "prescriptions. This is the inverse of check_map_plan: a map first, a plan second.",
+    "Builds a plan.json survey from an existing map: reads the BSP entity, model, face, " +
+    "static-prop, displacement and material lumps and the NAV mesh beside it. The nav graph " +
+    "gives the route from PLAYER_START to the far CHECKPOINT, rooms as nav components, " +
+    "buildings as rooms joined through door areas, stairs and ladders, and districts by height " +
+    "band. The BSP gives doors, water polygons, func_nav_blocker volumes, roof-derived context " +
+    "buildings, a collision-sampled terrain heightfield stamped with the displacements, the " +
+    "palette (sky, materials, models) and the finale. The plan is marked origin=imported, so " +
+    "the checker keeps structural rules and skips authoring prescriptions. This is the inverse " +
+    "of check_map_plan: a map first, a plan second.",
   realm: "map",
   guarded: true,
   inputSchema: {
