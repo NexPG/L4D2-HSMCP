@@ -176,7 +176,7 @@ material; the instructions live in one place.
 | `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
-| `references/mapping/model-facing.md` | which way a model faces, `write_prop` `facing`/`modelForward`, and the measured table |
+| `references/mapping/model-facing.md` | which way a model faces, how it tilts on a slope, `write_prop` `facing`/`modelForward`, and the measured table |
 | `references/mapping/doors.md` | door models and sizes, hinge origin, opening fit and swing clearance |
 | `references/mapping/engine-limits.md` | the ceilings a map must fit, and where the full table and each specific rule live |
 | `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |

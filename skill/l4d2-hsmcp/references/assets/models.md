@@ -17,7 +17,8 @@ interior, prop, fence, light, sign, terrain, escalator and stairs, and materials
 concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric,
 sign and building. It hides the roots the editor hides
 (`debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals`); `includeHidden: true`
-browses them. `read_game_content` with an empty pattern pages a whole kind.
+browses them. `read_game_content` with an empty pattern pages a whole kind. On a material,
+`details: true` resolves every texture it names; a missing one draws as a checkerboard.
 
 A name is not a look, and a family is not a size. `preview_asset` renders the candidate;
 `read_model_info` returns the hull, `.phy`, `$staticprop` flag and sequences that a placement

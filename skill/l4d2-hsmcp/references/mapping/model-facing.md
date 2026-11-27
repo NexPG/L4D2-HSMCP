@@ -1,4 +1,4 @@
-# Model facing
+# Model facing and tilt
 
 A `.mdl` does not store which way is "front". The hull is often symmetric, and
 `read_model_info` returns bounds, not an orientation. A model placed at yaw 0 can face any of
@@ -44,6 +44,14 @@ table was measured from `view: "front"` (the camera on world -X, looking +X).
 `$staticprop`, forward axis and confidence for every model. Until it exists, an unlisted model
 is measured on the spot with the four views and its row is appended here; never default to
 `x+` without looking.
+
+## Props on a slope: roll, not pitch
+
+Source `angles` are **pitch yaw roll**. A model whose long axis is local **Y** (an escalator,
+a handrail, a ramp prop) is tilted along that axis by **roll** (the third number), not pitch.
+For a ramp climbing +Y, positive roll raises the +Y end: `angles "0 0 23"`. Negative roll
+sinks it into the floor. A model long on **X** uses pitch instead. Verify the sign in game:
+the old escalator used `-23`, which tilted it against the 23-degree ramp.
 
 ## Doors are not props
 

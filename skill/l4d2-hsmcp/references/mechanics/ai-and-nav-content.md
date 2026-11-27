@@ -37,7 +37,8 @@ subject line.
 - `func_nav_blocker` is a **brush** entity that blocks the nav areas touching its AABB when
   the map loads. It is a runtime blocker, not a generation filter: the areas stay in the
   `.nav` (measured byte-identical output, `references/nav/generation.md`). Use it to keep
-  infected out of a closed door or a fence, not to keep scenery out of the mesh.
+  infected out of a closed door or a fence, not to keep scenery out of the mesh. Its
+  `affectsFlow` key decides whether it forces flow recomputation.
 - `func_nav_avoidance_obstacle` does not remove nav; it makes bots avoid the areas touching
   it. Use it for a hazard the player may cross.
 - Both are compiled into the BSP as brush entities; `read_bsp_entities` or `check_ai_contract`

@@ -30,6 +30,10 @@ read before touching the editor's settings or trusting a VMF that came out of Ha
 `run_compile` uses the `plusplus` chain by default and names the chain that actually ran.
 `read_map_geometry`/`read_map_report` are the budget oracles.
 
+The ++ compilers take `-l4d2`, or recognise the game's `SteamAppId` in `gameinfo.txt`.
+`-maxbrushes` and similar raised-limit switches only work on engines that support raised
+limits; L4D2 does not, so they cannot lift its ceilings.
+
 ## What Hammer++ adds to the VMF
 
 - `vertices_plus` inside a side — the exact face loop. The writers move it with geometry and

@@ -58,7 +58,9 @@ at the skybox shell.
    texture.
 6. **Keep the route gradeable.** A 45-degree slope is the walk limit; a 51-degree wedge is a
    wall. Stairs must be 18 units or less per step. `write_vmf_solid` refuses both unless
-   `steep: true` is passed for scenery.
+   `steep: true` is passed for scenery. A ramp needs flat landings at both ends and must join
+   nav on both banks. A lowered `nav_slope_limit` can let nav cross a steep surface, but it
+   does not make a 51-degree wall walkable for a player: fix the geometry.
 7. **Nav needs a mark on a real walking position.** The engine samples one mark, not the whole
    BSP; an empty mesh on terrain is usually the mark at the world origin, not a rise limit.
    Cause, check and fix: [`../../troubleshooting/terrain-nav-empty.md`](../../troubleshooting/terrain-nav-empty.md).

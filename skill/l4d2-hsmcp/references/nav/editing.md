@@ -34,6 +34,7 @@ commands. `nav_show_area_info -1` keeps the area id and attributes on screen.
 | `nav_select_damaging_areas` | Select damaging areas |
 | `nav_select_overlapping` | Select overlapping areas |
 | `nav_select_stairs` | Select stair areas |
+| `nav_gui` | Visual selection for bulk marking |
 
 ## Geometry
 

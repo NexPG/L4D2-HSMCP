@@ -48,8 +48,9 @@ survival wave.
 Survival is a round in one arena, so the nav says "this is the arena, do not stop spawning".
 Two `func_nav_attribute_region` brushes carry it: **BATTLEFIELD** over the play space (infected
 keep spawning while survivors are inside) and **NOT_CLEARABLE** over the same space (the
-Director will not mark it cleared when it empties). The flags and their combinable values are
-in [`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md).
+Director will not mark it cleared when it empties). Mark the arena with both, then generate nav:
+the attributes decide where the waves come from, not whether the mode is Survival. The flags
+and their combinable values are in [`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md).
 
 A map that also has a CHECKPOINT region for coop gets both ends; the mode picks the goal.
 

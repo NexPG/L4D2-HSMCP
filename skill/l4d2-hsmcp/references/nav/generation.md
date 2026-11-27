@@ -49,6 +49,11 @@ backups, restores the config and the archives, and returns the verdict from
 `read_nav_dump`. `addonsToHide` is not optional when an installed VPK contains a map with the
 same name — the archive would shadow the loose map.
 
+Two engine behaviours that look like bugs: `nav_generate` reloads the map when it runs and
+runs `nav_analyze` itself at the end; a separate `nav_analyze` is only for a manual edit after
+generation. `nav_generate_incremental` deletes JUMP areas and some connections in L4D2 — use
+it only at the start of nav work, never to touch up a working mesh.
+
 The manual procedure, when the tool cannot run:
 
 1. Copy the compiled `.bsp` into `left4dead2/maps/`, remove any `.nav` with that name.

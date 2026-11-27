@@ -3,6 +3,9 @@
 The last chapter of a campaign. In L4D2 this is not a special map type — it is a map whose
 goal area is FINALE and whose entities give the survivors a way to win.
 
+`trigger_finale` is a **point** entity with a world model (radio, generator, sound board); it
+starts on **+use** or from an input, not by walking into it.
+
 ## What Valve does
 
 Stock finales use types **1, 2 and 4**; no base campaign uses type 0 (Standard). The FGD

@@ -28,6 +28,11 @@ with a line here.
   `place_door`, `render_vmf_view`, `read_static_props`, `write_light`/`write_postprocess` and
   `validate_io`; the family metadata in `src/maps/typescript/tools/entitycoverage.ts` was
   corrected too, so its own report stops promising missing tools.
+- **Nothing was lost in the move.** The split's unique facts were checked back in: roll-not-
+  pitch on a ramp, flat landings and the `nav_slope_limit` caveat, `nav_generate`'s own
+  analyze/reload and the `nav_generate_incremental` JUMP loss, `nav_gui`, `affectsFlow`, the
+  `trigger_finale` world model, Tools++ auto-detect and the raised-limit caveat, and the
+  material `details: true` texture check.
 - All relative links in the skill resolve, and a new structure test fails when a skill page is
   not routed from `SKILL.md` (one index, no orphan pages).
 - Tests: 259 files, 2,046 passed, 32 skipped. Tool count: 312.
