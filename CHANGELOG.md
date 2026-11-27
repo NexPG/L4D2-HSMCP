@@ -16,7 +16,8 @@ with a line here.
 - **Duplicated process removed.** `five-drawings.md` no longer repeats the stage list or
   "pass 1 exactly" (owned by `workflows/design-a-map.md`); mode pages no longer repeat the
   `run_map_test` invocation; `build-and-deploy.md` points at the deployment rules instead of
-  copying them.
+  copying them; `route-skeleton.md` keeps the practice→field mapping and links the research
+  sources to `pipeline-research.md`.
 - **Contradictions fixed while deduplicating:** `func_nav_blocker` is a runtime blocker, not a
   generation filter (the two pages disagreed); `NAV ERRORS` is not proof of staleness (the
   stale and unplayable pages disagreed); the safe-room doorway is 64/72 x 112, not "64–128";

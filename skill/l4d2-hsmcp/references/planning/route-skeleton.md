@@ -35,26 +35,28 @@ the skeleton: the nodes carry `buildingId`, `floor`, `space` and a vertical `kin
 plans later have to contain those nodes, not invent a different route. The detailed flow sheet
 is last because it decorates a route that already exists.
 
-## What the research says, and what we take
+## Practices, and the field that enforces them
 
 The rule is: take a practice only if it becomes a **field or a check**. Otherwise it is
-decoration that the next agent will ignore.
+decoration that the next agent will ignore. The sources and the research behind each practice
+are in [`pipeline-research.md`](pipeline-research.md); this table maps the practice to the
+field that enforces it.
 
-| Proven practice | Source | What we take | Where it lives |
-|---|---|---|---|
-| Mental maps are built from **paths, edges, districts, nodes and landmarks** | Kevin Lynch, *The Image of the City* (1960); Level Design Book, *Wayfinding* | The chapter is split into 2–5 districts; each has a motif and a landmark; every route node names its district | `districts[]`, `node.district`, `node.landmark` |
-| **Mission graph first, space graph second** | Joris Dormans, *Adventures in level design* (PCG 2010); Smith et al., graph-based dungeon generation (PCG 2018) | Beats are authored first and mapped to route nodes; a node that serves no beat is decoration | `beats[]`, `node.beat` |
-| **Parti → bubble diagram → floor plan**, not detail first | Level Design Book, *Layout*; Francis Ching, *Architectural Graphics* | One named parti and 3–5 district bubbles before coordinates; the skeleton is the bubble diagram with numbers | `experience`, `pillars`, `districts`, `route.typology` |
-| **Critical path plus optional branches** | Level Design Book, *Critical path*, *Circulation* | One critical route; branches leave and rejoin it, or dead-end with a reward; a required branch is a second critical path | `route.kind`, `route.from`, `route.to` |
-| **Circulation hierarchy**: primary is wider and clearer than secondary | Architecture; Level Design Book, *Circulation* | Critical route ≥96 u (64 is the hull, not a design width); branches may be narrower; every gate is explicit | `route.width`, `node.gate` |
-| **Floor planes**, max three per space | Level Design Book, *Verticality* | Every floor change is a node; a space with more than three floor planes is a warning | `node.floor`, `node.kind`, `node.space` |
-| **One-way drops and gates** | Level Design Book, *Gates*; L4D2 | A drop must go down and must not be climbable back; gates are hard, soft, one-way or lock-and-key | `node.kind: "drop"`, `node.gate` |
-| **Typologies** (corridor, switchback, loop, hub, arena, pass-through, string of pearls) | Level Design Book, *Typology* | Every route declares its pattern; a long chapter that is only a corridor is a warning | `route.typology` |
-| **Landmarks, vistas, sightlines, composition hierarchy** | Lynch; Level Design Book, *Composition*; Disneyland "weenies" (Scott Rogers, GDC 2009) | A landmark or vista at least every four nodes; at least one vista; landmarks are useful, not skybox decoration | `node.landmark`, `node.enclosure: "vista"` |
-| **Pacing is a curve of peaks and rests** | Level Design Book, *Pacing*; L4D2 AI Director | Node intensity 0–5; at least one peak and two rests; no three high nodes in a row; the curve is rendered | `node.intensity`, `beats[].intensity` |
-| **Metrics, not magic** | Level Design Book, *Metrics*; Source dimensions | Use the measured table in [`../mapping/level-design.md`](../mapping/level-design.md); numbers are targets until playtested | route width, space table, later `spaces` |
-| **Prospect/refuge is weak theory; sightline/cover is useful** | Level Design Book, *Prospect-refuge* | Do not encode "refuge"; encode `open`/`covered`/`tight`/`vista` and the gameplay areas | `node.enclosure`, `areas[]` |
-| **Disneyland's branches are inconsequential; the path always returns** | Level Design Book, *Disneyland* | A branch is optional and returns to the critical path, or is a dead end with a reward; it never becomes the only way forward | `route.from`, `route.to` |
+| Proven practice | What we take | Where it lives |
+|---|---|---|
+| Mental maps are built from **paths, edges, districts, nodes and landmarks** | The chapter is split into 2–5 districts; each has a motif and a landmark; every route node names its district | `districts[]`, `node.district`, `node.landmark` |
+| **Mission graph first, space graph second** | Beats are authored first and mapped to route nodes; a node that serves no beat is decoration | `beats[]`, `node.beat` |
+| **Parti → bubble diagram → floor plan**, not detail first | One named parti and 3–5 district bubbles before coordinates; the skeleton is the bubble diagram with numbers | `experience`, `pillars`, `districts`, `route.typology` |
+| **Critical path plus optional branches** | One critical route; branches leave and rejoin it, or dead-end with a reward; a required branch is a second critical path | `route.kind`, `route.from`, `route.to` |
+| **Circulation hierarchy**: primary is wider and clearer than secondary | Critical route ≥96 u (64 is the hull, not a design width); branches may be narrower; every gate is explicit | `route.width`, `node.gate` |
+| **Floor planes**, max three per space | Every floor change is a node; a space with more than three floor planes is a warning | `node.floor`, `node.kind`, `node.space` |
+| **One-way drops and gates** | A drop must go down and must not be climbable back; gates are hard, soft, one-way or lock-and-key | `node.kind: "drop"`, `node.gate` |
+| **Typologies** (corridor, switchback, loop, hub, arena, pass-through, string of pearls) | Every route declares its pattern; a long chapter that is only a corridor is a warning | `route.typology` |
+| **Landmarks, vistas, sightlines, composition hierarchy** | A landmark or vista at least every four nodes; at least one vista; landmarks are useful, not skybox decoration | `node.landmark`, `node.enclosure: "vista"` |
+| **Pacing is a curve of peaks and rests** | Node intensity 0–5; at least one peak and two rests; no three high nodes in a row; the curve is rendered | `node.intensity`, `beats[].intensity` |
+| **Metrics, not magic** | Use the measured table in [`../mapping/level-design.md`](../mapping/level-design.md); numbers are targets until playtested | route width, space table, later `spaces` |
+| **Prospect/refuge is weak theory; sightline/cover is useful** | Do not encode "refuge"; encode `open`/`covered`/`tight`/`vista` and the gameplay areas | `node.enclosure`, `areas[]` |
+| **Disneyland's branches are inconsequential; the path always returns** | A branch is optional and returns to the critical path, or is a dead end with a reward; it never becomes the only way forward | `route.from`, `route.to` |
 
 What we deliberately do **not** take:
 
@@ -63,23 +65,16 @@ What we deliberately do **not** take:
 - **Prospect-refuge as psychology.** Use sightline, cover, enclosure and vista.
 - **Leading lines / shot composition as a navigation theory.** Players navigate by landmarks,
   light, contrast and prior patterns, not by lines drawn on a screenshot.
-- **ML floor-plan generation.** A hand-authored chapter needs a controlled graph, not a model.
-- **Full graph grammars.** Useful for hundreds of dungeons; not for one campaign chapter.
+- **ML floor-plan generation, full graph grammars and 3D isovist.** The reasons are in
+  [`pipeline-research.md`](pipeline-research.md#what-is-deliberately-not-adopted).
 
 ## The model
 
-Three graphs, one JSON, five views:
-
-1. **Mission graph** — beats and their intensity: start, quiet, fight, crescendo, tank/witch,
-   one-way drop, safe room, finale, escape. Authored at `stage: "brief"`.
-2. **Space graph** — route nodes with X/Y/Z, `floor`, `buildingId`, `space`, `district`, `kind`,
-   `enclosure`, `intensity`, `landmark`, `gate`. Authored at `stage: "skeleton"`. Edges are the
-   node order plus branch anchors (`from`/`to`).
-3. **Floor graph** — per enterable building, rooms, doors, stairs, route nodes on each level.
-   Authored at `stage: "floors"`.
-
-The five drawings are views of the same JSON. The skeleton is the layer that makes the later
-drawings possible; it is not a separate sketch that gets thrown away.
+The three graphs (mission, space, floor) and the five views are the model in
+[`pipeline-research.md`](pipeline-research.md#the-model-this-project-adopts). The skeleton is
+the mission graph plus the space graph, authored at `stage: "skeleton"`; the floor graph comes
+later. The skeleton is the layer that makes the later drawings possible, not a sketch that gets
+thrown away.
 
 ## Authoring procedure
 
