@@ -1,7 +1,8 @@
 # Campaign authoring checklist
 
-The ten-guide synthesis is `docs/reference/l4d2-campaign-authoring.md`. This is the order to
-work in and the contracts the tools enforce.
+The ten-guide synthesis is `docs/reference/l4d2-campaign-authoring.md`. This is the per-map
+order to work in and the contracts the tools enforce; the final gate before calling the
+campaign done is [`../../checklists/campaign-ready.md`](../../checklists/campaign-ready.md).
 
 ## 1. Skeleton
 
