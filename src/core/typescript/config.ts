@@ -87,15 +87,22 @@ function lazy<T>(target: object, key: string, compute: () => T): void {
 
 /**
  * Loads the effective configuration. The root is resolved in this order:
- * 1. `HAMMER_MCP_REPO` (env)  2. the file's `repoRoot` field  3. walking up from cwd.
+ * 1. `L4D2_HSMCP_REPO` (env)  2. the file's `repoRoot` field  3. walking up from cwd.
+ * The old `HAMMER_MCP_REPO` name is still read when the current one is unset.
  *
  * `binDir`, `gameDir` and `plusPlusBinDir` are resolved **lazily**: reading them scans
  * the Steam libraries, and loading a configuration must stay a file read. A machine with
  * no Left 4 Dead 2 gets null, which every tool reports rather than guessing a path.
  */
 export function loadConfig(cwd: string = process.cwd()): Config {
+  // The fork shipped as `hammer-mcp`; keep a machine's existing root override working
+  // instead of making every saved MCP config fail once after the rename.
+  if (!process.env.L4D2_HSMCP_REPO && process.env.HAMMER_MCP_REPO) {
+    process.env.L4D2_HSMCP_REPO = process.env.HAMMER_MCP_REPO;
+  }
+
   const config = coreLoadConfig(
-    { envVar: "HAMMER_MCP_REPO", stateDirName: ".hammer-mcp", schema: ConfigFile },
+    { envVar: "L4D2_HSMCP_REPO", stateDirName: ".hammer-mcp", schema: ConfigFile },
     cwd,
   ) as Config;
 

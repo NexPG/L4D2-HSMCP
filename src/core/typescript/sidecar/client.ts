@@ -40,7 +40,7 @@ interface SidecarFault {
  * Runs one sidecar verb: a fresh subprocess, JSON in, JSON out.
  *
  * One process per call is the design, not a shortcut. A resident helper would need a
- * lock and a lifecycle, which is exactly what keeps hammer-mcp stateless and out of the
+ * lock and a lifecycle, which is exactly what keeps l4d2-hsmcp stateless and out of the
  * failure mode that produced gmod-mcp's `daemon.lock`. The processes are short and cold
  * by construction: anything hot stayed in TypeScript.
  */

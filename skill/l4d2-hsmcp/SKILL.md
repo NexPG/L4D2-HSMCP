@@ -2,7 +2,7 @@
 name: l4d2-hsmcp
 description: Builds and ships Left 4 Dead 2 campaigns, maps, nav meshes, chapter transitions, finales, VScripts, models, textures and addon VPKs with the L4D2-HSMCP MCP server. Use for a L4D2 map or campaign, mission file, safe room, chapter change, nav mesh, finale, VScript, model, material, addon packaging or a compile — and when a campaign is missing from the menu, a chapter will not change, bots wander, a nav is stale or a script does not load.
 license: GPL-3.0-only
-compatibility: Windows 10/11; Left 4 Dead 2 with its bin/ compilers, FGD and vpk.exe; Node 22+ and pnpm; Python sidecar with srctools; MCP server hammer-mcp.
+compatibility: Windows 10/11; Left 4 Dead 2 with its bin/ compilers, FGD and vpk.exe; Node 22+ and pnpm; Python sidecar with srctools; MCP server l4d2-hsmcp.
 ---
 
 # L4D2-HSMCP

@@ -78,7 +78,7 @@ async function main(): Promise<void> {
 
   const ctx: ToolContext = { config, audit, registry };
   const server = createMcpServer(registry, ctx, {
-    name: "hammer-mcp",
+    name: "l4d2-hsmcp",
     version: VERSION,
     instructions: INSTRUCTIONS,
   });
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(
-    `hammer-mcp ${VERSION} ready -- repoRoot=${config.repoRoot} ` +
+    `l4d2-hsmcp ${VERSION} ready -- repoRoot=${config.repoRoot} ` +
       `platform=${process.platform} tools=${registry.list().length} ` +
       `skillResources=${skillCount} prompts=${promptCount}\n`,
   );
@@ -97,6 +97,6 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
-  process.stderr.write(`hammer-mcp: failed to start -- ${message}\n`);
+  process.stderr.write(`l4d2-hsmcp: failed to start -- ${message}\n`);
   process.exit(1);
 });

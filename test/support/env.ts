@@ -8,7 +8,7 @@
  * which lands OUTSIDE this repository and only resolves to anything meaningful when the
  * checkout happens to sit inside the private workspace it was written in.
  *
- * One place decides all of it now, and `HAMMER_MCP_REPO` overrides the guess, so a
+ * One place decides all of it now, and `L4D2_HSMCP_REPO` overrides the guess, so a
  * contributor with a different layout points the suite at their tree instead of editing
  * six files.
  *
@@ -29,12 +29,13 @@ export const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "..", "fix
 /**
  * The tree the server anchors its state and its game content to.
  *
- * `HAMMER_MCP_REPO` wins. Otherwise the repository root itself: `test/fixtures` is two
- * levels below it. (It used to be three, the private workspace layout this project was
- * born in, which made every game-content predicate false on a normal checkout.)
+ * `L4D2_HSMCP_REPO` wins; the pre-rename `HAMMER_MCP_REPO` is still accepted. Otherwise
+ * the repository root itself: `test/fixtures` is two levels below it. (It used to be three,
+ * the private workspace layout this project was born in, which made every game-content
+ * predicate false on a normal checkout.)
  */
 export function repoRoot(): string {
-  return process.env.HAMMER_MCP_REPO ?? join(FIXTURES, "..", "..");
+  return process.env.L4D2_HSMCP_REPO ?? process.env.HAMMER_MCP_REPO ?? join(FIXTURES, "..", "..");
 }
 
 export const REPO = repoRoot();
@@ -135,8 +136,8 @@ export function announceMissing(): void {
   const missing = (Object.keys(has) as Array<keyof typeof has>).filter((k) => !has[k]);
   if (missing.length === 0) return;
   console.warn(
-    `\n[hammer-mcp] Tests needing these are SKIPPED, not passing:\n` +
+    `\n[l4d2-hsmcp] Tests needing these are SKIPPED, not passing:\n` +
       missing.map((k) => `  - ${LABELS[k]}`).join("\n") +
-      `\n  Repo root: ${REPO}${process.env.HAMMER_MCP_REPO ? " (HAMMER_MCP_REPO)" : ""}\n`,
+      `\n  Repo root: ${REPO}${process.env.L4D2_HSMCP_REPO ? " (L4D2_HSMCP_REPO)" : ""}\n`,
   );
 }

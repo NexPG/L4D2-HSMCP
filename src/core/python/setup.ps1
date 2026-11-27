@@ -14,7 +14,8 @@ param([switch]$Models)
 $ErrorActionPreference = "Stop"
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repo = if ($env:HAMMER_MCP_REPO) { $env:HAMMER_MCP_REPO } else { Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $here)) }
+$repoOverride = if ($env:L4D2_HSMCP_REPO) { $env:L4D2_HSMCP_REPO } elseif ($env:HAMMER_MCP_REPO) { $env:HAMMER_MCP_REPO } else { $null }
+$repo = if ($repoOverride) { $repoOverride } else { Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $here)) }
 $venv = Join-Path $repo ".hammer-mcp\sidecar-venv"
 $python = Join-Path $venv "Scripts\python.exe"
 

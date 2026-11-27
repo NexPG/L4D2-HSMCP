@@ -1,6 +1,6 @@
 {
-  "name": "hammer-mcp",
-  "version": "0.0.330-alpha",
+  "name": "l4d2-hsmcp",
+  "version": "0.0.331-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
   "license": "GPL-3.0-only",
   "author": "NexPG",
@@ -24,12 +24,13 @@
   "type": "module",
   "packageManager": "pnpm@10.34.9",
   "bin": {
-    "hammer-mcp": "./dist/index.js"
+    "l4d2-hsmcp": "./bin/l4d2-hsmcp.mjs"
   },
   "exports": {
     ".": "./dist/index.js"
   },
   "files": [
+    "bin",
     "dist",
     "skill"
   ],

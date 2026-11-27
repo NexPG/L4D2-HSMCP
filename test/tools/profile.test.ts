@@ -15,21 +15,25 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 /**
  * A repo root carrying nothing but the config file under test.
  *
- * `HAMMER_MCP_REPO` is cleared for the call: it outranks the argument by design, so with
- * it set every test below silently loaded some other tree's configuration and asserted
- * against it.
+ * `L4D2_HSMCP_REPO` (and its pre-rename alias) is cleared for the call: it outranks the
+ * argument by design, so with it set every test below silently loaded some other tree's
+ * configuration and asserted against it.
  */
 function rootWith(name: string, config: Record<string, unknown>): Config {
   const root = join(scratch, name);
   mkdirSync(join(root, ".hammer-mcp"), { recursive: true });
   writeFileSync(join(root, ".hammer-mcp", "config.json"), JSON.stringify(config));
 
-  const saved = process.env["HAMMER_MCP_REPO"];
-  delete process.env["HAMMER_MCP_REPO"];
+  const names = ["L4D2_HSMCP_REPO", "HAMMER_MCP_REPO"] as const;
+  const saved = names.map((key) => process.env[key]);
+  for (const key of names) delete process.env[key];
   try {
     return loadConfig(root);
   } finally {
-    if (saved !== undefined) process.env["HAMMER_MCP_REPO"] = saved;
+    names.forEach((key, index) => {
+      const value = saved[index];
+      if (value !== undefined) process.env[key] = value;
+    });
   }
 }
 

@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.331-alpha - 2026-11-27
+
+- **The server is now `l4d2-hsmcp`.** The package name, `bin`, MCP server name, OpenCode server
+  key and `L4D2_HSMCP_REPO` use the new name; the Code Mode namespace is
+  `tools["l4d2-hsmcp"]`. `HAMMER_MCP_REPO` is still read when the new variable is unset, so an
+  existing MCP config keeps working, and attribution to the upstream `Hammer-MCP` projects is
+  unchanged. The on-disk state directory stays `.hammer-mcp` so an existing config and the
+  Python venv are not orphaned.
+- **The launcher is a real tracked file, not a config one-liner.** `bin/l4d2-hsmcp.mjs` runs
+  `dist/index.js` from its own location and is the package's `bin` entry, so
+  `node bin/l4d2-hsmcp.mjs` works from the root, from `src/` and from an installed package.
+  `opencode.json` locates it, sets `L4D2_HSMCP_REPO`, and imports it; the launcher never
+  changes the working directory, so a global install still anchors to the user's project.
+  `install` now writes that launcher into `.mcp.json`; it used to write a path that did not
+  exist (`dist/core/typescript/index.js`). An existing `.mcp.json` keeps its old
+  `hammer-mcp` key until it is deleted, because the installer preserves declared servers.
+- Verified after the rename: `opencode mcp list` connected from the root and `src/`, and the
+  trigger eval stayed at 20/20.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.330-alpha - 2026-11-27
 
 - **OpenCode sessions now have the L4D2 tools, not only the instructions.** `opencode.json`

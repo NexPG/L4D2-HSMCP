@@ -10,7 +10,7 @@ import { config as sharedConfig, has } from "../support/env.js";
  * The real configuration, overridable only in the interpreter it points at.
  *
  * This file used to build its own, rooted two levels up from the test file -- that is,
- * at the hammer-mcp checkout rather than at the tree holding `.hammer-mcp/`. The venv is
+ * at the l4d2-hsmcp checkout rather than at the tree holding `.hammer-mcp/`. The venv is
  * never there, so `installed` was always false and every test below silently skipped.
  */
 function configWith(python?: string): Config {
