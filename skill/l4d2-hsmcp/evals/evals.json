@@ -1,0 +1,53 @@
+{
+  "skill_name": "l4d2-hsmcp",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "У меня установлена L4D2. Возьми официальную карту c1m1_hotel, сделай из неё plan.json и проверь его. Хочу увидеть, что схема не выдумывает данные, а читает реальную карту.",
+      "expected_output": "A plan.json with origin=imported, the nav route and real bounds; check_map_plan returns zero findings; render_map_plan writes the drawings.",
+      "assertions": [
+        "A plan.json file is produced",
+        "The plan is marked origin=imported",
+        "The plan has a route from the player start to the far checkpoint",
+        "check_map_plan returns zero findings",
+        "The rendered output includes the five drawings or the documented drawing set"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Карта загружается, но после сейв-комнаты не переходит на следующую главу. Что проверить и как починить?",
+      "expected_output": "Diagnose the four transition parts: info_changelevel brush, checkpoint door class near the landmark, all survivors inside, matching landmark pair and CHECKPOINT nav.",
+      "assertions": [
+        "Mentions the checkpoint door class and the landmark distance",
+        "Mentions info_changelevel as a brush, not a point entity",
+        "Mentions CHECKPOINT nav and all survivors inside",
+        "Mentions the matching info_landmark pair",
+        "Does not suggest repacking or renaming the VPK as the first fix"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Собери минимальную сейв-комнату с checkpoint-дверью и переходом на следующую карту, скомпилируй и проверь, что нет утечки и линт чистый.",
+      "expected_output": "A sealed room with write_safe_room + write_changelevel, a checkpoint door, a landmark pair, lint 0 and a non-leaked compile.",
+      "assertions": [
+        "Uses write_safe_room or place_door for the door",
+        "Uses write_changelevel for the brush volume",
+        "Adds a matching info_landmark",
+        "read_vmf_lint reports 0",
+        "read_vmf_leak reports sealed=true and the compile has no leak"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Я перекомпилировал карту, и теперь пишет NAV ERRORS. Как понять, что nav устарел, и что делать?",
+      "expected_output": "Check read_nav freshness against the BSP, regenerate after the final compile, and ship the BSP/nav pair from the generator.",
+      "assertions": [
+        "Mentions read_nav and savedBspSize",
+        "Says to regenerate nav after the final compile",
+        "Says to ship the nav-generated BSP, not the compile output",
+        "Mentions read_nav fresh=true before packing",
+        "Does not treat NAV ERRORS as only a geometry leak"
+      ]
+    }
+  ]
+}

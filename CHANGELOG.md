@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.327-alpha - 2026-11-27
+
+- **The skill now has its first evaluation assets.** `evals/evals.json` defines four realistic
+  tasks (import a stock map to a plan, diagnose a chapter that does not change, build a safe
+  room and compile, check stale nav) with assertions. `evals/trigger-queries.json` has 20
+  should-trigger/near-miss queries split into train and validation, with a 3-run, 0.5 trigger
+  threshold. The runner/benchmark loop is the next step, not claimed here.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.326-alpha - 2026-11-27
 
 - **Runtime probe material now lives in testing.** The entity-family page kept the entity

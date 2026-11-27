@@ -1,0 +1,107 @@
+{
+  "skill_name": "l4d2-hsmcp",
+  "runs": 3,
+  "threshold": 0.5,
+  "queries": [
+    {
+      "query": "сделай кампанию из трёх глав для L4D2",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "почему у меня карта не переходит на следующую главу после сейв-комнаты",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "собери nav для моей карты, боты не ходят",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "сделай финал с вертолётом и эвакуацией выживших",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "почему боты стоят на месте и не идут за мной",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "упакуй мой аддон в VPK и проверь, что кампания видна",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "настрой DirectorOptions: меньше танков и больше патронов",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "кампания не появилась в меню L4D2, хотя аддон включён",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "почини материал, он фиолетовый в игре",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "сделай проп из Blender и добавь его в карту",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "напиши Python-скрипт, который читает CSV и строит график",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "сделай сайт-портфолио на React",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "объясни, как в целом работает Source engine",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "сделай карту в Unreal Engine 5",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "настрой Git и запуш ветку",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "напиши SQL-запрос к Postgres",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "сделай Discord-бота для модерации",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "переведи этот текст на английский",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "почини Docker-контейнер, он падает",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "сделай скин для CS:GO",
+      "should_trigger": false,
+      "split": "validation"
+    }
+  ]
+}
