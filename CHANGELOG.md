@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.320-alpha - 2026-11-27
+
+- **Spotlights and L4D music have builders.** `write_spotlight` writes `beam_spotlight` and
+  `point_spotlight` with the FGD's length, width, colour, HDR scale, rotation speed and
+  spawnflags; `point_spotlight` defaults to its FGD "No Dynamic Light" bit. `write_ambient_music`
+  writes the L4D music-cue entity (`message` is a GameSound entry, not a soundscript), with
+  optional outputs.
+- Tool count: 317. Tests: 259 files, 2,063 passed, 32 skipped (verified below).
+
 ## 0.0.319-alpha - 2026-11-27
 
 - **`DirectorOptions` is also live-proven.** The same bench and probe, with the table written

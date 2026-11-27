@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
   writeAmbientGenericTool,
+  writeAmbientMusicTool,
   writeBreakableTool,
   writeConstraintTool,
   writeLadderTool,
@@ -187,5 +188,26 @@ describe("breakables", () => {
     const e = entities(path).find((entity) => entity.id === r.entityId)!;
     expect(e.keyvalues["surfacetype"]).toBe("0");
     expect(e.keyvalues["fragility"]).toBe("60");
+  });
+});
+
+describe("ambient music", () => {
+  it("writes an L4D ambient_music cue, not an ambient_generic", async () => {
+    const path = map();
+    const r = (await writeAmbientMusicTool.handler(
+      {
+        path,
+        origin: [0, 0, 64],
+        message: "Event.BigScream",
+        targetname: "music_cue",
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; classname: string };
+    expect(r.classname).toBe("ambient_music");
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.classname).toBe("ambient_music");
+    expect(e.keyvalues["message"]).toBe("Event.BigScream");
+    expect(e.keyvalues["targetname"]).toBe("music_cue");
   });
 });

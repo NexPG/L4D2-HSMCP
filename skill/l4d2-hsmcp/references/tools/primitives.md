@@ -48,6 +48,7 @@ of that path, but deleting it must not remove the capability.
 | `write_displacement`, `subdivide_displacements`, `sculpt_displacement`, `paint_displacement` | Direct `dispinfo` editing, which is its own format |
 | `write_campaign` | The mission KeyValues format; `keyvalues` at mission, mode and chapter level covers anything the spec does not model |
 | `write_trigger`, `write_mover`, `write_logic` | `write_brush_entity` / `write_point_entity` with the class and keys; the named builders only add defaults |
+| `write_spotlight`, `write_ambient_music` | `write_point_entity` with the class and FGD keys; the builders add the key shape and checks |
 | `write_director_options` | `write_vscript`: the table is Squirrel source; this shortcut formats one table, checks it and leaves the rest of the file alone |
 
 ## Rules for new tools

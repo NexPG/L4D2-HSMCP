@@ -717,6 +717,58 @@ export const writeBreakableTool = defineTool({
   },
 });
 
+export const writeAmbientMusicTool = defineTool({
+  name: "write_ambient_music",
+  description:
+    "Writes an `ambient_music` entity: a Left 4 Dead music cue, not an ambient_generic " +
+    "sound. `message` names a GameSound entry; `PlaySound`/`StopSound` are inputs, so an " +
+    "optional output list can wire it to a trigger. Use `read_soundscript` when the game is " +
+    "available to check the cue. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    origin: VEC3,
+    message: z.string().min(1).describe("GameSound entry name, not a .wav path."),
+    targetname: z.string().optional(),
+    outputs: z.array(OUTPUT).default([]),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classname: z.string(),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    if (!insideWorld(args.origin)) throw new Error("the music origin leaves Source's world");
+    const keyvalues: Record<string, string> = {
+      classname: "ambient_music",
+      origin: vec(args.origin),
+      message: args.message,
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+    };
+    const warnings = await fgdWarnings("ambient_music", keyvalues, ctx);
+    const [id = null] = await addEntities(path, [keyvalues], ctx);
+    verifyEntities(path, [id], ["ambient_music"]);
+    await addOutputs(path, id!, args.outputs ?? [], ctx);
+    return {
+      path,
+      entityId: id,
+      classname: "ambient_music",
+      keyvalues,
+      warnings,
+      nextStep:
+        "Compile and listen; a cue name the game does not know is silence. `read_soundscript` " +
+        "is the check for the name.",
+    };
+  },
+});
+
 export const entityExtraTools = [
   writePropTool,
   writeConstraintTool,
@@ -724,4 +776,5 @@ export const entityExtraTools = [
   writeBreakableTool,
   writeSceneTool,
   writeAmbientGenericTool,
+  writeAmbientMusicTool,
 ];

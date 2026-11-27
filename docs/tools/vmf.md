@@ -1,6 +1,6 @@
 # VMF authoring
 
-94 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+96 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -26,6 +26,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `set_worldspawn` | Sets or removes ANY keyvalue on worldspawn: sky, mapversion, message, detail sprites, custom keys, whatever the engine or a mod reads. |
 | `validate_io` | Checks a map's entity wiring against the game's own FGD. |
 | `write_ambient_generic` | Writes an `ambient_generic` sound emitter with `message` (the soundscript name), `health` volume, `radius`, `pitch` and outputs. |
+| `write_ambient_music` | Writes an `ambient_music` entity: a Left 4 Dead music cue, not an ambient_generic sound. |
 | `write_breakable` | Writes a breakable brush: `func_breakable` (a wall or door that takes damage), `func_breakable_surf` (a glass/tile window that fractures in a pattern) or `func_physbox` (a physically simulated brush). |
 | `write_brush_entity` | The universal brush-entity primitive: any classname, a box volume, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_detail_sprites` | Adds a detail-sprite type to `detail.vbsp`: density, one sprite group with a sprite rectangle (`x y w h sheetSize`), `spritesize` (x y z random), amount and alpha. |
@@ -91,6 +92,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_overlay` | Puts an `info_overlay` decal on an existing brush face: road markings, blood, signage. |
 | `write_postprocess` | Places a postprocess entity: an `env_tonemap_controller` (with a `logic_auto` that sets the requested exposure, bloom and rate inputs at map spawn), an `env_fade`, an `env_shake`, or a `color_correction` volume. |
 | `write_rope` | Places a rope as the pair the engine expects: a `move_rope` at the start whose `NextKey` names a `keyframe_rope` at the end. |
+| `write_spotlight` | Adds a `beam_spotlight` (client-side beam/halo, optional rotation) or a `point_spotlight` (beam plus a dynamic light at its end). |
 | `write_sprite` | Places a sprite, a beam or a laser with the targets those entities need. |
 | `write_vmf_terrain` | Builds a terrain patch: a grid of floor brushes at floorZ, a power-2/3/4 displacement on every top face, then an optional continuous slope, sculpt_displacement noise and a sew. |
 | `write_vmf_water` | Creates a water volume: a `func_water_analog` brush with a Water-shader material and a `water_lod_control` entity if the map has none. |

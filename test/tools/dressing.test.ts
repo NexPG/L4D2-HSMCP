@@ -11,6 +11,7 @@ import {
   writePostprocessTool,
   writeRopeTool,
   writeSpriteTool,
+  writeSpotlightTool,
 } from "../../src/maps/typescript/tools/dressing.js";
 import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
 import { readEntities } from "../../src/maps/typescript/vmf/edit.js";
@@ -258,6 +259,56 @@ describe("write_env_wind", () => {
       warnings: string[];
     };
     expect(r.warnings.some((warning) => warning.includes("global env_wind"))).toBe(true);
+  });
+});
+
+describe("write_spotlight", () => {
+  it("writes a beam spotlight with FGD keys and spawnflags", async () => {
+    const path = map();
+    const r = (await writeSpotlightTool.handler(
+      {
+        path,
+        kind: "beam",
+        origin: [0, 0, 256],
+        angles: [-45, 90, 0],
+        color: [255, 200, 100],
+        length: 800,
+        width: 64,
+        maxRotationSpeed: 40,
+        startRotation: true,
+        axis: "x",
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; spawnflags: number };
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.classname).toBe("beam_spotlight");
+    expect(e.keyvalues["spotlightlength"]).toBe("800");
+    expect(e.keyvalues["spotlightwidth"]).toBe("64");
+    expect(e.keyvalues["maxspeed"]).toBe("40");
+    expect(e.keyvalues["rendercolor"]).toBe("255 200 100");
+    expect(r.spawnflags & 1).toBe(1);
+    expect(r.spawnflags & 4).toBe(4);
+    expect(r.spawnflags & 16).toBe(16);
+  });
+
+  it("writes a point spotlight with halo scale and its default no-dynamic-light bit", async () => {
+    const path = map();
+    const r = (await writeSpotlightTool.handler(
+      {
+        path,
+        kind: "point",
+        origin: [0, 0, 256],
+        angles: [0, 0, 0],
+        haloScale: 80,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; spawnflags: number };
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.classname).toBe("point_spotlight");
+    expect(e.keyvalues["HaloScale"]).toBe("80");
+    expect(r.spawnflags & 2).toBe(2);
   });
 });
 

@@ -103,7 +103,7 @@ edit_vmf(path, ops: [
 
 - `radius -1` means the scape is global; a positive radius makes it a local volume.
 - `ambient_music` plays a **GameSound** entry (`message`), fired by `PlaySound`; it is not a
-  soundscript name.
+  soundscript name. `write_ambient_music` writes it; `write_soundscape` writes the scape.
 - `sound_mix_layer` sets a named mix layer; it is a point entity, not a sound.
 - Two rooms need two scapes **and** a trigger/volume boundary; the entity radius alone does
   not fade the bed.

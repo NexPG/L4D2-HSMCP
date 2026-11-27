@@ -1,6 +1,6 @@
 # Tool catalogue
 
-315 tools. This page groups them by the job you are doing; each tool's own description is the
+317 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -75,6 +75,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_ladder` | `func_ladder` brush and the `func_useableladder` AI point |
 | `write_scene` | `logic_choreographed_scene` with a `.vcd` and targets |
 | `write_ambient_generic` | sound emitter with its soundscript name, volume and radius |
+| `write_ambient_music` | L4D music cue (`ambient_music`), not an ambient_generic |
 ## Shipping an addon
 
 | Tool | Use |
@@ -261,6 +262,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_decal` | `infodecal` at one or more points on a surface |
 | `write_rope` | a linked `move_rope` + `keyframe_rope` pair |
 | `write_sprite` | `env_sprite`, or an `env_beam`/`env_laser` with the targets it needs |
+| `write_spotlight` | `beam_spotlight` or `point_spotlight` with FGD length/width/colour/spawnflags |
 
 ## Displacements
 

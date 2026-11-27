@@ -165,7 +165,7 @@ material; the instructions live in one place.
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | the FGD check, and where each L4D2-specific entity family is documented |
-| `references/mapping/world-dressing.md` | light, postprocess, atmosphere volumes, wind, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
+| `references/mapping/world-dressing.md` | light, postprocess, atmosphere volumes, wind, spotlights, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
 | `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/detail-and-vis.md` | world vs `func_detail` vs `func_brush`/`func_lod`, and areaportal/occluder rules |
@@ -183,7 +183,7 @@ material; the instructions live in one place.
 | `references/mapping/fbx-import.md` | FBX (binary 7.x or ASCII) -> SMD: axes, units, bind pose from clusters, and what is not exported |
 | `references/mapping/brush-to-model.md` | a VMF brush → SMD/QC, with VMF UVs and a brush collision model |
 | `references/mapping/particles.md` | reading and writing `.pcf` systems, children, operators and materials |
-| `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, and the sound tools |
+| `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, the sound tools, and `ambient_music` |
 | [`references/assets/models.md`](references/assets/models.md) | browse the installed models/materials, confirmed stock paths, and what a name does not prove |
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |

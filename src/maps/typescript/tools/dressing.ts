@@ -942,6 +942,104 @@ export const writeEnvWindTool = defineTool({
   },
 });
 
+export const writeSpotlightTool = defineTool({
+  name: "write_spotlight",
+  description:
+    "Adds a `beam_spotlight` (client-side beam/halo, optional rotation) or a " +
+    "`point_spotlight` (beam plus a dynamic light at its end). The FGD keys are written " +
+    "explicitly: length, width, colour, HDR scale, beam rotation speed, and the point " +
+    "spotlight's halo scale. A spotlight is a light-like effect, not a `light` entity; use " +
+    "`write_light` for the lightmap. Guarded.",
+  realm: "map",
+  guarded: true,
+  inputSchema: {
+    path: z.string().describe("The .vmf."),
+    kind: z.enum(["beam", "point"]).default("beam").describe("`beam_spotlight` or `point_spotlight`."),
+    origin: VEC3.describe("Entity origin."),
+    angles: VEC3.default([0, 0, 0]).describe("Beam direction (pitch yaw roll)."),
+    color: COLOR.default([255, 255, 255]).describe("rendercolor."),
+    length: z.number().int().min(1).default(500).describe("spotlightlength."),
+    width: z.number().int().min(1).default(50).describe("spotlightwidth."),
+    startOn: z.boolean().default(true).describe("Start On spawnflag."),
+    noDynamicLight: z
+      .boolean()
+      .optional()
+      .describe("No Dynamic Light; the point spotlight defaults to true, the beam to false."),
+    noFog: z.boolean().default(false).describe("No Fog (beam only)."),
+    maxRotationSpeed: z.number().int().min(0).default(100).describe("maxspeed (beam only)."),
+    startRotation: z.boolean().default(false).describe("Start rotation on (beam only)."),
+    reverseDirection: z.boolean().default(false).describe("Reverse Direction (beam only)."),
+    axis: z.enum(["x", "y"]).optional().describe("Rotation axis (beam only)."),
+    haloScale: z.number().min(0).default(60).describe("HaloScale (point only)."),
+    hdrColorScale: z.number().min(0).default(0.7).describe("HDRColorScale."),
+    targetname: z.string().optional(),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classname: z.string(),
+    spawnflags: z.number(),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const kind = args.kind ?? "beam";
+    const origin = args.origin;
+    if (!insideWorld(origin)) throw new Error("the spotlight origin leaves Source's world");
+    const color = args.color ?? [255, 255, 255];
+    const noDynamicLight = args.noDynamicLight ?? kind === "point";
+    let spawnflags = 0;
+    if (args.startOn ?? true) spawnflags |= 1;
+    if (noDynamicLight) spawnflags |= 2;
+    if (kind === "beam") {
+      if (args.startRotation ?? false) spawnflags |= 4;
+      if (args.reverseDirection ?? false) spawnflags |= 8;
+      if (args.axis === "x") spawnflags |= 16;
+      if (args.axis === "y") spawnflags |= 32;
+      if (args.noFog ?? false) spawnflags |= 64;
+    }
+    const keyvalues: Record<string, string> = {
+      classname: kind === "beam" ? "beam_spotlight" : "point_spotlight",
+      origin: vec(origin),
+      angles: vec(args.angles ?? [0, 0, 0]),
+      spawnflags: String(spawnflags),
+      spotlightlength: String(args.length ?? 500),
+      spotlightwidth: String(args.width ?? 50),
+      rendercolor: color.join(" "),
+      HDRColorScale: String(args.hdrColorScale ?? 0.7),
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+    };
+    if (kind === "beam") {
+      keyvalues["maxspeed"] = String(args.maxRotationSpeed ?? 100);
+    } else {
+      keyvalues["HaloScale"] = String(args.haloScale ?? 60);
+    }
+    const warnings = await fgdWarnings(keyvalues["classname"]!, keyvalues, ctx);
+    if (kind === "point" && !noDynamicLight) {
+      warnings.push(
+        "point_spotlight creates a dynamic light at the beam end; too many of them share " +
+          "Source's dynamic-light budget.",
+      );
+    }
+    const [id = null] = await addEntities(path, [keyvalues], ctx);
+    verifyEntities(path, [id], [keyvalues["classname"]!]);
+    return {
+      path,
+      entityId: id,
+      classname: keyvalues["classname"]!,
+      spawnflags,
+      keyvalues,
+      warnings,
+      nextStep:
+        "Compile and look. A beam spotlight is client-side and not synced; a point " +
+        "spotlight also creates a dynamic light, so watch the dynamic-light budget.",
+    };
+  },
+});
+
 export const dressingTools = [
   writeLightTool,
   writePostprocessTool,
@@ -950,4 +1048,5 @@ export const dressingTools = [
   writeSpriteTool,
   writeAtmosphereVolumeTool,
   writeEnvWindTool,
+  writeSpotlightTool,
 ];

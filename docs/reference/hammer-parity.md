@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 27/11/2026: **315 tools**.
+Last checked against the tool list on 27/11/2026: **317 tools**.
 
 ## The file itself
 
@@ -147,6 +147,7 @@ getting `ENOENT` on the first call.
 | Fog | `write_weather`, `edit_vmf`, `write_atmosphere_volume` | One controller via `write_weather`; a multi-zone set via `edit_vmf`; `write_atmosphere_volume` links a `fog_volume` to the active controller. Source reads fog from an `env_fog_controller`, not worldspawn |
 | Lights | `write_light` | Point, `light_environment`, `light_dynamic`, `env_sun`, `shadow_control`; `_light` is the four-number colour+brightness form, and the sun gets angles. Compiles |
 | Postprocess | `write_postprocess` | Tonemap controller wired through a `logic_auto` (it has no setting keyvalues), fade, shake, and L4D2's `color_correction` |
+| Spotlights | `write_spotlight` | `beam_spotlight` and `point_spotlight` with FGD length, width, colour, rotation and spawnflags |
 | Atmosphere volume | `write_atmosphere_volume` | `fog_volume` box linking fog/postprocess/colour-correction targets by name; targets are resolved before the write |
 | Wind | `write_env_wind` | `env_wind` with FGD speed/gust keys and direction in `angles`; the FGD calls it partially functional |
 | Decals | `write_decal` | `infodecal` projected onto a face; a sized overlay is `write_overlay` |
@@ -349,6 +350,7 @@ map and looking, or by not happening at all.
 | `write_ladder` | func_ladder plus the func_useableladder point L4D2's AI uses |
 | `write_scene` | a choreographed scene with its .vcd and targets |
 | `write_ambient_generic` | an ambient sound with its soundscript name and volume |
+| `write_ambient_music` | an L4D music cue (`ambient_music`), distinct from an ambient sound |
 | `write_addon_scaffold` | a script addon needs a manifest and a mapspawn; this is the starting layout |
 | `write_addon_workspace` | every addon gets one named workspace with plan/templates/logs/src/addon/dist/evidence |
 | `install_addon` | copying a VPK/folder into the game is a manual file operation |

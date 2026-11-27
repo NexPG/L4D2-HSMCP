@@ -78,8 +78,8 @@ edit_vmf(path, ops: [{ op: "add", keyvalues: {
 
 - `_light` is the same four-number colour+brightness as `light`; `_cone`/`_inner_cone` are
   the outer/inner cone in degrees and `_exponent` is the falloff.
-- `beam_spotlight` and `point_spotlight` are point classes; write them with
-  `write_point_entity` and their FGD keys. They are effects, not light sources; pair them
+- `write_spotlight` writes `beam_spotlight` and `point_spotlight` with their FGD length,
+  width, colour, rotation and spawnflags. They are effects, not light sources; pair them
   with a real `light_spot`.
 - Measured fixture: one `light_spot`, one `infodecal` and one `env_beam` compile in a sealed
   room with no leak; the live frame is still a check.
