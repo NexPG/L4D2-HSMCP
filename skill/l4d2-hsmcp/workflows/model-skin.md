@@ -23,7 +23,7 @@ The root `README.md` Requirements table lists the **external** tools: Blender, B
 Tools and Crowbar. They are only for the model-skin workflow; a VMT/VTF-only task must not ask
 for them. The optional Python CV/inpainting stack is not a README requirement: it installs
 through `src/core/python/setup.ps1 -Models`. The exact per-task split is in
-[`../references/tools/photo-texture-toolchain.md`](../references/tools/photo-texture-toolchain.md).
+[`../references/models/photo-texture-toolchain.md`](../references/models/photo-texture-toolchain.md).
 
 ## 1. Workspace and references
 

@@ -145,7 +145,7 @@ material; the instructions live in one place.
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
 | `workflows/model-skin.md` | texture-only model skin: photo -> landmarks -> projection -> bake -> VTF |
 | `references/models/photo-texture.md` | the tools and the professional photo-to-texture pipeline |
-| `references/tools/photo-texture-toolchain.md` | which external tools and optional Python packages the user needs, and which they do not |
+| `references/models/photo-texture-toolchain.md` | which external tools and optional Python packages the user needs, and which they do not |
 | `workflows/from-a-wish.md` | the two passes in one view |
 | `workflows/make-a-prop.md` | a model or prop from glTF/FBX or a brush, through StudioMDL |
 | `workflows/hud-override.md` | reading a stock `.res`, shifting controls and writing an add-on copy |
@@ -154,7 +154,7 @@ material; the instructions live in one place.
 | `workflows/editor-sequence.md` | running the editor's own Run Map steps, and when not to |
 | `references/campaign/mission-file.md` | writing or debugging a mission file |
 | `references/campaign/safe-room-and-transition.md` | building a chapter exit |
-| `references/campaign/authoring-checklist.md` | the per-map checklist: skeleton, goals, safe room, finale, world, gate |
+| `checklists/map-ready.md` | the per-map checklist: skeleton, goals, safe room, finale, world, gate |
 | `references/campaign/finale.md` | building or debugging the last chapter |
 | `references/campaign/custom-finale.md` | type 2 stages, `[map]_finale.nut`, the escape phase |
 | `references/campaign/addon-and-deployment.md` | staging, packing, deploying |

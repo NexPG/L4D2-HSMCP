@@ -1,8 +1,8 @@
-# Campaign authoring checklist
+# Map authoring checklist
 
 The ten-guide synthesis is `docs/reference/l4d2-campaign-authoring.md`. This is the per-map
 order to work in and the contracts the tools enforce; the final gate before calling the
-campaign done is [`../../checklists/campaign-ready.md`](../../checklists/campaign-ready.md).
+campaign done is [`campaign-ready.md`](campaign-ready.md).
 
 ## 1. Skeleton
 
@@ -14,18 +14,18 @@ campaign done is [`../../checklists/campaign-ready.md`](../../checklists/campaig
 ## 2. Map goals
 
 - [ ] First map: spawn region plus CHECKPOINT at the start; CHECKPOINT in the exit safe room,
-      or FINALE on the last map. Flags: [`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md).
+      or FINALE on the last map. Flags: [`../references/nav/attributes-and-flow.md`](../references/nav/attributes-and-flow.md).
 - [ ] Middle maps: arrival CHECKPOINT; end CHECKPOINT.
 - [ ] Last map: arrival CHECKPOINT; **FINALE** over the arena, with `trigger_finale` inside it.
 - [ ] `info_changelevel` + matching `info_landmark`; last map has the disabled arrival volume
-      (see [`../mechanics/campaign-wiring.md`](../mechanics/campaign-wiring.md)).
+      (see [`../references/mechanics/campaign-wiring.md`](../references/mechanics/campaign-wiring.md)).
 
 ## 3. Safe room
 
 - [ ] `prop_door_rotating_checkpoint` present and resolved by class near the pair's landmark:
-      the contract is [`safe-room-and-transition.md`](safe-room-and-transition.md).
+      the contract is [`../references/campaign/safe-room-and-transition.md`](../references/campaign/safe-room-and-transition.md).
 - [ ] Door origin is the hinge, the opening fits the leaf, and the swing is clear:
-      [`../mapping/doors.md`](../mapping/doors.md). Lint: `l4d2-door-hinge-at-center`,
+      [`../references/mapping/doors.md`](../references/mapping/doors.md). Lint: `l4d2-door-hinge-at-center`,
       `l4d2-door-opening-too-wide`, `l4d2-door-swing-blocked`.
 - [ ] 4 `info_survivor_position` on a below-ground start.
 

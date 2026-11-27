@@ -2,7 +2,7 @@
 
 Use this before calling a campaign build done. Each line is a check with a tool or a log, not
 an opinion. The per-map build order is
-[`../references/campaign/authoring-checklist.md`](../references/campaign/authoring-checklist.md).
+[`map-ready.md`](map-ready.md).
 
 ## Brief
 

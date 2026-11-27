@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.324-alpha - 2026-11-27
+
+- **Two pages moved to the directory that owns their topic.** The external Blender/Python
+  toolchain is now `references/models/photo-texture-toolchain.md` (it is not an MCP tool
+  catalogue), and the per-map checklist is now `checklists/map-ready.md` (all checklists in one
+  directory). Links and the router were updated; no text was changed.
+- Tool count: 319. Tests: 259 files, 2,072 passed, 32 skipped (verified below).
+
 ## 0.0.323-alpha - 2026-11-27
 
 - **Every long reference and workflow page now starts with `## Contents`.** 38 files over
