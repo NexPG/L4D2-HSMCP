@@ -80,8 +80,9 @@ after). Do not use it to keep a surface out of the generated file.
 The generator samples collision and keeps cells a player hull fits in (72 units). Two
 generation-time fixes cover almost every case:
 
-- **No walkable slope.** A flat sea bed or a parapet top is a floor. A `wedge` steeper than
-  45 degrees (pass `steep: true`; it is scenery, not a route) has no walkable cell. This is how
+- **No walkable slope.** A flat sea bed or a parapet top is a floor. A `wedge` steeper than the
+  walk limit ([`terrain-water-boundaries.md`](../mapping/terrain-water-boundaries.md)) has no
+  walkable cell; `steep: true` marks it scenery, not a route. This is how
   a decorative sea bed under a `func_water_analog` stops producing areas: the water is not
   solid, so before the wedge the generator walked the bed.
 - **No headroom.** A solid `TOOLS/TOOLSCLIP` slab just above a roof, a counter top, a shop
@@ -95,7 +96,8 @@ findings.
 
 ## The spawn is the nav area, not `info_player_start`
 
-A `func_nav_attribute_region` with PLAYER_START (2176 on the first map) is where the engine
+A `func_nav_attribute_region` with PLAYER_START (the flags are in
+[`attributes-and-flow.md`](attributes-and-flow.md)) is where the engine
 puts survivors. Moving `info_player_start` alone does nothing: measured on a test copy, the
 player still spawned at the old house (`-700 -2362 8`) while the BSP's `info_player_start` was
 at `-300 1700 16`. Removing the nav region made the next run spawn at the moved entity. A

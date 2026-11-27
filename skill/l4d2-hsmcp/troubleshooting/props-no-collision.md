@@ -46,8 +46,9 @@ collision for anything.
 - **A solid `prop_static` car is a nav island.** A static prop is in the nav build; a parked
   car, bench or cart with `solid 6` can leave orphan and non-walkable areas around it (measured
   on Santa Monica: 149 areas after the blanket fix). The official maps make movable clutter
-  **`prop_physics`** (11,667 instances): it collides at runtime and `nav_generate` ignores it.
-  Use `write_prop` `collision: "physics"` for cars/benches/carts; keep `prop_static` solid 6
+  **`prop_physics`**; it collides at runtime and `nav_generate` ignores it. The family rule is
+  in [`../references/mapping/entity-families.md`](../references/mapping/entity-families.md). Use `write_prop`
+  `collision: "physics"` for cars/benches/carts; keep `prop_static` solid 6
   for fixed open architecture (lamp posts, steps, structures).
 - Wall-flush props (windows, doors, railings, guardrails) are `solid 0`: the wall or fence
   brush is the collision, and a solid row of 250 windows makes nav slivers.

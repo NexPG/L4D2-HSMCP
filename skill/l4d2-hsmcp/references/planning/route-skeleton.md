@@ -52,7 +52,7 @@ decoration that the next agent will ignore.
 | **Typologies** (corridor, switchback, loop, hub, arena, pass-through, string of pearls) | Level Design Book, *Typology* | Every route declares its pattern; a long chapter that is only a corridor is a warning | `route.typology` |
 | **Landmarks, vistas, sightlines, composition hierarchy** | Lynch; Level Design Book, *Composition*; Disneyland "weenies" (Scott Rogers, GDC 2009) | A landmark or vista at least every four nodes; at least one vista; landmarks are useful, not skybox decoration | `node.landmark`, `node.enclosure: "vista"` |
 | **Pacing is a curve of peaks and rests** | Level Design Book, *Pacing*; L4D2 AI Director | Node intensity 0–5; at least one peak and two rests; no three high nodes in a row; the curve is rendered | `node.intensity`, `beats[].intensity` |
-| **Metrics, not magic** | Level Design Book, *Metrics*; Source dimensions | 64 u hull, 96 u comfortable route, 56×112 door, 8×12 step, 256 u safe drop; numbers are targets until playtested | route width, space table, later `spaces` |
+| **Metrics, not magic** | Level Design Book, *Metrics*; Source dimensions | Use the measured table in [`../mapping/level-design.md`](../mapping/level-design.md); numbers are targets until playtested | route width, space table, later `spaces` |
 | **Prospect/refuge is weak theory; sightline/cover is useful** | Level Design Book, *Prospect-refuge* | Do not encode "refuge"; encode `open`/`covered`/`tight`/`vista` and the gameplay areas | `node.enclosure`, `areas[]` |
 | **Disneyland's branches are inconsequential; the path always returns** | Level Design Book, *Disneyland* | A branch is optional and returns to the critical path, or is a dead end with a reward; it never becomes the only way forward | `route.from`, `route.to` |
 
@@ -263,15 +263,14 @@ Fix it in the JSON; do not skip the stage or silence the warning.
 
 ## Numbers
 
-These are starting targets, not laws. Playtest decides.
+Physical metrics live on their own pages: player hull and room sizes in
+[`../mapping/level-design.md`](../mapping/level-design.md), door width in
+[`../mapping/doors.md`](../mapping/doors.md), step and slope in
+[`../mapping/terrain-water-boundaries.md`](../mapping/terrain-water-boundaries.md). The targets
+below are planning parameters, not physics; playtest decides.
 
 | Thing | Value | Source |
 |---|---|---|
-| Player hull | 32×32×72 | Source |
-| Minimum route width | 64 u | Source hull |
-| Comfortable critical width | 96 u | Level Design Book, *Metrics* |
-| Door | 56×112 u | Source |
-| Step | 8×12 u | Source |
 | Safe drop without fall damage | 256 u | TF2/Source community metrics |
 | Floor height | 128 u (96 minimum) | Source / L4D2 |
 | Floor planes per space | 3 maximum | Level Design Book, *Verticality* |

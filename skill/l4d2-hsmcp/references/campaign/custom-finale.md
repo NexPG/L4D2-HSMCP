@@ -117,8 +117,7 @@ credits map load (`Host_Changelevel`) is the deterministic end. A shipping campa
 
 ## Rules
 
-- **Type 0 is not a substitute.** It starts and can spawn a horde, but it has no stage list and
-  never reaches the escape phase; `FinaleEscapeFinished` is ignored there.
+- **Type 0 is not a substitute**: its limit is in [`finale.md`](finale.md).
 - The script name is content, not a guess: `<map>_finale.nut`, lowercase as the map is.
 - Verify the load in `console.log`: a `Msg`/`printl` at the top, and the stage log lines.
 - A wave needs somewhere to spawn: see `references/nav/attributes-and-flow.md` for FINALE

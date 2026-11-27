@@ -52,20 +52,16 @@ after rejection are all refused.
 |---|---|
 | `Director.WarpAllSurvivorsToCheckpoint()` | chapter maps; warps the team to the exit checkpoint |
 | `Director.WarpAllSurvivorsToFinale()` | finale maps; the checkpoint call fails with `No exit checkpoint could be found` |
-| `setpos x y z` | the local player only; `sv_cheats`; needs a live player |
+| `setpos x y z` | the local player only; the command's pre-player trap and flags are in [`console.md`](console.md) |
 | `point_teleport` | entity-driven, works from a timer |
 
-`setpos` in `listenserver.cfg` does nothing: the config runs before the player entity exists.
-It is not broken; there is nobody to move. Use a **timer** or a VScript call after the map is
-live.
+Use a **timer** or a VScript call after the map is live; a `listenserver.cfg` command runs
+before the player exists.
 
 ## Triggering entities
 
-```
-ent_fire <target> <input> [parameter] [delay]
-```
-
-Only the server or a listen-server host may use it. `trigger_finale` is the usual target:
+`ent_fire <target> <input> [parameter] [delay]` (permissions and quoting:
+[`console.md`](console.md)). `trigger_finale` is the usual target:
 
 | Input | Effect |
 |---|---|
@@ -110,13 +106,12 @@ wait for "Map: credits"
 ```
 
 **Nav.** `nav_edit 1`, then `select_with_attribute CHECKPOINT` or `select_with_attribute
-FINALE` in the console highlights the marked areas; `read_nav_dump` reads the same facts
-offline.
+FINALE` highlights the marked areas; the command list is in [`console.md`](console.md), and
+`read_nav_dump` reads the same facts offline.
 
-**Spawning.** If the horde is missing, check the log for `MOB SPAWN ERROR`. On a compact map
-lower `z_spawn_safety_range`, `z_finale_spawn_safety_range` and
-`z_finale_spawn_mob_safety_range`, and remember that BATTLEFIELD halts spawning while
-survivors stand in it.
+**Spawning.** If the horde is missing, check the log for `MOB SPAWN ERROR`; the safety-range
+convars and the BATTLEFIELD trap are in
+[`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md).
 
 ## Rules
 

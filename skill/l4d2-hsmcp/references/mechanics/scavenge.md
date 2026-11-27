@@ -5,21 +5,9 @@ round timer, scores and infected spawns.
 
 ## Mission entry
 
-```
-"modes"
-{
-    "scavenge"
-    {
-        "1"
-        {
-            "Map"         "my_map"
-            "DisplayName" "Scavenge"
-        }
-    }
-}
-```
-
-`write_campaign` writes this with `modes: [{ name: "scavenge", chapters: [...] }]`.
+A `"scavenge"` block under `"modes"`, with one chapter per map, as in
+[`../campaign/mission-file.md`](../campaign/mission-file.md). `write_campaign`
+`modes: [{ name: "scavenge", chapters: [...] }]` writes it.
 
 ## Gas cans
 
@@ -31,13 +19,8 @@ Spread them around the playable area. A spawn outside the sealed map makes vbsp 
 
 ## Running it
 
-```
-run_map_test({
-  map: "my_map",
-  waitFor: "Loading: [0-9]",
-  mode: "scavenge"
-})
-```
+`run_map_test` with `mode: "scavenge"`; the option and its log markers are in
+[`../testing/harness.md`](../testing/harness.md).
 
 ## What proves it
 

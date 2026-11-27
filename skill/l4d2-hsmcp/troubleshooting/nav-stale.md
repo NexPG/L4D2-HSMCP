@@ -26,16 +26,14 @@ After regenerating, `read_nav` must say `fresh` for **every** map in the campaig
 
 ## "Nav Errors — Map is unplayable!"
 
-That screen means the map has no usable `.nav` at all, not merely a stale one. A loose
-`left4dead2/maps/<map>.bsp` copied for a test does not bring its nav with it.
+The panel is not proof that the mesh is stale: a missing `.nav` and a fresh mesh with no goal
+show the same panel. [`nav-unplayable.md`](nav-unplayable.md) separates those cases; check
+freshness first, then the goal.
 
+A loose `left4dead2/maps/<map>.bsp` copied for a test does not bring its nav with it.
 Use `run_map_test({ map, bsp: "path/to/<map>.bsp", nav: "path/to/<map>.nav", ... })`: it
 installs both, launches, and restores the previous files in a `finally`. Copying only the
 BSP is the common mistake.
-
-A nav can exist and still have `no-goal` (no goal area). That is a different defect: the map
-needs a CHECKPOINT/FINALE nav attribute region and a goal, or the engine complains that the
-map is unplayable even though the file is fresh.
 
 ## Check the pair that ships
 

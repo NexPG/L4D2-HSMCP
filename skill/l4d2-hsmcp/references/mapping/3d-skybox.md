@@ -10,7 +10,10 @@ distant buildings, hills or a city skyline that the player can never reach.
    stock L4D2 maps store `sky_l4d_c1_1_hdr`, not `sky_l4d_c1_1`. A bare base name makes the
    engine request `skybox/<name>rt.vmt`, which does not exist, and the sky draws as a flat
    void. `read_asset_catalog` returns every sky with `ldrComplete`, `hdrComplete` and the
-   exact `suggested` name; `write_vmf` appends `_hdr` when that set is complete.
+   exact `suggested` name; `write_vmf` appends `_hdr` when that set is complete. The engine
+   looks for six faces under `materials/skybox/<skyname><suffix>` (`bk`, `dn`, `ft`, `lf`,
+   `rt`, `up`); searching `skybox` lists them, and the `skyname` is the path without the
+   two-letter suffix and the extension.
 2. **One `sky_camera`**, placed at the point the skybox is centred on. `scale` is 16 by
    default: the camera stays at world scale, the geometry around it is 1/16 size.
 3. A **sealed skybox area** built far from the playable map, containing the scaled geometry.

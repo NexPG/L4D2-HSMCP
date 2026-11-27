@@ -7,13 +7,11 @@ The map plays, the safe room is reachable, and walking into it does nothing.
 An `info_changelevel` transition needs all of these. Missing any one is enough to fail
 silently.
 
-1. **`prop_door_rotating_checkpoint`** exists in the safe room, within 1024 units of the
-   pair's `info_landmark`. Without one `info_changelevel` does not even spawn. A plain
-   `prop_door_rotating` is not a substitute. The **class** is what the engine resolves:
-   20 of the 57 stock chapters leave the door unnamed, so a name is not the test.
-2. **CHECKPOINT nav attribute** on the safe room areas. `func_nav_attribute_region` with
-   `spawnflags 2048`, applied during `nav_generate`. A nav generated before the region existed
-   does not have it.
+1. **`prop_door_rotating_checkpoint`** exists in the safe room, near the pair's
+   `info_landmark`. The class/distance contract is in
+   [`../references/campaign/safe-room-and-transition.md`](../references/campaign/safe-room-and-transition.md).
+2. **CHECKPOINT nav attribute** on the safe room areas. A nav generated before the region existed
+   does not have it; flags: [`../references/nav/attributes-and-flow.md`](../references/nav/attributes-and-flow.md).
 3. **All survivors inside the brush.** The engine waits for the team. If bots are somewhere
    else, it will not fire. This is the most common "it does nothing" cause after building a
    new map.
@@ -36,8 +34,9 @@ the door to the landmark and, on a BSP, whether the door origin is inside world 
 ## Look at the nav
 
 `read_nav` says whether the mesh belongs to this `.bsp`. Then read `<map>_nav.txt`: the safe
-room areas must show `0x800` under "Terror Spawn Attribute Flags", and there must be an escape
-route (proved by the live `nav_trouble_report`/`nav_analyze`; `0x20000000` is `MOSTLY_FLAT`, not flow) reaching them.
+room areas must carry the CHECKPOINT flag, and there must be an escape route (proved by the
+live `nav_trouble_report`/`nav_analyze`) reaching them. The dump's flag values and the
+`MOSTLY_FLAT` trap are in [`../references/nav/attributes-and-flow.md`](../references/nav/attributes-and-flow.md).
 
 ## If it still fails
 

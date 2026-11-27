@@ -21,10 +21,10 @@ engine's own weather.
 
 ## `env_fog_controller`
 
-**Not one per map.** Official maps carry 1–9 (most 2–3), each enabled by a trigger or relay;
-only the active controller's values are used. `write_weather` writes one and refuses a second
-because it assumes a one-zone map; an environment set uses the recipe in
-`references/mapping/atmosphere.md`. The fields that matter:
+Multiple controllers are the normal case, not the exception: the set-level rules (how many,
+which one is active, switching) are in [`../mapping/atmosphere.md`](../mapping/atmosphere.md).
+`write_weather` writes one and refuses a second because it assumes a one-zone map; use the
+atmosphere recipe for more. The fields that matter:
 
 | Key | Default | Meaning |
 |---|---|---|

@@ -22,18 +22,11 @@ Install for L4D2:
 
 ## Tools++ and L4D2
 
-`vbsp++`/`vvis++`/`vrad++` compile L4D2 BSP format when given `-l4d2`, or when they recognise
-the `SteamAppId` in the game's `gameinfo.txt`. Useful flags for this game:
+The flags and the chain that runs them are in [`hammerpp.md`](hammerpp.md); this project's
+compiler wrapper names the chain that actually ran. One consequence matters here:
 
-- `-staticpropformat v9` — the L4D2 static prop format, when a prop was built for another
-  branch;
-- `-simpleladders` — L4D2's `func_simpleladder` format;
-- `-maxbrushes` and friends only work on engines that support raised limits; do not assume
-  L4D2 does.
-
-VVIS++ in this chain deliberately keeps `blocklight`/`blockLOS` tool textures from cutting
-faces out of `func_detail`, because L4D2 maps rely on that behaviour. Do not "fix" a map that
-depends on it.
+VVIS++ deliberately keeps `blocklight`/`blockLOS` tool textures from cutting faces out of
+`func_detail`, because L4D2 maps rely on that behaviour. Do not "fix" a map that depends on it.
 
 ## Helper FGDs
 

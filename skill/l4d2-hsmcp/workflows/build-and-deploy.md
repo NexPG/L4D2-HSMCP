@@ -46,10 +46,12 @@ A failed ceiling is not a warning to ignore and not something a rebuild fixes: t
 compilers cannot be raised, so the map has to lose geometry or entities. Return to pass 1 with
 the measured number, because the excess was designed there.
 
-## Fixed name, one campaign
+## Fixed name and deploy
 
-The game keeps one campaign. The project keeps the numbered history. Deploying under a new
-name every time is how the menu fills with stale copies and the wrong chapter loads.
+The game keeps one campaign; the deployment rules — one archive under a fixed name, remove
+older `hsmcp*.vpk`, restart, enable in *Extras → Add-ons*, launch through Steam — are in
+[`../references/campaign/addon-and-deployment.md`](../references/campaign/addon-and-deployment.md).
+This workflow's last step is only to remove the older archives and copy the verified one.
 
 ## Verify after packing
 
@@ -57,14 +59,6 @@ name every time is how the menu fills with stale copies and the wrong chapter lo
 - VPK entry count equals the staging file count.
 - `read_nav` for each map says `fresh` against the `.bsp` that shipped.
 - No `.bak`, no loose maps, no console logs in the archive.
-
-## Deploy
-
-```
-<game>/left4dead2/addons/hsmcp_campaign.vpk   ← the only campaign archive
-```
-
-Restart the game, enable the add-on in *Extras → Add-ons*, then play.
 
 ## If it does not appear
 

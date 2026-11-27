@@ -5,7 +5,7 @@ This page is the map from one to the other, and the recipes for browsing a city'
 
 | Hammer++ | Use |
 |---|---|
-| Texture Browser | `read_game_content(kind: "material", pattern: "...")`; `details: true` checks that every texture the material names exists. `read_asset_catalog` groups materials by surface kind and hides the `debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals` roots the editor hides; `includeHidden: true` browses them. |
+| Texture Browser | `read_game_content(kind: "material", pattern: "...")`; `read_asset_catalog` groups materials by surface kind (roots, `includeHidden` and paths: [`../assets/models.md`](../assets/models.md)) |
 | Model Browser | `read_game_content(kind: "model", pattern: "...", details: true)` for names **and hull sizes**; `read_model_info` for skins, sequences and materials of one model |
 | Particle Browser | `read_game_content(kind: "particle", pattern: "*")` for files; `read_particle` for the systems inside one |
 | Entity Report / Entity Tool | `read_entity_report` shows what the map has; `read_fgd_class` with no classname lists classes by prefix, and with a classname returns every keyvalue, input and output |
@@ -42,18 +42,14 @@ origin sits at its centre sinks half its height into the floor when placed at th
 
 ## Skyboxes
 
-A skybox is not a brush material. `set_map_properties` sets `skyname` on worldspawn, and the
-engine looks for six faces under `materials/skybox/<skyname><suffix>` (`bk`, `dn`, `ft`, `lf`,
-`rt`, `up`). Searching `skybox` lists the faces; the `skyname` is the path without the
-two-letter suffix and the extension.
+A skybox is not a brush material: the `skyname` and its six faces are in
+[`3d-skybox.md`](3d-skybox.md).
 
 ## Rules
 
-1. **Names are content, not guesses.** Search, then use the returned name.
-2. **A `.vmt` existing is not the material drawing.** `details: true` resolves the textures it
-   names; missing ones are the checkerboard.
-3. **Size before placement.** Use the model bounds and the origin offset.
-4. **The FGD is the authority for entities.** `read_fgd_class` with no classname lists the
+1. **Names and sizes are content, not guesses.** Browse and measure with the tools in
+   [`../assets/models.md`](../assets/models.md); this page only maps the tab to the tool.
+2. **The FGD is the authority for entities.** `read_fgd_class` with no classname lists the
    classes (`prefix: "trigger_"` is the Entity Tool's filter); with a classname it answers
    what that class accepts. `read_entity_report` shows what the map already has.
-5. **The editor's helper FGD is not the engine.** See `references/mapping/editor-and-fgd.md`.
+3. **The editor's helper FGD is not the engine.** See `references/mapping/editor-and-fgd.md`.

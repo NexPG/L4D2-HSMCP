@@ -177,30 +177,12 @@ needs true polygon buffering/boolean operations; the current rectangles and 32-u
 samples do not. A DXF export can be added later as a second view of the same JSON, not as a
 second source.
 
-## Authoring order (do not draw them all at once)
+## Authoring order
 
-The five sheets are dependency-ordered views, not five independent tasks:
-
-1. **Brief** (`stage: "brief"`) — experience, three pillars, beats with intensity, acceptance,
-   no geometry.
-2. **Skeleton** (`stage: "skeleton"`) — districts (motif + landmark), the critical route as
-   **nodes**: X/Y/Z, floor, building id, named space, kind (`street`, `door`, `room`, `stair`,
-   `drop`, `finale`, …), enclosure, intensity, landmark, gate and beat. Decide the turns, the
-   vertical beats, the side rooms, the Director curve and the reveal here; this is the route,
-   not the site. The route through a large multi-storey interior belongs here too.
-3. **Site** (`stage: "site"`) — footprints around the skeleton, entrances, no-build/water.
-4. **Vertical** (`stage: "vertical"`) — terrain, base/roof Z, entrance Z, stairs/ladders/drops.
-5. **Schedule** (`stage: "schedule"`) — role (`facade`/`enterable`/`safe-room`), floors, height.
-6. **Floors** (`stage: "floors"`) — one floor plan per level; sections; route nodes in rooms.
-7. **Flow** (`stage: "flow"`) — the detailed splines, branches, cover/spawn/holdout/crescendo/
-   finale areas and item budget. The flow **decision** was already made in the skeleton; this
-   stage draws it at real coordinates.
-8. **Approved** — frozen JSON + all drawings.
-
-A site plan drawn before the route is buildings looking for a reason; a route drawn after the
-buildings is a corridor forced through them. The skeleton is where "interesting" is decided.
-If a later stage needs an earlier layer changed, change the JSON, re-run the earlier stage
-check, then regenerate the later drawings. Do not patch around it.
+The stage order, the gate at each stage and the design file are one procedure, owned by
+[`../../workflows/design-a-map.md`](../../workflows/design-a-map.md). This page is the schema
+those stages write. A stage check that fails is fixed in the JSON and the later drawings are
+regenerated, never patched around.
 
 ## Multi-level
 
@@ -250,17 +232,12 @@ The floor drawing shows doors in gold with `from→to`, stairs in grey with `kin
 `plan.md` adds a `Floor connections` table. This is the edge the earlier plan was missing: a
 route can now be checked against the rooms and stairs it claims to use.
 
-## Pass 1, exactly
+## Pass 1
 
-1. Write the experience, pillars, beats and acceptance in `plan/DESIGN.md`; write the districts
-   and the route skeleton in `plan.json` (`stage: "brief"`, then `"skeleton"`). Use
-   [`route-skeleton.md`](route-skeleton.md) as the procedure.
-2. `check_map_plan` at each stage; fix errors before the next. Do not leave a flat intensity
-   curve, a missing landmark or an unanchored branch for the build pass to discover.
-3. `render_map_plan` after site/vertical/schedule/floors/flow; look at every sheet and every
-   per-floor plan, including the district boundaries and the rhythm strip.
-4. Set `Status: approved` only after the user has seen the JSON and drawings.
-5. Report the JSON, drawing directory and findings; stop. Pass 2 reads them.
+The procedure — brief, skeleton, site, vertical, schedule, floors, flow, approval — is
+[`../../workflows/design-a-map.md`](../../workflows/design-a-map.md). The commands are
+`check_map_plan` at each stage and `render_map_plan` after the drawing stages; the fields below
+are what those checks read.
 
 ## Schema contract (what one field means)
 

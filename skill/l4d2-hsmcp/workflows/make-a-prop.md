@@ -5,7 +5,8 @@ geometry, skinning or animation, use Blender and come back at `read_smd`/`run_st
 
 ## 1. Decide the numbers before writing anything
 
-Source units: a standing survivor is 72 tall, a doorway is 64×96, a crate is often 32–64.
+Source units: a standing survivor is 72 tall, a safe-room doorway is 64×112 (see
+[doors](../references/mapping/doors.md)), a crate is often 32–64.
 `read_model_info` on a stock prop gives a real hull to copy. Write the model in its own
 space with the origin where you want the pivot — usually the base centre for a floor prop.
 

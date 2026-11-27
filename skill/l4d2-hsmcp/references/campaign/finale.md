@@ -40,10 +40,10 @@ exactly this: a trigger on the rescue vehicle fires `FinaleEscapeFinished`, then
 Two shapes, and they are not interchangeable:
 
 **Shipping (type 2, script-driven).** `trigger_finale` type 2 plus
-`scripts/vscripts/<map>_finale.nut` with a `DirectorOptions` stage list (see
-`custom-finale.md`). A survivor **+use** on the trigger fires `FinaleStart`; the stages run;
-`FinaleEscapeStarted` enables the escape trigger; its `OnStartTouch` fires
-`FinaleEscapeFinished` and `RollStatsCrawl` on an `env_outtro_stats`.
+`scripts/vscripts/<map>_finale.nut` with a `DirectorOptions` stage list: the file, stages and
+escape wiring are [`custom-finale.md`](custom-finale.md). A survivor **+use** on the trigger
+fires `FinaleStart`; the stages run; `FinaleEscapeStarted` enables the escape trigger; its
+`OnStartTouch` fires `FinaleEscapeFinished` and `RollStatsCrawl` on an `env_outtro_stats`.
 
 **Scriptless test (type 0).** A type 0 trigger on a FINALE area with an arrival
 `info_changelevel` starts and can spawn a horde, but it has no stage list and never reaches

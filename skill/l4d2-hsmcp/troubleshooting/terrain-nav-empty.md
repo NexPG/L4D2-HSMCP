@@ -5,7 +5,8 @@ open floor. A direct launch puts `nav_mark_walkable` in `listenserver.cfg` befor
 player exists, so it marks the **world origin**; a ladder, a prop or a displaced slope there
 produces `Invalid ground position` and an empty mesh. With a real Steam host the same
 2048x2048 1:12 terrain patch generated **1,158 nav areas**. Keep the spawn on a flat brush
-ring anyway, and block scenery tops with `func_nav_blocker`.
+ring anyway. A `func_nav_blocker` keeps bots off scenery tops at load; it does not seed or
+change the generated mesh.
 
 ## Symptom
 
@@ -70,7 +71,7 @@ with a walkable floor and 0 areas is one of the causes above, not a missing floo
   floor is displaced. A 2048 patch with a 512-unit ring and the spawn on the ring is the
   tested shape; the patch itself can rise 170 units.
 - Block a decorative top with a `func_nav_blocker` volume instead of deleting the brush:
-  that keeps the silhouette and removes the tiny no-merge areas. Santa Monica uses this for
-  the horizon pier and for the beach, which is scenery rather than the route.
+  that keeps the silhouette and keeps bots off the tiny no-merge areas. Santa Monica uses this
+  for the horizon pier and for the beach, which is scenery rather than the route.
 - Do not read `nav_trouble_report` as proof of terrain nav when the area count is 0; the
   report inspects areas and has nothing to fail on.

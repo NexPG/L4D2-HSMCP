@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.315-alpha - 2026-11-27
+
+- **One home per fact in the skill.** Duplicated sections were moved to their owner and
+  replaced by links: door models, hinge and swing to `references/mapping/doors.md`; stock model
+  and material paths to `references/assets/models.md`; skybox face names to `3d-skybox.md`;
+  prop collision to `troubleshooting/props-no-collision.md`; nav command set to
+  `references/nav/editing.md`; mode mission blocks to `campaign/mission-file.md`.
+  `engine-limits.md` is now ceilings only.
+- **Duplicated process removed.** `five-drawings.md` no longer repeats the stage list or
+  "pass 1 exactly" (owned by `workflows/design-a-map.md`); mode pages no longer repeat the
+  `run_map_test` invocation; `build-and-deploy.md` points at the deployment rules instead of
+  copying them.
+- **Contradictions fixed while deduplicating:** `func_nav_blocker` is a runtime blocker, not a
+  generation filter (the two pages disagreed); `NAV ERRORS` is not proof of staleness (the
+  stale and unplayable pages disagreed); the safe-room doorway is 64/72 x 112, not "64–128";
+  the planning table's 56x112 door and 8x12 step were removed; a non-existent `write_door` was
+  corrected to `place_door`; the checkpoint door is resolved by class, not by name.
+- All relative links in the skill resolve (`test/support/structure.test.ts`).
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.314-alpha - 2026-11-27
 
 - **Engine limits have one home.** The full ceiling table is `docs/reference/engine-limits-l4d2.md`

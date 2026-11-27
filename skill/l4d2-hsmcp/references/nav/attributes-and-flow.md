@@ -15,6 +15,7 @@ its volume during `nav_generate`. Its `spawnflags` value is the set of attribute
 | 64 | FINALE | the finale area; apply it **liberally**, the horde spawns here |
 | 128 | Mission Start | the spawn area of the first map |
 | 256 | Battlefield | a crescendo arena; **spawning halts while survivors are inside** |
+| 1024 | Not clearable | the Director never marks it cleared; Survival arenas use it |
 | 2048 | Checkpoint | a safe room; no zombies spawn here |
 | 8192 | No mobs | do not spawn common infected here |
 | 32768 | Rescue vehicle | where the rescue vehicle stands |
@@ -22,6 +23,8 @@ its volume during `nav_generate`. Its `spawnflags` value is the set of attribute
 | 524288 | No threat | the Director should not build threat here |
 
 Combine by adding: the first map's spawn is `128 + 2048 = 2176`; the exit safe room is `2048`.
+The tool also accepts the rarer FGD bits (OBSCURED 4096, LYING_DOWN 1048576); the table lists
+the ones a campaign or Survival map uses.
 
 **FINALE vs BATTLEFIELD is the trap.** A finale map needs FINALE over a large area with
 spawn space; marking the same area BATTLEFIELD stops infected spawning while survivors stand
@@ -75,21 +78,12 @@ check of what was asked for.
 Bots path to the goal area (CHECKPOINT or FINALE). That is why bots run ahead and wait: they
 are going to the goal, not following the player. A map with no goal area is why they wander.
 
-### A goal needs an end, not just an attribute (measured)
+### A goal needs an end, not just an attribute
 
-A CHECKPOINT or FINALE region alone is not a goal. The chapter must also contain the thing
-the attribute points at:
-
-- CHECKPOINT → `prop_door_rotating_checkpoint` and an `info_changelevel` with its landmark;
-- FINALE → a `trigger_finale`.
-
-Measured on a 45-area hall whose far end carried a CHECKPOINT region but no checkpoint door
-and no changelevel: `nav_trouble_report` reported **"Missing Checkpoint" on 43 areas** (45
-minus the two that carried the attribute), and the game showed
-**`NAV ERRORS — Map is unplayable!`** in the middle of the screen while the map itself played
-normally. Swapping the same hall to FINALE + `trigger_finale` made "Missing Finale" pass and
-the panel disappeared. "Missing Battlefield" still reported 45 areas and did **not** raise the
-panel: in coop that check is informational.
+A CHECKPOINT or FINALE region is not the end by itself: CHECKPOINT needs a
+`prop_door_rotating_checkpoint` and an `info_changelevel` with its landmark; FINALE needs a
+`trigger_finale`. The measured failure, the `Missing Checkpoint` count and the on-screen panel
+are in [`../../troubleshooting/nav-unplayable.md`](../../troubleshooting/nav-unplayable.md).
 
 A bench or probe map that must not leave itself uses a FINALE end, never a bare CHECKPOINT
 region.

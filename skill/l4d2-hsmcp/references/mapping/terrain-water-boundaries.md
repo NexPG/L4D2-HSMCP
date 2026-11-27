@@ -59,20 +59,10 @@ at the skybox shell.
 6. **Keep the route gradeable.** A 45-degree slope is the walk limit; a 51-degree wedge is a
    wall. Stairs must be 18 units or less per step. `write_vmf_solid` refuses both unless
    `steep: true` is passed for scenery.
-7. **Nav needs a mark on a real walking position.** The engine marks one walkable position
-   and samples around it; it does not scan the whole BSP. A `via: "direct"` nav launch puts
-   `nav_mark_walkable` in `listenserver.cfg`, before the local player exists, so it marks the
-   **world origin**. That is invisible when the origin is open floor and fatal when it is
-   inside terrain, a ladder or a prop. The first 2048x2048 1:12 terrain test produced **0
-   nav areas** this way, not because of the rise: the same map with `via: "steam"` (a real
-   host, `setpos` to `info_player_start`, then the mark) generated **1,158 areas**. Use
-   `run_nav_generate(via: "steam")` for any map whose origin is not a clean floor; keep the
-   spawn on a flat brush ring anyway, and do not read an empty nav dump as a terrain limit.
-   Santa Monica's 48-unit beach navves normally.
-8. **Decorations are not nav.** A flat silhouette top (the horizon pier) becomes a few
-   tiny no-merge areas and fails the engine's non-walkable-connections check. A
-   `func_nav_blocker` over the scenery volume fixes the check without making the scenery
-   solid; the same is true of a beach that is seen but not walked.
+7. **Nav needs a mark on a real walking position.** The engine samples one mark, not the whole
+   BSP; an empty mesh on terrain is usually the mark at the world origin, not a rise limit.
+   Cause, check and fix: [`../../troubleshooting/terrain-nav-empty.md`](../../troubleshooting/terrain-nav-empty.md).
+   Keep the spawn on a flat brush ring even when the patch is displaced.
 
 ## Water
 
@@ -105,14 +95,6 @@ hidden.
 
 ## See the asset before choosing it
 
-```
-read_asset_catalog(perCategory: 10)
-preview_asset(asset: "BRICK/BRICK_EXT_01", kind: "material")
-preview_asset(asset: "models/props_unique/escalator01_left.mdl", kind: "model")
-read_model_info(model: "...")
-```
-
-`read_asset_catalog` groups models into building, roof, window, vehicle, foliage, street,
-interior, prop, fence, light, sign, terrain, escalator and stairs, and materials into brick,
-concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric,
-sign and building. Use `preview_asset` on a candidate; a name is not a look.
+Browse the installed library, do not invent a name: [`../assets/models.md`](../assets/models.md).
+For a surface, `read_asset_catalog` groups terrain materials; `preview_asset` renders the
+candidate. A name is not a look.

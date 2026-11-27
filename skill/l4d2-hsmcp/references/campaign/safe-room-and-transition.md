@@ -31,18 +31,19 @@ The safe room needs a real doorway the player can walk through, with the door en
 and the `info_changelevel` volume covering the room behind the door. A door placed on a solid
 wall reads as a door and cannot be entered — that is a geometry bug, not an entity bug.
 
-Minimal safe room: floor, ceiling, four walls, a doorway sized to the door model -- 64 wide
-and ~112 tall for `checkpoint_door_02` (58.3 x 105.8) or 72 x 112 for
-`checkpoint_door_01` (68.4 x 105) -- the checkpoint door in the opening, `info_changelevel`
-over the floor behind it, `info_landmark` in open space, and a light. A 128- or 256-unit
-opening around a 58-unit door is a hole beside the door; `read_vmf_lint` reports it as
-`l4d2-door-opening-too-wide`. Keep it inside the sealed shell.
+Minimal safe room: floor, ceiling, four walls, a doorway that fits the door model, the
+checkpoint door in the opening, `info_changelevel` over the floor behind it, `info_landmark`
+in open space, and a light. Door dimensions, hinge placement and swing clearance are in
+[`../mapping/doors.md`](../mapping/doors.md); a 128- or 256-unit opening around a 58-unit door
+is a hole beside the door, which `read_vmf_lint` reports as `l4d2-door-opening-too-wide`. Keep
+it inside the sealed shell.
 
-A **finale map** ends with a FINALE nav area (`func_nav_attribute_region` spawnflags **64**),
-not a second CHECKPOINT. Marking the end CHECKPOINT gives the Director two checkpoints and a
-flow it rejects with `NAV ERRORS / Map is unplayable`; that happened on `night_moscow_m2`
-until the end region was changed to 64. The start safe room keeps CHECKPOINT (2048) +
-MISSION START (128).
+A **finale map** ends with a FINALE nav area, not a second CHECKPOINT. Marking the end
+CHECKPOINT gives the Director two checkpoints and a flow it rejects with
+`NAV ERRORS / Map is unplayable`; that happened on `night_moscow_m2` until the end region was
+changed to FINALE. The flags and how they combine are in
+[`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md); this page keeps only the
+transition's own contract.
 
 ## What the engine does
 

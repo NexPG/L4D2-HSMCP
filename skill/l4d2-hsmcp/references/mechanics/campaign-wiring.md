@@ -58,11 +58,9 @@ the map has none. It delegates the door to `place_door`, so the origin is on the
 model hull decides the swing rather than the middle of the opening.
 
 - The door class is `prop_door_rotating_checkpoint`, never a plain `prop_door_rotating`.
-- The **class is what matters**: `prop_door_rotating_checkpoint` near the transition's
-  `info_landmark`. The engine resolves the class, not a name: 20 of the 57 stock chapters
-  leave it unnamed, and names such as `door_checkpointentrance` exist. `checkpoint_exit` /
-  `checkpoint_entrance` are canonical advice. `check_transition` fails a safe room whose
-  nearest door is more than 1024 units from the landmark.
+- The door is resolved by **class near the landmark**, not by name, and the safe-room contract
+  (1024-unit radius, names as advice) is in
+  [`../campaign/safe-room-and-transition.md`](../campaign/safe-room-and-transition.md).
 - Four survivor positions default to a 48-unit square around the player start and the call
   says so. Move them; spawn points inside a wall or on a prop are a common first-pass bug.
 - It does **not** write the changelevel volume. That is `write_changelevel`, and a safe room
@@ -98,8 +96,8 @@ write_finale_setup(path, type: "custom", origin: [...], scriptFile: "finale_myca
 write_finale_setup(path, type: "scavenge", origin: [...])
 ```
 
-- The type numbers are not contiguous: **0 standard, 1 gauntlet, 2 custom, 4 scavenge**. There
-  is no type 3.
+- The types and their contracts are in [`../campaign/finale.md`](../campaign/finale.md); the
+  builder accepts **0 standard, 1 gauntlet, 2 custom, 4 scavenge** (there is no type 3).
 - A **custom** finale needs a `ScriptFile`; the builder refuses one without it. Custom finales
   start disabled (`StartDisabled 1`) and are enabled by their script or a button. Stock c2m5
   is the model: `StartDisabled 1`, type 2.
@@ -173,7 +171,8 @@ Findings are errors, warnings and info; `overall` is fail, warn or pass. It read
 ## L4D2 facts that make this different from other Source games
 
 - `info_changelevel` is a brush; `trigger_changelevel` is not the L4D2 transition.
-- The saferoom door is `prop_door_rotating_checkpoint` and is found by name.
+- The saferoom door is `prop_door_rotating_checkpoint`, resolved by class near the landmark
+  (not by name).
 - One `info_player_start`, not a team spawn pair.
 - The finale type set skips 3 and stock campaigns use gauntlet (1) or custom (2); scavenge is
   its own type 4.

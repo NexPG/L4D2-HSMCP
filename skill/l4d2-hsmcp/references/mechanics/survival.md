@@ -5,33 +5,14 @@ spawn, and a mission file that lists it under `survival`.
 
 ## Mission entry
 
-```
-"modes"
-{
-    "survival"
-    {
-        "1"
-        {
-            "Map"         "my_map"
-            "DisplayName" "Survival"
-        }
-    }
-}
-```
-
-`write_campaign` writes this with `modes: [{ name: "survival", chapters: [...] }]`.
+A `"survival"` block under `"modes"`, with one chapter per map, as in
+[`../campaign/mission-file.md`](../campaign/mission-file.md). `write_campaign`
+`modes: [{ name: "survival", chapters: [...] }]` writes it.
 
 ## Running it
 
-```
-run_map_test({
-  map: "my_map",
-  waitFor: "Loading: [0-9]",
-  mode: "survival"
-})
-```
-
-`mode` runs `map <map> survival` from `cfg/listenserver.cfg`; this client answers `Unknown command "mp_gamemode"`, so do not use that command line switch.
+`run_map_test` with `mode: "survival"`; the option, the `map <map> survival` launch and the
+`mp_gamemode` warning are in [`../testing/harness.md`](../testing/harness.md).
 
 ## Starting the round
 
@@ -65,15 +46,10 @@ survival wave.
 ## A survival arena's nav
 
 Survival is a round in one arena, so the nav says "this is the arena, do not stop spawning".
-Two `func_nav_attribute_region` brushes carry it:
-
-- **BATTLEFIELD (256)** over the play space: infected keep spawning while survivors are
-  inside, which is the opposite of the coop rule.
-- **NOT_CLEARABLE (1024)** over the same space: the Director will not mark it cleared when it
-  empties, so a wave never stalls waiting for a clean area.
-
-Mark the arena with both, then generate nav. The ROUND starts from `trigger_finale` (see
-above); the attributes decide where the waves come from, not whether the mode is Survival.
+Two `func_nav_attribute_region` brushes carry it: **BATTLEFIELD** over the play space (infected
+keep spawning while survivors are inside) and **NOT_CLEARABLE** over the same space (the
+Director will not mark it cleared when it empties). The flags and their combinable values are
+in [`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md).
 
 A map that also has a CHECKPOINT region for coop gets both ends; the mode picks the goal.
 

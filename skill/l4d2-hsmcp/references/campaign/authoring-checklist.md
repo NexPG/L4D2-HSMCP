@@ -14,23 +14,20 @@ contracts the tools enforce.
 
 ## 2. Map goals
 
-- [ ] First map: start `func_nav_attribute_region` **2176** (CHECKPOINT + MISSION START);
-      end CHECKPOINT, or FINALE on the last map.
+- [ ] First map: spawn region plus CHECKPOINT at the start; CHECKPOINT in the exit safe room,
+      or FINALE on the last map. Flags: [`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md).
 - [ ] Middle maps: arrival CHECKPOINT; end CHECKPOINT.
-- [ ] Last map: arrival CHECKPOINT; end **FINALE (64)**; `trigger_finale` **over** the
-      FINALE area.
-- [ ] `info_changelevel` + matching `info_landmark`; last map has the disabled arrival
-      changelevel (`spawnflags 2`).
+- [ ] Last map: arrival CHECKPOINT; **FINALE** over the arena, with `trigger_finale` inside it.
+- [ ] `info_changelevel` + matching `info_landmark`; last map has the disabled arrival volume
+      (see [`../mechanics/campaign-wiring.md`](../mechanics/campaign-wiring.md)).
 
 ## 3. Safe room
 
-- [ ] `prop_door_rotating_checkpoint` **within 1024 units of the pair's landmark** on
-      each side. The name (`checkpoint_exit`/`checkpoint_entrance`) is advice; the class is
-      what the engine resolves.
-- [ ] Door origin is the hinge, 2 units inside the jamb; opening 64 x 112 for
-      `checkpoint_door_02`, 72 x 112 for `checkpoint_door_01`.
-- [ ] Keep the leaf's width + 16 units clear of props; the lint
-      `l4d2-door-swing-blocked` checks it.
+- [ ] `prop_door_rotating_checkpoint` present and resolved by class near the pair's landmark:
+      the contract is [`safe-room-and-transition.md`](safe-room-and-transition.md).
+- [ ] Door origin is the hinge, the opening fits the leaf, and the swing is clear:
+      [`../mapping/doors.md`](../mapping/doors.md). Lint: `l4d2-door-hinge-at-center`,
+      `l4d2-door-opening-too-wide`, `l4d2-door-swing-blocked`.
 - [ ] 4 `info_survivor_position` on a below-ground start.
 
 ## 4. Finale (last map)

@@ -34,10 +34,10 @@ addon/
 `addonTitle`, `addonTag` and `addonDesc` are older spellings; a scanner that does not match
 them leaves the add-on unlisted. `addonTagline` is optional.
 
-**The BSP must carry the string-table dictionary.** `run_nav_generate` bakes it; if you ship
-a BSP from another pipeline, the engine logs `missing stringtable dictionary, don't ship this
-way` and a client may spend a long time rebuilding it. `read_map_dependencies` reports the
-dictionary as a packed entry; `read_nav` being `fresh` is the pair check.
+**The BSP must carry the string-table dictionary.** `run_nav_generate` bakes it; the
+compile/nav pair and the bake detail are in
+[`../compiling/toolchain.md`](../compiling/toolchain.md). `read_nav` being `fresh` is the pair
+check.
 
 ## Content flags: the add-on browser groups by these
 

@@ -10,7 +10,8 @@ with one half is a mechanic that silently does nothing.
 A rescue closet is **two records**:
 
 - `info_survivor_rescue`, the point where the waiting survivors stand;
-- a nav area with the **RESCUE_CLOSET** spawn attribute (`0x00010000`), so the Director
+- a nav area with the **RESCUE_CLOSET** spawn attribute (`65536`; the full flag table is in
+  [`../nav/attributes-and-flow.md`](../nav/attributes-and-flow.md)), so the Director
   knows the closet is a rescue and not a normal room.
 
 `write_rescue_closet` writes the point and ordered `info_survivor_position`s. It does not
@@ -33,8 +34,10 @@ subject line.
 
 ## Blockers and avoidance
 
-- `func_nav_blocker` is a **brush** entity: nav areas touching its AABB are removed at nav
-  generation. It is how a closed door or a fence keeps infected out.
+- `func_nav_blocker` is a **brush** entity that blocks the nav areas touching its AABB when
+  the map loads. It is a runtime blocker, not a generation filter: the areas stay in the
+  `.nav` (measured byte-identical output, `references/nav/generation.md`). Use it to keep
+  infected out of a closed door or a fence, not to keep scenery out of the mesh.
 - `func_nav_avoidance_obstacle` does not remove nav; it makes bots avoid the areas touching
   it. Use it for a hazard the player may cross.
 - Both are compiled into the BSP as brush entities; `read_bsp_entities` or `check_ai_contract`

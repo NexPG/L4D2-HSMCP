@@ -47,11 +47,9 @@ is measured on the spot with the four views and its row is appended here; never 
 
 ## Doors are not props
 
-A `prop_door_rotating*` origin is the **hinge**, and the leaf runs along the model's local
-**+Y** (checkpoint doors: hull `y` -2.6..55.7). `facing` is the wrong question: a door is
-placed into an opening by `write_door`/`placeDoor`, which derives the hinge jamb and the yaw
-from the opening and the model's hull. Use `write_prop` facing for the furniture and the
-vehicles, `write_door` for the door.
+A rotating door's origin is the **hinge**, its leaf runs along local **+Y**, and it is placed
+into an opening by `place_door`/`placeDoor`. Do not use `write_prop` facing for a door; the
+sizes, hinge math and swing clearance are in [`doors.md`](doors.md).
 
 ## Campaign audit rule
 

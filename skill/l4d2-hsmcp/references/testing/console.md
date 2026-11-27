@@ -22,26 +22,11 @@ Usual companions:
 
 ## Nav
 
-| Command | What it does |
-|---|---|
-| `sv_cheats 1` | required for every nav command |
-| `nav_edit 1` | enters nav editing; without it `nav_generate` does nothing, silently |
-| `nav_mark_walkable` | seed point for generation (where the player stands/aims) |
-| `nav_generate` | generates the mesh **and runs `nav_analyze` at the end**, saving the file |
-| `nav_analyze` | re-analyses the loaded mesh and saves it; this is where flow is computed |
-| `nav_save` | saves the mesh |
-| `select_with_attribute CHECKPOINT` | highlights the areas carrying an attribute in game (needs `nav_edit 1`) |
-| `mark CHECKPOINT` / `nav_clear_attribute CHECKPOINT` | manual attribute editing, an alternative to `func_nav_attribute_region` |
-| `nav_gui` | visual selection for bulk marking |
-
-Warnings from Valve's documentation:
-
-- `nav_generate_incremental` deletes JUMP areas and some connections in L4D2. Use it only at
-  the start of nav work, not to "touch up" a working mesh.
-- `nav_generate` reloads the map when it runs.
-
-Command-line alternatives: `-navanalyze` and `-navforceanalyze` analyse the loaded map at
-startup. They do not generate a mesh from nothing.
+Nav is its own workflow, not a console recipe: generation is
+[`../nav/generation.md`](../nav/generation.md), and repair plus the full command set
+(selection, geometry, attributes) is [`../nav/editing.md`](../nav/editing.md). The launch flags
+`-navanalyze` and `-navforceanalyze` analyse the loaded map at startup; neither generates a
+mesh from nothing.
 
 ## Entities and players
 

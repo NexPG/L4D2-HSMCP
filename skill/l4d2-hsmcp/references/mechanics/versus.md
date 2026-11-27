@@ -5,31 +5,14 @@ the infected spawn screen and the scoring.
 
 ## Mission entry
 
-```
-"modes"
-{
-    "versus"
-    {
-        "1"
-        {
-            "Map"         "my_map"
-            "DisplayName" "Versus"
-        }
-    }
-}
-```
-
-`write_campaign` writes this with `modes: [{ name: "versus", chapters: [...] }]`.
+A `"versus"` block under `"modes"`, with one chapter per map, as in
+[`../campaign/mission-file.md`](../campaign/mission-file.md). `write_campaign`
+`modes: [{ name: "versus", chapters: [...] }]` writes it.
 
 ## Running it
 
-```
-run_map_test({
-  map: "my_map",
-  waitFor: "Loading: [0-9]",
-  mode: "versus"
-})
-```
+`run_map_test` with `mode: "versus"`; the option and its log markers are in
+[`../testing/harness.md`](../testing/harness.md).
 
 ## What proves it
 

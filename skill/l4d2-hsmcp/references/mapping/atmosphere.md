@@ -21,7 +21,7 @@ postprocess, 3 colour correction, 3 tonemap, sun/light/shadow.
    `materials/color_correction/*.raw`), with `minfalloff`/`maxfalloff`/`maxweight`.
 5. **Tonemaps** — one `env_tonemap_controller` each for global, infected and ghost. The
    settings are inputs; `write_postprocess` adds the `logic_auto` that applies them at map
-   spawn, because keys on the controller do nothing.
+   spawn (the key mechanics are in [`world-dressing.md`](world-dressing.md)).
 6. **Sun, shadow and wind** — `light_environment` (sun colour + ambient), `env_sun` (the
    visible disc), `shadow_control` (direction/colour/distance) and `env_wind`.
 
@@ -57,9 +57,9 @@ write_postprocess(path, kind: "colorcorrection", origin: [0,0,64],
                   minFalloff: 200, maxFalloff: 1200, maxWeight: 0.8)
 ```
 
-`write_weather` writes **one** fog controller and refuses a second. That refusal is right for
-a one-zone map and wrong for an atmosphere set; use the recipe above for multiple zones, and
-`write_weather` only for the precipitation volume.
+`write_weather` writes **one** fog controller and refuses a second: that is right for a
+one-zone map and wrong for an atmosphere set. Use the recipe above for multiple zones; the
+tool's precipitation and fog keys are in [`../mechanics/weather.md`](../mechanics/weather.md).
 
 ## Switch states at runtime
 

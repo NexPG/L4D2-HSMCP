@@ -122,7 +122,7 @@ a route with one `ladder-up` step. That is the AI path a bot walks; it is not a 
 | `func_playerinfected_clip` | players and infected | physics props | keep survivors and AI out of a volume without stopping a barrel; 746 in the stock maps |
 | `func_clip_vphysics` | VPhysics objects | players and infected | a rail that stops a rolling car but not a survivor |
 | `func_block_charge` | Charger charges | other movement | L4D2-specific charger blocker |
-| `func_nav_blocker` | nav generation and paths | all physics | keep a visible-but-unwalkable roof, water or scenery out of the mesh |
+| `func_nav_blocker` | nav paths at load | all physics | keep bots off a visible-but-unwalkable roof, water or scenery; it does not remove areas from the generated file |
 | `func_brush` `Solidity 1` | nothing (default) | everything | a toggleable visual; `Solidity 2` makes it always solid |
 | `func_illusionary` | nothing | everything | legacy non-solid; prefer `func_brush` |
 
@@ -185,7 +185,7 @@ The MDL has no forward axis. `write_prop` takes `facing` (the world yaw the fron
 at), `modelForward` (`x+`/`x-`/`y+`/`y-`) and `yawOffset`; it writes the yaw. The measured
 table is `references/mapping/model-facing.md`: a sedan is `x+`, `bench001` is `y+`, a food
 cart and the rescue helicopter are `x-`, and `arcadegame01` is `x+`. Doors are not props: use
-`write_door`, because the leaf is on local Y and the origin is the hinge.
+`place_door`, because the leaf is on local Y and the origin is the hinge.
 
 ## Runtime presence
 

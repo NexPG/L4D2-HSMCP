@@ -11,9 +11,9 @@ the engine's own hull; the rest are starting points to adjust, not rules.
 | Standing hull | **32 × 32 × 72** (half-extents 16,16,36) |
 | Crouching hull | **32 × 32 × 36** |
 | Eye height | about **64** above the floor |
-| Safe-room doorway | **64–128 wide, ~112 tall** (measured/tested) |
+| Safe-room doorway | fits the door model: 64×112 or 72×112 (see [`doors.md`](doors.md)) |
 | Corridor for one survivor | at least **64** clear; **96–192** for a fight |
-| Step height | **16** is the usual stair rise; keep the run honest |
+| Step height | **16** usual, **18** is the walk limit (see [`terrain-water-boundaries.md`](terrain-water-boundaries.md)) |
 | Test arena | **768 × 512** interior, 192 tall |
 
 Check the real clearance with `measure_vmf_clearance` and `measure_vmf_approach`; a doorway

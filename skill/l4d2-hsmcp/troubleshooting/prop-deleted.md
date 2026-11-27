@@ -3,8 +3,8 @@
 **Prevention.** A `prop_static` must be a model compiled with `$staticprop`. Use `write_prop`:
 it reads `staticProp` from the MDL and warns before the entity is written; `read_vmf_lint`
 reports `prop-static-not-static-prop` as an **error**. For clutter the player moves, the
-official maps use `prop_physics` (11,667 instances) — `write_prop` `collision: "physics"`
-writes that class and keeps the model's own physics hull.
+official maps use `prop_physics` — `write_prop` `collision: "physics"` writes that class and
+keeps the model's own physics hull (why: [`../references/mapping/entity-families.md`](../references/mapping/entity-families.md)).
 
 ## Symptom
 

@@ -48,8 +48,8 @@ A leak here is a compiler error later.
 - `info_changelevel` — a brush over the exit safe room floor, `map` = next map,
   `landmark` = the shared name.
 - `prop_door_rotating_checkpoint` — in the safe room doorway.
-- `func_nav_attribute_region` — spawn (`2176` on the first map, `2048` after), exit safe room
-  (`2048`), finale corridor (`64` on the last map).
+- `func_nav_attribute_region` — spawn, exit safe room and finale corridor; the flags and how
+  they combine are in [`../references/nav/attributes-and-flow.md`](../references/nav/attributes-and-flow.md).
 
 Build the safe room from `references/campaign/safe-room-and-transition.md`; it is the part that
 silently fails when any piece is missing.
@@ -82,8 +82,9 @@ vertical connection the shipping mesh does not have.
 ## 5. Mission and add-on
 
 1. `write_campaign` into `addon/missions/<name>.txt`, with the same base name the VPK will
-   have.
-2. `addoninfo.txt`: app 550, `addonContent_Campaign 1`, campaign tag.
+   have. The shape and rules are in [`../references/campaign/mission-file.md`](../references/campaign/mission-file.md).
+2. `addoninfo.txt`: app 550, `addonContent_Campaign 1`, campaign tag (keys:
+   [`../references/campaign/addon-and-deployment.md`](../references/campaign/addon-and-deployment.md)).
 3. `run_vpk_pack` from the staging directory.
 4. `check_campaign` against the packed VPK and its mission entry.
 
@@ -92,8 +93,8 @@ and script.
 
 ## 6. Deploy and play test
 
-Deploy under one fixed name, remove older archives, restart the game, enable the add-on, and
-follow `workflows/playtest.md`. Record what happened; do not call the campaign done without a
+Deploy per [`build-and-deploy.md`](build-and-deploy.md), then follow
+[`playtest.md`](playtest.md). Record what happened; do not call the campaign done without a
 play test.
 
 Before the deploy, walk the design's `## 13. Acceptance criteria` line by line. Every

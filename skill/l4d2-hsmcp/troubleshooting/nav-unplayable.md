@@ -3,9 +3,9 @@
 The map loads, survivors stand in it, the HUD works — and a panel in the middle of the screen
 says **NAV ERRORS / Map is unplayable!** with a CONTINUE button.
 
-It is not a missing `.nav` and not a geometry leak. The engine's own **nav goal check**
-failed: a coop chapter must have a reachable goal of the right kind, not just a nav
-attribute.
+It is not always a geometry leak: the engine's own **nav goal check** can fail with a fresh
+mesh — a coop chapter must have a reachable goal of the right kind, not just a nav attribute.
+A missing or stale `.nav` shows the same panel; check [`nav-stale.md`](nav-stale.md) first.
 
 ## Measure it, do not guess
 

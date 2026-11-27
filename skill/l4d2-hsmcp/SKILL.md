@@ -96,7 +96,7 @@ again.
 | A prop faces the wall or is 90/180° off | Use `write_prop` `facing` + `modelForward` from the measured table; look at the model with `preview_model` (`view` for the other sides) | `references/mapping/model-facing.md` |
 | Official servers work, a friend's local/listen server does not | Check the game's `Network: IP` line; use a Steam lobby, not `connect` to a NAT'd host, and remove `-insecure` | `troubleshooting/local-server-connection.md` |
 | A prop is in Hammer but missing in game; the compile log says `Error! ... Deleted.` | A `prop_static` needs a model compiled with `$staticprop`; `write_prop` `collision: "dynamic"`/`"physics"` or a `$staticprop` model avoids the deletion | `troubleshooting/prop-deleted.md` |
-| Nav generation finishes in 0.1 s and the dump has 0 areas | Use `run_nav_generate(via: "steam")` when the origin is not open floor; a direct launch marks the world origin before the player spawns. Keep the spawn on a flat brush ring and block scenery tops with `func_nav_blocker`; a 2048 1:12 patch gets 1,158 areas through Steam | `troubleshooting/terrain-nav-empty.md` |
+| Nav generation finishes in 0.1 s and the dump has 0 areas | Use `run_nav_generate(via: "steam")` when the origin is not open floor; a direct launch marks the world origin before the player spawns. Keep the spawn on a flat brush ring; a 2048 1:12 patch gets 1,158 areas through Steam. `func_nav_blocker` only keeps bots off scenery at load, it does not change the generated mesh | `troubleshooting/terrain-nav-empty.md` |
 | A bot will not climb the ladder the player can use | Compile with Tools++ so vbsp emits `func_simpleladder`; span the brush to the upper floor and keep its centre line off the world origin; check `read_nav_ladders` | `references/mapping/entity-families.md` |
 | Two copies of one prefab fight over the same `screen01`/`door_button` names | Paste with `insert_prefab` `namePrefix`; check `duplicates`/`unresolvedOutputs` in the result, not by eye | `references/mapping/prefabs-and-instances.md` |
 | An ammo cabinet/helicopter button is inert | Place it with `place_entity_group`; the prefab needs its `vscripts` (`usetargets/...`) copied, not only the geometry | `references/mapping/prefabs-and-instances.md` |
@@ -152,6 +152,7 @@ material; the instructions live in one place.
 | `workflows/editor-sequence.md` | running the editor's own Run Map steps, and when not to |
 | `references/campaign/mission-file.md` | writing or debugging a mission file |
 | `references/campaign/safe-room-and-transition.md` | building a chapter exit |
+| `references/campaign/authoring-checklist.md` | the per-map checklist: skeleton, goals, safe room, finale, world, gate |
 | `references/campaign/finale.md` | building or debugging the last chapter |
 | `references/campaign/custom-finale.md` | type 2 stages, `[map]_finale.nut`, the escape phase |
 | `references/campaign/addon-and-deployment.md` | staging, packing, deploying |
@@ -163,7 +164,7 @@ material; the instructions live in one place.
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
-| `references/mapping/entities.md` | checking what an entity actually does in L4D2 |
+| `references/mapping/entities.md` | the FGD check, and where each L4D2-specific entity family is documented |
 | `references/mapping/world-dressing.md` | light, postprocess, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
 | `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
@@ -176,11 +177,14 @@ material; the instructions live in one place.
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
 | `references/mapping/model-facing.md` | which way a model faces, `write_prop` `facing`/`modelForward`, and the measured table |
+| `references/mapping/doors.md` | door models and sizes, hinge origin, opening fit and swing clearance |
+| `references/mapping/engine-limits.md` | the ceilings a map must fit, and where the full table and each specific rule live |
 | `references/mapping/gltf-import.md` | glTF/GLB → SMD: the axis, bind-pose and UV conventions, and what is not exported |
 | `references/mapping/fbx-import.md` | FBX (binary 7.x or ASCII) -> SMD: axes, units, bind pose from clusters, and what is not exported |
 | `references/mapping/brush-to-model.md` | a VMF brush → SMD/QC, with VMF UVs and a brush collision model |
 | `references/mapping/particles.md` | reading and writing `.pcf` systems, children, operators and materials |
 | `references/assets/sound.md` | WAV format L4D2 decodes, soundscript paths, and the sound tools |
+| [`references/assets/models.md`](references/assets/models.md) | browse the installed models/materials, confirmed stock paths, and what a name does not prove |
 | `references/mapping/hammerpp.md` | the Hammer++ build, settings, Tools++ flags and the editor-only boundary |
 | `docs/reference/hammerpp-complete-reference.md` | the full Hammer++ feature inventory and feature → tool matrix |
 | `docs/reference/l4d2-complete-reference.md` | L4D2 mechanics, Director defaults, finale stages, infected/weapon stats, entities, console, limits |

@@ -8,11 +8,12 @@ goal, or the goal is unreachable.
 
 `nav_generate` writes `<map>_nav.txt`. Check, in this order:
 
-1. **A goal attribute exists.** CHECKPOINT (`0x800`) or FINALE (`0x40`) under "Terror Spawn
-   Attribute Flags". No goal attribute → the Director has no destination.
+1. **A goal attribute exists.** CHECKPOINT or FINALE under "Terror Spawn Attribute Flags"
+   (the flag table is in [`../references/nav/attributes-and-flow.md`](../references/nav/attributes-and-flow.md)).
+   No goal attribute → the Director has no destination.
 2. **Flow was computed.** The live `nav_trouble_report`/`nav_analyze` says the goal is reachable;
-   `0x20000000` in "Base Attribute Flags" is `MOSTLY_FLAT`, not flow.
-   None → no flow, and bots have nowhere to go.
+   the dump's `MOSTLY_FLAT` bit is not flow (see the same page). None → no flow, and bots have
+   nowhere to go.
 3. **The goal is reachable.** Every area along the path must be connected; a gap in the mesh
    splits it.
 
