@@ -27,7 +27,13 @@ with a "read this when…" condition. That is deliberate: the skill must stay sm
 fit in context while the reference material can grow without cost.
 
 The repository's `opencode.json` points at `./skill/l4d2-hsmcp`, so the skill is available in
-this project without copying. To use it elsewhere:
+this project without copying. That relative path is resolved against the session's working
+directory, not the config file, so it only covers sessions started at the repository root.
+`pnpm skill:link` (also run by `pnpm install` through `prepare`) adds the gitignored
+`.opencode/skills/l4d2-hsmcp` directory link; OpenCode finds that while walking up from `src/`
+and `workspaces/<project>/` as well. The link is a pointer, not a second copy.
+
+To use it in another project or globally:
 
 ```powershell
 # project-local

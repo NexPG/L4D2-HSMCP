@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.329-alpha - 2026-11-27
+
+- **The skill is discoverable from any repository subdirectory.** The `skills` entry in
+  `opencode.json` resolves against the session's working directory, not the config file, so a
+  session started in `src/` or `workspaces/<project>/` failed with `Unable to load skill
+  l4d2-hsmcp` (reproduced with a real run). `scripts/link-skill.mjs` creates the gitignored
+  `.opencode/skills/l4d2-hsmcp` directory link to `skill/l4d2-hsmcp`; `pnpm skill:link` runs it
+  directly and `prepare` runs it on install. The link is a pointer, so the skill still has one
+  copy.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.328-alpha - 2026-11-27
 
 - **Terminology pass: `saferoom` is gone from prose.** The skill says `safe room` / `safe-room`
