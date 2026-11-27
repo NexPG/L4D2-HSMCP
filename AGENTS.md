@@ -80,9 +80,9 @@ never seen this repository. Treat it as a product, not a scratchpad.
    resolve. `test/support/structure.test.ts` fails on an orphan page or a broken link.
 4. **Respect the format.** `name` is lowercase/hyphenated and equals the directory; the
    description says what the skill does and when to use it; `SKILL.md` stays under 500 lines;
-   files over 100 lines start with `## Contents`; paths use forward slashes; dates are
-   provenance, not decoration. `test/support/skill-spec.test.ts` enforces the frontmatter and
-   the body limit.
+   reference, workflow and troubleshooting pages over 100 lines start with `## Contents`;
+   paths use forward slashes; dates are provenance, not decoration.
+   `test/support/skill-spec.test.ts` enforces the frontmatter and the body limit.
 5. **Do not add what already exists.** Check the skill, `references/tools/index.md` and
    `docs/` before writing a new tool, helper, page or table. A second copy is a defect even
    when it is shorter or “fits this page better”; the second-implementation rule above applies
