@@ -81,6 +81,9 @@ edit_vmf(path, ops: [{ op: "add", keyvalues: {
 - `write_spotlight` writes `beam_spotlight` and `point_spotlight` with their FGD length,
   width, colour, rotation and spawnflags. They are effects, not light sources; pair them
   with a real `light_spot`.
+- `write_projectedtexture` writes `env_projectedtexture`; it is a dynamic projected light, so
+  it shares the flashlight/muzzle-flash budget. `write_env_zoom` is the player FOV effect,
+  not a light.
 - Measured fixture: one `light_spot`, one `infodecal` and one `env_beam` compile in a sealed
   room with no leak; the live frame is still a check.
 

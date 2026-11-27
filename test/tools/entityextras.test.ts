@@ -9,8 +9,10 @@ import {
   writeBreakableTool,
   writeConstraintTool,
   writeLadderTool,
+  writeProjectedTextureTool,
   writePropTool,
   writeSceneTool,
+  writeZoomTool,
 } from "../../src/maps/typescript/tools/entityextras.js";
 import { readEntities } from "../../src/maps/typescript/vmf/edit.js";
 import { ctx as sharedCtx } from "../support/env.js";
@@ -188,6 +190,43 @@ describe("breakables", () => {
     const e = entities(path).find((entity) => entity.id === r.entityId)!;
     expect(e.keyvalues["surfacetype"]).toBe("0");
     expect(e.keyvalues["fragility"]).toBe("60");
+  });
+});
+
+describe("scripted view effects", () => {
+  it("writes env_zoom with its FOV, rate and suit-zoom flag", async () => {
+    const path = map();
+    const r = (await writeZoomTool.handler(
+      { path, origin: [0, 0, 64], fov: 30, rate: 2, allowSuitZoom: true, confirm: true } as never,
+      ctx,
+    )) as unknown as { entityId: number };
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.classname).toBe("env_zoom");
+    expect(e.keyvalues["FOV"]).toBe("30");
+    expect(e.keyvalues["Rate"]).toBe("2");
+    expect(e.keyvalues["spawnflags"]).toBe("1");
+  });
+
+  it("writes env_projectedtexture with colour+intensity and shadow keys", async () => {
+    const path = map();
+    const r = (await writeProjectedTextureTool.handler(
+      {
+        path,
+        origin: [0, 0, 128],
+        angles: [-90, 0, 0],
+        fov: 60,
+        color: [255, 200, 100, 180],
+        enableShadows: true,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number };
+    const e = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(e.classname).toBe("env_projectedtexture");
+    expect(e.keyvalues["lightfov"]).toBe("60");
+    expect(e.keyvalues["lightcolor"]).toBe("255 200 100 180");
+    expect(e.keyvalues["enableshadows"]).toBe("1");
+    expect(e.keyvalues["spawnflags"]).toBe("1");
   });
 });
 

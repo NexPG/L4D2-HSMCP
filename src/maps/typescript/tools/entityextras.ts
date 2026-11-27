@@ -769,6 +769,137 @@ export const writeAmbientMusicTool = defineTool({
   },
 });
 
+export const writeZoomTool = defineTool({
+  name: "write_env_zoom",
+  description:
+    "Writes an `env_zoom` entity: it controls the player's FOV over `Rate` seconds to `FOV` " +
+    "when it receives `Zoom`, and releases it on `UnZoom`. The optional outputs can wire " +
+    "those inputs to a trigger. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    origin: VEC3,
+    fov: z.number().int().min(10).max(179).default(75).describe("FOV."),
+    rate: z.number().min(0).default(1).describe("Rate: seconds to reach the target FOV."),
+    allowSuitZoom: z.boolean().default(false).describe("Allow Suit Zoom spawnflag."),
+    targetname: z.string().optional(),
+    outputs: z.array(OUTPUT).default([]),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classname: z.string(),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    if (!insideWorld(args.origin)) throw new Error("the env_zoom origin leaves Source's world");
+    const keyvalues: Record<string, string> = {
+      classname: "env_zoom",
+      origin: vec(args.origin),
+      FOV: String(args.fov ?? 75),
+      Rate: String(args.rate ?? 1),
+      spawnflags: args.allowSuitZoom ? "1" : "0",
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+    };
+    const warnings = await fgdWarnings("env_zoom", keyvalues, ctx);
+    const [id = null] = await addEntities(path, [keyvalues], ctx);
+    verifyEntities(path, [id], ["env_zoom"]);
+    await addOutputs(path, id!, args.outputs ?? [], ctx);
+    return {
+      path,
+      entityId: id,
+      classname: "env_zoom",
+      keyvalues,
+      warnings,
+      nextStep: "Compile and fire `Zoom`; a FOV change is a player-view effect, not a map property.",
+    };
+  },
+});
+
+export const writeProjectedTextureTool = defineTool({
+  name: "write_projectedtexture",
+  description:
+    "Writes an `env_projectedtexture`: a projected light texture with FOV, near/far Z, " +
+    "colour+intensity, shadows, world/model lighting and optional target. It is a dynamic " +
+    "projected texture, not a `light` or `light_spot`; keep the count low because it shares " +
+    "Source's projected-texture budget. Guarded.",
+  realm: "map",
+  guarded: true,
+  meta: { "anthropic/requiresUserInteraction": true },
+  inputSchema: {
+    path: z.string().describe("Path to the .vmf, absolute or relative to the repo root."),
+    origin: VEC3,
+    angles: VEC3.default([0, 0, 0]).describe("Projection direction (pitch yaw roll)."),
+    target: z.string().optional().describe("Optional target entity name."),
+    fov: z.number().min(1).max(179).default(90).describe("lightfov."),
+    nearZ: z.number().min(0).default(4).describe("nearz."),
+    farZ: z.number().min(0).default(750).describe("farz."),
+    color: z
+      .tuple([z.number().int().min(0).max(255), z.number().int().min(0).max(255), z.number().int().min(0).max(255), z.number().int().min(0).max(255)])
+      .default([255, 255, 255, 200])
+      .describe("lightcolor: R G B intensity."),
+    enabled: z.boolean().default(true).describe("Enabled spawnflag."),
+    enableShadows: z.boolean().default(false).describe("enableshadows."),
+    shadowQuality: z.number().int().min(0).max(1).default(1).describe("shadowquality."),
+    lightOnlyTarget: z.boolean().default(false).describe("lightonlytarget."),
+    lightWorld: z.boolean().default(true).describe("lightworld."),
+    cameraSpace: z.boolean().default(false).describe("cameraspace."),
+    targetname: z.string().optional(),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classname: z.string(),
+    keyvalues: z.record(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    if (!insideWorld(args.origin)) throw new Error("the projected texture origin leaves Source's world");
+    const color = args.color ?? [255, 255, 255, 200];
+    const keyvalues: Record<string, string> = {
+      classname: "env_projectedtexture",
+      origin: vec(args.origin),
+      angles: vec(args.angles ?? [0, 0, 0]),
+      spawnflags: args.enabled === false ? "0" : "1",
+      lightfov: String(args.fov ?? 90),
+      nearz: String(args.nearZ ?? 4),
+      farz: String(args.farZ ?? 750),
+      lightcolor: color.join(" "),
+      enableshadows: args.enableShadows ? "1" : "0",
+      shadowquality: String(args.shadowQuality ?? 1),
+      lightonlytarget: args.lightOnlyTarget ? "1" : "0",
+      lightworld: args.lightWorld === false ? "0" : "1",
+      cameraspace: args.cameraSpace ? "1" : "0",
+      ...(args.target !== undefined ? { target: args.target } : {}),
+      ...(args.targetname !== undefined ? { targetname: args.targetname } : {}),
+    };
+    const warnings = await fgdWarnings("env_projectedtexture", keyvalues, ctx);
+    warnings.push(
+      "a projected texture is a dynamic light: keep the number in view low or it competes " +
+        "with the flashlight and muzzle flashes.",
+    );
+    const [id = null] = await addEntities(path, [keyvalues], ctx);
+    verifyEntities(path, [id], ["env_projectedtexture"]);
+    return {
+      path,
+      entityId: id,
+      classname: "env_projectedtexture",
+      keyvalues,
+      warnings,
+      nextStep: "Compile and look; `TurnOn`/`TurnOff`/`SetFOV` are inputs, not keyvalues.",
+    };
+  },
+});
+
 export const entityExtraTools = [
   writePropTool,
   writeConstraintTool,
@@ -777,4 +908,6 @@ export const entityExtraTools = [
   writeSceneTool,
   writeAmbientGenericTool,
   writeAmbientMusicTool,
+  writeZoomTool,
+  writeProjectedTextureTool,
 ];

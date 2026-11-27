@@ -6,7 +6,7 @@ import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
 import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
 import { writeDecalTool, writeSpriteTool, writeSpotlightTool } from "../../src/maps/typescript/tools/dressing.js";
-import { writeAmbientMusicTool } from "../../src/maps/typescript/tools/entityextras.js";
+import { writeAmbientMusicTool, writeProjectedTextureTool, writeZoomTool } from "../../src/maps/typescript/tools/entityextras.js";
 import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { readBspEntities } from "../../src/maps/typescript/tools/bsp.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
@@ -21,6 +21,8 @@ describe.skipIf(!has.toolchain)("lighting and dressing",()=>{
   await writeSpriteTool.handler({path,kind:"beam",start:[-256,0,64],end:[256,0,64],confirm:true} as never,ctx);
   await writeSpotlightTool.handler({path,kind:"beam",origin:[0,0,300],angles:[-90,0,0],confirm:true} as never,ctx);
   await writeAmbientMusicTool.handler({path,origin:[0,0,64],message:"Event.MissionStart",confirm:true} as never,ctx);
+  await writeZoomTool.handler({path,origin:[0,0,64],fov:30,confirm:true} as never,ctx);
+  await writeProjectedTextureTool.handler({path,origin:[0,0,300],angles:[-90,0,0],confirm:true} as never,ctx);
   const c=await runCompile.handler({vmf:path,fast:true,hdr:false,stages:["vbsp"],toolchain:"stock",cull:false,timeoutMinutes:10,confirm:true} as never,ctx) as unknown as {ok:boolean;leaked:boolean;bsp:string};
   expect(c.leaked).toBe(false);expect(c.ok).toBe(true);
   const e=await readBspEntities.handler({path:c.bsp,limit:1,offset:0,histogramOnly:true},ctx) as unknown as {histogram:Record<string,number>};
@@ -29,5 +31,7 @@ describe.skipIf(!has.toolchain)("lighting and dressing",()=>{
   expect(e.histogram.env_beam??0).toBe(1);
   expect(e.histogram.beam_spotlight??0).toBe(1);
   expect(e.histogram.ambient_music??0).toBe(1);
+  expect(e.histogram.env_zoom??0).toBe(1);
+  expect(e.histogram.env_projectedtexture??0).toBe(1);
  },300000);
 });

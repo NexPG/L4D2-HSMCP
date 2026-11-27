@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.321-alpha - 2026-11-27
+
+- **Scripted view effects have builders.** `write_projectedtexture` writes
+  `env_projectedtexture` with FOV, near/far Z, colour+intensity, shadows, target and
+  camera-space keys; `write_env_zoom` writes `env_zoom` with FOV, rate and the suit-zoom flag.
+  Both are point-entity helpers over `write_point_entity`. The sealed-room compile fixture
+  emitted `env_zoom 1` and `env_projectedtexture 1` with no leak.
+- Tool count: 319. Tests: 259 files, 2,067 passed, 32 skipped (verified below).
+
 ## 0.0.320-alpha - 2026-11-27
 
 - **Spotlights and L4D music have builders.** `write_spotlight` writes `beam_spotlight` and

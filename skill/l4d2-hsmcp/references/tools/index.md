@@ -1,6 +1,6 @@
 # Tool catalogue
 
-317 tools. This page groups them by the job you are doing; each tool's own description is the
+319 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -263,6 +263,8 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_rope` | a linked `move_rope` + `keyframe_rope` pair |
 | `write_sprite` | `env_sprite`, or an `env_beam`/`env_laser` with the targets it needs |
 | `write_spotlight` | `beam_spotlight` or `point_spotlight` with FGD length/width/colour/spawnflags |
+| `write_projectedtexture` | `env_projectedtexture` with FOV, near/far Z, colour+intensity, shadows and target |
+| `write_env_zoom` | `env_zoom` FOV effect with rate and suit-zoom flag |
 
 ## Displacements
 

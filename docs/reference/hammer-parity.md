@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 27/11/2026: **317 tools**.
+Last checked against the tool list on 27/11/2026: **319 tools**.
 
 ## The file itself
 
@@ -148,6 +148,8 @@ getting `ENOENT` on the first call.
 | Lights | `write_light` | Point, `light_environment`, `light_dynamic`, `env_sun`, `shadow_control`; `_light` is the four-number colour+brightness form, and the sun gets angles. Compiles |
 | Postprocess | `write_postprocess` | Tonemap controller wired through a `logic_auto` (it has no setting keyvalues), fade, shake, and L4D2's `color_correction` |
 | Spotlights | `write_spotlight` | `beam_spotlight` and `point_spotlight` with FGD length, width, colour, rotation and spawnflags |
+| Projected texture | `write_projectedtexture` | `env_projectedtexture` with FOV, near/far Z, colour+intensity, shadows and target; it is a dynamic light |
+| FOV effect | `write_env_zoom` | `env_zoom` with FOV, rate and suit-zoom flag |
 | Atmosphere volume | `write_atmosphere_volume` | `fog_volume` box linking fog/postprocess/colour-correction targets by name; targets are resolved before the write |
 | Wind | `write_env_wind` | `env_wind` with FGD speed/gust keys and direction in `angles`; the FGD calls it partially functional |
 | Decals | `write_decal` | `infodecal` projected onto a face; a sized overlay is `write_overlay` |

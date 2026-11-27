@@ -1,6 +1,6 @@
 # VMF authoring
 
-96 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
+98 tools: source maps: files, entities, brushes, faces, lighting, overlays, instances, terrain and weather.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -31,12 +31,14 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_brush_entity` | The universal brush-entity primitive: any classname, a box volume, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_detail_sprites` | Adds a detail-sprite type to `detail.vbsp`: density, one sprite group with a sprite rectangle (`x y w h sheetSize`), `spritesize` (x y z random), amount and alpha. |
 | `write_entity_probe` | Adds a runtime presence probe to every entity with the given targetname: an `OnUser1` output that echoes a unique line through a `point_servercommand`. |
+| `write_env_zoom` | Writes an `env_zoom` entity: it controls the player's FOV over `Rate` seconds to `FOV` when it receives `Zoom`, and releases it on `UnZoom`. |
 | `write_ladder` | Writes `func_ladder` as a brush volume plus the `func_useableladder` point L4D2's compiler turns into AI ladder data. |
 | `write_logic` | Writes a point logic entity with its origin and outputs: `logic_auto`, `logic_relay`, `logic_timer`, `logic_branch`, `logic_compare`, `logic_case`, `math_counter` or `math_remap`. |
 | `write_mover` | Writes a brush mover with the volume it needs: `func_movelinear` (movedir, speed, startposition), `func_rotating` (maxspeed, angles, axis flags) or `func_tracktrain` (a `target` path of `path_track`s). |
 | `write_physics_constraint` | Writes a `phys_hinge`, `phys_lengthconstraint`, `phys_ballsocket`, `phys_slideconstraint` or `phys_ragdollconstraint` between two named entities. |
 | `write_point_entity` | The universal point-entity primitive: any classname, origin, arbitrary keyvalues and outputs, with the class read back and the keys checked against the FGD. |
 | `write_portal` | Places an areaportal, an areaportal window or an occluder: the two brush entities read_map_geometry has counted since the beginning and nothing has ever placed. |
+| `write_projectedtexture` | Writes an `env_projectedtexture`: a projected light texture with FOV, near/far Z, colour+intensity, shadows, world/model lighting and optional target. |
 | `write_prop` | Places a `prop_static`, `prop_dynamic`, `prop_physics`, `prop_dynamic_override` or `prop_physics_override` with its model, origin, angles, skin and solid mode. |
 | `write_random_case` | Writes a `logic_case` with one output per case and, by default, a `logic_auto` that fires `PickRandom` at map spawn. |
 | `write_scene` | Writes a `logic_choreographed_scene` with a required `SceneFile`, optional targets 1-8 and outputs. |
