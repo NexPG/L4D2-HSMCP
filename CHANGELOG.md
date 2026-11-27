@@ -11,7 +11,8 @@ with a line here.
   `point_spotlight` with the FGD's length, width, colour, HDR scale, rotation speed and
   spawnflags; `point_spotlight` defaults to its FGD "No Dynamic Light" bit. `write_ambient_music`
   writes the L4D music-cue entity (`message` is a GameSound entry, not a soundscript), with
-  optional outputs.
+  optional outputs. The sealed-room compile fixture emitted `beam_spotlight 1` and
+  `ambient_music 1` with no leak.
 - Tool count: 317. Tests: 259 files, 2,063 passed, 32 skipped (verified below).
 
 ## 0.0.319-alpha - 2026-11-27
