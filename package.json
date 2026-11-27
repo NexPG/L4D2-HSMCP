@@ -1,6 +1,6 @@
 {
   "name": "l4d2-hsmcp",
-  "version": "0.0.331-alpha",
+  "version": "0.0.332-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
   "license": "GPL-3.0-only",
   "author": "NexPG",
@@ -44,6 +44,7 @@
     "test:watch": "vitest",
     "skill:link": "tsx src/core/typescript/skill/link.ts",
     "eval:triggers": "tsx src/core/typescript/skill/eval-triggers.ts",
+    "eval:tasks": "tsx src/core/typescript/skill/eval-tasks.ts",
     "prepare": "tsx src/core/typescript/skill/link.ts",
     "prepack": "pnpm build",
     "docs:tools": "tsx src/core/typescript/docs/generate.ts"

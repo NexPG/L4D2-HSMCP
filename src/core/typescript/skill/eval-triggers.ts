@@ -3,16 +3,16 @@
  *
  * A trigger query asks one question: given this user request, does the model load the
  * `l4d2-hsmcp` skill? The runner does not grade answers and does not execute the work; it
- * sends a routing probe that forbids file changes, then reads the session's JSON events and
- * records every `skill` tool call. That separates description matching from whether the agent
- * can finish the task, which the task evals in `evals.json` cover.
+ * sends a routing probe that forbids file changes, then records every `skill` tool call.
+ * That separates description matching from whether the agent can finish the task, which the
+ * task evals in `evals.json` cover.
  *
  * Run it with `pnpm eval:triggers`. The report is development output and goes to
  * `.develop-diary/evals/` by default (gitignored), not to `test/` or the skill.
  */
-import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { runOpenCodeSession } from "./opencode-session.js";
 
 interface QueryCase {
   query: string;
@@ -25,7 +25,7 @@ interface EvalConfig {
   queries: QueryCase[];
 }
 
-interface ProbeResult {
+interface ProbeDetail {
   run: number;
   triggered: boolean;
   skillIds: string[];
@@ -42,28 +42,8 @@ interface Job {
   run: number;
 }
 
-interface EventPart {
-  type?: string;
-  tool?: string;
-  id?: string;
-  name?: string;
-  text?: string;
-  state?: { input?: { id?: unknown; skill?: unknown } };
-}
-
 const root = resolve(import.meta.dirname, "..", "..", "..", "..");
 const evalFile = join(root, "skill", "l4d2-hsmcp", "evals", "trigger-queries.json");
-const opencode =
-  process.env.OPENCODE_BIN ??
-  join(
-    process.env.APPDATA ?? "",
-    "npm",
-    "node_modules",
-    "@opencode",
-    "cli",
-    "bin",
-    "opencode.exe",
-  );
 
 const parsed = parseArgs(process.argv.slice(2));
 const config = JSON.parse(readFileSync(evalFile, "utf8")) as EvalConfig;
@@ -97,7 +77,7 @@ for (const entry of queries) {
   for (let run = 1; run <= runs; run += 1) jobs.push({ entry, run });
 }
 
-const results = new Map<number, ProbeResult[]>();
+const results = new Map<number, ProbeDetail[]>();
 let next = 0;
 
 async function worker(): Promise<void> {
@@ -105,14 +85,30 @@ async function worker(): Promise<void> {
     const job = jobs[next];
     next += 1;
     if (!job) return;
-    const result = await runProbe(job.entry, job.run);
+    const session = await runOpenCodeSession({
+      prompt: probe(job.entry.query),
+      cwd: root,
+      model,
+      timeoutMs,
+    });
+    const detail: ProbeDetail = {
+      run: job.run,
+      triggered: session.skillIds.some((id) => id.toLowerCase().includes("l4d2-hsmcp")),
+      skillIds: session.skillIds,
+      tools: session.toolNames,
+      text: session.text.slice(0, 400),
+      timedOut: session.timedOut,
+      exitCode: session.exitCode,
+      seconds: session.seconds,
+      stderr: session.stderr.slice(0, 400),
+    };
     const list = results.get(job.entry.id) ?? [];
-    list.push(result);
+    list.push(detail);
     results.set(job.entry.id, list);
-    const mark = result.triggered ? "LOAD" : "miss";
+    const mark = detail.triggered ? "LOAD" : "miss";
     process.stdout.write(
       `#${String(job.entry.id).padStart(2, "0")} run ${job.run}/${runs} ${mark} ` +
-        `${result.seconds.toFixed(1)}s ${JSON.stringify(result.skillIds)} ${job.entry.query}\n`,
+        `${detail.seconds.toFixed(1)}s ${JSON.stringify(detail.skillIds)} ${job.entry.query}\n`,
     );
   }
 }
@@ -187,85 +183,4 @@ function numberOption(value: string | number | boolean | undefined): number | un
 
 function stringOption(value: string | number | boolean | undefined): string | undefined {
   return typeof value === "string" ? value : undefined;
-}
-
-function runProbe(entry: QueryCase, run: number): Promise<ProbeResult> {
-  return new Promise((resolvePromise) => {
-    const started = Date.now();
-    const child = spawn(
-      opencode,
-      ["run", "--archived", "--format", "json", "--model", model, probe(entry.query)],
-      { cwd: root, env: process.env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
-    );
-
-    const skillIds: string[] = [];
-    const tools: string[] = [];
-    let text = "";
-    let buffer = "";
-    let stderr = "";
-    let timedOut = false;
-
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill();
-    }, timeoutMs);
-
-    const consume = (line: string): void => {
-      const trimmed = line.trim();
-      if (trimmed === "") return;
-      let event: { part?: EventPart } & EventPart;
-      try {
-        event = JSON.parse(trimmed) as { part?: EventPart } & EventPart;
-      } catch {
-        return;
-      }
-      const part = event.part ?? event;
-      if (part.type === "tool" && part.tool === "skill") {
-        const id = part.state?.input?.id ?? part.state?.input?.skill;
-        if (typeof id === "string") skillIds.push(id);
-      } else if (part.type === "skill") {
-        const id = part.id ?? part.name;
-        if (typeof id === "string") skillIds.push(id);
-      } else if (part.type === "tool") {
-        if (typeof part.tool === "string") tools.push(part.tool);
-      } else if (part.type === "text" && typeof part.text === "string") {
-        text += part.text;
-      }
-    };
-
-    child.stdout?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => {
-      buffer += chunk;
-      let newline = buffer.indexOf("\n");
-      while (newline !== -1) {
-        consume(buffer.slice(0, newline));
-        buffer = buffer.slice(newline + 1);
-        newline = buffer.indexOf("\n");
-      }
-    });
-
-    child.stderr?.setEncoding("utf8");
-    child.stderr?.on("data", (chunk: string) => {
-      stderr += chunk;
-    });
-
-    const finish = (code: number | null): void => {
-      clearTimeout(timer);
-      if (buffer !== "") consume(buffer);
-      resolvePromise({
-        run,
-        triggered: skillIds.some((id) => id.toLowerCase().includes("l4d2-hsmcp")),
-        skillIds,
-        tools,
-        text: text.slice(0, 400),
-        timedOut,
-        exitCode: code,
-        seconds: (Date.now() - started) / 1000,
-        stderr: stderr.slice(0, 400),
-      });
-    };
-
-    child.on("error", () => finish(-1));
-    child.on("close", (code) => finish(code));
-  });
 }

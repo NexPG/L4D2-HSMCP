@@ -5,6 +5,24 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.332-alpha - 2026-11-27
+
+- **The server now tells the agent to load the skill before its first tool call.** The MCP
+  instructions name the `skill` tool (OpenCode) and `l4d2-hsmcp://skill/SKILL.md` (other
+  clients) and say the skill owns the workflow. Measured on the same nav request: before the
+  change the agent made 12 `execute` calls without loading the skill; after it, one skill load
+  and 4 `execute` calls, with the same correct answer.
+- **Task evals now run, not just describe.** `src/core/typescript/skill/eval-tasks.ts`
+  (`pnpm eval:tasks`) runs each case in `evals.json` in its own `workspaces/eval-*` directory,
+  checks the artifact (plan JSON, VMF), the tool calls that produced it and the final answer,
+  and writes a report to `.develop-diary/evals/`. All four cases pass on
+  `deepseek-v4.1-flash`: the imported `c1m1_hotel` plan (`origin=imported`, 7 routes, 51
+  buildings, zero findings), the chapter-transition diagnosis, a sealed two-map safe-room
+  compile (lint 0, leak 0) and the stale-nav answer. The skill was loaded in every case.
+- The trigger and task runners share one session helper (`opencode-session.ts`), so the event
+  stream, stdin rule and standalone mode are defined once.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.331-alpha - 2026-11-27
 
 - **The server is now `l4d2-hsmcp`.** The package name, `bin`, MCP server name, OpenCode server

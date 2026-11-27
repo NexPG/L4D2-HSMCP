@@ -94,7 +94,8 @@ never seen this repository. Treat it as a product, not a scratchpad.
 7. **Validate before commit.** Run `pnpm vitest run test/support/skill-spec.test.ts
    test/support/structure.test.ts test/tools/skill.test.ts`, then the full gates. If a tool
    changed, regenerate `docs/tools/`. If a skill description or trigger changed, run
-   `pnpm eval:triggers --runs 1` and read the false negatives/positives.
+   `pnpm eval:triggers --runs 1` and read the false negatives/positives. If a workflow, a
+   reference or the server instructions changed, run the matching `pnpm eval:tasks --case N`.
 8. **Follow the published guidance.** The Agent Skills specification is
    <https://agentskills.io/specification>; Anthropic's authoring guide is
    <https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices>. When a

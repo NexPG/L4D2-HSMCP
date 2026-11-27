@@ -55,9 +55,11 @@ using it (`pnpm build`).
 
 `pnpm eval:triggers` sends every query in `evals/trigger-queries.json` to a real session as a
 routing probe, records whether `l4d2-hsmcp` was loaded, and writes a report to
-`test/eval-out/`. The task cases in `evals/evals.json` are the behaviour half. Together they
-answer two separate questions: does the description fire, and does the agent then do the right
-thing. They do not grade the model.
+`.develop-diary/evals/`. `pnpm eval:tasks` runs the task cases in `evals.json` in their own
+`workspaces/eval-*` directories and checks the artifact (a plan file, a compiled map), the
+tool calls that produced it, and the final answer. Together they answer two separate
+questions: does the description fire, and does the agent then do the right thing. They do not
+grade the model.
 
 ## Rules for writing here
 

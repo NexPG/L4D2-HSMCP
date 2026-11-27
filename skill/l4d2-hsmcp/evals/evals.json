@@ -3,6 +3,8 @@
   "evals": [
     {
       "id": 1,
+      "workspace": "eval-01-plan",
+      "timeoutMs": 900000,
       "prompt": "У меня установлена L4D2. Возьми официальную карту c1m1_hotel, сделай из неё plan.json и проверь его. Хочу увидеть, что схема не выдумывает данные, а читает реальную карту.",
       "expected_output": "A plan.json with origin=imported, the nav route and real bounds; check_map_plan returns zero findings; render_map_plan writes the drawings.",
       "assertions": [
@@ -11,10 +13,32 @@
         "The plan has a route from the player start to the far checkpoint",
         "check_map_plan returns zero findings",
         "The rendered output includes the five drawings or the documented drawing set"
+      ],
+      "checks": [
+        { "kind": "skill" },
+        { "kind": "tool", "any": ["plan_from_map"] },
+        { "kind": "file", "suffix": "plan.json", "jsonPath": "origin", "equals": "imported" },
+        { "kind": "file", "suffix": "plan.json", "jsonPath": "routes", "minLength": 1 },
+        { "kind": "tool", "any": ["check_map_plan"] },
+        {
+          "kind": "text",
+          "any": [
+            "findings: []",
+            "findings []",
+            "0 findings",
+            "0 замечаний",
+            "замечаний нет",
+            "no findings",
+            "ноль замечаний",
+            "zero findings"
+          ]
+        }
       ]
     },
     {
       "id": 2,
+      "workspace": "eval-02-transition",
+      "timeoutMs": 300000,
       "prompt": "Карта загружается, но после сейв-комнаты не переходит на следующую главу. Что проверить и как починить?",
       "expected_output": "Diagnose the four transition parts: info_changelevel brush, checkpoint door class near the landmark, all survivors inside, matching landmark pair and CHECKPOINT nav.",
       "assertions": [
@@ -23,10 +47,30 @@
         "Mentions CHECKPOINT nav and all survivors inside",
         "Mentions the matching info_landmark pair",
         "Does not suggest repacking or renaming the VPK as the first fix"
+      ],
+      "checks": [
+        { "kind": "skill" },
+        { "kind": "text", "any": ["info_changelevel"] },
+        { "kind": "text", "any": ["info_landmark"] },
+        { "kind": "text", "any": ["CHECKPOINT"] },
+        {
+          "kind": "text",
+          "any": [
+            "prop_door_rotating_checkpoint",
+            "checkpoint door",
+            "checkpoint-двер",
+            "checkpoint-зон",
+            "checkpoint зона",
+            "дверь чекпоинта"
+          ]
+        },
+        { "kind": "text", "any": ["выживш", "survivor"] }
       ]
     },
     {
       "id": 3,
+      "workspace": "eval-03-safe-room",
+      "timeoutMs": 1200000,
       "prompt": "Собери минимальную сейв-комнату с checkpoint-дверью и переходом на следующую карту, скомпилируй и проверь, что нет утечки и линт чистый.",
       "expected_output": "A sealed room with write_safe_room + write_changelevel, a checkpoint door, a landmark pair, lint 0 and a non-leaked compile.",
       "assertions": [
@@ -35,10 +79,19 @@
         "Adds a matching info_landmark",
         "read_vmf_lint reports 0",
         "read_vmf_leak reports sealed=true and the compile has no leak"
+      ],
+      "checks": [
+        { "kind": "skill" },
+        { "kind": "tool", "any": ["write_safe_room", "write_changelevel", "place_door"] },
+        { "kind": "file", "suffix": ".vmf" },
+        { "kind": "text", "any": ["sealed", "герметич", "нет утечки", "no leak"] },
+        { "kind": "text", "any": ["lint"] }
       ]
     },
     {
       "id": 4,
+      "workspace": "eval-04-nav",
+      "timeoutMs": 300000,
       "prompt": "Я перекомпилировал карту, и теперь пишет NAV ERRORS. Как понять, что nav устарел, и что делать?",
       "expected_output": "Check read_nav freshness against the BSP, regenerate after the final compile, and ship the BSP/nav pair from the generator.",
       "assertions": [
@@ -47,6 +100,12 @@
         "Says to ship the nav-generated BSP, not the compile output",
         "Mentions read_nav fresh=true before packing",
         "Does not treat NAV ERRORS as only a geometry leak"
+      ],
+      "checks": [
+        { "kind": "skill" },
+        { "kind": "text", "any": ["savedBspSize"] },
+        { "kind": "text", "any": ["regenerate", "перегенер", "пересобр"] },
+        { "kind": "text", "any": ["fresh"] }
       ]
     }
   ]

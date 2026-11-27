@@ -33,9 +33,11 @@ Realms: \`map\` is pure file work, \`local\` shells out to a host binary. Tools 
 or execute are guarded and take confirm:true. It never talks to a running game or a
 dedicated server and holds no lock.
 
-The L4D2-HSMCP skill is served as MCP resources under \`l4d2-hsmcp://skill/\`: start with
-\`l4d2-hsmcp://skill/SKILL.md\`, then the workflow or reference it names. The same routes
-are MCP prompts (\`l4d2_task\`, \`l4d2_hud_override\`, \`l4d2_material_edit\`,
+Before the first tool call in a session, load the \`l4d2-hsmcp\` skill and follow the workflow
+it names: in OpenCode call the \`skill\` tool with id \`l4d2-hsmcp\`; in any other client read
+\`l4d2-hsmcp://skill/SKILL.md\`. It says which workflow and reference the task needs, and which
+tools to reach for; the tool descriptions do not repeat that guidance. The same routes are
+MCP prompts (\`l4d2_task\`, \`l4d2_hud_override\`, \`l4d2_material_edit\`,
 \`l4d2_compiled_light\`, \`l4d2_editor_sequence\`).`;
 import { allTools } from "./registry.js";
 import { preapprove } from "./core/typescript/mcp/preapprove.js";
