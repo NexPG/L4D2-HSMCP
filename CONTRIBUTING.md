@@ -145,6 +145,12 @@ editing and VPK are separate areas. A tool from a new kind of work gets a new ar
 in `docs/tools/README.md` and a new page; it is not folded into an existing area and there is
 no "Other" table. `test/tools/docs.test.ts` fails when the generated pages drift.
 
+**Skill documentation follows the same one-owner rule.** Before adding a page, section or
+fact, search the skill; if it exists, edit the owner and link instead of copying. Every page is
+routed from `SKILL.md`, and the Agent Skills format is enforced by
+`test/support/skill-spec.test.ts`. The full maintenance rule is
+[`AGENTS.md` → Skill documentation is a product surface](AGENTS.md#skill-documentation-is-a-product-surface).
+
 **Research reports and upstream-intake audits belong in `.develop-diary/04-log/`, not in
 `docs/`.** `docs/reference/` is for stable contracts the agent reads while working;
 `docs/reports/` is for build/test incident reports. A research narrative in `docs/reports/`

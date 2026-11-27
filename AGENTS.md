@@ -64,6 +64,41 @@ run" table in `SKILL.md` is the index of those pages. Research exists to transfe
 into the skill: an insight that lives only in a log or a chat message will be lost, and the
 next agent will pay for the same mistake again.
 
+## Skill documentation is a product surface
+
+`skill/l4d2-hsmcp/` follows the Agent Skills specification and is read by an agent that has
+never seen this repository. Treat it as a product, not a scratchpad.
+
+1. **Search before writing.** Before adding a page, a section or a fact, read `SKILL.md` and
+   search the skill for the term, tool or rule. If it already exists, edit its owner and link;
+   never add a second copy. The page that owns a fact holds the full version; every other page
+   points to it.
+2. **One topic per file and directory.** A file may cover one coherent job; a sentence that
+   belongs to another page is moved there and linked, not left as a side note. If a new file is
+   needed, put it in the directory that owns the topic, not in the nearest convenient one.
+3. **A new page is routed.** Every page is listed in `SKILL.md` and every relative link must
+   resolve. `test/support/structure.test.ts` fails on an orphan page or a broken link.
+4. **Respect the format.** `name` is lowercase/hyphenated and equals the directory; the
+   description says what the skill does and when to use it; `SKILL.md` stays under 500 lines;
+   files over 100 lines start with `## Contents`; paths use forward slashes; dates are
+   provenance, not decoration. `test/support/skill-spec.test.ts` enforces the frontmatter and
+   the body limit.
+5. **Do not add what already exists.** Check the skill, `references/tools/index.md` and
+   `docs/` before writing a new tool, helper, page or table. A second copy is a defect even
+   when it is shorter or “fits this page better”; the second-implementation rule above applies
+   to documentation as well as code.
+6. **The skill is for the runtime agent.** Development notes, research narratives, changelogs,
+   open-task lists and “we should later” comments belong in `.develop-diary/`, not in the
+   skill. The skill says how to make L4D2 content; it does not describe how this repository is
+   maintained.
+7. **Validate before commit.** Run `pnpm vitest run test/support/skill-spec.test.ts
+   test/support/structure.test.ts test/tools/skill.test.ts`, then the full gates. If a tool
+   changed, regenerate `docs/tools/`.
+8. **Follow the published guidance.** The Agent Skills specification is
+   <https://agentskills.io/specification>; Anthropic's authoring guide is
+   <https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices>. When a
+   local habit and the specification disagree, the specification wins.
+
 ## Repository facts
 
 - **Every project gets its own directory under `workspaces/`.** A map, campaign, model or

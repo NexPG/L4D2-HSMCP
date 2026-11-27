@@ -5,6 +5,16 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.325-alpha - 2026-11-27
+
+- **The agent rules now cover skill maintenance itself.** `AGENTS.md` has a "Skill
+  documentation is a product surface" section: search before writing, one owner per fact, one
+  topic per file/directory, route every new page from `SKILL.md`, respect the Agent Skills
+  format, do not duplicate existing material, keep development notes in `.develop-diary/`, and
+  run the skill-spec/structure/tool tests before committing. `CONTRIBUTING.md` links to it from
+  the documentation rules.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.324-alpha - 2026-11-27
 
 - **Two pages moved to the directory that owns their topic.** The external Blender/Python
