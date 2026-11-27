@@ -165,6 +165,7 @@ material; the instructions live in one place.
 | `references/scripting/addons.md` | pure VScript addons: `mapspawn_addon`, a think runner, event-hook loaders, item control and probe testing |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
+| `references/testing/entity-probes.md` | entity, class and nav probes: marker shape, `markerOrder`, and measured limits |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | the FGD check, and where each L4D2-specific entity family is documented |
 | `references/mapping/world-dressing.md` | light, postprocess, atmosphere volumes, wind, spotlights, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |

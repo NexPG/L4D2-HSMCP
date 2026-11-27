@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.326-alpha - 2026-11-27
+
+- **Runtime probe material now lives in testing.** The entity-family page kept the entity
+  contract and moved `write_entity_probe`/class/nav probe shapes, marker rules and measured
+  limits into `references/testing/entity-probes.md`; the family page links to it. One topic per
+  page, and the probe detail no longer sits under a mapping reference.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.325-alpha - 2026-11-27
 
 - **The agent rules now cover skill maintenance itself.** `AGENTS.md` has a "Skill
