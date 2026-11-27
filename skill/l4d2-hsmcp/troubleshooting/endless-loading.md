@@ -7,7 +7,7 @@ loop**, not a slow load.
 ## Read the log first
 
 ```
-Get-Content "<game>\left4dead2\console.log" | Select-String 'Host_NewGame|Loading:|Map:'
+Get-Content "<game>/left4dead2/console.log" | Select-String 'Host_NewGame|Loading:|Map:'
 ```
 
 - A normal load prints **one** `Host_NewGame on map <name>`, **one** `Loading: N seconds` and

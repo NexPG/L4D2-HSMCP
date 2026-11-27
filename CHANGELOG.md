@@ -5,6 +5,17 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.322-alpha - 2026-11-27
+
+- **The skill frontmatter now follows the Agent Skills specification.** `name` is
+  `l4d2-hsmcp` (lowercase, matches the directory), the description opens in the third person
+  and keeps the discovery triggers, and `license: GPL-3.0-only` plus `compatibility` state
+  what the skill needs. A new `test/support/skill-spec.test.ts` enforces the name regex, the
+  directory match, the description limit, the optional-field limits and the 500-line body.
+- **Windows paths in skill text are forward slashes**, so a non-Windows reader and the
+  specification's path rule agree.
+- Tool count: 319. Tests: 259 files, 2,072 passed, 32 skipped (verified below).
+
 ## 0.0.321-alpha - 2026-11-27
 
 - **Scripted view effects have builders.** `write_projectedtexture` writes

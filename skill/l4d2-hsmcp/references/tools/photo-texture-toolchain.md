@@ -45,7 +45,7 @@ and bring the resulting PNG back into the workspace.
 - **Verified here: Blender 4.2.9 LTS.** Blender 5.3 is installed, but the stock Blender
   Source Tools add-on is older and not yet proven on 5.x; use 4.2 LTS for the model-skin
   workflow until that changes.
-- Installed here at `C:\Program Files\Blender Foundation\Blender 5.3\blender.exe` and
+- Installed here at `C:/Program Files/Blender Foundation/Blender 5.3/blender.exe` and
   `.3d-projects/blender-4.2.9/blender-4.2.9-windows-x64/blender.exe`.
 - Headless use: `blender.exe -b -P script.py`.
 - Licence: GPL. It is an external program; the MCP only launches it.
@@ -88,7 +88,7 @@ rembg[cpu]==2.0.88
 Install it with:
 
 ```powershell
-.\src\core\python\setup.ps1 -Models
+./src/core/python/setup.ps1 -Models
 ```
 
 Without `-Models`, the normal sidecar stays small; the VTF/VMT/VPK/BSP tools still work.
