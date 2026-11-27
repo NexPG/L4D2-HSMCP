@@ -2,7 +2,7 @@
 
 A chapter is a sequence of files the engine walks through, and every step is an entity the
 next map has to agree with. Each file can be valid on its own and the campaign still breaks:
-a changelevel that names the wrong map, a landmark that exists in one file, a saferoom door
+a changelevel that names the wrong map, a landmark that exists in one file, a safe-room door
 whose name the engine does not look up. This page is the wiring behind the geometry, and the
 tools that write and check it.
 
@@ -182,7 +182,7 @@ Findings are errors, warnings and info; `overall` is fail, warn or pass. It read
 ## L4D2 facts that make this different from other Source games
 
 - `info_changelevel` is a brush; `trigger_changelevel` is not the L4D2 transition.
-- The saferoom door is `prop_door_rotating_checkpoint`, resolved by class near the landmark
+- The safe-room door is `prop_door_rotating_checkpoint`, resolved by class near the landmark
   (not by name).
 - One `info_player_start`, not a team spawn pair.
 - The finale type set skips 3 and stock campaigns use gauntlet (1) or custom (2); scavenge is

@@ -5,6 +5,12 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.328-alpha - 2026-11-27
+
+- **Terminology pass: `saferoom` is gone from prose.** The skill says `safe room` / `safe-room`
+  consistently; the tool name `write_saferoom_stock` is unchanged because it is an API name.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.327-alpha - 2026-11-27
 
 - **The skill now has its first evaluation assets.** `evals/evals.json` defines four realistic

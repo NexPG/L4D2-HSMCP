@@ -230,7 +230,7 @@ script, name the file and the hook.
 |---|---:|---:|---:|---:|---:|---|
 
 Use the measured official range (`references/mechanics/weapons-and-items.md`) and the
-chapter's nav-area ratio. State where the saferoom stock is forced and where the Director owns
+chapter's nav-area ratio. State where the safe-room stock is forced and where the Director owns
 the density. "Five spawners in a full chapter" is a defect, not a style.
 
 ## 10. Asset palette and motifs

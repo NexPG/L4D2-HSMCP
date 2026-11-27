@@ -23,7 +23,7 @@ run_map_test(map, bsp, nav, markers, markerOrder: "any")
   already carry pistols. Probe a spawner early (OnMapSpawn) or accept that its removal is the
   finding.
 - Verified end to end on `hsmcp_gameplay`: vbsp++ compiled a sealed room with a rifle spawner,
-  saferoom medkit/pills/ammo, an intro camera with its `logic_auto` and timer, a rescue point
+  safe-room medkit/pills/ammo, an intro camera with its `logic_auto` and timer, a rescue point
   and an infected border; all nine probes matched at 11.2 s.
 
 ## Behaviour, not just presence
@@ -37,7 +37,7 @@ run_map_test(map, bsp, nav, markers, markerOrder: "any")
 
 Limits found in the same runs:
 
-- The saferoom medkit/pills/ammo spawners were present, but their classes counted 0. The test
+- The safe-room medkit/pills/ammo spawners were present, but their classes counted 0. The test
   map has no flow and survivors start with a medkit and pills, so the Director did not
   populate them. Density is a probability, not a count.
 - `info_map_parameters` density was isolated on a stock `c1m1_hotel` copy:

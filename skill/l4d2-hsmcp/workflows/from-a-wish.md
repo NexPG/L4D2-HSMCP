@@ -101,7 +101,7 @@ than three chapters of the same mistake.
 | Chapter transition | `info_changelevel` + landmark + checkpoint door + nav CHECKPOINT | The next map loads and the log names it |
 | Crescendo / panic | `func_button`/`trigger_once` → `director` `ForcePanicEvent`, nav Battlefield | `STAGE_DONE` or the Director's own marker, not just an entity |
 | Tank / witch | `z_spawn` with `sv_cheats 1`, spawn area or scripted stage | The spawn line and a screenshot; `Tank Count` is not proof |
-| Weapons / items | FGD-checked `weapon_*`, `item_*`, saferoom stock | The pickup appears and is usable |
+| Weapons / items | FGD-checked `weapon_*`, `item_*`, safe-room stock | The pickup appears and is usable |
 | Custom finale | `trigger_finale` type 2, stages, escape, outtro | Each stage marker and the credits/changelevel marker |
 | Weather | `func_precipitation`, `env_fog_controller` | Game screenshot; a static check only proves the entity exists |
 | Survival / Scavenge / Versus | mission mode, mode script, mode entities | Load/HUD and the mode script line; say when a full round is not proven |

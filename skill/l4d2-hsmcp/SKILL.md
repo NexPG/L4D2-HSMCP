@@ -197,7 +197,7 @@ material; the instructions live in one place.
 | `references/mapping/3d-skybox.md` | `build_skybox`, scale 16, and the copy/room/camera workflow |
 | `references/mechanics/coverage.md` | what of L4D2 is covered, and what is not yet |
 | `references/mechanics/campaign-wiring.md` | safe room, landmark pair, changelevel, finale, spawn areas, item density, and the cross-map check |
-| `references/mechanics/weapons-and-items.md` | the spawn classes, how to place one, and the saferoom rules |
+| `references/mechanics/weapons-and-items.md` | the spawn classes, how to place one, and the safe-room rules |
 | `references/mechanics/crescendo-and-panic.md` | triggered hordes, nav Battlefield/Battlestation, testing |
 | `references/mechanics/tanks-and-witches.md` | `z_spawn`, cheats, the log lines that prove a tank or witch exists |
 | `references/mechanics/survival.md` | mission mode, `run_map_test mode: "survival"`, HUD evidence |
