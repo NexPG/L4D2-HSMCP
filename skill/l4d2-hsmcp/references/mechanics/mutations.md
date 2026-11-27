@@ -104,7 +104,8 @@ MaxSpecials`, and every class disabled. It cannot prove a class actually spawned
 run_vpk_build({ dir: "my_mutation", out: "my_mutation.vpk" })
 ```
 
-Copy the VPK into `left4dead2/addons/` and launch:
+Copy the VPK into `<gameDir>/addons/` and launch. `config.gameDir` is already the
+`.../left4dead2` folder; the path is **not** `<gameDir>/left4dead2/addons`.
 
 ```
 run_map_test({

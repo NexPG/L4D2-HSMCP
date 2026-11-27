@@ -5,6 +5,18 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.318-alpha - 2026-11-27
+
+- **`write_director_options` is verified at runtime.** A bench map with a mutation VPK and
+  `write_options_probe` logged `Mutation hsmcp_opt_mode loaded`, then
+  `SessionOptions` `CommonLimit=0`, `TankLimit=0`, `MaxSpecials=1`, `MinSpecials=0`
+  at 14.2 s. The table was written by the new tool, not by `write_mutation`.
+- **The mutation install path is now explicit.** `config.gameDir` is already
+  `.../left4dead2`; the addon goes to `<gameDir>/addons`, not
+  `<gameDir>/left4dead2/addons`. The earlier live failure was a nested directory, not the mode
+  or the probe.
+- Tool count: 315. Tests: 259 files, 2,058 passed, 32 skipped.
+
 ## 0.0.317-alpha - 2026-11-27
 
 - **Atmosphere volumes and wind have builders.** `write_atmosphere_volume` creates a
