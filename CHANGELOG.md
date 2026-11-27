@@ -5,6 +5,27 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.335-alpha - 2026-11-28
+
+- **Foundation addons are required items, not copies.** A Workshop add-on can be a library,
+  framework or shared asset pack that other add-ons build on. Dependents declare it on the
+  Workshop page, never in `addoninfo.txt` or the upload VDF, and keep its scripts and assets
+  out of their own VPK. The rule is in `SKILL.md`,
+  `references/campaign/addon-and-deployment.md` and `references/scripting/addons.md`.
+- **The add-on script set was wrong and is now correct.** The skill said "four"
+  `*_addon.nut` scripts; L4D2 runs three: `mapspawn_addon.nut` (root, before entities),
+  `director_base_addon.nut` (`DirectorScript`, every round) and `scriptedmode_addon.nut`
+  (`g_MapScript`, scripted modes). The same pages now document library/plugin hosts and
+  `StringToFile`/`FileToString` settings under `left4dead2/ems/`, with the fork hazards:
+  class-name replacement, unnamespaced globals, colliding settings paths and chat commands.
+- **The workshop VDF tools say what they cannot do.** `write_workshop_vdf` and
+  `read_workshop_vdf` now state that required items are Workshop page metadata; neither the
+  VDF nor the VPK has a field for them.
+- Study note: `.develop-diary/04-log/2026-11-28-workshop-addon-study.md` (not shipped). Open
+  product gap: an installed-addon conflict audit (plugin classes, globals, settings paths).
+- Router: 378 lines, ≈9,330 tokens by the controlled attachment measurement.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.334-alpha - 2026-11-27
 
 - **No prepared author name anywhere.** The skill's author-identity rule now says there is no

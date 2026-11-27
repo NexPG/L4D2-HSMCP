@@ -73,6 +73,14 @@ The version is read from the toolkit's `package.json`; do not hard-code an older
 it with `health` or from the package itself, and use the same value in files you write by
 hand. There is deliberately no fixed number in this skill: a number here would drift.
 
+**Foundations are required, not copied.** Some Workshop add-ons are libraries, frameworks or
+shared asset packs that other add-ons build on. A dependent add-on lists the foundation as a
+required item on the Workshop page and keeps its scripts and assets out of its own VPK; a
+second copy is a conflict. If a script needs the library, check its global at load and tell the
+player what to install when it is missing. Details:
+[`references/campaign/addon-and-deployment.md`](references/campaign/addon-and-deployment.md)
+and [`references/scripting/addons.md`](references/scripting/addons.md).
+
 ## The mistakes that waste a run
 
 Every research result on this project is converted into **prevention**, not into a story.
@@ -157,12 +165,12 @@ material; the instructions live in one place.
 | `checklists/map-ready.md` | the per-map checklist: skeleton, goals, safe room, finale, world, gate |
 | `references/campaign/finale.md` | building or debugging the last chapter |
 | `references/campaign/custom-finale.md` | type 2 stages, `[map]_finale.nut`, the escape phase |
-| `references/campaign/addon-and-deployment.md` | staging, packing, deploying |
+| `references/campaign/addon-and-deployment.md` | staging, packing, deploying, and foundation add-ons as Workshop required items |
 | `references/nav/generation.md` | generating a nav mesh |
 | `references/nav/attributes-and-flow.md` | marking CHECKPOINT/FINALE, or bots ignore the map |
 | `references/nav/editing.md` | the console command set for repairing a generated mesh |
 | `references/scripting/vscript.md` | shipping a `.nut`, the event contract, `read_vscript_api` and `check_vscript_contract` |
-| `references/scripting/addons.md` | pure VScript addons: `mapspawn_addon`, a think runner, event-hook loaders, item control and probe testing |
+| `references/scripting/addons.md` | pure VScript addons: the three `*_addon.nut` scripts, library/plugin hosts, `ems` settings, event hooks, item control and probes |
 | `references/scripting/game-events.md` | `info_game_event_proxy`'s FGD list vs the 338 VScript events, and how to read each |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |

@@ -23,7 +23,8 @@ export const writeWorkshopVdfTool = defineTool({
     "image, visibility, title, description and change note. The content folder must exist and " +
     "should contain addoninfo.txt; a missing manifest is a warning because SteamCMD will " +
     "still build the item. Uploading itself is a Steam action, not something this server can " +
-    "do offline. Guarded.",
+    "do offline. It does not set Workshop required items: Steam stores those on the item page, " +
+    "and neither this VDF nor the VPK has a field for them. Guarded.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -131,7 +132,8 @@ export const readWorkshopVdfTool = defineTool({
   description:
     "Reads a `workshop_build_item.vdf`: appid, publishedfileid, contentfolder, previewfile, " +
     "visibility, title, description and change note. Use it before handing the file to " +
-    "steamcmd or after editing it by hand.",
+    "steamcmd or after editing it by hand. The format has no dependency field; required items " +
+    "are Workshop page metadata, not VDF keys.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Workshop VDF, absolute or relative to the repo root."),

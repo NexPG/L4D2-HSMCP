@@ -7,6 +7,7 @@ mounts; the VPK name decides how the mission is found.
 
 - Staging tree
 - Content flags: the add-on browser groups by these
+- Foundation addons and required items
 - Large add-ons: numbered archives
 - Deployment rules
 - After deploy
@@ -68,6 +69,31 @@ A **single map with no `missions/` file is a map add-on, not a broken campaign**
 validator reports it as `addon-single-map` and asks for `addonContent_Map`. Soundtrack and
 voice packs use `addonContent_Music` and `addonContent_Sound`; a model or texture pack needs no
 map at all.
+
+## Foundation addons and required items
+
+Some Workshop add-ons are **foundations**: a script library, a framework, a shared asset pack
+or a mode layer that other add-ons build on. They are installed alongside the add-on that uses
+them, not copied into it. A foundation is usually updated by its author; a copy freezes an old
+version and can disagree with the add-ons built for the current one.
+
+- Declare the foundation on the **Workshop page** with *Add/Remove Required Items*. That is
+  where Steam stores the dependency. Neither `addoninfo.txt` nor `workshop_build_item.vdf` has
+  a field for it, and `write_workshop_vdf` cannot set it.
+- Do not copy the foundation's scripts, globals, hooks or assets into your VPK "to make it
+  standalone". A second copy means two globals with the same name, doubled hooks or two
+  competing entity factories; the last one loaded wins, or both run.
+- A script that needs a library should detect its global at load and, when it is absent, print
+  a short chat line that names the required item and stop. Do not silently fall back to a
+  bundled copy; that is the duplication the required item exists to avoid.
+- A fork of a foundation-based add-on keeps the foundation required, uses unique global,
+  class, command and settings-file names, and must not be installed next to the original
+  unless it is explicitly a replacement. The script-side pattern is in
+  [`../scripting/addons.md`](../scripting/addons.md).
+
+This is a dependency on a **different add-on**, not on a map asset. For assets the rule is the
+opposite: an asset that is not in the game or in the map's pakfile must be packed, because the
+player does not have it.
 
 ## Large add-ons: numbered archives
 

@@ -9,9 +9,11 @@ a timer, and the mistakes that look correct in a file but never execute.
 - Layout
 - Before packing
 - What loads by itself
+- Libraries and plugin hosts
 - Event hooks need a loader
 - Bot detection
 - Item control
+- Persistent settings without a map
 - Testing without a map edit
 - A verified pattern
 
@@ -73,6 +75,18 @@ The three manifests use different blocks and keys: `particles_manifest` with `fi
 chapter, before entities exist**, in the root table. Several addons can ship the same name and
 all run, unlike `mapspawn.nut`, which conflicts.
 
+The engine knows three fixed file names under `scripts/vscripts/`. Every active add-on's copy
+runs, so two add-ons can use the same one without colliding:
+
+| File | Scope | When |
+|---|---|---|
+| `mapspawn_addon.nut` | root table | once per chapter, before entities |
+| `director_base_addon.nut` | `DirectorScript` | every round start |
+| `scriptedmode_addon.nut` | `g_MapScript` | when a scripted mode starts |
+
+A library usually initialises through `director_base_addon.nut`; a dependent add-on uses its
+own copy to check that the library is present and then includes its script.
+
 Because it runs before entities, it is the right place to define state and spawn a runner, not
 to look for players or props. Three ways to get recurring code:
 
@@ -95,10 +109,37 @@ SpawnEntityFromTable("logic_script", {
 
 `hsmcp_think.nut` then defines `HSMCP_Think()` and calls the root function with `::`.
 
+## Libraries and plugin hosts
+
+A library add-on can expose a global table, a set of hooks and a plugin interface; dependent
+add-ons load themselves through it instead of copying it. The dependency is a required
+Workshop item (see
+[`../campaign/addon-and-deployment.md`](../campaign/addon-and-deployment.md)), not a file in
+the dependent VPK.
+
+The load-time check belongs in `director_base_addon.nut`, and it must fail visibly:
+
+```squirrel
+if (!("LibGlobal" in getroottable()))
+{
+    ClientPrint(null, 3, "\x04[My Addon] \x03A required library add-on is missing.");
+    return;
+}
+IncludeScript("my_addon", getroottable());
+```
+
+- Do not `IncludeScript` a path that belongs to another add-on as a fallback. The engine does
+  not namespace add-on scripts, and a copy is a second implementation with its own globals.
+- A plugin host may key plugins by **class name** and replace a duplicate. A fork that keeps
+  the class name silently shadows the original, or is shadowed by it, depending on load order.
+  Give a fork unique class, global, chat-command and settings-file names.
+- The chat message is the only missing-item signal a player sees; a silent `return` looks like
+  a broken add-on.
+
 ## Event hooks need a loader
 
 `OnGameEvent_<name>(params)` is called only when the file containing it is loaded by a
-**loader**: a `logic_script` entity, a mode script, or one of the four `*_addon.nut` global
+**loader**: a `logic_script` entity, a mode script, or one of the three `*_addon.nut` global
 scripts. `script_execute` runs a file's top-level code but registers no hooks, and an
 `IncludeScript` from `mapspawn_addon` does **not** register hooks either.
 
@@ -148,6 +189,22 @@ inventory, no entity is created or destroyed, and the bot can still give it to a
 The classes are `weapon_pain_pills`, `weapon_adrenaline` and `weapon_first_aid_kit`. A hidden
 inventory needs death, round end and chapter transition handling because the item is not in the
 bot's inventory; a carry lock needs none of that.
+
+## Persistent settings without a map
+
+`StringToFile(name, text)` and `FileToString(name)` read and write one string under
+`<game>/left4dead2/ems/`; the name is a relative path, so `my_addon/settings.txt` becomes
+`left4dead2/ems/my_addon/settings.txt`. The file is server-side, survives map changes and is
+not in the VPK.
+
+- Write a table literal (`"{ ... }"`) and read it back with
+  `compilestring("return " + text)()`; that is the simple format the engine gives you.
+- Parse defensively and clamp after loading: a hand-edited `Limit = -1`, or a minimum above
+  its maximum, must not reach `SpawnEntityFromTable`. Rewrite the sanitised values so the next
+  load starts clean.
+- `StringToFile` creates the directory and overwrites the file; there is no append.
+- A reset command rewrites the defaults rather than deleting the file; the script has no
+  reliable delete.
 
 ## Testing without a map edit
 
