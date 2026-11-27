@@ -1,6 +1,6 @@
 {
   "name": "hammer-mcp",
-  "version": "0.0.329-alpha",
+  "version": "0.0.330-alpha",
   "description": "Local-first MCP server for Source-engine map work: VMF, BSP, entity-lump patches, compile and audit",
   "license": "GPL-3.0-only",
   "author": "NexPG",
@@ -41,8 +41,9 @@
     "lint": "eslint src test",
     "test": "vitest run",
     "test:watch": "vitest",
-    "skill:link": "node scripts/link-skill.mjs",
-    "prepare": "node scripts/link-skill.mjs",
+    "skill:link": "tsx src/core/typescript/skill/link.ts",
+    "eval:triggers": "tsx src/core/typescript/skill/eval-triggers.ts",
+    "prepare": "tsx src/core/typescript/skill/link.ts",
     "prepack": "pnpm build",
     "docs:tools": "tsx src/core/typescript/docs/generate.ts"
   },

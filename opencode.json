@@ -1,4 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "skills": ["./skill/l4d2-hsmcp"]
+  "skills": ["./skill/l4d2-hsmcp"],
+  "mcp": {
+    "servers": {
+      "hammer-mcp": {
+        "type": "local",
+        "command": [
+          "node",
+          "-e",
+          "const fs=require('fs'),p=require('path');let d=process.cwd();for(;;){const f=p.join(d,'package.json');if(fs.existsSync(f)){try{if(JSON.parse(fs.readFileSync(f,'utf8')).name==='hammer-mcp')break}catch{}}const u=p.dirname(d);if(u===d)throw new Error('hammer-mcp: repository root not found from '+process.cwd());d=u}const e=p.join(d,'dist','index.js');if(!fs.existsSync(e))throw new Error('hammer-mcp: '+e+' is missing; run pnpm build');process.chdir(d);import(require('url').pathToFileURL(e).href).catch(err=>{console.error(err);process.exit(1)})"
+        ]
+      }
+    }
+  }
 }

@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.330-alpha - 2026-11-27
+
+- **OpenCode sessions now have the L4D2 tools, not only the instructions.** `opencode.json`
+  registers the `hammer-mcp` server. OpenCode resolves a local MCP `command` against the
+  session's directory, so `["node", "dist/index.js"]` failed with `Cannot find module
+  .../src/dist/index.js` in `src/` (reproduced with `opencode mcp list`). The entry is a
+  `node -e` bootstrap that walks up to the package named `hammer-mcp`, changes to that
+  directory and imports `dist/index.js`. Verified connected and callable from the root and
+  from `src/`.
+- **The trigger evals have a runner.** `src/core/typescript/skill/eval-triggers.ts`
+  (`pnpm eval:triggers`) sends each query in `evals/trigger-queries.json` as a routing probe,
+  records the `skill` tool calls, and writes a report to `.develop-diary/evals/`. Baseline:
+  **20/20 at 3 runs** on `deepseek-v4.1-flash` and **20/20 at 1 run** on `claude-haiku-5-5`,
+  with no false positives on the near-miss queries. The skill setup scripts live in
+  `src/core/typescript/skill/` rather than a top-level `scripts/` directory.
+- The earlier "nav does not load the skill" result was not a description fault: the server was
+  not connected, and a piped child process blocked on stdin. Both are fixed; the skill now
+  loads for that query in about 4 s.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.329-alpha - 2026-11-27
 
 - **The skill is discoverable from any repository subdirectory.** The `skills` entry in

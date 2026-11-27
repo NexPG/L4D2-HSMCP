@@ -10,14 +10,13 @@
  * ships and what the MCP server serves). This script points `.opencode/skills/l4d2-hsmcp`
  * at it with a directory link, so there is still one copy of the content.
  *
- * Idempotent: a correct link is left alone; an existing real directory is reported and
- * never deleted.
+ * Run it with `pnpm skill:link`; `prepare` also runs it on install. Idempotent: a correct
+ * link is left alone, and an existing real directory is reported and never deleted.
  */
 import { existsSync, lstatSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..", "..", "..", "..");
 const target = join(root, "skill", "l4d2-hsmcp");
 const skillsDir = join(root, ".opencode", "skills");
 const link = join(skillsDir, "l4d2-hsmcp");
@@ -29,7 +28,7 @@ if (!existsSync(join(target, "SKILL.md"))) {
 
 mkdirSync(skillsDir, { recursive: true });
 
-let existing;
+let existing: ReturnType<typeof lstatSync> | undefined;
 try {
   existing = lstatSync(link);
 } catch {
@@ -43,7 +42,7 @@ if (existing) {
       process.exit(0);
     }
     console.error(
-      `link-skill: .opencode/skills/l4d2-hsmcp is a link to another directory; remove it first`,
+      "link-skill: .opencode/skills/l4d2-hsmcp is a link to another directory; remove it first",
     );
     process.exit(1);
   }

@@ -45,6 +45,20 @@ Copy-Item -Recurse skill/l4d2-hsmcp "$env:USERPROFILE/.config/opencode/skills/l4
 
 The directory name becomes the skill ID, so keep it `l4d2-hsmcp`.
 
+The same `opencode.json` registers the `hammer-mcp` server, so a session gets the tools the
+skill talks about. OpenCode resolves a local MCP `command` against the session directory, so
+the entry uses a small `node -e` bootstrap that finds the repository root and imports
+`dist/index.js`; a plain `["node", "dist/index.js"]` fails outside the root. Build before
+using it (`pnpm build`).
+
+## Evaluations
+
+`pnpm eval:triggers` sends every query in `evals/trigger-queries.json` to a real session as a
+routing probe, records whether `l4d2-hsmcp` was loaded, and writes a report to
+`test/eval-out/`. The task cases in `evals/evals.json` are the behaviour half. Together they
+answer two separate questions: does the description fire, and does the agent then do the right
+thing. They do not grade the model.
+
 ## Rules for writing here
 
 1. **Only verified facts.** A statement about the engine, a keyvalue or a flag needs a source:
