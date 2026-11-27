@@ -5,6 +5,15 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.312-alpha - 2026-11-26
+
+- **Facades and landmarks enter the plan.** A building that cannot be walked into has no nav,
+  so the survey now reads upward-facing roof polygons above the local ground and records them
+  as context buildings (up to 24 per map, clipped to the site). Every chapter now carries 8–40
+  buildings (median 29) instead of only its enterable rooms.
+- All 55 official chapters import with zero findings.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.311-alpha - 2026-11-26
 
 - **Every flight of stairs, not only the route's.** Stairs used to be derived from the route's

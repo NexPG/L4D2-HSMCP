@@ -180,6 +180,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   };
   // Declared before the site so the site can hold the same arrays; the volumes are filled
   // once the brush models are read.
+  let bspPolygons: ReturnType<typeof readBspPolygons> | undefined;
   const water: Array<Record<string, unknown>> = [];
   const noBuild: Array<Record<string, unknown>> = [];
   const site = {
@@ -322,7 +323,8 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   // Water is usually world geometry with a water material, not an entity: a survey reads the
   // upward-facing water polygons and records their footprint.
   try {
-    const polygons = readBspPolygons(bspPath);
+    bspPolygons = readBspPolygons(bspPath);
+    const polygons = bspPolygons;
     for (const polygon of polygons.faces) {
       if (!/water|swamp|canal/i.test(polygon.material)) continue;
       if (polygon.normal[2] < 0.7) continue;
@@ -489,6 +491,53 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       };
     });
 
+  // ---- context buildings from roof faces -----------------------------------------
+  // A facade cannot be walked into, so it has no nav: its roof is the evidence that a volume
+  // exists. Upward faces above the local ground become context buildings.
+  const groundAt = (x: number, y: number): number | undefined => {
+    let best = Number.POSITIVE_INFINITY;
+    for (const area of nav.areas) {
+      if (x < area.minX || x > area.maxX || y < area.minY || y > area.maxY) continue;
+      best = Math.min(best, (area.minZ + area.maxZ) / 2);
+    }
+    return Number.isFinite(best) ? best : undefined;
+  };
+  const roofBuildings: Array<Record<string, unknown>> = [];
+  if (bspPolygons) {
+    for (const polygon of bspPolygons.faces) {
+      if (polygon.normal[2] < 0.85 || polygon.points.length < 3) continue;
+      const px = polygon.points.map((point) => point[0]);
+      const py = polygon.points.map((point) => point[1]);
+      const width = Math.max(...px) - Math.min(...px);
+      const depth = Math.max(...py) - Math.min(...py);
+      if (width < 256 || depth < 256 || width * depth < 8192) continue;
+      const cx = (Math.min(...px) + Math.max(...px)) / 2;
+      const cy = (Math.min(...py) + Math.max(...py)) / 2;
+      if (Math.min(...px) < site.bounds.x0 || Math.max(...px) > site.bounds.x1) continue;
+      if (Math.min(...py) < site.bounds.y0 || Math.max(...py) > site.bounds.y1) continue;
+      if (buildings.some((building) => Math.abs(cx - building.x) <= building.width / 2 && Math.abs(cy - building.y) <= building.depth / 2)) continue;
+      if (roofBuildings.some((roof) => Math.hypot(Number(roof.x) - cx, Number(roof.y) - cy) < 64)) continue;
+      const z = polygon.points[0]![2];
+      const base = groundAt(cx, cy) ?? z - 128;
+      if (z <= base) continue;
+      roofBuildings.push({
+        id: `roof_${roofBuildings.length}`,
+        name: `Roof ${roofBuildings.length + 1}`,
+        x: Math.round(cx), y: Math.round(cy),
+        width: Math.round(width), depth: Math.round(depth), rotation: 0,
+        floors: Math.max(1, Math.round((z - base) / 128)),
+        floorHeight: 128,
+        baseZ: Math.round(base),
+        roofZ: Math.round(z) + 8,
+        excavated: false,
+        enterable: false,
+        role: "context",
+        floorsPlan: [],
+      });
+      if (roofBuildings.length >= 24) break;
+    }
+  }
+
   // ---- heightfield from the map's own collision ---------------------------------
   // A 128 u grid, each cell sampled by a downward column trace: the lowest standable surface
   // is the ground, so bumps, kerbs and pits survive. The nav surface is only the fallback for
@@ -626,7 +675,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     districts,
     site,
     terrain,
-    buildings,
+    buildings: [...buildings, ...roofBuildings],
     routes: [{
       id: "critical", kind: "critical" as const, typology: "string-of-pearls" as const, width: 128,
       points: steps.map((step) => [Math.round(step.x), Math.round(step.y), Math.round(step.z)]),
@@ -652,7 +701,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   writeFileSync(destination, JSON.stringify(parsed, null, 2), "utf8");
   return {
     path: destination, name: plan.name, areas: areas.length, nodes: routeNodes.length,
-    buildings: buildings.length, districts: districts.length,
+    buildings: buildings.length + roofBuildings.length, districts: districts.length,
   };
 }
 
