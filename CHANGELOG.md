@@ -5,6 +5,20 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.317-alpha - 2026-11-27
+
+- **Atmosphere volumes and wind have builders.** `write_atmosphere_volume` creates a
+  `fog_volume` box and resolves `FogName`, `PostProcessName` and `ColorCorrectionName` against
+  the VMF before writing, so a volume cannot point at a controller that does not exist.
+  `write_env_wind` writes the installed `base.fgd` keys: integer idle/gust speeds, gust delays,
+  duration, direction change and `windradius`; wind direction is the entity's `angles`.
+- **The old atmosphere recipe was wrong.** It wrote `minwind`/`maxwind` as vectors and gusts
+  (10/20) below the FGD defaults (100/250). The page now uses the builders and names the real
+  key shapes.
+- The compile atmosphere fixture now includes a `fog_volume`, a `postprocess_controller` and an
+  `env_wind`; vbsp emitted all of them with no leak.
+- Tool count: 315. Tests: 259 files, 2,058 passed, 32 skipped (verified below).
+
 ## 0.0.316-alpha - 2026-11-27
 
 - **`write_director_options` closes the "validator without a builder" gap.** It writes or

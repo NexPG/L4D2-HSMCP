@@ -165,7 +165,7 @@ material; the instructions live in one place.
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | the FGD check, and where each L4D2-specific entity family is documented |
-| `references/mapping/world-dressing.md` | light, postprocess, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
+| `references/mapping/world-dressing.md` | light, postprocess, atmosphere volumes, wind, decals, ropes, sprites/beams/lasers, checked against the FGD and vbsp |
 | `references/mapping/entity-families.md` | triggers as brush volumes, movers with their origin, and point logic with connections |
 | `references/mapping/level-design.md` | turning a theme and a wish into rooms, cover and sightlines |
 | `references/mapping/detail-and-vis.md` | world vs `func_detail` vs `func_brush`/`func_lod`, and areaportal/occluder rules |

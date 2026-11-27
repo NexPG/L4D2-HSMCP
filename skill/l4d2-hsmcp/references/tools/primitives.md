@@ -36,6 +36,8 @@ of that path, but deleting it must not remove the capability.
 |---|---|
 | `write_vmf_fitting` (door frame, counter, skirting, cornice) | `write_vmf_solid` with convex faces |
 | `write_weather` | `edit_vmf` for the entities + `write_vmf_solid` for the volume |
+| `write_atmosphere_volume` | `edit_vmf` for `fog_volume` + `write_vmf_solid` for its box; the links are targetnames |
+| `write_env_wind` | `edit_vmf` with an `env_wind` point entity and the FGD keys |
 | `write_sky_camera` | `edit_vmf` with `sky_camera` |
 | `write_instance` | `edit_vmf` with `func_instance` |
 | `create_instance_from_selection` | Read the selection, write it as a VMF, place `func_instance`, delete the originals |

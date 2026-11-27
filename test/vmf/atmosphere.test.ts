@@ -5,7 +5,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import { insertSolids } from "../../src/maps/typescript/vmf/build.js";
 import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
-import { writeLightTool, writePostprocessTool } from "../../src/maps/typescript/tools/dressing.js";
+import {
+  writeAtmosphereVolumeTool,
+  writeEnvWindTool,
+  writeLightTool,
+  writePostprocessTool,
+} from "../../src/maps/typescript/tools/dressing.js";
 import { runCompile } from "../../src/maps/typescript/tools/compile.js";
 import { readBspEntities } from "../../src/maps/typescript/tools/bsp.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
@@ -114,17 +119,31 @@ describe.skipIf(!has.toolchain)("map atmosphere", () => {
             {
               op: "add",
               keyvalues: {
-                classname: "env_wind",
-                origin: "0 0 0",
-                minwind: "20 20 20",
-                maxwind: "40 40 40",
-                mingust: "10",
-                maxgust: "20",
-                gustduration: "5",
-                gustspeed: "1",
+                classname: "postprocess_controller",
+                targetname: "pp_main",
+                origin: "0 0 64",
               },
             },
           ],
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
+      await writeEnvWindTool.handler(
+        {
+          path,
+          origin: [0, 0, 0],
+          angles: [0, 245, 0],
+          minWind: 20,
+          maxWind: 50,
+          windRadius: -1,
+          minGust: 100,
+          maxGust: 250,
+          minGustDelay: 10,
+          maxGustDelay: 20,
+          gustDuration: 5,
+          gustDirectionChange: 20,
           confirm: true,
         } as never,
         ctx,
@@ -165,6 +184,19 @@ describe.skipIf(!has.toolchain)("map atmosphere", () => {
         ctx,
       );
 
+      await writeAtmosphereVolumeTool.handler(
+        {
+          path,
+          mins: [-256, -256, 0],
+          maxs: [256, 256, 128],
+          fog: "fog_interior",
+          postprocess: "pp_main",
+          colorCorrection: "cc_main",
+          confirm: true,
+        } as never,
+        ctx,
+      );
+
       const compiled = (await runCompile.handler(
         {
           vmf: path,
@@ -190,6 +222,8 @@ describe.skipIf(!has.toolchain)("map atmosphere", () => {
       expect(entities.histogram.env_sun ?? 0).toBe(1);
       expect(entities.histogram.shadow_control ?? 0).toBe(1);
       expect(entities.histogram.env_wind ?? 0).toBe(1);
+      expect(entities.histogram.fog_volume ?? 0).toBe(1);
+      expect(entities.histogram.postprocess_controller ?? 0).toBe(1);
       expect(entities.histogram.light_environment ?? 0).toBe(1);
     },
     300_000,

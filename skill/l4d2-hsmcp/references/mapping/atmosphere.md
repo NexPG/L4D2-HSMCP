@@ -36,16 +36,20 @@ write_light(path, kind: "sun", origin: [0,0,1200], angles: [-52,245,0], confirm:
 write_light(path, kind: "shadow", origin: [0,0,0], color: [40,48,60], brightness: 120,
             confirm: true)
 
-# 2. fog controllers and wind: edit_vmf, because write_weather refuses a second fog
+# 2. fog controllers, the volume that chooses between them, and wind
 edit_vmf(path, ops: [
   { op: "add", keyvalues: { classname: "env_fog_controller", targetname: "fog_exterior",
     fogenable: "1", fogcolor: "190 202 214", fogstart: "1200", fogend: "5200",
     fogmaxdensity: "0.55" } },
   { op: "add", keyvalues: { classname: "env_fog_controller", targetname: "fog_interior",
-    fogenable: "0", fogcolor: "120 110 100", fogstart: "256", fogend: "900" } },
-  { op: "add", keyvalues: { classname: "env_wind", minwind: "20 20 20",
-    maxwind: "40 40 40", mingust: "10", maxgust: "20", gustduration: "5" } }
+    fogenable: "0", fogcolor: "120 110 100", fogstart: "256", fogend: "900" } }
 ])
+write_atmosphere_volume(path, mins: [-512,-512,0], maxs: [512,512,256],
+                        fog: "fog_interior", confirm: true)
+write_env_wind(path, origin: [0,0,0], angles: [0,245,0],
+               minWind: 20, maxWind: 50, windRadius: -1,
+               minGust: 100, maxGust: 250, minGustDelay: 10, maxGustDelay: 20,
+               gustDuration: 5, gustDirectionChange: 20, confirm: true)
 
 # 3. tonemaps and a colour-correction volume
 write_postprocess(path, kind: "tonemap", targetname: "tonemap_global",
@@ -53,9 +57,14 @@ write_postprocess(path, kind: "tonemap", targetname: "tonemap_global",
 write_postprocess(path, kind: "tonemap", targetname: "tonemap_infected", ...)
 write_postprocess(path, kind: "tonemap", targetname: "tonemap_ghost", ...)
 write_postprocess(path, kind: "colorcorrection", origin: [0,0,64],
+                  targetname: "cc_interior",
                   correctionFile: "materials/color_correction/dawn.raw",
                   minFalloff: 200, maxFalloff: 1200, maxWeight: 0.8)
 ```
+
+`write_atmosphere_volume` resolves every linked target in the VMF before writing, so a volume
+cannot point at a controller that does not exist. `write_env_wind` writes the FGD's integer
+speeds; wind direction is the entity's `angles`, not a vector in `minwind`.
 
 `write_weather` writes **one** fog controller and refuses a second: that is right for a
 one-zone map and wrong for an atmosphere set. Use the recipe above for multiple zones; the
@@ -79,6 +88,7 @@ door or a `logic_auto` on spawn.
 - `run_compile` with `vbsp`: a point entity outside the sealed hull (a sun at z=1200 above a
   384-high test room) makes the map leak; keep the sun and controllers inside the hull.
 - `read_bsp_entities(histogramOnly)`: expected counts for the measured fixture are
-  `env_fog_controller 3`, `env_tonemap_controller 3`, `color_correction 1`, `env_sun 1`,
+  `env_fog_controller 3`, `fog_volume 1`, `postprocess_controller 1`,
+  `env_tonemap_controller 3`, `color_correction 1`, `env_sun 1`,
   `shadow_control 1`, `env_wind 1`, `light_environment 1`.
 - Screenshot: not yet captured; use `run_map_test` for the frame.

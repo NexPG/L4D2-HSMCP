@@ -4,12 +4,15 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 import {
+  writeAtmosphereVolumeTool,
   writeDecalTool,
+  writeEnvWindTool,
   writeLightTool,
   writePostprocessTool,
   writeRopeTool,
   writeSpriteTool,
 } from "../../src/maps/typescript/tools/dressing.js";
+import { editVmf } from "../../src/maps/typescript/tools/vmfedit.js";
 import { readEntities } from "../../src/maps/typescript/vmf/edit.js";
 import { ctx as sharedCtx } from "../support/env.js";
 
@@ -141,6 +144,120 @@ describe("write_postprocess", async () => {
     expect(e.keyvalues["minfalloff"]).toBe("200");
     expect(e.keyvalues["maxfalloff"]).toBe("1200");
     expect(r.warnings.some((w) => w.includes("does not declare"))).toBe(false);
+  });
+});
+
+describe("write_atmosphere_volume", () => {
+  it("links an existing fog controller, postprocess and colour correction", async () => {
+    const path = map();
+    await editVmf.handler(
+      {
+        path,
+        ops: [
+          { op: "add", keyvalues: { classname: "env_fog_controller", targetname: "fog_ext" } },
+          { op: "add", keyvalues: { classname: "postprocess_controller", targetname: "pp_ext" } },
+          { op: "add", keyvalues: { classname: "color_correction", targetname: "cc_ext" } },
+        ],
+        backup: false,
+        dryRun: false,
+        confirm: true,
+      } as never,
+      ctx,
+    );
+    const r = (await writeAtmosphereVolumeTool.handler(
+      {
+        path,
+        mins: [-256, -256, 0],
+        maxs: [256, 256, 128],
+        fog: "fog_ext",
+        postprocess: "pp_ext",
+        colorCorrection: "cc_ext",
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number; solidIds: number[]; classes: string[] };
+    const volume = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(volume.classname).toBe("fog_volume");
+    expect(volume.keyvalues["FogName"]).toBe("fog_ext");
+    expect(volume.keyvalues["PostProcessName"]).toBe("pp_ext");
+    expect(volume.keyvalues["ColorCorrectionName"]).toBe("cc_ext");
+    expect(volume.solidCount).toBe(1);
+    expect(r.solidIds).toHaveLength(1);
+  });
+
+  it("refuses a target that does not exist or has the wrong class", async () => {
+    const path = map();
+    await expect(
+      writeAtmosphereVolumeTool.handler(
+        { path, mins: [0, 0, 0], maxs: [64, 64, 64], fog: "missing", confirm: true } as never,
+        ctx,
+      ),
+    ).rejects.toThrow(/no entity is named/);
+
+    await editVmf.handler(
+      {
+        path,
+        ops: [{ op: "add", keyvalues: { classname: "light", targetname: "not_fog" } }],
+        backup: false,
+        dryRun: false,
+        confirm: true,
+      } as never,
+      ctx,
+    );
+    await expect(
+      writeAtmosphereVolumeTool.handler(
+        { path, mins: [0, 0, 0], maxs: [64, 64, 64], fog: "not_fog", confirm: true } as never,
+        ctx,
+      ),
+    ).rejects.toThrow(/not env_fog_controller/);
+  });
+});
+
+describe("write_env_wind", () => {
+  it("writes the FGD keys, not a vector for minwind", async () => {
+    const path = map();
+    const r = (await writeEnvWindTool.handler(
+      {
+        path,
+        origin: [0, 0, 0],
+        angles: [0, 90, 0],
+        minWind: 20,
+        maxWind: 50,
+        windRadius: -1,
+        minGust: 100,
+        maxGust: 250,
+        minGustDelay: 10,
+        maxGustDelay: 20,
+        gustDuration: 5,
+        gustDirectionChange: 20,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as unknown as { entityId: number };
+    const wind = entities(path).find((entity) => entity.id === r.entityId)!;
+    expect(wind.classname).toBe("env_wind");
+    expect(wind.keyvalues["minwind"]).toBe("20");
+    expect(wind.keyvalues["maxwind"]).toBe("50");
+    expect(wind.keyvalues["mingust"]).toBe("100");
+    expect(wind.keyvalues["gustduration"]).toBe("5");
+    expect(wind.keyvalues["windradius"]).toBe("-1");
+    expect(wind.keyvalues["angles"]).toBe("0 90 0");
+  });
+
+  it("refuses inverted ranges and warns about a second global wind", async () => {
+    const path = map();
+    await expect(
+      writeEnvWindTool.handler(
+        { path, minWind: 60, maxWind: 20, confirm: true } as never,
+        ctx,
+      ),
+    ).rejects.toThrow(/minWind/);
+
+    await writeEnvWindTool.handler({ path, confirm: true } as never, ctx);
+    const r = (await writeEnvWindTool.handler({ path, confirm: true } as never, ctx)) as unknown as {
+      warnings: string[];
+    };
+    expect(r.warnings.some((warning) => warning.includes("global env_wind"))).toBe(true);
   });
 });
 

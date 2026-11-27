@@ -7,6 +7,7 @@ import { maxId, readEntities } from "../vmf/edit.js";
 import { parse } from "../../../formats/typescript/kv/parse.js";
 import { readFgdClass } from "./vmf.js";
 import { editVmf } from "./vmfedit.js";
+import { writeVmfSolidTool } from "./build.js";
 
 const VEC3 = z.tuple([z.number(), z.number(), z.number()]);
 const COLOR = z.tuple([
@@ -715,10 +716,238 @@ export const writeSpriteTool = defineTool({
   },
 });
 
+const ATMOSPHERE_TARGETS = {
+  fog: { key: "FogName", classname: "env_fog_controller" },
+  postprocess: { key: "PostProcessName", classname: "postprocess_controller" },
+  colorCorrection: { key: "ColorCorrectionName", classname: "color_correction" },
+} as const;
+
+export const writeAtmosphereVolumeTool = defineTool({
+  name: "write_atmosphere_volume",
+  description:
+    "Adds a `fog_volume` brush that switches the atmosphere where the player stands: it " +
+    "names an existing `env_fog_controller`, `postprocess_controller` and/or `color_correction` " +
+    "by targetname. Every target is resolved in the VMF before the write, so a volume cannot " +
+    "point at a controller that does not exist. The volume is a `TOOLS/TOOLSNODRAW` box; " +
+    "`fog_volume` decides which atmosphere is active, it is not a visible surface. Guarded.",
+  realm: "map",
+  guarded: true,
+  inputSchema: {
+    path: z.string().describe("The .vmf."),
+    mins: VEC3.describe("Low corner of the volume."),
+    maxs: VEC3.describe("High corner of the volume."),
+    fog: z.string().optional().describe("Targetname of an existing env_fog_controller."),
+    postprocess: z
+      .string()
+      .optional()
+      .describe("Targetname of an existing postprocess_controller."),
+    colorCorrection: z
+      .string()
+      .optional()
+      .describe("Targetname of an existing color_correction entity."),
+    targetname: z.string().optional().describe("Optional name for the fog_volume itself."),
+    startDisabled: z.boolean().default(false).describe("Write StartDisabled 1."),
+    material: z.string().default("TOOLS/TOOLSNODRAW").describe("Material for the volume brush."),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    solidIds: z.array(z.number()),
+    classes: z.array(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const requested = Object.entries(ATMOSPHERE_TARGETS).filter(
+      ([name]) => args[name as keyof typeof ATMOSPHERE_TARGETS] !== undefined,
+    );
+    if (requested.length === 0) {
+      throw new Error("nothing to link: pass fog, postprocess, colorCorrection, or a combination");
+    }
+    for (let axis = 0; axis < 3; axis++) {
+      if (!(args.mins[axis]! < args.maxs[axis]!)) {
+        throw new Error(
+          `the atmosphere volume is empty on the ${"xyz"[axis]} axis: ` +
+            `${args.mins[axis]} must be below ${args.maxs[axis]}`,
+        );
+      }
+      if (Math.abs(args.mins[axis]!) > 16384 || Math.abs(args.maxs[axis]!) > 16384) {
+        throw new Error("the atmosphere volume leaves Source's world (-16384..16384)");
+      }
+    }
+
+    const entities = readEntities(readFileSync(path, "utf8")).entities;
+    const keyvalues: Record<string, string> = { classname: "fog_volume" };
+    if (args.targetname !== undefined) keyvalues["targetname"] = args.targetname;
+    if (args.startDisabled === true) keyvalues["StartDisabled"] = "1";
+    const classes = ["fog_volume"];
+    for (const [name, spec] of requested) {
+      const target = args[name as keyof typeof ATMOSPHERE_TARGETS] as string;
+      const found = entities.find((entity) => entity.targetname === target);
+      if (!found) {
+        throw new Error(
+          `no entity is named "${target}"; create the ${spec.classname} before the volume`,
+        );
+      }
+      if (found.classname.toLowerCase() !== spec.classname) {
+        throw new Error(
+          `"${target}" is ${found.classname}, not ${spec.classname}; ${spec.key} would not resolve`,
+        );
+      }
+      keyvalues[spec.key] = target;
+    }
+
+    const warnings = await fgdWarnings("fog_volume", keyvalues, ctx);
+    const [entityId] = await addEntities(path, [keyvalues], ctx as never);
+    if (entityId === null || entityId === undefined) {
+      throw new Error("refusing to write: fog_volume was not readable after the write");
+    }
+    const solid = (await writeVmfSolidTool.handler(
+      {
+        path,
+        entityId,
+        solids: [{ shape: "box", mins: args.mins, maxs: args.maxs }],
+        material: args.material ?? "TOOLS/TOOLSNODRAW",
+        backup: false,
+        dryRun: false,
+        confirm: true,
+      } as never,
+      ctx,
+    )) as { solidIds: number[] };
+    verifyEntities(path, [entityId], classes);
+    warnings.push(
+      "fog_volume is a brush volume: the player must be inside it for the linked " +
+        "atmosphere to apply. It is not a visible surface.",
+    );
+    return {
+      path,
+      entityId,
+      solidIds: solid.solidIds,
+      classes,
+      warnings,
+      nextStep:
+        "Compile and walk through the volume; the linked controller should take over. " +
+        "A volume that does not overlap the play space never fires.",
+    };
+  },
+});
+
+export const writeEnvWindTool = defineTool({
+  name: "write_env_wind",
+  description:
+    "Adds an `env_wind` point entity with the keys the installed `base.fgd` declares: normal " +
+    "wind speed, gust speed, gust delay, duration and direction change. The FGD calls the " +
+    "entity partially functional, so this authors the entity, not a promise of a visual " +
+    "effect. Wind direction is the entity's `angles`; `windradius -1` is global. Guarded.",
+  realm: "map",
+  guarded: true,
+  inputSchema: {
+    path: z.string().describe("The .vmf."),
+    origin: VEC3.default([0, 0, 0]).describe("Entity origin."),
+    angles: VEC3.default([0, 0, 0]).describe("Wind direction (pitch yaw roll)."),
+    minWind: z.number().int().min(0).default(20).describe("minwind: idle speed."),
+    maxWind: z.number().int().min(0).default(50).describe("maxwind: idle speed."),
+    windRadius: z.number().default(-1).describe("windradius: -1 is global."),
+    minGust: z.number().int().min(0).default(100).describe("mingust."),
+    maxGust: z.number().int().min(0).default(250).describe("maxgust."),
+    minGustDelay: z.number().int().min(0).default(10).describe("mingustdelay, seconds."),
+    maxGustDelay: z.number().int().min(0).default(20).describe("maxgustdelay, seconds."),
+    gustDuration: z.number().int().min(0).default(5).describe("gustduration, seconds."),
+    gustDirectionChange: z
+      .number()
+      .int()
+      .min(0)
+      .max(180)
+      .default(20)
+      .describe("gustdirchange, degrees."),
+    targetname: z.string().optional(),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    entityId: z.number().nullable(),
+    classes: z.array(z.string()),
+    warnings: z.array(z.string()),
+    nextStep: z.string(),
+  },
+  handler: async (args, ctx) => {
+    const path = resolveVmfInput(args.path, ctx.config);
+    const origin = args.origin ?? [0, 0, 0];
+    const angles = args.angles ?? [0, 0, 0];
+    const minWind = args.minWind ?? 20;
+    const maxWind = args.maxWind ?? 50;
+    const windRadius = args.windRadius ?? -1;
+    const minGust = args.minGust ?? 100;
+    const maxGust = args.maxGust ?? 250;
+    const minGustDelay = args.minGustDelay ?? 10;
+    const maxGustDelay = args.maxGustDelay ?? 20;
+    const gustDuration = args.gustDuration ?? 5;
+    const gustDirectionChange = args.gustDirectionChange ?? 20;
+    if (!insideWorld(origin)) throw new Error("the env_wind origin leaves Source's world");
+    if (minWind > maxWind) throw new Error("minWind must not exceed maxWind");
+    if (minGust > maxGust) throw new Error("minGust must not exceed maxGust");
+    if (minGustDelay > maxGustDelay) {
+      throw new Error("minGustDelay must not exceed maxGustDelay");
+    }
+
+    const warnings: string[] = [];
+    const existing = readEntities(readFileSync(path, "utf8")).entities.filter(
+      (entity) => entity.classname.toLowerCase() === "env_wind",
+    );
+    if (windRadius === -1) {
+      const global = existing.find((entity) => {
+        const radius = entity.keyvalues["windradius"];
+        return radius === undefined || Number(radius) === -1;
+      });
+      if (global) {
+        warnings.push(
+          "this map already has a global env_wind; two global winds fight. Use windRadius " +
+            "on the new one or edit the existing entity.",
+        );
+      }
+    }
+
+    const keyvalues: Record<string, string> = {
+      classname: "env_wind",
+      origin: vec(origin),
+      angles: vec(angles),
+      minwind: String(minWind),
+      maxwind: String(maxWind),
+      windradius: String(windRadius),
+      mingust: String(minGust),
+      maxgust: String(maxGust),
+      mingustdelay: String(minGustDelay),
+      maxgustdelay: String(maxGustDelay),
+      gustduration: String(gustDuration),
+      gustdirchange: String(gustDirectionChange),
+    };
+    if (args.targetname !== undefined) keyvalues["targetname"] = args.targetname;
+    warnings.push(...(await fgdWarnings("env_wind", keyvalues, ctx)));
+    const [entityId] = await addEntities(path, [keyvalues], ctx as never);
+    if (entityId === null || entityId === undefined) {
+      throw new Error("refusing to write: env_wind was not readable after the write");
+    }
+    verifyEntities(path, [entityId], ["env_wind"]);
+    return {
+      path,
+      entityId,
+      classes: ["env_wind"],
+      warnings,
+      nextStep:
+        "Compile and look at a prop with a cloth or foliage surface; the FGD calls env_wind " +
+        "partially functional, so treat the visual result as an eye check.",
+    };
+  },
+});
+
 export const dressingTools = [
   writeLightTool,
   writePostprocessTool,
   writeDecalTool,
   writeRopeTool,
   writeSpriteTool,
+  writeAtmosphereVolumeTool,
+  writeEnvWindTool,
 ];
