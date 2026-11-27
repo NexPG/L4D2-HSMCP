@@ -120,6 +120,16 @@ describe("documentation layout", () => {
     }
   });
 
+  it("lists every skill page in SKILL.md", () => {
+    const skillRoot = join(SKILL, "l4d2-hsmcp");
+    const router = readFileSync(join(skillRoot, "SKILL.md"), "utf8");
+    const orphans = files(skillRoot, [".md"])
+      .filter((file) => !file.endsWith("SKILL.md"))
+      .map((file) => file.slice(skillRoot.length + 1).replaceAll("\\", "/"))
+      .filter((rel) => !router.includes(rel) && !router.includes(rel.split("/").pop()!));
+    expect(orphans, `skill pages not routed from SKILL.md: ${orphans.join(", ")}`).toEqual([]);
+  });
+
   it("has no broken relative links", () => {
     const roots = [join(ROOT, "README.md"), ...files(DOCS, [".md"]), ...files(SKILL, [".md"])];
     const broken: string[] = [];

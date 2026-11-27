@@ -130,10 +130,6 @@ compare against the source before shipping.
 
 ## Sources
 
-- Blender bake: <https://docs.blender.org/manual/en/latest/render/cycles/baking.html>
-- Blender UV Project: <https://docs.blender.org/manual/en/latest/modeling/modifiers/modify/uv_project.html>
-- Crowbar CLI: <https://github.com/UltraTechX/Crowbar-Command-Line>
-- Blender Source Tools: <https://github.com/Artfunkel/BlenderSourceTools>
-- MediaPipe Face Landmarker: <https://mediapipe.readthedocs.io/en/latest/solutions/face_mesh.html>
-- rembg: <https://github.com/danielgatis/rembg>
-- IOPaint: <https://github.com/Sanster/IOPaint>
+The research sources and the pipeline they support are in
+[`../models/photo-texture.md`](../models/photo-texture.md); this page lists what must be
+installed, not why.

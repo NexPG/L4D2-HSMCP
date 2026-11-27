@@ -27,9 +27,9 @@ compilation, native VTF writing and add-on VPKs are proven. Two-team rounds and 
 checks still need a person or a second client. Read
 [What is not supported](#what-is-not-supported) before promising the rest.
 
-**A new addon or campaign is one workspace and two passes.** `write_addon_workspace(name)` creates
-`workspaces/<addon-name>/` with `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and
-`evidence/`. Pass 1 writes `plan/plan.json` and renders the five drawings (site, terrain,
+**A new addon or campaign is one workspace and two passes.** `write_addon_workspace(name)`
+creates it; the layout is in [`workflows/addon-workspace.md`](workflows/addon-workspace.md).
+Pass 1 writes `plan/plan.json` and renders the five drawings (site, terrain,
 circulation, building/height schedule, floor plans/sections) plus plan/DESIGN.md: the route,
 rooms, floors, beats, events, finale, palette, variability and budget, using read-only tools.
 It writes no `.vmf` and stops for approval. Pass 2 builds that plan; it chooses exact assets

@@ -38,8 +38,9 @@ A leak here is a compiler error later.
 ## 2. Entities
 
 - `info_player_start` — one on the first map, on the floor in the spawn area. A later
-  chapter is spawned by its arrival `info_changelevel` and may have none (21 of the 60 stock
-  BSPs have none); `write_safe_room` writes one by default, which is harmless but not the
+  chapter is spawned by its arrival `info_changelevel` and may have none (the stock count is
+  in [`../references/mechanics/campaign-wiring.md`](../references/mechanics/campaign-wiring.md));
+  `write_safe_room` writes one by default, which is harmless but not the
   transition's placement.
 - `info_director` — required.
 - `info_zombie_spawn` — at least one, or the map is quiet.

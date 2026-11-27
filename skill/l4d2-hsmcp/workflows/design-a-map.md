@@ -32,8 +32,8 @@ Create the workspace first if it does not exist:
 write_addon_workspace(name: "<addon-name>", title: "<title>", kind: "campaign")
 ```
 
-It creates `workspaces/<addon-name>/` with the plan, templates, logs, src, addon, dist and
-evidence folders. See [`addon-workspace.md`](addon-workspace.md).
+It creates the workspace described in [`addon-workspace.md`](addon-workspace.md): the plan,
+templates, logs, source, addon, dist and evidence folders.
 
 ## The authoring order: flow skeleton first, sheets later
 
@@ -58,21 +58,10 @@ one-way drop, a holdout, a reveal. The site, terrain and floors then have to ser
 
 ### Flow is decided in the skeleton, drawn last
 
-"Flow" has two meanings and they belong at opposite ends of the chain:
-
-- **the flow decision** — the route, its turns, floor changes, landmarks, gates and the
-  Director's peaks and rests. This is authored in the **skeleton**, including the route through
-  a large multi-storey building;
-- **the flow sheet** — splines, cover, spawn/cover/holdout/crescendo/finale areas, item clusters
-  and per-load variation. This is drawn at stage 6, because it needs real rooms and coordinates.
-
-So a building's interior route is not postponed to the flow sheet. Its rooms and stairs are
-skeleton nodes (`buildingId`, `floor`, `space`, `kind: "stair"`/`"drop"`), and the later floor
-plans must contain those nodes. The detailed flow sheet decorates a route that already exists.
-
-The full first-layer playbook, the research it is based on and the authoring procedure are in
-[`../references/planning/route-skeleton.md`](../references/planning/route-skeleton.md). Read it
-before writing the skeleton.
+"Flow" means the route decision (skeleton) and the flow sheet (stage 6). The distinction, why
+the sheet is last and the exact order are in
+[`../references/planning/route-skeleton.md`](../references/planning/route-skeleton.md#flow-the-decision-is-first-the-drawing-is-last).
+A building's interior route is still a skeleton node, not something postponed to the sheet.
 
 Why not all at once: a footprint change after floor plans invalidates every room; a route
 change after the schedule invalidates the entrances. The stages are a dependency chain, not a
@@ -80,10 +69,9 @@ checklist. If stage 4 needs a footprint moved, go back to stage 2, amend the JSO
 stage checks and re-render; do not patch the floors around a broken footprint.
 
 **Multi-level rule.** A floor change is a route node (`stair`, `ladder`, `elevator`, `ramp`,
-`drop`), not a Z value hidden in a spline. The node names the building and both floors; the
-building has a floor plan for each level; the floor plan marks the stair and the route node.
-`check_map_plan` fails a route node on an enterable building with no floor plan (from the
-`floors` stage), and warns when a vertical node does not change floor.
+`drop`), not a Z value hidden in a spline. The field-level rule and the checks (floor plan per
+level, the stair on it, the route node in a room) are in
+[`../references/planning/five-drawings.md`](../references/planning/five-drawings.md).
 
 **Facade rule.** Only `enterable` buildings get floor plans. A row of 30 houses is massing;
 the safe room, the through-house and the set piece are interiors. The schedule records the
