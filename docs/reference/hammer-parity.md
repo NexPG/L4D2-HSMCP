@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 24/11/2026: **312 tools**.
+Last checked against the tool list on 27/11/2026: **313 tools**.
 
 ## The file itself
 
@@ -163,6 +163,7 @@ getting `ENOENT` on the first call.
 | Finale contract | `check_finale_contract` | `trigger_finale` count/type, type-4 gas cans, FINALE/RESCUE/ESCAPE nav areas |
 | VScript catalogue | `read_script_catalog` | `.nut`/`.nuc` inventory by category, source presence and includes |
 | Director options | `check_director_options` | table keys/types, non-negative limits, MinSpecials <= MaxSpecials |
+| Director options write | `write_director_options` | write/replace the table, preserve the rest of the `.nut`, validate and roll back on failure |
 
 ## Organisation
 

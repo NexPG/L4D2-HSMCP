@@ -5,11 +5,13 @@
  * layer: a key the catalogue knows, a value of the declared type, a non-negative limit, and
  * a MinSpecials/MaxSpecials pair that can actually be satisfied. It does not run the script.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { dirname, extname } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
-import { checkNut } from "../vscript/check.js";
+import { writeGuarded } from "../../../core/typescript/fs/write.js";
+import { checkNut, tableBody } from "../vscript/check.js";
 import { DIRECTOR_OPTIONS, MUTATION_ONLY_OPTIONS } from "../vscript/api.js";
 
 const NUMERIC = new Set([
@@ -56,6 +58,64 @@ function knownKeys(): Map<string, { type: string; note: string }> {
 
 function unquote(value: string): string {
   return value.trim().replace(/^["']|["']$/g, "");
+}
+
+const OPTION_FINDING = z.object({
+  severity: z.enum(["error", "warning", "info"]),
+  key: z.string(),
+  value: z.string(),
+  message: z.string(),
+});
+
+type OptionInput = Record<string, string | number | boolean>;
+
+function formatOptionValue(key: string, value: string | number | boolean): string {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new Error(`${key} is not a finite number`);
+    return String(value);
+  }
+  if (typeof value === "boolean") return value ? "true" : "false";
+  // A custom-finale stage type is a Squirrel constant, not a string. Writing `"PANIC"`
+  // would compile but the Director would not match it; the table examples use PANIC/TANK.
+  if (/^A_CustomFinale\d+$/.test(key) && /^[A-Za-z_]\w*$/.test(value)) return value;
+  return JSON.stringify(value);
+}
+
+function optionsTable(options: OptionInput): string {
+  const entries = Object.entries(options);
+  if (entries.length === 0) throw new Error("options is empty: nothing to write");
+  const lines = ["{"];
+  for (const [key, value] of entries) {
+    if (!/^[A-Za-z_]\w*$/.test(key)) {
+      throw new Error(`"${key}" is not a Squirrel identifier`);
+    }
+    lines.push(`    ${key} = ${formatOptionValue(key, value)}`);
+  }
+  lines.push("}");
+  return lines.join("\n");
+}
+
+function upsertOptionsTable(
+  source: string,
+  table: string,
+  options: OptionInput,
+): { code: string; replaced: boolean } {
+  const assignment = new RegExp(`\\b${table}\\s*(?:<-|=)\\s*\\{`).exec(source);
+  const block = optionsTable(options);
+  if (!assignment) {
+    const head = source.replace(/\s*$/, "");
+    return {
+      code: `${head}${head ? "\n\n" : ""}${table} <-\n${block}\n`,
+      replaced: false,
+    };
+  }
+  const start = assignment.index + assignment[0].lastIndexOf("{");
+  const body = tableBody(source, start);
+  if (!body) throw new Error(`the ${table} table has no closing brace`);
+  return {
+    code: `${source.slice(0, start)}${block}${source.slice(body.end + 1)}`,
+    replaced: true,
+  };
 }
 
 export interface DirectorOptionsCheck {
@@ -175,14 +235,7 @@ export const checkDirectorOptionsTool = defineTool({
     path: z.string(),
     directorOptions: z.record(z.string()),
     mutationOptions: z.record(z.string()),
-    findings: z.array(
-      z.object({
-        severity: z.enum(["error", "warning", "info"]),
-        key: z.string(),
-        value: z.string(),
-        message: z.string(),
-      }),
-    ),
+    findings: z.array(OPTION_FINDING),
     verdict: z.enum(["pass", "fail"]),
     note: z.string(),
   },
@@ -193,4 +246,93 @@ export const checkDirectorOptionsTool = defineTool({
   },
 });
 
-export const directorOptionsTools = [checkDirectorOptionsTool];
+export const writeDirectorOptionsTool = defineTool({
+  name: "write_director_options",
+  description:
+    "Writes or replaces a DirectorOptions/MutationOptions table in an existing or new .nut. " +
+    "This is a builder over write_vscript, not a second writer: code outside the table is " +
+    "preserved byte-for-byte, a missing table is appended, an existing one is replaced, and " +
+    "the result is read back with check_director_options. Invalid Squirrel or a table that " +
+    "fails the option check leaves the file as it was. Guarded.",
+  realm: "map",
+  guarded: true,
+  inputSchema: {
+    path: z.string().describe("The .nut to edit; it is created when absent."),
+    table: z
+      .enum(["DirectorOptions", "MutationOptions"])
+      .default("DirectorOptions")
+      .describe("Which table to write."),
+    options: z
+      .record(z.union([z.number(), z.boolean(), z.string()]))
+      .describe(
+        "Key/value pairs. Numbers and booleans are written unquoted; strings are quoted. " +
+          "Unknown keys are allowed and reported as information, not refused.",
+      ),
+    backup: z.boolean().default(true).describe("Copy the previous file to <path>.bak."),
+    confirm: z.boolean().default(false),
+  },
+  outputSchema: {
+    path: z.string(),
+    table: z.string(),
+    created: z.boolean(),
+    replaced: z.boolean(),
+    written: z.boolean(),
+    backupPath: z.string().nullable(),
+    bytes: z.number(),
+    directorOptions: z.record(z.string()),
+    mutationOptions: z.record(z.string()),
+    findings: z.array(OPTION_FINDING),
+    verdict: z.enum(["pass", "fail"]),
+  },
+  handler: (args, ctx) => {
+    if (extname(args.path).toLowerCase() !== ".nut") {
+      throw new Error("a VScript file must end in .nut");
+    }
+    const path = resolveInput(args.path, ctx.config);
+    const table = args.table ?? "DirectorOptions";
+    const before = existsSync(path) ? readFileSync(path, "utf8") : null;
+    const next = upsertOptionsTable(before ?? "", table, args.options);
+    const syntax = checkNut(next.code, path);
+    const errors = syntax.diagnostics.filter((entry) => entry.severity === "error");
+    if (errors.length > 0) {
+      throw new Error(
+        `the table would not compile:\n${errors
+          .map((entry) => `${entry.line === null ? "" : `line ${entry.line}: `}${entry.message}`)
+          .join("\n")}`,
+      );
+    }
+
+    mkdirSync(dirname(path), { recursive: true });
+    const write = writeGuarded(path, next.code, ctx.config, {
+      backup: args.backup !== false && before !== null,
+      unchanged: before === next.code,
+    });
+    const check = checkDirectorOptions(path);
+    if (check.verdict === "fail") {
+      if (before === null) rmSync(path, { force: true });
+      else writeGuarded(path, before, ctx.config, { backup: false });
+      throw new Error(
+        `the table would not pass check_director_options:\n${check.findings
+          .filter((finding) => finding.severity === "error")
+          .map((finding) => `${finding.key}: ${finding.message}`)
+          .join("\n")}`,
+      );
+    }
+
+    return {
+      path,
+      table,
+      created: before === null,
+      replaced: next.replaced,
+      written: write.written,
+      backupPath: write.backupPath,
+      bytes: statSync(path).size,
+      directorOptions: check.directorOptions,
+      mutationOptions: check.mutationOptions,
+      findings: check.findings,
+      verdict: check.verdict,
+    };
+  },
+});
+
+export const directorOptionsTools = [checkDirectorOptionsTool, writeDirectorOptionsTool];

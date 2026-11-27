@@ -30,7 +30,9 @@ No compilation step. The engine loads the `.nut` source; Valve's own scripts shi
 `.nuc`, which is not required for add-ons.
 
 `read_vscript` checks a `.nut` without running it, and `write_vscript` uses the same checker
-before it writes:
+before it writes. `write_director_options` writes or replaces the `DirectorOptions` /
+`MutationOptions` table without touching the rest of the file, then runs
+`check_director_options` and rolls the file back if the table fails:
 
 - **Errors** (the engine would not compile): `end`, `elseif`, `then`, `nil`, `~=`, `--[[`,
   and unbalanced `{}`/`()`/`[]` with the line the delimiter opened on.

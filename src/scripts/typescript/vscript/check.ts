@@ -12,7 +12,7 @@
  * the engine is still the final authority.
  */
 
-import { MUTATION_ONLY_OPTIONS } from "./api.js";
+import { OPTION_SPECS } from "./api.js";
 
 export type NutSeverity = "error" | "warning" | "info";
 
@@ -41,33 +41,6 @@ export interface NutReport {
   hasBanner: boolean;
   diagnostics: NutDiagnostic[];
 }
-
-/** The DirectorOptions keys this checker knows; unknown ones are information, not errors. */
-const KNOWN_DIRECTOR_KEYS = new Set([
-  "A_CustomFinale_StageCount",
-  "TankLimit",
-  "WitchLimit",
-  "CommonLimit",
-  "MobMaxSize",
-  "MegaMobSize",
-  "MegaMobMinSize",
-  "HordeEscapeCommonLimit",
-  "EscapeSpawnTanks",
-  "SpecialRespawnInterval",
-  "SmokerLimit",
-  "BoomerLimit",
-  "HunterLimit",
-  "SpitterLimit",
-  "JockeyLimit",
-  "ChargerLimit",
-  "DominatorLimit",
-  "DoorSpawnLimit",
-  "MaxSpecials",
-  "MaxConcurrentSpecials",
-  "MinSpecials",
-  "TankSpawnInterval",
-  "WitchSpawnInterval",
-]);
 
 function diag(
   severity: NutSeverity,
@@ -177,7 +150,7 @@ function balance(code: string): NutDiagnostic[] {
   return diagnostics;
 }
 
-function tableBody(code: string, start: number): { body: string; end: number } | null {
+export function tableBody(code: string, start: number): { body: string; end: number } | null {
   let depth = 0;
   for (let index = start; index < code.length; index += 1) {
     if (code[index] === "{") depth += 1;
@@ -381,7 +354,7 @@ export function checkNut(source: string, path = "<script>"): NutReport {
         }
       }
       for (const key of Object.keys(directorOptions)) {
-        if (!KNOWN_DIRECTOR_KEYS.has(key) && !/^A_CustomFinale(Value)?\d+$/.test(key)) {
+        if (!OPTION_SPECS.has(key) && !/^A_CustomFinale(Value)?\d+$/.test(key)) {
           diagnostics.push(
             diag(
               "info",
@@ -402,10 +375,7 @@ export function checkNut(source: string, path = "<script>"): NutReport {
     if (table) mutationOptions = tableEntries(table.body);
   }
 
-  const knownMutationKeys = new Set([
-    ...KNOWN_DIRECTOR_KEYS,
-    ...MUTATION_ONLY_OPTIONS.map((option) => option.key),
-  ]);
+  const knownMutationKeys = OPTION_SPECS;
   for (const key of Object.keys(mutationOptions)) {
     if (!knownMutationKeys.has(key) && !/^A_CustomFinale(Value)?\d+$/.test(key)) {
       diagnostics.push(

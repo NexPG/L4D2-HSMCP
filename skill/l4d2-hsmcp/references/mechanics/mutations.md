@@ -60,6 +60,9 @@ information, not errors, because the catalogue is not the engine's complete API.
 check_director_options(path: "scripts/vscripts/my_mutation.nut")
 ```
 
+To change only the table in an existing script, `write_director_options` replaces it and
+leaves the rest of the file alone; `write_mutation` builds the whole mode.
+
 Measured: a table with `CommonLimit = 0; MinSpecials = 0; MaxSpecials = 2` passes; one with
 `TankLimit = -1; MinSpecials = 3; MaxSpecials = 2` fails on the sign and the impossible pair.
 The stock no-mob script (`santa_monica_nomobs.nut`) has no table literal and passes, because

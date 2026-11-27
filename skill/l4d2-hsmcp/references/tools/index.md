@@ -1,6 +1,6 @@
 # Tool catalogue
 
-312 tools. This page groups them by the job you are doing; each tool's own description is the
+313 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -102,6 +102,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `check_finale_contract` | one `trigger_finale`, type 0/1/2/4, script/spawn/nav-area contract |
 | `read_script_catalog` | browse the `.nut`/`.nuc` trees by category, source/nuc presence and includes |
 | `check_director_options` | validate `DirectorOptions`/`MutationOptions` keys, types, signs and Min/Max |
+| `write_director_options` | write or replace a `DirectorOptions`/`MutationOptions` table, preserving the rest of the `.nut`, and validate it |
 | `write_intro_camera` | `point_viewcontrol` + `logic_auto`, optional disable timer |
 | `write_rescue_closet` | `info_survivor_rescue` and ordered survivor positions |
 | `check_ai_contract` | rescue points vs RESCUE_CLOSET areas, remarkables, blockers, hiding spots |

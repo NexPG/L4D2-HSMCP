@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.316-alpha - 2026-11-27
+
+- **`write_director_options` closes the "validator without a builder" gap.** It writes or
+  replaces a `DirectorOptions`/`MutationOptions` table in a `.nut`, preserves the rest of the
+  script byte-for-byte, appends the table when it is absent, writes a custom-finale stage type
+  as a Squirrel constant (`A_CustomFinale1 = PANIC`, not `"PANIC"`), and rolls the file back
+  when `check_director_options` rejects the result. It is a helper over `write_vscript`, not a
+  second writer.
+- **The checker's key list is no longer a second copy.** `vscript/check.ts` kept its own
+  `DirectorOptions` key set beside `vscript/api.ts`; it now uses `OPTION_SPECS`, so a key the
+  catalogue knows is not reported by one checker and accepted by the other.
+- Tool count: 313. Tests: 259 files, 2,052 passed, 32 skipped (verified below).
+
 ## 0.0.315-alpha - 2026-11-27
 
 - **One home per fact in the skill.** Duplicated sections were moved to their owner and

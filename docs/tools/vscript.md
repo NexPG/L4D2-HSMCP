@@ -1,6 +1,6 @@
 # VScript authoring
 
-6 tools: Squirrel source: writing and checking .nut files, DirectorOptions and include paths.
+7 tools: Squirrel source: writing and checking .nut files, DirectorOptions and include paths.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -24,3 +24,4 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | Tool | What it does |
 |---|---|
 | `check_director_options` | Validates the DirectorOptions/MutationOptions table in a .nut without running it: known keys, number/boolean types, non-negative limits, MinSpecials <= MaxSpecials and the read_vscript diagnostics. |
+| `write_director_options` | Writes or replaces a DirectorOptions/MutationOptions table in an existing or new .nut. |
