@@ -4,6 +4,17 @@ An addon can change behaviour on every map without editing a single `.vmf`. This
 addon-level half of `vscript.md`: which script the engine loads on its own, how to run code on
 a timer, and the mistakes that look correct in a file but never execute.
 
+## Contents
+
+- Layout
+- Before packing
+- What loads by itself
+- Event hooks need a loader
+- Bot detection
+- Item control
+- Testing without a map edit
+- A verified pattern
+
 ## Layout
 
 ```

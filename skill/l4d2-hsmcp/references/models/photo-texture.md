@@ -4,6 +4,16 @@ This page is the reference for turning a portrait/body photo into a texture for 
 Source model **without changing the model**. The current 2D "paste a face into the atlas" attempt
 is not this pipeline; it is the failure mode this page exists to prevent.
 
+## Contents
+
+- The short version
+- Why the 2D atlas paste fails
+- The tools that actually solve it
+- The pipeline in detail
+- What the MCP should expose
+- What is installed here now
+- Sources
+
 ## The short version
 
 A UV atlas is not a photo layout. A face photo must be **projected through a camera onto the

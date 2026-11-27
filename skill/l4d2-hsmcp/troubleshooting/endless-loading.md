@@ -4,6 +4,14 @@ The campaign poster is on screen, the loading bar fills part way or stays empty,
 never starts. The process is alive, so it reads as a slow load. It is usually a **restart
 loop**, not a slow load.
 
+## Contents
+
+- Read the log first
+- The four causes seen in this project
+- Look at the screen, twice
+- The client never joins: `net_SignonState`
+- Fixes
+
 ## Read the log first
 
 ```

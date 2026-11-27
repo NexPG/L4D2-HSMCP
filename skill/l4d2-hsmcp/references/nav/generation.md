@@ -4,6 +4,15 @@ Left 4 Dead 2 has no offline nav generator. The engine builds the mesh from a lo
 analyses it in the same pass. `run_nav_generate` drives that pass; there is no supported way
 to synthesise a `.nav` without the engine.
 
+## Contents
+
+- Requirements
+- Procedure
+- Keeping a surface out of the mesh
+- The spawn is the nav area, not `info_player_start`
+- What to verify
+- Cleanup the engine leaves behind
+
 ## Requirements
 
 - **Windows and the game client.** A dedicated `srcds` binary is not needed or installed.

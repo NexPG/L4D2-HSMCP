@@ -5,6 +5,23 @@ authority on its arguments. Every tool states its realm (`map` for files, `local
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
 
+## Contents
+
+- Start here
+- Campaign files
+- Entity families
+- Shipping an addon
+- Campaign wiring
+- Compiled map
+- Source map
+- Build and edit
+- World dressing
+- Displacements
+- Look at it
+- Runtime probes
+- Source text and models
+- Compile and ship
+
 ## Start here
 
 | Tool | Use |

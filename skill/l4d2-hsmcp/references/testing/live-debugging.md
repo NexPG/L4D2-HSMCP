@@ -3,6 +3,16 @@
 The agent can run the game itself. This page is the whole loop: start a map, make something
 happen, and prove it from the console log.
 
+## Contents
+
+- Launch and watch
+- A human gate for live edits
+- Moving survivors
+- Triggering entities
+- Markers
+- Recipes
+- Rules
+
 ## Launch and watch
 
 ```

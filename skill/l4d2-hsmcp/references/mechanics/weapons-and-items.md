@@ -7,6 +7,14 @@ prop_physics.
 The class list below is read from the installed `left4dead2.fgd` with
 `read_fgd_class(prefix: "weapon_")` — 37 classes on this install.
 
+## Contents
+
+- Tier 1 and tier 2 weapons
+- Ammo, health and throwables
+- Placing one
+- Density: what a full chapter carries
+- Checking
+
 ## Tier 1 and tier 2 weapons
 
 | Tier | Spawn class |

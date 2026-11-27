@@ -14,6 +14,16 @@ beat, a floor count or the finale type is a design change: append it to the desi
 An addon lives in one local workspace: `workspaces/<addon-name>/`. It never goes into git. The
 work below is ordered so each step can fail cheaply.
 
+## Contents
+
+- 0. Preconditions
+- 1. Source geometry
+- 2. Entities
+- 3. Compile
+- 4. Nav
+- 5. Mission and add-on
+- 6. Deploy and play test
+
 ## 0. Preconditions
 
 - `workspaces/<addon-name>/plan/DESIGN.md` exists, its `Status` is `approved`, and its §14 build order

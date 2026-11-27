@@ -3,6 +3,20 @@
 Use this for a texture-only skin: the model, skeleton, animations and geometry stay stock. The
 reference pipeline is [`../references/models/photo-texture.md`](../references/models/photo-texture.md).
 
+## Contents
+
+- What the user installs
+- 1. Workspace and references
+- 2. Decompile the model
+- 3. Prepare the photo
+- 4. Align and project in Blender
+- 5. Fill unknown areas
+- 6. Hair
+- 7. Output and verify
+- Gates
+- Do not
+- Known limit (2026-11, recorded honestly)
+
 ## What the user installs
 
 The root `README.md` Requirements table lists the **external** tools: Blender, Blender Source

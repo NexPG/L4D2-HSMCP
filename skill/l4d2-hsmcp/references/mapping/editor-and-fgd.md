@@ -4,6 +4,14 @@ The toolkit writes files; a person still opens the result in an editor. Two comm
 change what that editor shows, and one of them can quietly make a map unshippable if its
 entities are used.
 
+## Contents
+
+- Hammer++ for L4D2
+- Tools++ and L4D2
+- Helper FGDs
+- When to drive the editor
+- Practical workflow
+
 ## Hammer++ for L4D2
 
 Hammer++ is the editor this project is built around. It is a modified Hammer with working

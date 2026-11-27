@@ -12,6 +12,15 @@ compiled maps. Two different things can be done with one:
 - **`create_instance_from_selection`** is Hammer++'s reverse direction: selected brushes
   become the instance file and one `func_instance` stays behind.
 
+## Contents
+
+- Read the library before building a house by hand
+- Paste one, with names that cannot collide
+- Instance or prefab?
+- A house as a safe room
+- The environment prefab
+- Entity groups
+
 ## Read the library before building a house by hand
 
 ```text

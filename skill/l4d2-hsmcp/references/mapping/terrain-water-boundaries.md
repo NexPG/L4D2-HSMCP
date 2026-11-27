@@ -4,6 +4,13 @@ The tools for all three exist. This is the order they go in; the failure mode is
 never the tool, it is a flat box used where terrain was wanted and a map whose ground ends
 at the skybox shell.
 
+## Contents
+
+- Terrain
+- Water
+- Boundaries
+- See the asset before choosing it
+
 ## Terrain
 
 1. **Build the floor as a grid, not one giant box.** A displacement replaces one face; a

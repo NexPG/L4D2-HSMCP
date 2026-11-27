@@ -4,6 +4,16 @@
 page is for the cases where a generated mesh needs repair, and for understanding what the
 console commands do. The command names and behaviour are L4D2's own.
 
+## Contents
+
+- Start a session
+- Selection
+- Geometry
+- Attributes and places
+- Flow and validation
+- Safe order
+- What the agent can and cannot do
+
 ## Start a session
 
 ```

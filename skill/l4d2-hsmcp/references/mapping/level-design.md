@@ -4,6 +4,17 @@ The tools can make any shape. This page is the part that decides whether the sha
 place someone can fight through. Numbers marked **measured** come from the test campaign or
 the engine's own hull; the rest are starting points to adjust, not rules.
 
+## Contents
+
+- Player metrics
+- One room, one decision
+- Flow and sightlines
+- Verticality
+- A first chapter that proves the pipeline
+- Theme without inventing content
+- Lighting and weather
+- Before you call a room done
+
 ## Player metrics
 
 | Thing | Value |

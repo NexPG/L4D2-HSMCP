@@ -6,6 +6,14 @@ a changelevel that names the wrong map, a landmark that exists in one file, a sa
 whose name the engine does not look up. This page is the wiring behind the geometry, and the
 tools that write and check it.
 
+## Contents
+
+- The chain, in one picture
+- Builders
+- Checking a whole campaign
+- L4D2 facts that make this different from other Source games
+- Evidence
+
 ## The chain, in one picture
 
 ```

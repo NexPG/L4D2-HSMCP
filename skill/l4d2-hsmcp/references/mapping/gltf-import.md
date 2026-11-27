@@ -5,6 +5,17 @@
 game can compile. `gltf_to_smd` is the bridge, and `read_gltf` is the map of the file before
 you convert it.
 
+## Contents
+
+- The two commands
+- The conventions that make it a Source model
+- Animations
+- Collision
+- Morph targets → flexes
+- What is not exported
+- What is supported
+- Pitfalls
+
 ## The two commands
 
 | Job | Tool |

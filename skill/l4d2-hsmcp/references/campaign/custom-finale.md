@@ -5,6 +5,15 @@ finales work (`c5m5_bridge` is the type 1 gauntlet and `c1m4_atrium` the type 4 
 exception), and it is the path to a Director-driven finale with waves and a real escape
 phase.
 
+## Contents
+
+- The file
+- Stages
+- The escape
+- Contract check
+- The test campaign's finale
+- Rules
+
 ## The file
 
 ```

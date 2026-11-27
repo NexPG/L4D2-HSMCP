@@ -14,6 +14,16 @@ The mode name is the filename stem and the console argument. The engine also acc
 compiled `scripts/vscripts/<name>.nuc`; Valve's own `dash`, `holdout`, `shootzones` and
 `gunbrain` modes ship that way.
 
+## Contents
+
+- Start from the tools
+- The contract `check_mutation` enforces
+- Validate the options table
+- Director settings
+- Special-infected sets
+- Pack and test
+- Stock references
+
 ## Start from the tools
 
 ```

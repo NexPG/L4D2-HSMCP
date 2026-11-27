@@ -5,6 +5,15 @@ optional, and what the MCP can still do without them. The pipeline itself is in
 [`references/models/photo-texture.md`](../models/photo-texture.md); the agent steps are in
 [`workflows/model-skin.md`](../../workflows/model-skin.md).
 
+## Contents
+
+- What the MCP does and does not do
+- Required vs optional
+- External tools
+- Python packages
+- What the user needs, by task
+- Sources
+
 ## What the MCP does and does not do
 
 The MCP does:

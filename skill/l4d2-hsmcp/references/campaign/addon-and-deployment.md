@@ -3,6 +3,15 @@
 A campaign ships as one VPK in `<game>/left4dead2/addons/`. The add-on tree is what the game
 mounts; the VPK name decides how the mission is found.
 
+## Contents
+
+- Staging tree
+- Content flags: the add-on browser groups by these
+- Large add-ons: numbered archives
+- Deployment rules
+- After deploy
+- What not to ship
+
 ## Staging tree
 
 ```

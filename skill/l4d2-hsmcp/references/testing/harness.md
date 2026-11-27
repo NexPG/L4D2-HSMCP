@@ -8,6 +8,22 @@ a timeline with the matching line and the time.
 This is the difference between "the map loaded" and "the finale started, the tank stage
 followed, the escape unlocked, the credits loaded".
 
+## Contents
+
+- A finale, as a timeline
+- A mutation or custom mode
+- Special-infected probe
+- Effective DirectorOptions
+- Do not use a stock `.bsp` as a probe host
+- A loading bar that never finishes is a restart loop
+- The trap: `commands` run before the map's entities exist
+- When the assertion is minutes away
+- Do not launch while someone is playing
+- The environment limit
+- Reading the result
+- Hidden addons and a killed run
+- Driving the menu
+
 ## A finale, as a timeline
 
 ```

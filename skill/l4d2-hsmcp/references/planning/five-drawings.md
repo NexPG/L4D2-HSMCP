@@ -6,6 +6,25 @@ decision to guess at. The research behind the authoring order — mission graph,
 floor-plan graph — is in [`pipeline-research.md`](pipeline-research.md); the first layer, and the
 proven practices it encodes, is in [`route-skeleton.md`](route-skeleton.md).
 
+## Contents
+
+- What real projects draw
+- Why five architectural sheets are not enough for L4D2
+- The JSON is the contract
+- The two tools
+- The handoff: JSON, build sheet, SVG, PNG
+- Why SVG, not a CAD library
+- Authoring order
+- Multi-level
+- Floor graph: rooms, doors and stairs
+- Pass 1
+- Schema contract (what one field means)
+- Heights: one rule per question
+- Real campaign as the test
+- The inverse: a plan from an existing map
+- Terrain is a plan field, not a build detail
+- Engine limits the plan must respect
+
 ## What real projects draw
 
 A building or neighbourhood drawing set is project-specific; there is no universal five-sheet

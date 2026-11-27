@@ -8,6 +8,16 @@ copies the files out and restores the game install.
 
 The map must be loose, writable, and already contain cubemap samples.
 
+## Contents
+
+- What a cubemap sample is
+- Checklist before running the command
+- Automated: `run_build_cubemaps`
+- Packing the result
+- What the log lines mean
+- What is verified and what is not
+- Clean up
+
 ## What a cubemap sample is
 
 `env_cubemap` is an **internal entity**. vbsp turns it into an entry in the BSP's CUBEMAPS

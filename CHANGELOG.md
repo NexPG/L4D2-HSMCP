@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.323-alpha - 2026-11-27
+
+- **Every long reference and workflow page now starts with `## Contents`.** 38 files over
+  100 lines gained a short table of contents (the section names, so an agent can see the
+  scope before reading); no instructions or facts were removed. `SKILL.md` stays a router and
+  was not given a second index.
+- Tool count: 319. Tests: 259 files, 2,072 passed, 32 skipped (verified below).
+
 ## 0.0.322-alpha - 2026-11-27
 
 - **The skill frontmatter now follows the Agent Skills specification.** `name` is

@@ -12,6 +12,16 @@ right and every local lobby still fails, a full power cycle is the cheap first t
 OS/Steam network state that a process restart leaves behind. It is a workaround, not a
 diagnosis; record what changed in the Windows/Steam event log if it recurs.
 
+## Contents
+
+- Symptom
+- Check, in this order
+- Fix matrix
+- Windows itself: the inbound firewall
+- Player-hosted (listen) servers are a different path
+- Measured example
+- What not to conclude
+
 ## Symptom
 
 - Official/Valve and public dedicated servers work.

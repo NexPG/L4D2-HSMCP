@@ -9,6 +9,21 @@ The full inventory, including Tools++ flags and the settings that change output,
 `docs/reference/hammerpp-complete-reference.md`. Read it before assuming a feature is
 covered: this table is the summary.
 
+## Contents
+
+- Map and file
+- World geometry
+- Displacements
+- Entities and I/O
+- Faces, textures, lighting
+- Detail, hints, portals
+- Campaign wiring
+- Assets
+- Compile, run, nav, campaign
+- Hammer++ editor-only features
+- Hammer++ files
+- What is genuinely missing
+
 ## Map and file
 
 | Feature | Tool | Status |

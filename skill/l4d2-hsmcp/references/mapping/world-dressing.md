@@ -9,6 +9,17 @@ against the game's own FGD, and reads the entity back after the write.
 All five are guarded: pass `confirm: true`. They write through `edit_vmf`, so ids, backups,
 outputs and the rest of the file behave as they do there.
 
+## Contents
+
+- Light
+- Postprocess
+- Spotlights
+- Decals
+- Ropes
+- Sprites, beams and lasers
+- Checking the result
+- Verified
+
 ## Light
 
 ```

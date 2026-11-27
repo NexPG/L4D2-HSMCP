@@ -19,6 +19,17 @@ requested mechanic.
 A build started before the design is a decision made by accident. A design that needs the chat
 to be understood is not finished.
 
+## Contents
+
+- Pass 1 — write the wish back as a design
+- Pass 1 — design before geometry
+- Pass 2 — build a chapter from the design
+- Pass 2 — mechanics, one at a time
+- Pass 2 — compile, nav, mission, add-on
+- Pass 2 — play test the design
+- Pass 2 — report
+- Example
+
 ## Pass 1 — write the wish back as a design
 
 Read the request and write the design before touching a file. If something is genuinely

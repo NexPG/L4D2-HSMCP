@@ -8,6 +8,15 @@ assets and evidence.
 **Stop at the end of this page.** Do not "just start a box" to see whether the idea works.
 A box built before the design is a decision made by accident.
 
+## Contents
+
+- Two passes, two tool sets
+- The authoring order: flow skeleton first, sheets later
+- The plan is a JSON source and five drawings
+- Rules for pass 1
+- The file
+- When the design is done
+
 ## Two passes, two tool sets
 
 Keep the passes apart in your head and in your hands; mixing them is how a plan starts

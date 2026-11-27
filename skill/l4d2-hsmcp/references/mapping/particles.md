@@ -5,6 +5,16 @@ definitions. A map points `info_particle_system` at one of those names; a missin
 system shows nothing and no compiler complains. `read_particle` lists what is inside;
 `write_particle` builds or rewrites the file.
 
+## Contents
+
+- Reading
+- Children are `DmeParticleChild` wrappers
+- Naming a system in the map
+- Shipping a custom `.pcf`
+- Writing
+- What the writer guarantees
+- Pitfalls
+
 ## Reading
 
 `read_particle` takes either a loose `path` or a `gameDir` + `filePattern`. It returns every

@@ -13,6 +13,19 @@ Everything later (site, terrain, floors, detailed flow) serves this layer. A foo
 before the route is a building looking for a reason. A route drawn after the buildings is a
 corridor forced through them.
 
+## Contents
+
+- Flow: the decision is first, the drawing is last
+- Practices, and the field that enforces them
+- The model
+- Authoring procedure
+- Fields
+- The checks
+- Numbers
+- A worked skeleton
+- What "good" reads like
+- What comes next
+
 ## Flow: the decision is first, the drawing is last
 
 This is the part that is easy to get backwards. "Flow" means two different things:

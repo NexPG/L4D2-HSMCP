@@ -4,6 +4,16 @@ Hammer can build a shape faster than a DCC can, but a brush is map geometry, not
 `brush_to_model` takes one or more VMF solids and writes the SMD/QC `studiomdl` compiles.
 This is the Propper++ workflow with the toolkit's own plane oracle and UV maths.
 
+## Contents
+
+- The path
+- Geometry
+- UVs
+- Materials
+- Collision
+- Pitfalls
+- Provenance
+
 ## The path
 
 1. `read_vmf_solids` — find the Hammer solid id and check that it is valid.

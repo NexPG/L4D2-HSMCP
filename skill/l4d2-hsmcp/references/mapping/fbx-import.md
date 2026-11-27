@@ -4,6 +4,17 @@ An FBX from Blender, Maya or 3ds Max is not a model source `studiomdl` can read.
 describes the file and `fbx_to_smd` writes the SMD the game's own compiler already accepts.
 Both binary 7.x and ASCII are read; no SDK, Blender or third-party importer is involved.
 
+## Contents
+
+- Fast path
+- Conventions this path chooses
+- Animations
+- What is reported, not exported
+- Shape keys and flexes
+- Collision
+- Formats and failure modes
+- Checking it
+
 ## Fast path
 
 | Want | Tool |

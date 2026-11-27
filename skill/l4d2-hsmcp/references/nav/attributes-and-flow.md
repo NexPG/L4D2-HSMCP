@@ -3,6 +3,14 @@
 A nav file can be valid and still unplayable. What makes it playable is the attribute flags on
 its areas and the flow path the Director computes from them.
 
+## Contents
+
+- Marking attributes
+- Small maps and the safety range
+- What a chapter needs
+- Flow
+- Order of operations
+
 ## Marking attributes
 
 `func_nav_attribute_region` is a brush entity that applies attributes to the nav areas inside

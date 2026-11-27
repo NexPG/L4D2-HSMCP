@@ -3,6 +3,17 @@
 L4D2 supports VScript natively, and an add-on VPK can ship it. This page covers what is
 verified: the file path, the attachment entity, and how to prove the engine loaded it.
 
+## Contents
+
+- Find the script first
+- Where the file goes
+- The event contract
+- How the map attaches it
+- Verify the load without playing
+- Custom finale stages
+- What the API covers
+- Common failures
+
 ## Find the script first
 
 `read_script_catalog` inventories the SDK and game `scripts/vscripts` trees: name, category

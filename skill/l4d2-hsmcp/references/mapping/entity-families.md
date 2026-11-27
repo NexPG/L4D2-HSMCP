@@ -6,6 +6,15 @@ mover is a brush with an origin at its centre, or that a `logic_relay`'s behavio
 installed FGD. They are shortcuts: `write_brush_entity` and `write_point_entity` accept any
 classname, so a class with no named builder is still one call away.
 
+## Contents
+
+- Triggers
+- Movers
+- Logic
+- Props, constraints, ladders, scenes and sounds
+- Runtime presence
+- Verification
+
 ## Triggers
 
 ```

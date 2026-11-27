@@ -3,6 +3,15 @@
 The toolkit reads a WAV, tells you whether L4D2 will decode it, and converts it when it will
 not. It does not mix, master or generate audio; that stays in a sound editor.
 
+## Contents
+
+- What L4D2 decodes
+- Where it goes
+- The tools
+- Soundscapes
+- Two rooms, one bed: the map-level pattern
+- Checking it
+
 ## What L4D2 decodes
 
 - **16-bit PCM**, mono or stereo, at **22050 or 44100 Hz**. That is what `read_wav` calls

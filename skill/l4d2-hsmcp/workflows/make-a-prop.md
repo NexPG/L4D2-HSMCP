@@ -3,6 +3,18 @@
 For a box, a sign, a simple machine or any shape that is a handful of quads. For sculpted
 geometry, skinning or animation, use Blender and come back at `read_smd`/`run_studiomdl`.
 
+## Contents
+
+- 1. Decide the numbers before writing anything
+- 2. Write the mesh
+- 3. Write the QC
+- 4. Compile
+- 5. Material and texture
+- 6. Physics: the one thing that does not come for free
+- 7. Prove it in the map
+- Building a prop from a Hammer brush
+- Reusing an existing DCC export
+
 ## 1. Decide the numbers before writing anything
 
 Source units: a standing survivor is 72 tall, a safe-room doorway is 64×112 (see

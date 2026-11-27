@@ -9,6 +9,17 @@ also reads and writes the source
 formats itself: an SMD or DMX can be inspected, and a simple mesh can be built from JSON
 without a DCC. Complex sculpting, UV painting and animation still belong in Blender.
 
+## Contents
+
+- The source set
+- A simple prop without a DCC
+- Reading what a DCC exported
+- Decompiling a compiled model
+- L4D2 specifics
+- The commands
+- Checking a model before it ships
+- Licensing
+
 ## The source set
 
 A Source 1 model is a `.qc` plus `.smd`/`.dmx` meshes and animations. The QC names the
