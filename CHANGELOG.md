@@ -5,6 +5,19 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.334-alpha - 2026-11-27
+
+- **No prepared author name anywhere.** The skill's author-identity rule now says there is no
+  default and no prepared name: before the first addon, ask the user what name should appear,
+  store it with `set_addon_author`, and use it for every `addonauthor`/`Author` field. Replace
+  it only when the user asks; future writes use the new name, files already written keep the
+  old one. The explicit nickname that had been used as an anti-example is gone from the skill,
+  and the worldspawn test fixture uses a neutral `Test Author`.
+- **Router size corrected.** A controlled re-measure (same prompt with a one-line attachment
+  versus `SKILL.md`) puts the router at **≈9,164 tokens**, not the 8,532 from the first pass;
+  that session's cache accounting was inconsistent. The one-router decision is unchanged.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.333-alpha - 2026-11-27
 
 - **The last mixed reference pages are split.** `five-drawings` (344 lines) keeps the schema,

@@ -25,7 +25,7 @@ describe("set_worldspawn", () => {
     const out = (await setWorldspawnTool.handler(
       {
         path,
-        set: { message: "HSMCP test map", custom_author: "NexPG" },
+        set: { message: "HSMCP test map", custom_author: "Test Author" },
         remove: ["skyname"],
         backup: false,
         confirm: true,
@@ -47,7 +47,7 @@ describe("set_worldspawn", () => {
 
     const text = readFileSync(path, "utf8");
     expect(text).toContain('"message" "HSMCP test map"');
-    expect(text).toContain('"custom_author" "NexPG"');
+    expect(text).toContain('"custom_author" "Test Author"');
     expect(text).not.toContain('"skyname"');
   });
 
