@@ -15,7 +15,8 @@ read_model_info(model: "...")
 `read_asset_catalog` groups models into building, roof, window, vehicle, foliage, street,
 interior, prop, fence, light, sign, terrain, escalator and stairs, and materials into brick,
 concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric,
-sign and building. It hides the roots the editor hides
+sign and building. It returns real counts, a bounded sample per category, and hull bounds for
+structural categories. It hides the roots the editor hides
 (`debug/engine/hud/vgui/voice/console/sblitz/particle/dons_decals`); `includeHidden: true`
 browses them. `read_game_content` with an empty pattern pages a whole kind. On a material,
 `details: true` resolves every texture it names; a missing one draws as a checkerboard.
@@ -28,12 +29,12 @@ needs.
 
 Measured on the installed L4D2, 2026.
 
-| Need | Models | Hull (units) |
+| Need | Models | Size (units) |
 |---|---|---|
-| Escalator | `models/props_unique/escalator01_left.mdl`, `..._right.mdl`; `models/props_mall/mall_escalator.mdl`; `models/props_unique/escalator02.mdl`, `escalatorairport.mdl` | 38.99 x 467.55 x 261.34; 110.5 x 606 x 324.25 |
-| Stairs / steps | `models/props_interiors/stair_treads_straight.mdl`; `models/props_exteriors/wood_stairs_120.mdl`; brush `shape: "stairs"` | read with `read_model_info` |
-| Doors | `models/props_doors/checkpoint_door_02.mdl`, `checkpoint_door_01.mdl`, `checkpoint_door_-02.mdl` | [`../mapping/doors.md`](../mapping/doors.md) |
-| Vehicles | `models/props_vehicles/apc001.mdl` (closest stock BTR stand-in); `train003.mdl` | read with `read_model_info` |
+| Escalator | `models/props_unique/escalator01_left.mdl`, `..._right.mdl`; `models/props_mall/mall_escalator.mdl`; `models/props_unique/escalator02.mdl`, `escalatorairport.mdl` | 38.99 x 467.55 x 261.34 (`escalator01`); 110.5 x 606 x 324.25 (`mall_escalator`); measure the others with `read_model_info` |
+| Stairs / steps | `models/props_interiors/stair_treads_straight.mdl`; `models/props_exteriors/wood_stairs_120.mdl`; brush `shape: "stairs"` | measure with `read_model_info` |
+| Doors | `models/props_doors/checkpoint_door_02.mdl`, `checkpoint_door_01.mdl`, `checkpoint_door_-02.mdl` | see [`../mapping/doors.md`](../mapping/doors.md) |
+| Vehicles | `models/props_vehicles/apc001.mdl` (closest stock BTR stand-in); `train003.mdl` | measure with `read_model_info` |
 
 The escalator's long axis is local **Y**; it tilts by **roll**, not pitch. That rule, with the
 campaign corrections, is in [`../mapping/model-facing.md`](../mapping/model-facing.md).

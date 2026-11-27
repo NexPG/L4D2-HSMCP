@@ -54,4 +54,4 @@ The bake is finished only when the BSP **stops growing** after the dictionary ma
 Killing on the marker alone produced a map with 45 of 89 strings, and the client failed signon
 with `Netchannel: failed reading message net_SignonState` and stayed at the main menu. The tool
 now waits for the file size to be stable for two seconds; do not shorten that to "the marker
-exists".
+exists". `read_map_dependencies` reports the dictionary as a packed entry.

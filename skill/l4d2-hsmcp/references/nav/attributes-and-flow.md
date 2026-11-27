@@ -14,7 +14,7 @@ its volume during `nav_generate`. Its `spawnflags` value is the set of attribute
 | 32 | Battlestation | the spot a crescendo defends |
 | 64 | FINALE | the finale area; apply it **liberally**, the horde spawns here |
 | 128 | Mission Start | the spawn area of the first map |
-| 256 | Battlefield | a crescendo arena; **spawning halts while survivors are inside** |
+| 256 | Battlefield | a crescendo arena; in coop, ordinary spawning halts while survivors are inside. Survival marks its arena with it and the mode keeps sending waves |
 | 1024 | Not clearable | the Director never marks it cleared; Survival arenas use it |
 | 2048 | Checkpoint | a safe room; no zombies spawn here |
 | 8192 | No mobs | do not spawn common infected here |

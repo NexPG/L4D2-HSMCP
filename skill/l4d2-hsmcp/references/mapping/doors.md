@@ -35,7 +35,7 @@ The leaf runs along the model's local **+Y**. For `checkpoint_door_02` the hull 
 
 The engine picks the checkpoint door by **class near the transition's `info_landmark`**, not by
 name. `checkpoint_exit`/`checkpoint_entrance` are canonical advice; 20 of the 57 stock chapters
-leave the door unnamed and still transition. The transition contract — `info_changelevel`,
+leave the door unnamed and still transition, and names such as `door_checkpointentrance` exist. The transition contract — `info_changelevel`,
 landmark pair, nav CHECKPOINT — is in
 [`../campaign/safe-room-and-transition.md`](../campaign/safe-room-and-transition.md).
 

@@ -43,8 +43,9 @@ whole BSP. The position comes from `nav_mark_walkable`, which uses the **current
 2. **The spawn is on a displacement.** A mark on a displaced surface may not find a solid
    brush under it. A flat brush ring or pad under `info_player_start` is the safe shape; the
    engine's own maps spawn on brush floors, not on terrain.
-3. **The nav area is there but not seeded.** A `func_nav_blocker` over the only spawn, or a
-   spawn inside a closed brush, leaves no seed.
+3. **The spawn is enclosed or covered.** A solid brush or a `TOOLS/TOOLSCLIP` volume over the
+   only spawn, or a spawn inside a closed brush, leaves no seed. A `func_nav_blocker` does not
+   change generation (see [`../references/nav/generation.md`](../references/nav/generation.md)).
 
 A different failure looks similar: a **flat silhouette** (a horizon pier, a roof, a counter
 top) gets a few tiny `NO_MERGE` areas; the engine then reports `Areas with

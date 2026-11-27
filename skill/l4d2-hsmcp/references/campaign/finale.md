@@ -37,6 +37,7 @@ The FGD exposes the ending as inputs on `trigger_finale`:
 The Authoring Tools' rescue template
 (`sdk_content/scripting/scripts/vscripts/entitygroups/rescue_helicopter_group.nut`) wires
 exactly this: a trigger on the rescue vehicle fires `FinaleEscapeFinished`, then the outtro.
+`info_survivor_rescue` marks where a rescue stands; it is not required for the victory input.
 
 ## Minimal completable finale
 

@@ -43,6 +43,8 @@ write_spawn_points(path, kind: "rescue", origin: [...])
 - `info_zombie_spawn` is where common infected enter. `population` is `default` or a number;
   `offer_tank` lets the Director offer a tank from that spawn. A map with no spawn point is a
   quiet map, not a broken one.
+- `info_director` is required for a campaign map; without it there is no Director behaviour.
+  `read_fgd_class` lists its panic, special and finale inputs and outputs exactly.
 - `info_survivor_rescue` marks a rescue; the model is editor-only in normal play.
 
 ### `write_safe_room`
@@ -111,6 +113,7 @@ write_finale_setup(path, type: "scavenge", origin: [...])
   areas FINALE with `func_nav_attribute_region` (or the nav tools), then `check_finale`.
 
 ### `write_item_spawns` and `write_saferoom_stock`
+
 `write_item_spawns` places L4D2 `weapon_*_spawn` classes at points, with `count` and `skin`;
 `write_saferoom_stock` is a 48-unit row of medkit/pills/ammo/pistol shortcuts. A spawner
 is a candidate: `info_map_parameters` density decides whether it becomes an item.
