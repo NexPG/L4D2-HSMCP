@@ -224,15 +224,30 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     if (doorIndex >= 96) break;
   }
 
-  // Stairs are the route's short drops: bigger ones are drops, not stairs.
+  // Stairs are connections between nav areas on different heights, not only the route's own
+  // descent: reading the graph finds every flight, including the ones the route never uses.
   let stairIndex = 0;
-  for (let index = 1; index < steps.length; index += 1) {
-    const dz = steps[index]!.z - steps[index - 1]!.z;
-    if (dz <= -48 && dz > -64) {
+  const stairKeys = new Set<string>();
+  for (const area of nav.areas) {
+    const a = areaCenter(area);
+    for (const neighbour of graph.neighbors.get(area.id) ?? []) {
+      if (neighbour < area.id) continue;
+      const other = graph.byId.get(neighbour);
+      if (!other) continue;
+      const b = areaCenter(other);
+      const dz = Math.abs(a.z - b.z);
+      if (dz < 16 || dz > 128) continue;
+      if (Math.hypot(a.x - b.x, a.y - b.y) > 256) continue;
+      const x = Math.round((a.x + b.x) / 2);
+      const y = Math.round((a.y + b.y) / 2);
+      const key = `${Math.round(x / 64)}:${Math.round(y / 64)}`;
+      if (stairKeys.has(key)) continue;
+      stairKeys.add(key);
       areas.push({ id: `stair_${stairIndex++}`, label: "Stair", kind: "stair", floor: 1,
-        x: Math.round(steps[index - 1]!.x), y: Math.round(steps[index - 1]!.y),
-        width: 96, depth: 96, note: `drop ${Math.round(dz)}` });
+        x, y, width: 96, depth: 96, note: `dz ${Math.round(dz)}` });
+      if (stairIndex >= 64) break;
     }
+    if (stairIndex >= 64) break;
   }
 
   // Director zones live in the nav flags; a survey can read them back.

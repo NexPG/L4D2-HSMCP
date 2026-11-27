@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.311-alpha - 2026-11-26
+
+- **Every flight of stairs, not only the route's.** Stairs used to be derived from the route's
+  own 48 u drops, so 39 of 55 chapters reported none; the survey now reads the nav graph and
+  records every pair of connected areas on different heights (3,520 across the stock maps, 64
+  max per map). Doors were already complete (1,178).
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.310-alpha - 2026-11-26
 
 - **Landscape, water and volumes in the survey.** A new sp/models.ts reads brush-model bounds
