@@ -82,7 +82,7 @@ edit_vmf(path, ops: [{ op: "add", keyvalues: {
   `write_point_entity` and their FGD keys. They are effects, not light sources; pair them
   with a real `light_spot`.
 - Measured fixture: one `light_spot`, one `infodecal` and one `env_beam` compile in a sealed
-  room with no leak; the screenshot is deferred with the game launch.
+  room with no leak; the live frame is still a check.
 
 ## Decals
 

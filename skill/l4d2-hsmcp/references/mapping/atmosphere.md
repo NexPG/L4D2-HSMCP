@@ -81,4 +81,4 @@ door or a `logic_auto` on spawn.
 - `read_bsp_entities(histogramOnly)`: expected counts for the measured fixture are
   `env_fog_controller 3`, `env_tonemap_controller 3`, `color_correction 1`, `env_sun 1`,
   `shadow_control 1`, `env_wind 1`, `light_environment 1`.
-- Screenshot: deferred while the game launch is paused; use `run_map_test` when it is back.
+- Screenshot: not yet captured; use `run_map_test` for the frame.

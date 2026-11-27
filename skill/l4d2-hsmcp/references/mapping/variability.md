@@ -46,5 +46,5 @@ write_template_spawner(path, targetname: "car_set", origin: [0,0,64],
 
 The design decision and the visual check. `read_bsp_entities` proves the classes exist after
 a compile, but whether the chosen colour or prop set looks right is a screenshot/play-test,
-deferred while the game launch is paused. Two variability beats were not applied to campaign
+still a live check. Two variability beats were not applied to campaign
 003 yet; that is a build edit, not a tool gap.

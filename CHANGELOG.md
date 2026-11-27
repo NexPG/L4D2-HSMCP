@@ -40,6 +40,9 @@ with a line here.
   change generation).
 - The per-map authoring checklist and the final campaign-ready checklist now link to each
   other, so "done with this map" and "done with the campaign" are not two copies of one gate.
+- **Stale "launch is paused" notes removed.** Six pages said a screenshot was deferred while
+  the game launch was paused; the pause is no longer the state, so they now say the check is
+  still live and name the tool, instead of dating the page.
 - All relative links in the skill resolve, and a new structure test fails when a skill page is
   not routed from `SKILL.md` (one index, no orphan pages).
 - Tests: 259 files, 2,046 passed, 32 skipped. Tool count: 312.

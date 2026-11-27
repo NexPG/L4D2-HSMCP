@@ -83,7 +83,7 @@ surrounds the map origin cannot be used because the camera would sit inside it.
 - The skybox area is a second sealed volume; vbsp compiles it without a leak
   (`test/tools/skyboxbuild.test.ts` runs that compile where a toolchain exists).
 - Measured: a 128-unit tower at 1/16 in a 1,024 room produced a `sky_camera` at
-  `1616 -6 184`, a 76x76x80 sealed room and a vbsp compile with no leak. The screenshot is
-  deferred while the game launch is paused.
+  `1616 -6 184`, a 76x76x80 sealed room and a vbsp compile with no leak. The live frame is
+  still a check; use `run_map_test` and look at the horizon.
 - In game, look at the horizon: a broken 3D skybox shows as a seam or a hole, not as missing
   geometry in the play area.

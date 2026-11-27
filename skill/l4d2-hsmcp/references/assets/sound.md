@@ -108,8 +108,7 @@ edit_vmf(path, ops: [
 - Two rooms need two scapes **and** a trigger/volume boundary; the entity radius alone does
   not fade the bed.
 - Measured fixture: two `env_soundscape`, one proxy, one `ambient_music` and one
-  `sound_mix_layer` compile with no leak. Hearing the mix is a live test, deferred with the
-  game launch.
+  `sound_mix_layer` compile with no leak. Hearing the mix is still a live test.
 
 ## Checking it
 
