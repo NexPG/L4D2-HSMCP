@@ -27,12 +27,6 @@ Left 4 Dead 2 modding. The server provides the operations -- reading and writing
 files, building and checking content, compiling and packaging it -- and the companion skill
 provides the knowledge of how that content has to fit together.
 
-The same skill is served by the server as MCP resources under
-`l4d2-hsmcp://skill/`. A client that has only the server can read `SKILL.md`, the workflow
-pages and the references without a separate skill installation. The common routes are also
-MCP prompts: `l4d2_task`, `l4d2_hud_override`, `l4d2_material_edit`,
-`l4d2_compiled_light` and `l4d2_editor_sequence`.
-
 It is built for agents and usable by people: every operation is a described, checked tool, and
 anything that writes asks for confirmation.
 
