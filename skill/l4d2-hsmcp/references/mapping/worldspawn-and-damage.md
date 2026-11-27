@@ -49,16 +49,8 @@ separators, not values.
 
 `filter_melee_damage` is separate: `0` all, `4` slash, `128` club.
 
-## Game events for `info_game_event_proxy`
-
-The FGD lists **109 game events** (107 unique names; `exaplin_scavenge_leave_area` is a typo
-in the list, and many more events are commented out). Read the installed list with
-`read_fgd_class { classname: "info_game_event_proxy" }` instead of copying a value from a
-tutorial: a proxy that names an event the game does not fire is silent.
-
-The 338 events VScript can hook are a different list — `resource/modevents.res`, exposed by
-`read_vscript_api` and checked by `check_vscript_contract`. A name in one list is not
-automatically in the other.
+Proxy event names, and why the FGD list is not the VScript list, are in
+[`../scripting/game-events.md`](../scripting/game-events.md).
 
 ## What the lint now reports
 

@@ -21,7 +21,6 @@ proven practices it encodes, is in [`route-skeleton.md`](route-skeleton.md).
 - Schema contract (what one field means)
 - Heights: one rule per question
 - Real campaign as the test
-- The inverse: a plan from an existing map
 - Terrain is a plan field, not a build detail
 - Engine limits the plan must respect
 
@@ -322,28 +321,8 @@ Two fixtures keep the checker honest against real geometry:
 `test/plan/fixtures/nomercy-c8m1.json` and `dead-center-c1m1.json`. Both must pass with zero
 findings; a plan that only passes on a hand-made toy is not evidence.
 
-## The inverse: a plan from an existing map
-
-`plan_from_map` takes a `.bsp` and the `.nav` beside it and writes a survey plan
-(`origin: "imported"`): the nav mesh's own path from `PLAYER_START` to the far `CHECKPOINT`,
-the player start, safe room, checkpoints and item spawns as areas, districts by height band,
-and a `source.nav` reference that the drawings render as the real walkable layout. An imported
-plan keeps every structural check and skips the authoring prescriptions, because a survey is
-measured, not designed.
-
-Covered today, all read from the compiled map rather than guessed: route and side branches from
-the nav graph; start, safe room, checkpoints and item spawns; rooms as nav components, and
-buildings as rooms joined **through door areas**; floors, sections and a basement level;
-doors from entities; stairs as the route's own flights plus nav ladders; static props with a
-role (cover, landmark, item cluster, prop); water polygons and `func_nav_blocker` volumes;
-the terrain heightfield from collision plus the BSP displacements; districts by height band;
-the palette (sky, materials, models); and the `finale` block from `trigger_finale`.
-
-Still holes, and why they are not tool bugs: the stock nav `places[]` table is empty, so rooms
-are "Room 1" and "Middle level", not "Stairwell"; terrain cells with no collision (roofs, sky,
-void) stay 0, which is 38% of the grid on a median chapter; the per-map caps (48 roof
-buildings, 48 water contours, 80 props, 32 stairs) truncate the densest chapters; and beats are
-a design decision, so a survey does not invent them.
+To survey an existing map instead of authoring one, use [`plan-survey.md`](plan-survey.md);
+the schema, checks and drawings below still apply.
 
 ## Terrain is a plan field, not a build detail
 

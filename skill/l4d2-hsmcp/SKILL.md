@@ -19,10 +19,11 @@ let you do that is not finished; a finding that stayed in a log is lost.
 **A tool factory, not a parts catalogue.** We build instruments for making parts, not a fixed
 box of parts. The agent must be able to make something we never anticipated: a class with no
 named builder, a shape no preset covers, a script no template describes. Named builders are
-shortcuts over primitives; `write_brush_entity` and `write_point_entity` take any classname,
+shortcuts over primitives: `write_brush_entity` and `write_point_entity` take any classname,
 `write_vmf_solid` takes arbitrary convex faces, `edit_vmf` reaches every key and output, and
-`write_vscript` is the Squirrel source. If a capability exists only as a preset, the primitive
-is missing. `CONTRIBUTING.md` section 4 and `references/tools/primitives.md` carry the rule.
+`write_vscript` is the Squirrel source. If a helper cannot express what you need, the primitive
+can; if a capability exists only as a preset, the primitive is missing. `CONTRIBUTING.md`
+section 4 and `references/tools/primitives.md` carry the rule.
 
 The toolkit is early, but maps, campaigns, finales, nav, model source authoring and
 compilation, native VTF writing and add-on VPKs are proven. Two-team rounds and a few visual
@@ -41,12 +42,10 @@ within the palette but may not silently change the route, a room's purpose or a 
 `workflows/model-skin.md` and
 `workflows/from-a-wish.md`.
 
-**Primitives first.** Use the general operations (`write_vmf_solid` with convex faces,
-`edit_vmf`, `write_brush_entity`, `write_point_entity`, `set_worldspawn`, `transform_solids`,
-`clone_solids`, `write_vscript`); the named helpers are shortcuts, not the limit of what is
-possible. If a helper cannot express what you need, the primitive can. The classname on
-`write_brush_entity`/`write_point_entity` is a string, so a class with no named builder is
-still reachable. See `references/tools/primitives.md`.
+**Tool names are this server's.** A bare `write_vmf` means the `l4d2-hsmcp` tool:
+`l4d2-hsmcp:write_vmf` in a client that prefixes server and tool, or
+`tools["l4d2-hsmcp"].write_vmf` through OpenCode's Code Mode. A tool from another server keeps
+its own prefix; never assume a bare name belongs to this catalogue.
 
 **Runtime truth is a primitive too.** `write_entity_probe` + `run_map_test` with
 `markerOrder: "any"` proves a written entity exists in the running map; a compiled BSP alone
@@ -140,6 +139,7 @@ material; the instructions live in one place.
 | `workflows/addon-workspace.md` | one workspace per addon: plan, templates, logs, src, addon, dist, evidence |
 | `workflows/design-a-map.md` | pass 1: the design file, route, rooms, floors, beats, palette, variability |
 | `references/planning/five-drawings.md` | the five drawings, the plan JSON, the checks and why SVG |
+| `references/planning/plan-survey.md` | surveying a stock `.bsp`/`.nav` into an imported plan, and what it cannot recover |
 | `references/planning/route-skeleton.md` | first layer: districts, route nodes, pacing, landmarks, gates, the research and the checks |
 | `references/planning/pipeline-research.md` | mission graph, space graph and floor-plan graph; what the research says |
 | `workflows/new-campaign.md` | pass 2: the build pipeline from the approved design |
@@ -163,6 +163,7 @@ material; the instructions live in one place.
 | `references/nav/editing.md` | the console command set for repairing a generated mesh |
 | `references/scripting/vscript.md` | shipping a `.nut`, the event contract, `read_vscript_api` and `check_vscript_contract` |
 | `references/scripting/addons.md` | pure VScript addons: `mapspawn_addon`, a think runner, event-hook loaders, item control and probe testing |
+| `references/scripting/game-events.md` | `info_game_event_proxy`'s FGD list vs the 338 VScript events, and how to read each |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
 | `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
 | `references/testing/entity-probes.md` | entity, class and nav probes: marker shape, `markerOrder`, and measured limits |
@@ -176,9 +177,10 @@ material; the instructions live in one place.
 | `references/mapping/atmosphere.md` | the six atmosphere layers, multiple fog controllers, tonemaps/colour correction and wind |
 | `references/mapping/variability.md` | `logic_case`/`PickRandom`, `point_template`/`env_entity_maker`, `Color`/`SetSkin` |
 | `references/mapping/terrain-water-boundaries.md` | terrain patches, slope/profile, the measured nav band, water and map edges |
-| `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday`, damage types, game events |
+| `references/mapping/worldspawn-and-damage.md` | sky, music, detail material, `timeofday` and damage types |
 | `references/mapping/editor-and-fgd.md` | Hammer++, Tools++ flags, FGD edits and what not to ship |
 | `references/mapping/model-authoring.md` | QC/SMD/DMX, `studiomdl`, physics, viewmodels and player models |
+| `references/mapping/model-decompile.md` | turning a `.mdl` back into QC/SMDs, and what autolayers, IK rules, weight lists and a recompile cannot restore |
 | `references/mapping/model-facing.md` | which way a model faces, how it tilts on a slope, `write_prop` `facing`/`modelForward`, and the measured table |
 | `references/mapping/doors.md` | door models and sizes, hinge origin, opening fit and swing clearance |
 | `references/mapping/engine-limits.md` | the ceilings a map must fit, and where the full table and each specific rule live |
@@ -347,16 +349,10 @@ material; the instructions live in one place.
   triangles and `prop_data`, and checks its checksum against the `.mdl`. More than one piece
   per solid means the QC needs `$concave`; `read_static_props` only reports whether a `.phy`
   exists.
-- **Model decompilation.** `decompile_model` turns a compiled `.mdl` back into a QC, a
-  reference SMD, one animation SMD per decodable sequence, and a collision SMD, with the
-  bind-pose skeleton and per-vertex bone weights. It writes attachments, custom hitboxes,
-  `$texturegroup` skin families, every bodygroup alternative and every VTX LOD, and
-  round-trips through studiomdl (the recompiled hull matches the source within 8 units, a
-  31-frame prop spin keeps all 31 frames, smoker's 4 attachments and 17 hitboxes come back,
-  arcade_button's three skin families match, brokenglass's three alternatives and
-  checkpoint_door's blank+studio part survive, and hospital_bed's 900/618/409 LODs come
-  back). Flex deltas become a `.vta` with a `$model { flexfile ... }` block, the original
-  controllers and rules. Remaining gap: bodygroup presets; its `warnings` say so.
+- **Model decompilation.** `decompile_model` turns a compiled `.mdl` back into a QC/SMD set
+  and round-trips through studiomdl; the recovery rules, the autolayer/IK/weight-list limits
+  and the remaining gap (bodygroup presets) are in
+  [`references/mapping/model-decompile.md`](references/mapping/model-decompile.md).
 - **Model flex inspection.** `read_model_flexes` reports a compiled model's flex
   descriptors, controllers and rules, plus sampled position/normal deltas with the vertex
   position. Use it to compare a source and a recompiled model; the decompiler writes the

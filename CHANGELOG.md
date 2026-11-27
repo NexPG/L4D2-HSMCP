@@ -5,6 +5,26 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.333-alpha - 2026-11-27
+
+- **The last mixed reference pages are split.** `five-drawings` (344 lines) keeps the schema,
+  checks and drawings; the survey half is `references/planning/plan-survey.md`.
+  `model-authoring` (204 lines) keeps authoring, import and QC; the decompiler's recovery rules
+  and limits are `references/mapping/model-decompile.md` (125 lines).
+  `worldspawn-and-damage` keeps sky, music and damage; the `info_game_event_proxy` vs VScript
+  event lists are `references/scripting/game-events.md`. Every new page is routed from
+  `SKILL.md`.
+- **Tool names are qualified in one rule, not repeated per page.** `SKILL.md` now says a bare
+  `write_vmf` is `l4d2-hsmcp:write_vmf` (or `tools["l4d2-hsmcp"].write_vmf` in Code Mode), and
+  another server's tool keeps its own prefix. The duplicate "primitives" paragraphs were
+  merged into one.
+- **`SKILL.md` size is measured, not estimated.** 370 lines and **≈8,532 tokens** by the
+  provider's tokenizer (an attachment run used 19,194 input+cache tokens against 10,662 for the
+  same prompt without the file). The ~5k recommendation is knowingly exceeded: the reference
+  table is the only index, and moving it would create the second index the structure rules
+  forbid.
+- Tool count: 319. Tests: 260 files, 2,072 passed, 32 skipped.
+
 ## 0.0.332-alpha - 2026-11-27
 
 - **The server now tells the agent to load the skill before its first tool call.** The MCP
