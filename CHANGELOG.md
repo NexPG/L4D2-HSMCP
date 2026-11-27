@@ -5,6 +5,14 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.319-alpha - 2026-11-27
+
+- **`DirectorOptions` is also live-proven.** The same bench and probe, with the table written
+  by `write_director_options` as `DirectorOptions` (`CommonLimit=0`, `TankLimit=1`,
+  `MaxSpecials=2`, `MinSpecials=1`), matched `SessionOptions` at 15.8 s. The `MutationOptions`
+  run matched at 14.2 s. Both paths are now runtime evidence, not only a file check.
+- Tool count: 315. Tests: 259 files, 2,058 passed, 32 skipped.
+
 ## 0.0.318-alpha - 2026-11-27
 
 - **`write_director_options` is verified at runtime.** A bench map with a mutation VPK and
