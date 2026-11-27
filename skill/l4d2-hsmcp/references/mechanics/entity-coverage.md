@@ -31,10 +31,10 @@ prompt, not a silent gap.
 | Doors, buttons and movement | partial | 18 | 1,505 | `place_door`, `write_safe_room`, `write_changelevel` | `campaign-wiring.md` |
 | Brush and clip volumes | covered | 22 | 7,379 | `write_vmf_solid`, `clip_solids`, `check_ai_contract` | `ai-and-nav-content.md` |
 | Props and physics | covered | 9 | 14,714 | `write_prop`, `read_static_props`, `read_model_info` | `../mapping/model-facing.md` |
-| Lighting and decals | covered | 13 | 7,880 | `write_light`, `write_env_sun`, `read_vmf_lint` | `../mapping/lighting.md` |
-| Atmosphere, weather and sound | partial | 37 | 5,447 | `write_weather`, `write_atmosphere`, `read_soundscape` | `../mapping/atmosphere.md` |
+| Lighting and decals | covered | 13 | 7,880 | `write_light`, `write_postprocess`, `read_vmf_lint` | `../mapping/world-dressing.md` |
+| Atmosphere, weather and sound | partial | 37 | 5,447 | `write_weather`, `edit_vmf`, `write_postprocess`, `read_soundscape` | `../mapping/atmosphere.md` |
 | Particles | covered | 2 | 2,614 | `read_particle`, `write_particle`, `write_point_entity` | `coverage.md` |
-| Logic, math and filters | covered | 26 | 3,617 | `write_logic`, `write_random_case`, `write_template_spawner`, `check_entity_wiring` | `../mapping/variability.md` |
+| Logic, math and filters | covered | 26 | 3,617 | `write_logic`, `write_random_case`, `write_template_spawner`, `validate_io` | `../mapping/variability.md` |
 | Triggers | partial | 9 | 836 | `write_trigger`, `read_vmf_lint` | `crescendo-and-panic.md` |
 | Campaign, nav and mode entities | covered | 19 | 2,161 | `write_spawn_points`, `write_rescue_closet`, `write_map_parameters`, `check_gamemode_contract`, `check_ai_contract` | `ai-and-nav-content.md` |
 | Cameras and view control | documented | 4 | 171 | — | `../mapping/entity-families.md` |

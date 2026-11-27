@@ -225,8 +225,8 @@ material; the instructions live in one place.
 
 1. **State of the install.** `health`. It reports the game profile, compilers, FGD, sidecar
    and tool count. Missing pieces are named with their cost; do not guess around them.
-2. **Workspace.** `write_addon_workspace(name)` creates `workspaces/<addon-name>/` with
-   `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and `evidence/`.
+2. **Workspace.** `write_addon_workspace(name)` creates the layout described in
+   [`workflows/addon-workspace.md`](workflows/addon-workspace.md).
 3. **Design.** `workflows/design-a-map.md`: the brief (experience, pillars, beats), the route
    skeleton (districts, nodes, intensity, landmarks, gates), then rooms, floors, events, finale,
    palette, variability and budget in the design file and the plan JSON. Read-only; no `.vmf`;
@@ -282,21 +282,27 @@ material; the instructions live in one place.
 ## Gotchas
 
 - `info_changelevel` does not spawn without `prop_door_rotating_checkpoint` in the safe room.
-  A brush alone is inert.
+  A brush alone is inert. [`references/campaign/safe-room-and-transition.md`](references/campaign/safe-room-and-transition.md)
 - `nav_generate` needs **`sv_cheats 1` and `nav_edit 1`**, and a **loose** map: a `.nav`
   cannot be written beside a map inside a VPK. Without `nav_edit` it does nothing, silently.
+  [`references/nav/generation.md`](references/nav/generation.md)
 - `read_nav` compares `savedBspSize` with the `.bsp`: after any geometry change the mesh is
-  stale until regenerated.
+  stale until regenerated. [`troubleshooting/nav-stale.md`](troubleshooting/nav-stale.md)
 - Mission file base name must equal the VPK name, and `Name` is alphanumeric only. This is
   the difference between "add-on enabled" and "campaign in the list".
+  [`references/campaign/mission-file.md`](references/campaign/mission-file.md)
 - `trigger_finale` type 0 (Standard) is used by no Valve campaign. A shipping finale is type 2
   plus `scripts/vscripts/<map>_finale.nut`; `FinaleEscapeStarted` enables the escape and
   `FinaleEscapeFinished` plus an outtro ends it. Type 0 is a scriptless test path only.
+  [`references/campaign/finale.md`](references/campaign/finale.md)
 - `addOutput` values have five comma-separated fields: `target,input,param,delay,timesToFire`.
   Four fields are rejected by the sidecar.
+  [`references/mapping/entity-families.md`](references/mapping/entity-families.md)
 - VScript in an add-on lives at `scripts/vscripts/<name>.nut` and is attached with
   `logic_script` keyvalue `vscripts = <name>`, no extension.
+  [`references/scripting/vscript.md`](references/scripting/vscript.md)
 - `-condebug` plus `printl` turns "does the engine load this?" into a one-command check.
+  [`references/testing/live-debugging.md`](references/testing/live-debugging.md)
 
 ## What is not supported
 

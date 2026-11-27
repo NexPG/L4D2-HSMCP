@@ -22,6 +22,12 @@ with a line here.
   stale and unplayable pages disagreed); the safe-room doorway is 64/72 x 112, not "64–128";
   the planning table's 56x112 door and 8x12 step were removed; a non-existent `write_door` was
   corrected to `place_door`; the checkpoint door is resolved by class, not by name.
+- **Stale tool names corrected.** The skill pointed at `write_door`, `read_vmf_view`,
+  `read_bsp_static_props`, and the entity-coverage table named `write_env_sun`,
+  `write_atmosphere` and `check_entity_wiring`, none of which exist. They now name
+  `place_door`, `render_vmf_view`, `read_static_props`, `write_light`/`write_postprocess` and
+  `validate_io`; the family metadata in `src/maps/typescript/tools/entitycoverage.ts` was
+  corrected too, so its own report stops promising missing tools.
 - All relative links in the skill resolve, and a new structure test fails when a skill page is
   not routed from `SKILL.md` (one index, no orphan pages).
 - Tests: 259 files, 2,046 passed, 32 skipped. Tool count: 312.

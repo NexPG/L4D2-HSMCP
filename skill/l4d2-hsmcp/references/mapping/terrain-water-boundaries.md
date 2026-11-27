@@ -89,7 +89,7 @@ A map that ends at the skybox shell is a map that shows its edge. Cover it in th
    around is not a boundary.
 4. **A sound/atmosphere edge** if the map is large: `env_soundscape` and a fog volume.
 
-Use `read_vmf_view`/`run_map_test` to look at the boundary from the playable side. The
+Use `render_vmf_view`/`run_map_test` to look at the boundary from the playable side. The
 offline plan and the game frame are different oracles; only the frame proves the seam is
 hidden.
 

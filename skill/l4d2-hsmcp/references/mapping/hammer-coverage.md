@@ -34,7 +34,7 @@ covered: this table is the summary.
 | Delete | `delete_solids` | verified |
 | Carve | several clips | verified through the same two-plane cut: four convex pieces compiled with vbsp. No dedicated tool, by design |
 | Fitting (door casing, counter, skirting) | `write_vmf_fitting` | verified: a counter assembled from several brushes compiled with vbsp |
-| Rotating door | `place_door` | verified: hinge origin and checkpoint name on the night-moscow door |
+| Rotating door | `place_door` | verified: hinge origin and checkpoint door on the night-moscow door |
 | Water volume | `write_vmf_water` | verified on a fixture: Water shader checked, brush valid, `water_lod_control` added |
 
 ## Displacements

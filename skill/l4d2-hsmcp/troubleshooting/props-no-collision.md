@@ -24,7 +24,7 @@ collision for anything.
 
 1. `read_static_props` → `solidity` histogram and `nonSolidInstances`. A solid map is mostly
    `"6"`; `"0"` is allowed only for `spawnflags 2` decoration.
-2. `read_bsp_static_props`/the raw `sprp` reader → per-instance `solidity`.
+2. `read_static_props` on the compiled BSP → per-instance `solidity`.
 3. `read_vmf_lint` → `prop-static-not-solid` for `solid 0` unless `spawnflags 2`.
 4. `read_model_info` → `hasPhysics`; a model without `.phy` cannot be solid at `6`.
 
