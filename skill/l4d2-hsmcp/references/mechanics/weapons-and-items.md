@@ -77,8 +77,8 @@ with one official peer. Measured totals on the official maps:
 | `c1m1_hotel` | 81 | 51 |
 | `c5m1_waterfront` | 96 | 28 |
 
-The task list's "321 each for Milltown" is not the spawner count this reader sees: the three
-Milltown chapters are 187/191/152. Use **~150 total** as the full-chapter budget and
+A previous estimate of 321 per Milltown chapter is not the spawner count this reader sees: the
+three Milltown chapters are 187/191/152. Use **~150 total** as the full-chapter budget and
 `weapon_item_spawn` ~50–100 as the random layer; a short arena needs the nav-area ratio.
 
 ```text
