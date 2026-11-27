@@ -4,6 +4,10 @@
  * A brush entity (`func_water_analog`, `func_nav_blocker`, a door made of brushes) has no
  * `origin`; its keyvalues name a `*N` model. The model lump carries the world-space mins/maxs
  * that the entity's brushes occupy, which is what a plan needs to place the volume.
+ *
+ * `dmodel_t` is 48 bytes: `Vector mins, maxs, origin; int headnode; int firstface, numfaces`.
+ * That is `src/public/bspfile.h` in source-sdk-2013, read 2026-11-27 — the first version of
+ * this reader assumed 64 and read denormal garbage from every model after the world.
  */
 import { LUMP_MODELS, readAt, readHeader } from "./header.js";
 

@@ -5,6 +5,21 @@ prerelease suffix (`-alpha`, `-beta`) while the toolchain is still being proven 
 target game. A version is bumped in the same commit as the change it describes, together
 with a line here.
 
+## 0.0.313-alpha - 2026-11-27
+
+- **The survey closes its last three gaps.** inale is filled from 	rigger_finale entities
+  (14 of 55 chapters) with its own type and host building; props are classified by model into
+  cover, landmark, item-cluster or prop (606 cover, 41 landmark, 441 item clusters);
+  stairs are the route's own flights plus the nav ladders, not every 16 u step — the previous
+  graph scan reported 128 per map, which is a step inventory, not stairs.
+- **Caps raised:** roofs 48, water 48, props 80 per map.
+- **Engine limits recorded.** The Source SDK spfile.h is now the cited oracle in the skill:
+  MAX_MAP_MODELS 1024, MAX_MAP_ENTITIES 8192 (runtime 2048), MAX_MAP_BRUSHES 8192,
+  MAX_MAP_DISPINFO 2048, and dmodel_t is 48 bytes — the 64-byte assumption was the bug that
+  zeroed every nav-blocker volume.
+- All 55 official chapters import with zero findings.
+- Tests: 259 files, 2,045 passed, 32 skipped. Tool count: 312.
+
 ## 0.0.312-alpha - 2026-11-26
 
 - **Facades and landmarks enter the plan.** A building that cannot be walked into has no nav,

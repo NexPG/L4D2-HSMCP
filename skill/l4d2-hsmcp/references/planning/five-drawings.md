@@ -343,9 +343,7 @@ stairs are not extracted from the BSP brushes; static props and cover are not im
 stock L4D2 nav has an empty place table, so district names are generic. Until those land, an
 imported plan is a route survey over the real nav, not a full architectural plan.
 
-## Terrain is a plan field, not a build detail
-
-A plan without a heightfield describes a flat world. When buildings stand at different
+## Terrain is a plan field, not a build detailA plan without a heightfield describes a flat world. When buildings stand at different
 `baseZ` and the terrain is all zeros, `check_map_plan` reports `terrain-flat-relief`: the
 level's relief has to be decided in pass 1 and written into `terrain.heights`, not invented by
 whoever places the first brush. `plan_from_map` fills it from the nav surface (the ground,
@@ -353,6 +351,19 @@ lowest sample per cell) and stamps the BSP displacements over it, because the na
 flattens the designed banks and hills.
 
 
+## Engine limits the plan must respect
 
+The numbers are in the Source SDK header, not in a forum post:
+source-sdk-2013/src/public/bspfile.h, read 2026-11-27.
 
+| Limit | Value | Why the plan cares |
+|---|---|---|
+| MAX_MAP_ENTITIES | 8192 | every point entity and brush entity in the level; the runtime edict budget is lower (2048), so a plan with more entities than that is already suspect |
+| MAX_MAP_MODELS | 1024 | one model per brush entity: water, blockers, doors, movers. A survey that reads *N models must stay under it, and an imported map that is near it cannot take many new brush entities |
+| MAX_MAP_BRUSHES | 8192 | solids; the build pass adds one per wall, floor and detail volume |
+| MAX_MAP_DISPINFO | 2048 | terrain patches; a heightfield finer than the map's own displacements does not add relief, it adds patches |
+| dmodel_t | 48 bytes | mins, maxs, origin, headnode, firstface, numfaces; reading it as 64 yields garbage after the world model |
 
+The nav mesh is a separate format with its own limits (area count, ladder count) and is not
+bounded by MAX_MAP_AREAS, which counts BSP vis areas (256). Do not confuse the two when a
+survey reports 1690 nav areas: that is normal and legal.

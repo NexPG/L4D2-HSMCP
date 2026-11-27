@@ -225,30 +225,27 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     if (doorIndex >= 96) break;
   }
 
-  // Stairs are connections between nav areas on different heights, not only the route's own
-  // descent: reading the graph finds every flight, including the ones the route never uses.
+  // The nav does not mark a stair; it marks each step as a separate area, so an area-pair scan
+  // reports every step of every ramp (128 per map). A plan needs the vertical links the route
+  // uses plus the real ladders, not a step inventory.
   let stairIndex = 0;
-  const stairKeys = new Set<string>();
-  for (const area of nav.areas) {
-    const a = areaCenter(area);
-    for (const neighbour of graph.neighbors.get(area.id) ?? []) {
-      if (neighbour < area.id) continue;
-      const other = graph.byId.get(neighbour);
-      if (!other) continue;
-      const b = areaCenter(other);
-      const dz = Math.abs(a.z - b.z);
-      if (dz < 16 || dz > 128) continue;
-      if (Math.hypot(a.x - b.x, a.y - b.y) > 256) continue;
-      const x = Math.round((a.x + b.x) / 2);
-      const y = Math.round((a.y + b.y) / 2);
-      const key = `${Math.round(x / 64)}:${Math.round(y / 64)}`;
-      if (stairKeys.has(key)) continue;
-      stairKeys.add(key);
+  for (let index = 1; index < steps.length; index += 1) {
+    const dz = steps[index]!.z - steps[index - 1]!.z;
+    if (dz <= -32 && dz > -64) {
       areas.push({ id: `stair_${stairIndex++}`, label: "Stair", kind: "stair", floor: 1,
-        x, y, width: 96, depth: 96, note: `dz ${Math.round(dz)}` });
-      if (stairIndex >= 64) break;
+        x: Math.round(steps[index - 1]!.x), y: Math.round(steps[index - 1]!.y),
+        width: 96, depth: 96, note: `route drop ${Math.round(dz)}` });
     }
-    if (stairIndex >= 64) break;
+  }
+  for (const ladder of nav.ladders) {
+    if (stairIndex >= 32) break;
+    const top = ladder.top;
+    if (!top) continue;
+    areas.push({
+      id: `stair_${stairIndex++}`, label: "Ladder", kind: "stair", floor: 1,
+      x: Math.round(top.x), y: Math.round(top.y), width: 64, depth: 64,
+      note: `ladder ${Math.round(ladder.length)}`,
+    });
   }
 
   // Director zones live in the nav flags; a survey can read them back.
@@ -318,7 +315,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       const rect = boundsOf(entity);
       if (rect) noBuild.push({ ...rect, rotation: 0 });
     }
-    if (water.length >= 24 && noBuild.length >= 24) break;
+    if (water.length >= 48 && noBuild.length >= 24) break;
   }
   // Water is usually world geometry with a water material, not an entity: a survey reads the
   // upward-facing water polygons and records their footprint.
@@ -338,7 +335,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         y: Math.round((Math.min(...ysFace) + Math.max(...ysFace)) / 2),
         width: Math.round(width), depth: Math.round(depth), rotation: 0,
       });
-      if (water.length >= 24) break;
+      if (water.length >= 48) break;
     }
   } catch {
     /* no polygon reader; the entity water above still applies */
@@ -347,6 +344,14 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
   const propsNearRoute: Array<Record<string, unknown>> = [];
   let propCount = 0;
   let propModels: string[] = [];
+  // A prop's role is guessed from its model name: a car is cover, a sign is a landmark, a
+  // weapon spawn is an item cluster. Everything else stays a plain prop.
+  const propKind = (model: string): "cover" | "landmark" | "item-cluster" | "prop" => {
+    if (/ammo|weapon|medkit|pills|grenade|gascan|molotov|adrenaline|defib/i.test(model)) return "item-cluster";
+    if (/sign|billboard|neon|statue|tower|clock|monument|spire/i.test(model)) return "landmark";
+    if (/car|truck|van|bus|crate|dumpster|barrier|sandbag|table|desk|counter|fridge|sofa|bench|shelf|cabinet/i.test(model)) return "cover";
+    return "prop";
+  };
   try {
     const lumpProps = readStaticProps(bspPath);
     propCount = lumpProps.props.length;
@@ -356,11 +361,12 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
       const near = steps.some((step) => Math.hypot(step.x - prop.origin[0], step.y - prop.origin[1]) <= 320);
       if (!near) continue;
       propsNearRoute.push({
-        id: `prop_${propIndex++}`, label: prop.model.split("/").pop() ?? "prop", kind: "prop", floor: 1,
+        id: `prop_${propIndex++}`, label: prop.model.split("/").pop() ?? "prop",
+        kind: propKind(prop.model), floor: 1,
         x: Math.round(prop.origin[0]), y: Math.round(prop.origin[1]), width: 64, depth: 64,
         note: prop.model,
       });
-      if (propIndex >= 40) break;
+      if (propIndex >= 80) break;
     }
   } catch {
     propsNearRoute.length = 0;
@@ -534,7 +540,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         role: "context",
         floorsPlan: [],
       });
-      if (roofBuildings.length >= 24) break;
+      if (roofBuildings.length >= 48) break;
     }
   }
 
@@ -663,6 +669,29 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
     if (branchIndex >= 6) break;
   }
 
+  // ---- finale -------------------------------------------------------------------------
+  // A finale is an entity in the map (	rigger_finale), not a design decision: record it when
+  // it exists, with its own type and the building that hosts it.
+  let finale: { type: 0 | 1 | 2 | 4; arena: string; stages: string[]; escape: string } | undefined;
+  const finaleEntity = entities.find((entity) => /^trigger_finale/i.test(entity.classname ?? ""));
+  const finaleArea = nav.areas.find((area) => (area.spawnAttributes & 0x40) !== 0);
+  if (finaleEntity || finaleArea) {
+    const raw = Number(finaleEntity?.keyvalues?.find(([key]) => key.toLowerCase() === "finale")?.[1]);
+    const type = raw === 1 || raw === 2 || raw === 4 ? raw : 0;
+    const point = finaleEntity
+      ? (() => {
+          const [x, y] = origin(finaleEntity);
+          return { x, y };
+        })()
+      : areaCenter(finaleArea!);
+    const host = buildings.find(
+      (building) =>
+        Math.abs(point.x - building.x) <= building.width / 2 &&
+        Math.abs(point.y - building.y) <= building.depth / 2,
+    );
+    finale = { type, arena: host?.id ?? "arena", stages: [], escape: "" };
+  }
+
   const plan = {
     version: 1 as const,
     name: name ?? bspPath.replace(/\\/g, "/").split("/").pop()!.replace(/\.bsp$/i, ""),
@@ -690,6 +719,7 @@ export function planFromMap(bspPath: string, outPath?: string, name?: string): P
         Number(area.x) >= site.bounds.x0 && Number(area.x) <= site.bounds.x1 &&
         Number(area.y) >= site.bounds.y0 && Number(area.y) <= site.bounds.y1,
     ),
+    ...(finale ? { finale } : {}),
     beats: [],
     budget: {},
     palette: { sky: skyName, motifs: [], materials, models: propModels },
