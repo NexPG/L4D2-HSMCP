@@ -12,6 +12,7 @@ classname, so a class with no named builder is still one call away.
 - Movers
 - Logic
 - Props, constraints, ladders, scenes and sounds
+- Cameras and view control
 - Runtime presence
 - Verification
 
@@ -44,6 +45,13 @@ you mean; `read_fgd_class` lists the names and bit values.
 Outputs go into the `connections` block via `addOutput`, not flat `OnStartTouch` keys. A
 trigger with no output is a volume that does nothing until something else targets it.
 
+Other trigger classes: `trigger_hurt_ghost` damages only ghost-infected; `point_hurt` is a
+point damage source, not a brush; `trigger_active_weapon_detect` and
+`trigger_upgrade_laser_sight` react to weapons and upgrades. `trigger_finale` is the finale
+volume: its type, script and escape contract are in
+[`../campaign/finale.md`](../campaign/finale.md), not in this page. Write the brush forms with
+`write_brush_entity`; `read_fgd_class` is the key authority.
+
 ## Movers
 
 ```
@@ -61,6 +69,21 @@ write_mover(path, kind: "tracktrain", bounds: ..., target: "path_start")
 - `func_tracktrain`: requires the first `path_track` as `target`; the chain is built from the
   path tracks' own `target` keys. The builder refuses a tracktrain without one.
 - L4D2's FGD has no `func_pendulum`; do not invent it from another Source game.
+
+Doors are their own shape: `prop_door_rotating` and `prop_door_rotating_checkpoint` put the
+leaf on local Y and the origin on the hinge, so a generic prop or mover origin is wrong. Use
+`place_door` and the measured sizes and swing clearance in [`doors.md`](doors.md); a checkpoint
+door also needs the safe-room contract in
+[`../campaign/safe-room-and-transition.md`](../campaign/safe-room-and-transition.md).
+
+Classes with no named builder: `func_door`, `func_door_rotating`, `func_button`,
+`func_button_timed`, `momentary_rot_button`, `func_rot_button`, `func_platrot`, `func_elevator`
+and `info_elevator_floor`. Write the brush volume with `write_brush_entity` (or the point with
+`write_point_entity`) and copy the keys from `read_fgd_class`; for a door leaf use `place_door`
+and the measured sizes in [`doors.md`](doors.md). A `path_track`/`path_corner` pair is a point
+chain: write the points and wire `target` to the next one; a tracktrain without a path is a
+brush that never moves. `func_block_charge` and `func_extinguisher` are documented read-only
+classes; use `edit_vmf` and verify the keys against the FGD.
 
 ## Logic
 
@@ -92,6 +115,11 @@ write_logic(path, kind: "counter", origin: [0,0,96], startValue: 2, maxValue: 10
 These are shortcuts over `write_point_entity`/`write_brush_entity`, not a closed list:
 `func_useableladder` is itself a point entity, and a constraint class with no enum entry can
 be written through the primitive.
+
+The prop family also includes `prop_ragdoll`, `prop_physics_multiplayer`, `prop_minigun`,
+`prop_minigun_l4d1` and `prop_mounted_machine_gun`. `write_prop`'s enum does not take them;
+use `write_point_entity`/`edit_vmf`, and for a minigun prefer the official prefab through
+`place_entity_group` so its `vscripts` come with the model.
 
 ### Ladders
 
@@ -195,6 +223,19 @@ at), `modelForward` (`x+`/`x-`/`y+`/`y-`) and `yawOffset`; it writes the yaw. Th
 table is `references/mapping/model-facing.md`: a sedan is `x+`, `bench001` is `y+`, a food
 cart and the rescue helicopter are `x-`, and `arcadegame01` is `x+`. Doors are not props: use
 `place_door`, because the leaf is on local Y and the origin is the hinge.
+
+## Cameras and view control
+
+`point_viewcontrol`, `point_viewcontrol_multiplayer`, `point_viewcontrol_survivor` and
+`point_deathfall_camera` are documented classes with **no dedicated writer**. Place them with
+`write_point_entity` or `edit_vmf`, then read the result back; `read_fgd_class` is the
+authority for the target and the `Enable`/`Disable` inputs. A camera with no targetname or no
+output is a dead entity.
+
+For constraints, the classes are `phys_hinge`, `phys_ballsocket`, `phys_ragdollconstraint`,
+`phys_ragdollmagnet`, `phys_constraintsystem` and `phys_convert`. `write_physics_constraint`
+covers the hinge, length, ballsocket, slide and ragdoll forms; the rest are `edit_vmf` work.
+`read_vmf_lint` reports a constraint whose `attach1`/`attach2` name does not exist.
 
 ## Runtime presence
 

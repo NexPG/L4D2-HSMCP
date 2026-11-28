@@ -94,6 +94,10 @@ console says `Attempted to precache unknown particle system "fire_01l4d/fire_bar
 `Attempting to create unknown particle system ...` — and draws nothing. Both a stock map and
 the test map were proven to render `fire_barrel_big` once the prefix was removed.
 
+`info_particle_target` is a control-point target, not a system: name it and point a
+`info_particle_system` control point (`cpoint1`..`cpoint8`) at it. Write it with
+`write_point_entity`; an unnamed target is never used.
+
 ## Shipping a custom `.pcf`
 
 The engine registers particle files at startup from `particles/particles_manifest.txt` (44

@@ -6,6 +6,26 @@ Official L4D2 maps carry **1–9 `env_fog_controller` entities (most 2–3)**, 2
 version of that. The source `c1m1_environment_ents.vmf` is the measured example: 6 fog, 3
 postprocess, 3 colour correction, 3 tonemap, sun/light/shadow.
 
+The classes in this family, grouped so a name always has a page:
+
+| Group | Classes |
+|---|---|
+| Fog and volumes | `env_fog_controller`, `fog_volume` |
+| Colour, postprocess, tonemap | `color_correction`, `color_correction_volume`, `postprocess_controller`, `env_tonemap_controller`, `env_tonemap_controller_infected`, `env_tonemap_controller_ghost`, `env_fade` |
+| Weather and effects | `func_precipitation`, `func_precipitation_blocker`, `env_wind`, `env_fire`, `env_steam`, `env_spark`, `env_smokestack`, `env_smoketrail`, `env_explosion`, `env_physexplosion`, `env_physimpact`, `env_shake`, `env_weaponfire`, `env_shooter`, `env_rock_launcher`, `env_airstrike_indoors`, `water_lod_control`, `env_detail_controller` |
+| Sound and scenes | `ambient_generic`, `ambient_music`, `env_soundscape`, `env_soundscape_proxy`, `sound_mix_layer`, `env_microphone`, `func_orator`, `ai_speechfilter`, `logic_choreographed_scene`, `logic_scene_list_manager` |
+
+The sound/scene group has its own page for the assets and script side:
+[`../assets/sound.md`](../assets/sound.md). Sun, shadow and the light entities are in
+[`world-dressing.md`](world-dressing.md), not this family.
+
+## Contents
+
+- The six layers
+- Build it
+- Switch states at runtime
+- Check without the game
+
 ## The six layers
 
 1. **Distance fog** — one `env_fog_controller` per area/state. Only one is enabled at a time;

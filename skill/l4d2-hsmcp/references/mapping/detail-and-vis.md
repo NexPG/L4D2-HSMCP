@@ -4,6 +4,22 @@ The compiled `.bsp` cannot tell you which brush was structural: vbsp folds `func
 into the world, so a shipped map has no trace of the decision. It has to be made in the
 source, and it is the biggest single lever on compile time and PVS quality.
 
+Related classes that are not visual brushes: `func_nav_blocker`,
+`func_nav_avoidance_obstacle`, `func_nav_connection_blocker`, `func_nav_attribute_region`,
+`func_clip_vphysics`, `func_playerinfected_clip`, `env_player_blocker`,
+`trigger_playermovement`, `trigger_auto_crouch`, `trigger_look`, `trigger_remove`,
+`trigger_changelevel`, `trigger_escape`, `func_timescale` and `func_ragdoll_fader` are
+documented in [`../mechanics/ai-and-nav-content.md`](../mechanics/ai-and-nav-content.md) and
+the nav pages; this page owns the `func_detail`/`func_brush`/`func_lod`/areaportal choice.
+
+## Contents
+
+- Decide by what the brush does
+- The rule that matters
+- Recipes
+- What each costs
+- Chapter 1 of Santa Monica
+
 ## Decide by what the brush does
 
 | Brush | Structural? | Seals? | Collision | Cost | Use for |

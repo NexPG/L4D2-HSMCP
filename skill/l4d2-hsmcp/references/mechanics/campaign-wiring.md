@@ -10,6 +10,7 @@ tools that write and check it.
 
 - The chain, in one picture
 - Builders
+- Other campaign classes
 - Checking a whole campaign
 - L4D2 facts that make this different from other Source games
 - Evidence
@@ -155,6 +156,21 @@ each mode target exists, scavenge spawners with no `OnScavenge`, and unknown or 
 `info_map_parameters` keys. Measured: `c2m1_highway` has two `info_gamemode` (coop, versus
 and survival wired, scavenge on the second) and passes; `c5m5_bridge` wires coop, versus and
 survival. A target that exists nowhere is a mode switch that does nothing.
+
+## Other campaign classes
+
+These are in the official maps but have no dedicated builder; `write_point_entity` and the
+FGD keys are enough.
+
+| Class | Role |
+|---|---|
+| `info_game_event_proxy` | names a stock game event the map can fire; `event_name` is the event (see [`../scripting/game-events.md`](../scripting/game-events.md)) |
+| `info_remarkable` | a survivor sees it and says a `TLK_REMARK`; `contextsubject` is the subject text (see [`ai-and-nav-content.md`](ai-and-nav-content.md)) |
+| `info_goal_infected_chase` | attracts infected like a pipe bomb during an outro; parent it to the escape vehicle |
+| `info_ambient_mob_start` / `info_ambient_mob_end` / `info_ambient_mob` | start, end and universal points for an ambient mob |
+| `info_item_position` | a candidate item location a mode script can fill; `group`, `rarity`, `replace01..` |
+| `info_l4d1_survivor_spawn` | spawns a L4D1 survivor in a L4D1 campaign; `character` |
+| `info_zombie_border` | no zombies spawn behind it; `StartDisabled` |
 
 ## Checking a whole campaign
 

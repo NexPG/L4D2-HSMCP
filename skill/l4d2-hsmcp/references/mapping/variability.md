@@ -8,6 +8,20 @@ is deterministic. The official maps use two small patterns to break that:
 - **`point_template` + `env_entity_maker`** stores a named set of entities and `ForceSpawn`
   makes a copy. It is how random prop sets, gascan drops and rescue sequences appear.
 
+The rest of the family is grouped here so a class name always has a page:
+
+| Group | Classes |
+|---|---|
+| Relays, timers, branches | `logic_relay`, `logic_timer`, `logic_auto`, `logic_branch`, `logic_branch_listener`, `logic_compare`, `math_counter`, `math_remap`, `logic_versus_random`, `logic_director_query`, `logic_game_event` |
+| Filters | `filter_activator_name`, `filter_activator_class`, `filter_activator_team`, `filter_activator_model`, `filter_activator_infected_class`, `filter_health`, `filter_damage_type`, `filter_melee_damage`, `filter_multi` |
+| Templates and spawners | `point_template`, `env_entity_maker`, `game_gib_manager`, `game_scavenge_progress_display` |
+| Script | `logic_script` (see [`../scripting/vscript.md`](../scripting/vscript.md)) |
+
+`write_logic` writes the relay, timer, branch, compare, counter and remap kinds;
+`write_random_case` and `write_template_spawner` write the two patterns below. A filter is a
+point entity with a `targetname`; write it with `write_point_entity` and read its criteria from
+the FGD.
+
 ## Random case
 
 ```text

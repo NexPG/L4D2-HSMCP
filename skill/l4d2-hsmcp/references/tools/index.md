@@ -219,7 +219,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |
 | `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
 | `preview_model` | **look at** a model when HLMV's canvas is blank: renders it in a sealed engine room and captures the game window |
-| `read_entity_coverage` | the official class inventory by family, with covered/partial/documented/none status |
+| `read_entity_coverage` | the official class inventory by family, with covered/partial/documented/none status and every `classnames` entry |
 | `plan_from_map` | build a plan.json survey from an existing map: BSP entity/model/face/static-prop/displacement/material lumps and the NAV beside it |
 | `check_map_plan` | validate plan JSON: footprints, route width/crossings, entrances, heights, floors |
 | `render_map_plan` | the five SVG drawings + plan.md from plan JSON |

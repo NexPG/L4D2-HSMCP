@@ -50,6 +50,11 @@ write_light(path, kind: "environment", origin: [0, 0, 128],
 `style` selects a stock flicker (0 normal, 10 fluorescent, 2 slow pulse, ...). The full list
 is in `read_fgd_class(classname: "light")`.
 
+Other lighting classes: `light_directional` is a directional light; `env_lightglow` is the
+glow card around a light; `info_projecteddecal` projects a decal; `sky_camera` is the 3D
+skybox anchor, documented in [`3d-skybox.md`](3d-skybox.md). `write_light` has no kind for
+these; use `write_point_entity`/`edit_vmf` and read the keys from the FGD.
+
 ## Postprocess
 
 ```
@@ -114,6 +119,11 @@ write_decal(path, material: "decals/blood1", positions: [[0, 0, 1], [64, 0, 1]])
   a moving entity.
 
 ## Ropes
+
+The constraint classes are a separate family: `phys_hinge`, `phys_ballsocket`,
+`phys_ragdollconstraint`, `phys_ragdollmagnet`, `phys_constraintsystem` and `phys_convert` are
+documented in [`entity-families.md`](entity-families.md); `write_physics_constraint` covers the
+hinge, ballsocket, slide and ragdoll forms.
 
 ```
 write_rope(path, start: [0, 0, 128], end: [128, 0, 128],

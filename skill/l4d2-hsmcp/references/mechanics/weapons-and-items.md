@@ -12,6 +12,7 @@ The class list below is read from the installed `left4dead2.fgd` with
 - Tier 1 and tier 2 weapons
 - Ammo, health and throwables
 - Placing one
+- Health cabinet
 - Density: what a full chapter carries
 - Checking
 
@@ -42,6 +43,7 @@ The class list below is read from the installed `left4dead2.fgd` with
 | `weapon_melee_spawn` | a random melee weapon (or set the model to choose one) |
 | `weapon_gascan_spawn` | gas can |
 | `weapon_scavenge_item_spawn` | scavenge item |
+| `upgrade_spawn` | generic ammo-upgrade spawner (the `weapon_upgradepack_*` classes name the specific upgrade) |
 
 Two randomisers: `weapon_spawn` spawns a random weapon, `weapon_item_spawn` a random item.
 `weapon_first_aid_kit` and `weapon_grenade_launcher` exist as classes but the `_spawn`
@@ -70,6 +72,14 @@ Rules that matter:
   that flag to checkpoint items is a common cause of duplicates after a transition.
 - The Director controls item density outside safe rooms; a corridor full of tier 2 weapons is
   not what a campaign wants.
+
+## Health cabinet
+
+`prop_health_cabinet` is a **model prop**, not a spawner. It needs a
+`point_prop_use_target` (the official prefab supplies it) so the +use reaches the cabinet;
+place the pair with `place_entity_group` and the cabinet prefab, or write the prop and target
+yourself. `write_saferoom_stock` fills the room with medkits, pills, ammo and pistols; it
+does not create the cabinet. A bare `prop_health_cabinet` is a wall box that does nothing.
 
 ## Density: what a full chapter carries
 

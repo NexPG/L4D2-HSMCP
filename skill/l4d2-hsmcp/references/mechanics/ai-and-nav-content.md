@@ -44,6 +44,28 @@ subject line.
 - Both are compiled into the BSP as brush entities; `read_bsp_entities` or `check_ai_contract`
   counts them. Measured: `c1m1_hotel` 9 blockers, `c5m5_bridge` 38.
 
+## Ladders
+
+A ladder is two halves, like a rescue closet:
+
+- `func_ladder` is the **brush** the player climbs; `write_ladder` writes the brush and a
+  `func_useableladder` point for the AI.
+- `func_simpleladder` is the compiled record bots path on. Stock `vbsp` only emits it when the
+  map is compiled with **Tools++**; a stock-chain ladder can be climbable by the player and
+  still invisible to bots.
+- The `.nav` also carries a ladder record (top/bottom points, width, direction, five area
+  ids). `read_nav_ladders` shows it; `write_nav_ladders` changes an existing record in place.
+
+Rules that survive the measurement:
+
+- Span the brush to the upper floor, not just the wall height; a ladder that ends below the
+  floor has no exit area.
+- Keep the brush centre line off the world origin; a ladder crossing it can produce a
+  degenerate record.
+- Regenerate nav after the final compile, then check `read_nav_ladders` for the record and
+  `nav_path` for a route through it. A bot that refuses the climb usually has a missing
+  `func_simpleladder`, not a broken nav mesh.
+
 ## Hiding spots
 
 Hiding spots live in the `.nav`, not the VMF. `read_nav_hiding_spots` lists them;

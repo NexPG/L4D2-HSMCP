@@ -54,7 +54,7 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
     test: /^(func_breakable|func_breakable_surf|func_physbox|prop_wall_breakable|prop_car_glass|prop_car_alarm|prop_fuel_barrel)$/,
     status: "covered",
     tools: ["write_breakable", "write_point_entity"],
-    page: "references/mechanics/coverage.md",
+    page: "references/mapping/entity-families.md",
     note: "class and keys checked; the break reaction is verified in game",
   },
   {
@@ -70,24 +70,24 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
     test: /^(prop_door_rotating|prop_door_rotating_checkpoint|func_door|func_door_rotating|func_button|func_button_timed|momentary_rot_button|func_rot_button|func_rotating|func_movelinear|func_platrot|func_elevator|info_elevator_floor|func_tracktrain|path_track|path_corner|func_block_charge|func_extinguisher)$/,
     status: "partial",
     tools: ["place_door", "write_safe_room", "write_changelevel"],
-    page: "references/mechanics/campaign-wiring.md",
-    note: "doors and the checkpoint door are covered; trains and complex moving platforms are not",
+    page: "references/mapping/entity-families.md",
+    note: "doors and the checkpoint door are covered (doors.md); trains and complex moving platforms are not",
   },
   {
     name: "Brush and clip volumes",
     test: /^(func_brush|func_illusionary|func_detail_blocker|func_lod|func_occluder|func_clip_vphysics|func_playerinfected_clip|func_nav_blocker|func_nav_avoidance_obstacle|func_nav_connection_blocker|func_nav_attribute_region|env_player_blocker|func_areaportal|func_areaportalwindow|func_ragdoll_fader|func_timescale|trigger_playermovement|trigger_auto_crouch|trigger_look|trigger_remove|trigger_changelevel|trigger_escape)$/,
     status: "covered",
     tools: ["write_vmf_solid", "clip_solids", "check_ai_contract"],
-    page: "references/mechanics/ai-and-nav-content.md",
-    note: "solids and nav blockers; vbsp resolves the areaportal pair",
+    page: "references/mapping/detail-and-vis.md",
+    note: "visual/vis brushes here; nav clips and blockers: ai-and-nav-content.md",
   },
   {
     name: "Props and physics",
     test: /^(prop_physics|prop_physics_multiplayer|prop_physics_override|prop_dynamic|prop_dynamic_override|prop_ragdoll|prop_car_glass|prop_car_alarm|prop_fuel_barrel|prop_minigun|prop_minigun_l4d1|prop_mounted_machine_gun)$/,
     status: "covered",
     tools: ["write_prop", "read_static_props", "read_model_info"],
-    page: "references/mapping/model-facing.md",
-    note: "static/dynamic/physics class and `solid` are checked; facing is a measured cache",
+    page: "references/mapping/entity-families.md",
+    note: "static/dynamic/physics class and `solid` are checked; facing is model-facing.md",
   },
   {
     name: "Lighting and decals",
@@ -95,7 +95,7 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
     status: "covered",
     tools: ["write_light", "write_postprocess", "read_vmf_lint"],
     page: "references/mapping/world-dressing.md",
-    note: "entity keys and placement; the baked result is a compile/render check",
+    note: "light/decals here; sky_camera: 3d-skybox.md; the baked result is a compile/render check",
   },
   {
     name: "Atmosphere, weather and sound",
@@ -103,14 +103,14 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
     status: "partial",
     tools: ["write_weather", "edit_vmf", "write_postprocess", "read_soundscape"],
     page: "references/mapping/atmosphere.md",
-    note: "weather/fog/tonemap are covered; scene and speech choreography are documented only",
+    note: "weather/fog/tonemap here; sound: assets/sound.md; scenes are documented only",
   },
   {
     name: "Particles",
     test: /^(info_particle_system|info_particle_target)$/,
     status: "covered",
     tools: ["read_particle", "write_particle", "write_point_entity"],
-    page: "references/mechanics/coverage.md",
+    page: "references/mapping/particles.md",
     note: "PCF read/write and a stock system rendered in game",
   },
   {
@@ -119,15 +119,15 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
     status: "covered",
     tools: ["write_logic", "write_random_case", "write_template_spawner", "validate_io"],
     page: "references/mapping/variability.md",
-    note: "logic_case/template patterns; arbitrary graphs are read and checked",
+    note: "case/template patterns here; relays, timers and filters: entity-families.md",
   },
   {
     name: "Triggers",
     test: /^(trigger_.*|point_hurt)$/,
     status: "partial",
     tools: ["write_trigger", "read_vmf_lint"],
-    page: "references/mechanics/crescendo-and-panic.md",
-    note: "panic and finale triggers are covered; a few legacy triggers are read-only",
+    page: "references/mapping/entity-families.md",
+    note: "panic and finale triggers are covered (crescendo-and-panic.md, finale.md); a few legacy triggers are read-only",
   },
   {
     name: "Campaign, nav and mode entities",
@@ -140,8 +140,8 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
       "check_gamemode_contract",
       "check_ai_contract",
     ],
-    page: "references/mechanics/ai-and-nav-content.md",
-    note: "the campaign/nav/mode halves are checked offline; the round is a live test",
+    page: "references/mechanics/campaign-wiring.md",
+    note: "the campaign/nav/mode halves are checked offline (ai-and-nav-content.md); the round is a live test",
   },
   {
     name: "Cameras and view control",
@@ -156,8 +156,8 @@ export const ENTITY_FAMILIES: readonly EntityFamilyRule[] = [
     test: /^(keyframe_rope|move_rope|phys_hinge|phys_ballsocket|phys_ragdollconstraint|phys_ragdollmagnet|phys_constraintsystem|phys_convert)$/,
     status: "documented",
     tools: ["write_prop"],
-    page: "references/mapping/entity-families.md",
-    note: "the prop is written; the constraint graph is read from the map, not authored",
+    page: "references/mapping/world-dressing.md",
+    note: "ropes are written (world-dressing.md); the constraint graph is read from the map, not authored",
   },
   {
     name: "Scripts, commands and overlays",
@@ -188,6 +188,8 @@ export interface EntityCoverage {
     note: string;
     classes: number;
     entities: number;
+    /** Every class in the family, sorted; `examples` is only the busiest few. */
+    classnames: string[];
     examples: Array<{ classname: string; entities: number }>;
   }>;
   unclassified: Array<{ classname: string; entities: number }>;
@@ -250,6 +252,7 @@ export function readEntityCoverage(options: { maps?: string[]; examples?: number
         note: family.note,
         classes: family.classEntries.length,
         entities: family.classEntries.reduce((sum, [, n]) => sum + n, 0),
+        classnames: family.classEntries.map(([classname]) => classname).sort(),
         examples: family.classEntries
           .sort((a, b) => b[1] - a[1])
           .slice(0, examples)
@@ -276,8 +279,9 @@ export const readEntityCoverageTool = defineTool({
   description:
     "Builds the official entity-class inventory from compiled BSPs and groups every class " +
     "into a family with a coverage status (`covered`, `partial`, `documented`, `none`), the " +
-    "tools and skill page for it, and any class no rule matched. Defaults to every " +
-    "`left4dead2*/maps` beside the configured game; `maps` overrides. Read-only, no launch.",
+    "tools and skill page for it, every `classnames` entry in the family, and any class no " +
+    "rule matched. Defaults to every `left4dead2*/maps` beside the configured game; `maps` " +
+    "overrides. Read-only, no launch.",
   realm: "map",
   inputSchema: {
     maps: z
@@ -298,6 +302,8 @@ export const readEntityCoverageTool = defineTool({
         note: z.string(),
         classes: z.number(),
         entities: z.number(),
+        /** Every class in the family, sorted; `examples` is only the busiest few. */
+        classnames: z.array(z.string()),
         examples: z.array(z.object({ classname: z.string(), entities: z.number() })),
       }),
     ),

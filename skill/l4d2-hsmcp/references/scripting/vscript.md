@@ -9,6 +9,7 @@ verified: the file path, the attachment entity, and how to prove the engine load
 - Where the file goes
 - The event contract
 - How the map attaches it
+- Related entities
 - Verify the load without playing
 - Custom finale stages
 - What the API covers
@@ -91,6 +92,23 @@ A `logic_script` entity:
 
 `vscripts` may take a list; one name is enough for a single script. The same key is used by
 Valve's traffic-message script in `c4m5_milltown_escape`.
+
+## Related entities
+
+| Class | Role |
+|---|---|
+| `logic_script` | attaches a `.nut` through `vscripts` (`Group00` for more than one) |
+| `point_servercommand` / `point_clientcommand` / `point_broadcastclientcommand` | run a console command on the server, one client or all clients |
+| `env_instructor_hint` | an on-screen instructor hint; the text is a localization token |
+| `commentary_zombie_spawner` | commentary-mode spawner; not a gameplay spawner |
+| `player_weaponstrip` | strips a player's weapons when its input fires |
+| `info_overlay_accessor` | names an overlay so a script can toggle it |
+| `info_target` | a named point scripts can find; no behaviour of its own |
+| `env_outtro_stats` | the end-of-campaign stats screen |
+| `worldspawn` | the map entity; its keys are the world settings, not a script hook |
+
+`read_fgd_class` is the authority for their keys and inputs. The VScript API itself is read
+with `read_vscript_api`; `check_vscript_contract` checks the include graph.
 
 ## Verify the load without playing
 
