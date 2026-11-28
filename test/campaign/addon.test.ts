@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { runVpkPackTool } from "../../src/packages/typescript/tools/addon.js";
+import { addonInfoText, runVpkPackTool } from "../../src/packages/typescript/tools/addon.js";
 import { ctx as sharedCtx, has } from "../support/env.js";
 import type { ToolContext } from "../../src/core/typescript/mcp/registry.js";
 
@@ -33,6 +33,23 @@ const pack = (args: Record<string, unknown>) =>
     aiCredit: string | null;
     verified: { compared: number; missingFromVpk: string[]; extraInVpk: string[] };
   }>;
+
+describe("addonInfoText", () => {
+  it("writes the content flag the tag names, not always campaign", () => {
+    expect(addonInfoText({ title: "Script Addon", tag: "script" }, false)).toContain(
+      '"addonContent_Script"\t"1"',
+    );
+    expect(addonInfoText({ title: "Map Addon", tag: "map" }, false)).toContain(
+      '"addonContent_Map"\t"1"',
+    );
+    expect(addonInfoText({ title: "Plain Addon", tag: "none" }, false)).not.toContain(
+      "addonContent_",
+    );
+    expect(addonInfoText({ title: "Default Addon" }, false)).toContain(
+      '"addonContent_Campaign"\t"1"',
+    );
+  });
+});
 
 describe.skipIf(!has.sidecar || !has.vpk)("run_vpk_pack", () => {
   it("packs the staging tree root-relative and verifies every file came through", async () => {

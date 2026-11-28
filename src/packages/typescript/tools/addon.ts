@@ -42,6 +42,34 @@ export interface AddonInfo {
   tagline?: string;
 }
 
+/**
+ * `tag` is the add-on content flag, not a Workshop tag. The engine groups the Add-ons menu by
+ * `addonContent_*`; a pure script add-on that leaves it at the campaign default is filed wrong.
+ * Unknown values write no flag; `none` is an explicit no-flag.
+ */
+const CONTENT_FLAG: Record<string, string> = {
+  campaign: "Campaign",
+  map: "Map",
+  skin: "Skin",
+  weapon: "Weapon",
+  boss: "BossInfected",
+  bossinfected: "BossInfected",
+  common: "CommonInfected",
+  commoninfected: "CommonInfected",
+  survivor: "Survivor",
+  sound: "Sound",
+  music: "Music",
+  script: "Script",
+  vscript: "Script",
+  prop: "Prop",
+};
+
+function contentFlag(tag: string | undefined): string | null {
+  const value = (tag ?? "campaign").trim().toLowerCase();
+  if (value === "none") return null;
+  return CONTENT_FLAG[value] ?? null;
+}
+
 /** The conventional Left 4 Dead 2 addon manifest. */
 export function addonInfoText(info: AddonInfo, credit = true): string {
   const lines = [
@@ -53,9 +81,8 @@ export function addonInfoText(info: AddonInfo, credit = true): string {
     `\t"addonversion"\t${quote(info.version ?? "1")}`,
   ];
   if (info.tagline) lines.push(`\t"addonTagline"\t${quote(info.tagline)}`);
-  if ((info.tag ?? "campaign") === "campaign") {
-    lines.push(`\t"addonContent_Campaign"\t${quote("1")}`);
-  }
+  const flag = contentFlag(info.tag);
+  if (flag) lines.push(`\t"addonContent_${flag}"\t${quote("1")}`);
   if (info.description) lines.push(`\t"addonDescription"\t${quote(info.description)}`);
   if (credit) lines.push(`\t"${AI_CREDIT_KEY}"\t${quote(aiCredit())}`);
   lines.push("}");
@@ -80,7 +107,13 @@ const ADDON_INFO = z.object({
   description: z.string().optional(),
   author: z.string().optional(),
   version: z.string().optional(),
-  tag: z.string().optional().describe('Usually "campaign".'),
+  tag: z
+    .string()
+    .optional()
+    .describe(
+      "Content flag: campaign, map, script, skin, weapon, boss, common, survivor, sound, " +
+        "music or prop; default campaign. Use `none` for an add-on with no content flag.",
+    ),
   tagline: z.string().optional().describe("AddonTagline, the one-line description in the menu."),
 });
 
@@ -256,10 +289,11 @@ export const writeAddonInfoTool = defineTool({
   name: "write_addoninfo",
   description:
     "Writes an `addoninfo.txt` without packing an archive: appid 550, title, author, " +
-    "version, tag, tagline and description, plus the `addonAICredit` line with the toolkit " +
-    "version. Refuses an existing file unless `overwrite` is set, and parses the result back " +
-    "as KeyValues. Use it for a campaign or addon staging folder before `validate_addon` and " +
-    "`run_vpk_pack`. Guarded.",
+    "version, the `addonContent_*` flag, tagline and description, plus the `addonAICredit` " +
+    "line with the toolkit version. `tag` is the content flag (campaign, map, script, skin, " +
+    "weapon, sound, ...), not a Workshop tag; a script add-on must pass `script`. Refuses an " +
+    "existing file unless `overwrite` is set, and parses the result back as KeyValues. Use it " +
+    "for a campaign or addon staging folder before `validate_addon` and `run_vpk_pack`. Guarded.",
   realm: "map",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
