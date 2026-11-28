@@ -18,19 +18,27 @@ write_addon_workspace(name: "santa-monica", title: "Santa Monica", kind: "campai
 
 `kind` is `campaign`, `map`, `mutation`, `hud`, `model`, `vscript` or `other`. The tool refuses
 to populate a non-empty directory unless `overwrite: true`, and it writes no map and no game
-file.
+file. The author is `args.author`, then the stored `addonAuthor`, then `(ask the user)`.
+
+**A map plan is conditional.** `kind: "campaign"` and `kind: "map"` get `plan/DESIGN.md`,
+`plan/ASSETS.md`, `plan/plan.example.json` and the five-drawing workflow. Every other kind gets
+a single root `DESIGN.md` with what it changes, its settings, conflicts and compatibility; no
+`plan/`, no `plan.example.json` and no map drawings. A pure `vscript` add-on also gets
+`addonContent_Script 1` in the template rather than the campaign flag.
 
 ## Layout
 
 | Folder | What belongs here | Created as |
 |---|---|---|
-| `plan/` | `plan.json` (the five-drawing source), `DESIGN.md` (pass 1 prose), `ASSETS.md`, `drawings/` (rendered SVG + `build-sheet.md`) | `DESIGN.md`, `ASSETS.md` |
+| `plan/` | **campaign/map only:** `plan.json` (the five-drawing source), `DESIGN.md` (pass 1 prose), `ASSETS.md`, `drawings/` | `DESIGN.md`, `ASSETS.md` |
 | `templates/` | `addoninfo.txt`, `mission.txt` (campaign/map), `README.md`; copy, do not edit in place | templates |
+| `reference/` | read-only upstream baseline: the unmodified download/extract, its URL, date, author and licence; never build from it in place | `README.md` |
 | `logs/` | `errors.md` (symptom → cause → fix), `gate.json` (last `run_campaign_gate`), build logs | `errors.md`, `README.md` |
 | `src/` | source `.vmf`, `.qc`, `.nut`, `.txt`; the files that are compiled | `README.md` |
 | `addon/` | staging tree: `addoninfo.txt`, `missions/`, `maps/`, `materials/`, `models/`, `scripts/` | `README.md` |
 | `dist/` | the packed `.vpk` | `README.md` |
 | `evidence/` | screenshots, nav dumps, console logs, gate output | `README.md` |
+| `DESIGN.md` | **non-map kinds only:** the short design note; no map plan | `DESIGN.md` |
 
 The root `README.md` records the addon's name, kind, status, author and date.
 
@@ -56,6 +64,9 @@ The root `README.md` records the addon's name, kind, status, author and date.
    `addon/`, build into `src/`, stage into `addon/`, compile, nav, gate, pack into `dist/`.
    The plan's JSON and build sheet are fixed; `## 15. Amendments` is the only place a route/beat
    change is allowed.
+
+For `hud`, `model`, `vscript`, `mutation` or `other`, pass 1 is the root `DESIGN.md` note; there
+is no `plan.json`, no drawings and no map check. Go from the note to the build.
 
 ## Rules
 

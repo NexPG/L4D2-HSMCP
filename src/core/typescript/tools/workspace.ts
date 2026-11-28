@@ -16,13 +16,29 @@ const NAME = /^[a-z0-9][a-z0-9_-]{1,63}$/;
 
 const KIND = z.enum(["campaign", "map", "mutation", "hud", "model", "vscript", "other"]);
 
-const DIRECTORIES = ["plan", "templates", "logs", "src", "addon", "dist", "evidence"] as const;
+const DIRECTORIES = [
+  "plan",
+  "templates",
+  "reference",
+  "logs",
+  "src",
+  "addon",
+  "dist",
+  "evidence",
+] as const;
 
 const write = (path: string, text: string): void => {
   writeFileSync(path, text, "utf8");
 };
 
-function readme(name: string, title: string, kind: string, author: string, created: string): string {
+function readme(
+  name: string,
+  title: string,
+  kind: string,
+  author: string,
+  created: string,
+  mapLike: boolean,
+): string {
   return `# ${title}
 
 - Directory: \`${name}\`
@@ -36,8 +52,8 @@ function readme(name: string, title: string, kind: string, author: string, creat
 
 | Folder | What belongs here |
 |---|---|
-| \`plan/\` | \`plan.json\`, \`DESIGN.md\`, \`ASSETS.md\` and \`drawings/\` |
-| \`templates/\` | \`addoninfo.txt\`, \`mission.txt\`; copy, replace the placeholders, do not edit in place |
+${mapLike ? "| `plan/` | `plan.json`, `DESIGN.md`, `ASSETS.md` and `drawings/` |\n" : ""}| \`templates/\` | \`addoninfo.txt\`, \`mission.txt\`; copy, replace the placeholders, do not edit in place |
+| \`reference/\` | read-only upstream baseline and its provenance; never build from it in place |
 | \`logs/\` | \`errors.md\` and \`gate.json\`; symptom -> cause -> fix, and the last gate result |
 | \`src/\` | source \`.vmf\`, \`.qc\`, \`.nut\`, \`.txt\` — the files that are compiled |
 | \`addon/\` | staging tree: \`addoninfo.txt\`, \`missions/\`, \`maps/\`, \`materials/\`, \`models/\`, \`scripts/\` |
@@ -46,11 +62,39 @@ function readme(name: string, title: string, kind: string, author: string, creat
 
 ## Passes
 
-1. **Design (pass 1):** fill \`plan/DESIGN.md\` with the template in
+${
+  mapLike
+    ? `1. **Design (pass 1):** fill \`plan/DESIGN.md\` with the template in
    \`l4d2-hsmcp://skill/workflows/design-a-map.md\` and stop for approval. No \`.vmf\` yet.
 2. **Build (pass 2):** copy the templates into \`addon/\`, build into \`src/\`, compile, nav,
    gate and pack. The build may choose exact assets within the palette; a change to the route
-   or a beat is a \`## 15. Amendments\` row in the design.
+   or a beat is a \`## 15. Amendments\` row in the design.`
+    : `1. **Design note:** fill \`DESIGN.md\` with what the add-on changes, its settings, its
+   conflicts and its compatibility. No map plan is written for this kind.
+2. **Build:** copy the templates into \`addon/\`, build into \`src/\`, pack and install.`
+}
+`;
+}
+
+function noteStub(title: string, kind: string): string {
+  return `# ${title} — design note
+
+Status: draft
+Version: 1
+Date: ${new Date().toISOString().slice(0, 10)}
+Kind: ${kind}
+
+This kind has no map plan. Record only what matters for an installable add-on:
+
+## What it changes
+
+## Settings
+
+## Conflicts
+
+## Compatibility
+
+## Acceptance
 `;
 }
 
@@ -128,14 +172,18 @@ memory. Record the query and the answer here.
 `;
 }
 
-function addoninfo(title: string, author: string, campaign: boolean): string {
+function addoninfo(title: string, author: string, kind: string): string {
+  const content =
+    kind === "vscript"
+      ? '"addonContent_Script"\t\t"1"'
+      : `"addonContent_Campaign"\t\t"${kind === "campaign" || kind === "map" ? "1" : "0"}"`;
   return `"AddonInfo"
 {
 	"addonSteamAppID"		"550"
 	"addontitle"		"${title}"
 	"addonauthor"		"${author}"
 	"addonversion"		"1"
-	"addonContent_Campaign"		"${campaign ? "1" : "0"}"
+	${content}
 	"addonDescription"		""
 }
 `;
@@ -434,7 +482,8 @@ export const writeAddonWorkspaceTool = defineTool({
       throw new Error("confirm:true is required: this creates a workspace directory");
     }
     const title = args.title?.trim() || args.name;
-    const author = args.author?.trim() || "(ask the user)";
+    const author = args.author?.trim() || ctx.config.addonAuthor?.trim() || "(ask the user)";
+    const mapLike = args.kind === "campaign" || args.kind === "map";
     const root = join(resolveInput("workspaces", ctx.config), args.name);
     if (existsSync(root) && readdirSync(root).length > 0 && !args.overwrite) {
       throw new Error(
@@ -444,7 +493,8 @@ export const writeAddonWorkspaceTool = defineTool({
 
     const created: string[] = [];
     const skipped: string[] = [];
-    for (const directory of DIRECTORIES) {
+    const directories = mapLike ? DIRECTORIES : DIRECTORIES.filter((directory) => directory !== "plan");
+    for (const directory of directories) {
       const path = join(root, directory);
       if (!existsSync(path)) {
         mkdirSync(path, { recursive: true });
@@ -453,15 +503,26 @@ export const writeAddonWorkspaceTool = defineTool({
     }
 
     const files: Array<[string, string]> = [
-      ["README.md", readme(args.name, title, args.kind, author, new Date().toISOString().slice(0, 10))],
-      ["plan/DESIGN.md", designStub(title)],
-      ["plan/ASSETS.md", assetsStub()],
-      ["plan/plan.example.json", planExample(title)],
-      ["templates/README.md", `# Templates\n\nCopy these into \`addon/\` and replace the placeholders. The design and the build decide the values.\n`],
       [
-        "templates/addoninfo.txt",
-        addoninfo(title, author, args.kind === "campaign" || args.kind === "map"),
+        "README.md",
+        readme(
+          args.name,
+          title,
+          args.kind,
+          author,
+          new Date().toISOString().slice(0, 10),
+          mapLike,
+        ),
       ],
+      [
+        "reference/README.md",
+        "# Reference\n\nRead-only upstream baseline for this add-on. Put the unmodified download, " +
+          "extracted tree or source snapshot here, with its Workshop/file URL, date, author and " +
+          "licence in this README. Do not build from it in place; copy what the fork needs into " +
+          "`src/` or `addon/`.\n",
+      ],
+      ["templates/README.md", `# Templates\n\nCopy these into \`addon/\` and replace the placeholders. The design and the build decide the values.\n`],
+      ["templates/addoninfo.txt", addoninfo(title, author, args.kind)],
       ["logs/errors.md", "# Error log\n\n| Date | Symptom | Cause | Fix |\n|---|---|---|---|\n"],
       [
         "logs/README.md",
@@ -472,8 +533,15 @@ export const writeAddonWorkspaceTool = defineTool({
       ["dist/README.md", "# Dist\n\nThe packed `.vpk`. `campaigns/` and `workspaces/` are local; the game holds only the latest deploy.\n"],
       ["evidence/README.md", "# Evidence\n\nScreenshots, nav dumps, console logs and gate output for this attempt.\n"],
     ];
-    if (args.kind === "campaign" || args.kind === "map") {
-      files.push(["templates/mission.txt", mission(title, author, title)]);
+    if (mapLike) {
+      files.push(
+        ["plan/DESIGN.md", designStub(title)],
+        ["plan/ASSETS.md", assetsStub()],
+        ["plan/plan.example.json", planExample(title)],
+        ["templates/mission.txt", mission(title, author, title)],
+      );
+    } else {
+      files.push(["DESIGN.md", noteStub(title, args.kind)]);
     }
 
     for (const [relative, text] of files) {
@@ -491,9 +559,11 @@ export const writeAddonWorkspaceTool = defineTool({
       name: args.name,
       created,
       skipped,
-      note:
-        "Pass 1 starts in plan/DESIGN.md and stops for approval; no .vmf is written yet. " +
-        "The addoninfo and mission templates are in templates/, not in the staging tree.",
+      note: mapLike
+        ? "Pass 1 starts in plan/DESIGN.md and stops for approval; no .vmf is written yet. " +
+          "The addoninfo and mission templates are in templates/, not in the staging tree."
+        : "Fill DESIGN.md with the change, settings, conflicts and compatibility; no map plan " +
+          "is written for this kind. The addoninfo template is in templates/, not in the staging tree.",
     };
   },
 });

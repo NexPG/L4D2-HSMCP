@@ -9,10 +9,13 @@ import { ctx as sharedCtx } from "../support/env.js";
 
 const ctx = sharedCtx as unknown as ToolContext;
 const name = `workspace-test-${Date.now()}`;
+const vname = `${name}-vscript`;
 let root = "";
+let vroot = "";
 
 afterAll(() => {
   if (root) rmSync(root, { recursive: true, force: true });
+  if (vroot) rmSync(vroot, { recursive: true, force: true });
 });
 
 describe("write_addon_workspace", () => {
@@ -36,6 +39,7 @@ describe("write_addon_workspace", () => {
       "plan/plan.example.json",
       "templates/addoninfo.txt",
       "templates/mission.txt",
+      "reference/README.md",
       "logs/errors.md",
       "README.md",
     ]) {
@@ -46,6 +50,7 @@ describe("write_addon_workspace", () => {
     expect(existsSync(join(root, "addon"))).toBe(true);
     expect(existsSync(join(root, "dist"))).toBe(true);
     expect(existsSync(join(root, "evidence"))).toBe(true);
+    expect(existsSync(join(root, "reference"))).toBe(true);
 
     const design = readFileSync(join(root, "plan", "DESIGN.md"), "utf8");
     expect(design).toContain("# Test Addon — design");
@@ -58,6 +63,32 @@ describe("write_addon_workspace", () => {
     const example = JSON.parse(readFileSync(join(root, "plan", "plan.example.json"), "utf8"));
     const parsed = MapPlanSchema.parse(example);
     expect(checkMapPlan("example", parsed).ok).toBe(true);
+  });
+
+  it("gives a script addon a design note, a reference baseline and the script content flag", async () => {
+    const authoredCtx = {
+      ...sharedCtx,
+      config: { ...sharedCtx.config, addonAuthor: "Stored Author" },
+    } as unknown as ToolContext;
+    const r = (await writeAddonWorkspaceTool.handler(
+      {
+        name: vname,
+        title: "Script Test",
+        kind: "vscript",
+        overwrite: false,
+        confirm: true,
+      } as never,
+      authoredCtx,
+    )) as unknown as { path: string; created: string[]; note: string };
+    vroot = r.path;
+    expect(existsSync(join(vroot, "plan"))).toBe(false);
+    expect(existsSync(join(vroot, "DESIGN.md"))).toBe(true);
+    expect(existsSync(join(vroot, "reference", "README.md"))).toBe(true);
+    expect(r.created).not.toContain("plan/DESIGN.md");
+    const addoninfo = readFileSync(join(vroot, "templates", "addoninfo.txt"), "utf8");
+    expect(addoninfo).toContain('"addonContent_Script"\t\t"1"');
+    expect(addoninfo).toContain('"Stored Author"');
+    expect(r.note).toContain("no map plan");
   });
 
   it("refuses a non-empty workspace without overwrite, and fills only missing files with it", async () => {
