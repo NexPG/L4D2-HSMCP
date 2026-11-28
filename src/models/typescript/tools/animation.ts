@@ -23,6 +23,8 @@ import { looseOrVpk, normalizeModelPath } from "./source.js";
 
 /** `STUDIO_LOOPING`: the sequence loops instead of stopping on its last frame. */
 const STUDIO_LOOPING = 1;
+/** `STUDIO_WORLD`: the sequence blends in worldspace; the QC writes `worldspace`. */
+const STUDIO_WORLD = 0x4000;
 
 const EVENT = z.object({
   cycle: z.number(),
@@ -39,7 +41,9 @@ export const readModelAnimationTool = defineTool({
   description:
     "Reads a compiled model's animation structure: every sequence with its activity, flags, " +
     "fps, frame count, blend width and pose range, the `mstudioevent_t` events (name or " +
-    "numeric id, frame and options), the pose parameters, the IK chains, and the " +
+    "numeric id, frame and options), per-sequence IK locks, activity modifiers, the " +
+    "`keyvalues` and `node`/`transition` fields, the worldspace flag, the pose parameters, " +
+    "the IK chains, and the " +
     "`$includemodel` entries that let a survivor reuse another model's sequences. Reports " +
     "whether each animation lives in the `.mdl` or in an external `.ani`. Frames are not " +
     "decoded; use `decompile_model` for SMDs. Pass an engine model path or a local `.mdl`.",
@@ -84,8 +88,20 @@ export const readModelAnimationTool = defineTool({
         paramIndices: z.tuple([z.number(), z.number()]),
         paramStart: z.tuple([z.number(), z.number()]),
         paramEnd: z.tuple([z.number(), z.number()]),
-        /** IK rules the sequence carries; the decompiler cannot write `ikrule` back. */
+        /** IK rules the sequence carries; block-stored rules cannot be written back. */
         ikrules: z.number(),
+        /** Per-sequence `iklock` records; the decompiler writes each as `iklock "<chain>"`. */
+        iklocks: z.number(),
+        /** `activitymodifier "name"` values. */
+        activityModifiers: z.array(z.string()),
+        /** Whether the sequence carries its own `keyvalues` block. */
+        keyValues: z.boolean(),
+        /** 1-based local node indexes and the `rtransition` bit; 0 means absent. */
+        localEntryNode: z.number(),
+        localExitNode: z.number(),
+        nodeFlags: z.number(),
+        /** `STUDIO_WORLD`; the decompiler writes `worldspace`. */
+        worldspace: z.boolean(),
         /** `addlayer`/`blendlayer` entries on the sequence. */
         autolayers: z.number(),
         weightlist: z.number(),
@@ -202,6 +218,13 @@ export const readModelAnimationTool = defineTool({
           paramStart: sequence.paramStart,
           paramEnd: sequence.paramEnd,
           ikrules: sequence.ikrules,
+          iklocks: sequence.iklocks.length,
+          activityModifiers: sequence.activityModifiers,
+          keyValues: sequence.keyValues.length > 0,
+          localEntryNode: sequence.localEntryNode,
+          localExitNode: sequence.localExitNode,
+          nodeFlags: sequence.nodeFlags,
+          worldspace: (sequence.flags & STUDIO_WORLD) !== 0,
           autolayers: sequence.autolayers,
           weightlist: sequence.weightlist,
           events: sequence.events.map((event) => ({

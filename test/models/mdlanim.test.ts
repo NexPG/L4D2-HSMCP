@@ -14,8 +14,14 @@ import {
   readAnimations,
   readAnimBlocks,
   readAnimValue,
+  readLocalNodeNames,
   readSequences,
 } from "../../src/models/typescript/formats/mdlanim.js";
+import {
+  sequenceKeyValueLines,
+  sequenceNodeLine,
+  sequenceQcOptions,
+} from "../../src/models/typescript/tools/decompile.js";
 import { readMdlBones } from "../../src/models/typescript/formats/mdlbones.js";
 import { openGameVpk } from "../../src/assets/typescript/game/vpkcontent.js";
 import { ctx, has } from "../support/env.js";
@@ -155,6 +161,99 @@ describe.skipIf(!has.gameContent)("mdlanim", () => {
   });
 });
 
+
+/**
+ * A 212-byte v49 sequence descriptor in a 2 KiB buffer, with one of each optional record.
+ *
+ * Every offset below is documented in `mstudioseqdesc_t`: the keyvalues and IK locks are
+ * relative to the descriptor, while the local node name table holds absolute file offsets.
+ */
+function syntheticSequenceModel(): Buffer {
+  const bytes = Buffer.alloc(2048);
+  const base = 300;
+  bytes.write("IDST", 0, "latin1");
+  bytes.writeInt32LE(49, 4);
+  bytes.writeInt32LE(1, 188); // local sequence count
+  bytes.writeInt32LE(base, 192);
+  bytes.writeInt32LE(700 - base, base + 4); // sequence label
+  bytes.writeInt32LE(1, base + 112); // local entry node
+  bytes.writeInt32LE(1, base + 116); // local exit node
+  bytes.writeInt32LE(0, base + 120); // node flags
+  bytes.writeInt32LE(1, base + 164); // numiklocks
+  bytes.writeInt32LE(280, base + 168); // iklockindex
+  bytes.writeInt32LE(3, base + 280); // chain
+  bytes.writeFloatLE(1, base + 284);
+  bytes.writeFloatLE(0.25, base + 288);
+  const keyValues = Buffer.from('mdlkeyvalue\n{\n"test" "1"\n}\n\0', "latin1");
+  keyValues.copy(bytes, base + 240);
+  bytes.writeInt32LE(240, base + 172);
+  bytes.writeInt32LE(keyValues.length, base + 176);
+  bytes.writeInt32LE(220, base + 184);
+  bytes.writeInt32LE(1, base + 188);
+  bytes.writeInt32LE(720 - (base + 220), base + 220); // modifier name, relative to the entry
+  bytes.write("seq_test", 700, "latin1");
+  bytes.write("TestMod", 720, "latin1");
+  bytes.writeInt32LE(1, 248); // numlocalnodes
+  bytes.writeInt32LE(800, 256); // localnodenameindex
+  bytes.writeInt32LE(900, 800);
+  bytes.write("walk", 900, "latin1");
+  return bytes;
+}
+
+describe("sequence extras stored in the mdl", () => {
+  it("reads activity modifiers, keyvalues, local nodes and per-sequence IK locks", () => {
+    const bytes = syntheticSequenceModel();
+    const sequences = readSequences(bytes, readAnimations(bytes));
+    expect(sequences).toHaveLength(1);
+    const sequence = sequences[0]!;
+    expect(sequence.name).toBe("seq_test");
+    expect(sequence.activityModifiers).toEqual(["TestMod"]);
+    expect(sequence.keyValues).toContain('"test" "1"');
+    expect(sequence.localEntryNode).toBe(1);
+    expect(sequence.localExitNode).toBe(1);
+    expect(sequence.iklocks).toEqual([
+      { chain: 3, positionWeight: 1, localQWeight: 0.25, flags: 0 },
+    ]);
+    expect(readLocalNodeNames(bytes)).toEqual(["walk"]);
+  });
+
+  it("formats the QC options the reader cannot guess", () => {
+    expect(sequenceQcOptions({ flags: 0x4000, name: "world" }, [])).toEqual(["worldspace"]);
+    expect(sequenceQcOptions({ flags: 0x20000, name: "relative" }, [])).toEqual([
+      "worldrelative",
+    ]);
+    expect(
+      sequenceKeyValueLines('mdlkeyvalue\n{\nfaceposer\n{\n"entrytag" "in"\n}\n}\n'),
+    ).toEqual([
+      "\tkeyvalues",
+      "\t{",
+      "\t\tfaceposer",
+      "\t\t{",
+      '\t\t\t"entrytag" "in"',
+      "\t\t}",
+      "\t}",
+    ]);
+    expect(
+      sequenceNodeLine({ localEntryNode: 2, localExitNode: 3, nodeFlags: 0 }, ["a", "b", "c"]),
+    ).toBe('\ttransition "b" "c"');
+    expect(
+      sequenceNodeLine({ localEntryNode: 2, localExitNode: 3, nodeFlags: 1 }, ["a", "b", "c"]),
+    ).toBe('\trtransition "b" "c"');
+    expect(
+      sequenceNodeLine({ localEntryNode: 2, localExitNode: 2, nodeFlags: 0 }, ["a", "b"]),
+    ).toBe('\tnode "b"');
+  });
+
+  it.skipIf(!has.gameContent)("finds the IK locks and worldspace flag L4D2 uses", () => {
+    const bytes = openGameVpk(ctx.config.gameDir!)!.read("models/survivors/anim_gambler.mdl")!;
+    const sequences = readSequences(bytes, readAnimations(bytes));
+    expect(sequences.length).toBeGreaterThan(700);
+    expect(sequences.filter((sequence) => sequence.iklocks.length > 0).length).toBeGreaterThan(200);
+    expect(sequences.filter((sequence) => (sequence.flags & 0x4000) !== 0).length).toBeGreaterThan(
+      100,
+    );
+  }, 60_000);
+});
 
 describe("sequence options stock L4D2 actually uses", () => {
   it.skipIf(!has.gameContent)("reports IK rules, autolayers and weight lists", () => {

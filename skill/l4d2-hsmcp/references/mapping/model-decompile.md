@@ -78,32 +78,71 @@ block layout and the loss is reported rather than guessed. Those rules are count
 a warning;
 `read_model_animation` shows the per-sequence counts, so the loss is visible before a compile.
 For an aim-matrix-heavy character, treat the decompiled QC as a starting point.
-(`walkframe` is not in the sequence descriptor at all; it is a QC option baked into the clips
-during compile.)
 
 ## Sequence options
 
-Sequence options are written from the flags, with one deliberate exception. `snap`,
-`hidden`, `autoplay`, `realtime` and `posecycle` come from the compiled sequence flags and go
-into the `$sequence` block. Verified by a real compile of `gascan001a`: `pullpin`/`throw`/
-`melee` came back with `STUDIO_SNAP` (0x2) and `a_gasCan_vaims` with `STUDIO_HIDDEN` (0x400).
-`delta` is **not** written: the decompiled SMDs are baked frames, while `delta` tells studiomdl
-to read them as differences from the reference pose. That model's `gasCan_idle` loses the
-`delta` bit on a recompile, and the tool does not pretend otherwise. Autolayers are written: `addlayer`
-when the window is empty, otherwise `blendlayer "<sequence>" <start> <peak> <tail> <end>` with
+Sequence options are written from the flags and from the per-sequence records, with two
+deliberate exceptions. `snap`, `hidden`, `autoplay`, `realtime`, `posecycle`, `worldspace` and
+`worldrelative` come from the compiled sequence flags and go into the `$sequence` block.
+Verified by a real compile of `gascan001a`: `pullpin`/`throw`/`melee` came back with
+`STUDIO_SNAP` (0x2) and `a_gasCan_vaims` with `STUDIO_HIDDEN` (0x400). `worldspace`
+(`STUDIO_WORLD`, 0x4000) is common on animation models: 126 of the gambler's 814 sequences
+and 121 of the coach's 803. `worldrelative` (0x20000) is a CS:GO flag and does not occur in
+L4D2 data, but is written if a model does set it.
+
+The per-sequence records are written back when present:
+
+- `activitymodifier "<name>"` from `activitymodifierindex`/`numactivitymodifiers` (descriptor
+  +184/+188).
+- `iklock "<chain>" <position> <angle>` from `numiklocks`/`iklockindex` (+164/+168), resolved
+  through the model's `$ikchain` names. Also common: 239 of the gambler's and 246 of the
+  coach's sequences.
+- `keyvalues { ... }` from `keyvalueindex`/`keyvaluesize` (+172/+176). The stored
+  `mdlkeyvalue` text is reformatted into the QC block; faceposer gestures are the usual user
+  (14 in `anim_gestures`).
+- `node "name"`, `transition "<from>" "<to>"` or `rtransition` from the 1-based local node
+  indexes and `nodeflags` (+112/+116/+120), resolved through the header's local node names.
+  A model without a node table gets no line.
+
+A/B on `v_rifle` (patched to carry each record): stock `studiomdl` compiled the QC, and the
+recompiled model came back with the `iklock` (`lhand`, 1, 0.5), the `keyvalues` block, the
+`worldspace` flag (0x4000), the `activitymodifier` name and the `node` entry. Autolayers are
+written: `addlayer` when the window is empty, otherwise
+`blendlayer "<sequence>" <start> <peak> <tail> <end>` with
 `xfade`/`spline`/`noblend`/`poseparameter`/`local`, converted from the stored 0..1 phase to
 frames. A layer that names a sequence the decompile did not write is dropped with a warning —
 studiomdl++ aborts the whole model on a dangling layer name. Verified on `gascan001a`
 (`gasCan_idle` returned with one autolayer).
 
+Not written, because the compiled data does not contain them:
+
+- `delta`: the decompiled SMDs are baked frames, so a `delta` line would ask studiomdl to read
+  them as differences from the reference pose. `gasCan_idle` loses the `delta` bit on a
+  recompile, and the tool says so.
+- `walkframe`: absent from `mstudioseqdesc_t` v49; the compiler applies it to the clips, so
+  nothing in the `.mdl` names it.
+- `animtag` and `rootdriver`: CS:GO v49 fields (the L4D2 descriptor's unused tail is five
+  ints, not the CS:GO animtag/rootdriver block), so an L4D2 decompile cannot see them.
+
 ## Weight lists
 
-Weight lists are written and verified. Non-default bone weights are common (measured:
-35 of the hunter's 89 sequences, 355 of the gambler's 814, 18 of the 36 in
-`v_huntingrifle`). The decompiler writes `$weightlist "weights_<sequence>" { "bone" weight ... }`
-once per unique list and `weightlist "..."` inside each sequence. A/B on `v_huntingrifle`:
-decompile -> compile -> read back gave **35 sequences, 17 with non-default weights** (the source
-has 36 sequences and 18; one is skipped by the decompile).
+Weight lists are written only for bones that carry LOD-0 vertices. Stock `studiomdl` treats a
+`$weightlist` entry naming a bone with no mesh vertices as an error (`unknown bone reference`,
+aborting the whole model), even though the name exists in the skeleton. The decompiler writes
+`$weightlist "weights_<sequence>" { "bone" weight ... }` once per unique list, keeps only the
+entries for weighted bones, and drops a list that becomes all-default.
+
+The A/B on `v_huntingrifle` is the honest limit: 6 of its 63 bones carry a vertex, and all 18
+of its non-default lists change a finger bone that does not. So every list is dropped, the
+decompiled QC has no `$weightlist`, and stock `studiomdl` compiles the result (**35
+sequences**, one skipped by the decompile; no non-default weight survives). A scan of 74 full
+stock models found **no** list that survives the filter; `gascan001a`, `survivor_gambler` and
+`hunter` have none to begin with. Lists with real changed values live on animation models
+(`anim_hunter`: 35 of 89), which have no mesh and are not decompiled here.
+
+The trade-off is stated rather than hidden: a weight for a bone that drives no vertex is not
+written, so a model whose attachment rides an unweighted bone keeps the default weight there.
+`studiomdl++` still accepts the full list if you need it, with a warning.
 
 **`activity` needs a weight, or stock studiomdl stops.** A `$sequence` line that ends with
 `activity ACT_...` and no number makes stock `studiomdl` print `Line N is incomplete` and
@@ -111,15 +150,3 @@ abort — the message names a QC line, not an SMD one, which is why it reads as 
 decompiler writes the compiled `actweight` after the name (`activity ACT_VM_IDLE_GASCAN 1`)
 and comments out a zero weight, which studiomdl also refuses. Verified: `gascan001a` compiles
 with stock `studiomdl` after this, and both activities came back with weight 1.
-
-**Weight lists are limited to bones that carry vertices.** Stock `studiomdl` treats a
-`$weightlist` entry naming a bone with no mesh vertices as an error (`unknown bone reference`,
-aborting the model), even though the name exists in the skeleton: measured on
-`v_huntingrifle`, where only 6 of 63 bones are weighted by the mesh, and on the finger bones
-Valve's own viewmodel animation uses. The decompiler therefore writes an entry only for a
-bone with at least one LOD-0 vertex (`survivor_gambler` has 69 such bones, the hunter mesh 53,
-`v_huntingrifle` 6), and drops a list that becomes all-default. After the change both
-`gascan001a` and `v_huntingrifle` compile with **stock** `studiomdl`. The trade-off is stated
-rather than hidden: a weight for a bone that drives no vertex is not written, so a model whose
-attachment rides an unweighted bone keeps the default weight there. `studiomdl++` still
-accepts the full list if you need it, with a warning.

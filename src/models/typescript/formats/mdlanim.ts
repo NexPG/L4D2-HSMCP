@@ -55,6 +55,16 @@ export interface MdlSequence {
   autoLayers: MdlAutoLayer[];
   /** `event` lines stored with the sequence, in file order. */
   events: MdlEvent[];
+  /** `activitymodifier "name"` entries (`activitymodifierindex` at +184, count at +188). */
+  activityModifiers: string[];
+  /** The sequence's own KeyValues text (`keyvalueindex` at +172); starts with `mdlkeyvalue`. */
+  keyValues: string;
+  /** 1-based local entry/exit node (0 when absent) and the `rtransition` bit at +120. */
+  localEntryNode: number;
+  localExitNode: number;
+  nodeFlags: number;
+  /** `iklock` records the sequence carries (`numiklocks` at +164, list at +168). */
+  iklocks: MdlIkLock[];
 }
 
 /** One `mstudioautolayer_t`: a layer of another sequence blended over this one. */
@@ -305,6 +315,12 @@ export function readSequences(mdl: Buffer, animations: MdlAnimationDesc[]): MdlS
       weightlist: mdl.readInt32LE(base + 156),
       autoLayers: readAutoLayers(mdl, base),
       events: readSequenceEvents(mdl, base),
+      activityModifiers: readSequenceActivityModifiers(mdl, base),
+      keyValues: readSequenceKeyValues(mdl, base),
+      localEntryNode: mdl.readInt32LE(base + 112),
+      localExitNode: mdl.readInt32LE(base + 116),
+      nodeFlags: mdl.readInt32LE(base + 120),
+      iklocks: readSequenceIkLocks(mdl, base),
     });
   }
   return sequences;
@@ -344,6 +360,68 @@ function readSequenceEvents(mdl: Buffer, base: number): MdlEvent[] {
     });
   }
   return events;
+}
+
+/**
+ * A sequence's `mstudioactivitymodifier_t` names (`activitymodifierindex` at +184, count at
+ * +188). Each record is a 4-byte name offset relative to the sequence descriptor, the same
+ * shape as an event name. The decompiler writes these as `activitymodifier "name"`.
+ */
+function readSequenceActivityModifiers(mdl: Buffer, base: number): string[] {
+  const count = mdl.readInt32LE(base + 188);
+  const offset = mdl.readInt32LE(base + 184);
+  if (count <= 0 || count > 1024 || offset <= 0) return [];
+  const names: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const at = base + offset + index * 4;
+    if (at + 4 > mdl.length) break;
+    const nameAt = at + mdl.readInt32LE(at);
+    if (nameAt <= 0 || nameAt >= mdl.length) continue;
+    const name = readName(mdl, nameAt);
+    if (name) names.push(name);
+  }
+  return names;
+}
+
+/**
+ * The sequence's own KeyValues text (`keyvalueindex` at +172, `keyvaluesize` at +176).
+ *
+ * L4D2 writes it with an `mdlkeyvalue` wrapper, so the decompiler can hand the body to
+ * studiomdl as a `keyvalues` block. Faceposer gestures are the common user; a sequence
+ * without one returns an empty string rather than a guessed block.
+ */
+function readSequenceKeyValues(mdl: Buffer, base: number): string {
+  const size = mdl.readInt32LE(base + 176);
+  const offset = mdl.readInt32LE(base + 172);
+  if (size <= 0 || size > 1 << 20 || offset <= 0) return "";
+  const at = base + offset;
+  if (at + size > mdl.length) return "";
+  return mdl.toString("latin1", at, at + size).replace(/\0+$/g, "");
+}
+
+/**
+ * Per-sequence `iklock` records (`numiklocks` at +164, list at +168).
+ *
+ * The record is the same 16-byte `mstudioiklock_t` as the model-level autoplay list, but
+ * these locks belong to the sequence and are written inside its `$sequence` block. They are
+ * common on animation models: 239 of the gambler's 814 sequences and 246 of the coach's 803.
+ */
+function readSequenceIkLocks(mdl: Buffer, base: number): MdlIkLock[] {
+  const count = mdl.readInt32LE(base + 164);
+  const offset = mdl.readInt32LE(base + 168);
+  if (count <= 0 || count > 1024 || offset <= 0) return [];
+  const locks: MdlIkLock[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const at = base + offset + index * 16;
+    if (at + 16 > mdl.length) break;
+    locks.push({
+      chain: mdl.readInt32LE(at),
+      positionWeight: mdl.readFloatLE(at + 4),
+      localQWeight: mdl.readFloatLE(at + 8),
+      flags: mdl.readInt32LE(at + 12),
+    });
+  }
+  return locks;
 }
 
 /**
@@ -458,6 +536,28 @@ export function readIkLocks(mdl: Buffer): MdlIkLock[] {
     });
   }
   return locks;
+}
+
+/**
+ * Local node names (`numlocalnodes` at 248, `localnodenameindex` at 256).
+ *
+ * Each entry is an int32 offset from the start of the file; a sequence's `node`/`transition`/
+ * `rtransition` line quotes a 1-based index into this table. Models without nodes return an
+ * empty list, and the caller then writes nothing rather than inventing a node name.
+ */
+export function readLocalNodeNames(mdl: Buffer): string[] {
+  if (mdl.length < 260) return [];
+  const count = mdl.readInt32LE(248);
+  const offset = mdl.readInt32LE(256);
+  if (count <= 0 || count > 100 || offset <= 0 || offset >= mdl.length) return [];
+  const names: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const at = offset + index * 4;
+    if (at + 4 > mdl.length) break;
+    const nameAt = mdl.readInt32LE(at);
+    names.push(nameAt > 0 && nameAt < mdl.length ? readName(mdl, nameAt) : "");
+  }
+  return names;
 }
 
 export function readAnimations(mdl: Buffer): MdlAnimationDesc[] {

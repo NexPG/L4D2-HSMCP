@@ -45,7 +45,7 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | Tool | What it does |
 |---|---|
 | `read_model_ani` | Reads the external `.ani` a model's clips live in: the `IDAG` header and version, every anim block with its byte range and size, the clips and sequences that use each block, frame-by-bone/sectioned/delta counts and the duration, plus range, gap, overlap and orphan checks. |
-| `read_model_animation` | Reads a compiled model's animation structure: every sequence with its activity, flags, fps, frame count, blend width and pose range, the `mstudioevent_t` events (name or numeric id, frame and options), the pose parameters, the IK chains, and the `$includemodel` entries that let a survivor reuse another model's seque... |
+| `read_model_animation` | Reads a compiled model's animation structure: every sequence with its activity, flags, fps, frame count, blend width and pose range, the `mstudioevent_t` events (name or numeric id, frame and options), per-sequence IK locks, activity modifiers, the `keyvalues` and `node`/`transition` fields, the worldspace flag, the... |
 | `read_model_skeleton` | Reads a model's skeleton and writes the bind pose as ready-to-paste `$definebone` lines. |
 
 ## Flexes and VTA

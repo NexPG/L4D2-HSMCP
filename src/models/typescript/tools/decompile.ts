@@ -10,8 +10,11 @@
  * `$lod`/`replacemodel` line. Flex deltas are written as a `.vta` next to the reference SMD,
  * with a `$model { flexfile ... }` block, the original flex controllers and the rules
  * rebuilt from the MDL's postfix ops. Multi-blend sequences become `$sequence` blocks with
- * one SMD per animation and their pose-parameter ranges. Bodygroup presets are the remaining
- * gap; the result says so instead of producing a quiet, incomplete model.
+ * one SMD per animation and their pose-parameter ranges, and the sequence fields that only
+ * the compiled model keeps (`activitymodifier`, `iklock`, `keyvalues`, `node`/`transition`,
+ * the worldspace flag) are written back. `delta` is reported because the SMDs are baked;
+ * `walkframe` is absent from the descriptor, and CS:GO's `animtag`/`rootdriver` are not L4D2
+ * fields, so the result states the gaps instead of producing a quiet, incomplete model.
  *
  * Geometry comes from `parseModelGeometry`, so the VVD fixup table and the selected VTX
  * layout are already applied. Vertices are written in model space, which is what SMD expects;
@@ -53,6 +56,7 @@ import {
   readAnimations,
   readIkChains,
   readIkLocks,
+  readLocalNodeNames,
   readSequences,
   STUDIO_AL_LOCAL,
   STUDIO_AL_NOBLEND,
@@ -68,6 +72,8 @@ import {
   readIncludedModels,
 } from "../formats/mdlmeta.js";
 import type { MdlAttachment, MdlHitboxSet, MdlIncludedModel } from "../formats/mdlmeta.js";
+import { parse } from "../../../formats/typescript/kv/parse.js";
+import { serialize } from "../../../formats/typescript/kv/serialize.js";
 import { defineBoneLines } from "./skeleton.js";
 
 const STATIC_PROP = 1 << 4;
@@ -662,6 +668,14 @@ function qcText(
     events: Array<{ name: string; frame: number; options: string }>;
     options: string[];
     ikrules: string[];
+    /** `activitymodifier "name"` values, in stored order. */
+    activityModifiers: string[];
+    /** Preformatted `keyvalues` block, empty when the sequence has none. */
+    keyValues: string[];
+    /** Preformatted per-sequence `iklock` lines. */
+    iklocks: string[];
+    /** `node`/`transition`/`rtransition`, when the model has a local node table. */
+    nodeLine?: string;
     weightListName?: string;
     autoLayers: Array<{
       sequenceName: string;
@@ -849,6 +863,10 @@ function qcText(
         sequence.events.length > 0 ||
         sequence.options.length > 0 ||
         sequence.ikrules.length > 0 ||
+        sequence.activityModifiers.length > 0 ||
+        sequence.keyValues.length > 0 ||
+        sequence.iklocks.length > 0 ||
+        sequence.nodeLine !== undefined ||
         sequence.autoLayers.length > 0 ||
         sequence.weightListName !== undefined ||
         Math.abs(sequence.fadeIn - 0.2) > 1e-6 ||
@@ -884,7 +902,12 @@ function qcText(
         );
       }
       if (sequence.loop) lines.push("\tloop");
+      for (const modifier of sequence.activityModifiers) {
+        lines.push(`\tactivitymodifier "${modifier.replace(/"/g, "")}"`);
+      }
       for (const option of sequence.options) lines.push(`\t${option}`);
+      for (const lock of sequence.iklocks) lines.push(lock);
+      lines.push(...sequence.keyValues);
       if (sequence.weightListName) lines.push(`\tweightlist "${sequence.weightListName}"`);
       for (const layer of sequence.autoLayers) {
         if (layer.flags === 0 && layer.start === layer.end) {
@@ -906,6 +929,7 @@ function qcText(
         if ((layer.flags & STUDIO_AL_LOCAL) !== 0) line += " local";
         lines.push(line);
       }
+      if (sequence.nodeLine) lines.push(sequence.nodeLine);
       if (sequence.blendWidth !== undefined) lines.push(`\tblendwidth ${sequence.blendWidth}`);
       for (const blend of sequence.blends) {
         lines.push(`\tblend "${blend.name}" ${fmt(blend.start)} ${fmt(blend.end)}`);
@@ -1093,7 +1117,7 @@ function qcText(
  * read them as differences from the reference pose, which is a different animation. Crowbar
  * writes it because it also writes the unbaked clip; this decompiler does not.
  */
-function sequenceQcOptions(
+export function sequenceQcOptions(
   sequence: { flags: number; name: string },
   poseParamNames: readonly string[],
 ): string[] {
@@ -1106,7 +1130,73 @@ function sequenceQcOptions(
     const name = poseParamNames[0];
     if (name) options.push(`posecycle ${name}`);
   }
+  // `STUDIO_WORLD`: the sequence blends in worldspace. 247 of the 814 gambler sequences and
+  // 247 of the 803 coach sequences carry it, so it is not a curiosity.
+  if ((sequence.flags & 0x4000) !== 0) options.push("worldspace");
+  // `STUDIO_WORLD_AND_RELATIVE` is a CS:GO addition (0x20000); L4D2 models do not set it,
+  // but writing it when present costs nothing and keeps the reader honest.
+  if ((sequence.flags & 0x20000) !== 0) options.push("worldrelative");
   return options;
+}
+
+/**
+ * The sequence's `keyvalues` block, reformatted from the `mdlkeyvalue` text in the `.mdl`.
+ *
+ * The stored text is already KeyValues; parsing and reserialising is what gives the QC one
+ * tab per level and quoted keys, while every value stays verbatim. A text that does not parse
+ * is emitted as-is rather than dropped, because studiomdl may still accept what the parser
+ * here does not model.
+ */
+export function sequenceKeyValueLines(text: string, indent = "\t"): string[] {
+  const body = text
+    .replace(/\0+$/g, "")
+    .trim()
+    .replace(/^"?mdlkeyvalue"?/i, "")
+    .trim();
+  if (!body) return [];
+  let formatted: string;
+  try {
+    let nodes = parse(body);
+    if (
+      nodes.length === 1 &&
+      nodes[0]?.kind === "block" &&
+      nodes[0].name.toLowerCase() === "mdlkeyvalue"
+    ) {
+      nodes = nodes[0].entries;
+    }
+    formatted = serialize(nodes).trimEnd();
+  } catch {
+    formatted = body.startsWith("{") ? body : `{\n${body}\n}`;
+  }
+  if (!formatted) return [];
+  return [
+    `${indent}keyvalues`,
+    ...formatted.split("\n").map((line) => `${indent}${line}`),
+  ];
+}
+
+/**
+ * A sequence's `node`, `transition` or `rtransition` line.
+ *
+ * The descriptor stores 1-based node indexes and a flag: the same node on both sides is a
+ * `node`, two nodes are a `transition`, and `nodeFlags & 1` makes it a reversed
+ * `rtransition`. A name the table does not contain is dropped rather than guessed.
+ */
+export function sequenceNodeLine(
+  sequence: { localEntryNode: number; localExitNode: number; nodeFlags: number },
+  localNodes: readonly string[],
+  indent = "\t",
+): string | undefined {
+  if (sequence.localEntryNode <= 0) return undefined;
+  const entry = localNodes[sequence.localEntryNode - 1];
+  if (!entry) return undefined;
+  if (sequence.localEntryNode === sequence.localExitNode) {
+    return `${indent}node "${entry.replace(/"/g, "")}"`;
+  }
+  const exit = localNodes[sequence.localExitNode - 1];
+  if (!exit) return undefined;
+  const keyword = (sequence.nodeFlags & 1) !== 0 ? "rtransition" : "transition";
+  return `${indent}${keyword} "${entry.replace(/"/g, "")}" "${exit.replace(/"/g, "")}"`;
 }
 
 function keyValueNumber(text: string | null, key: string, fallback: number): number {
@@ -1135,7 +1225,10 @@ export const decompileModelTool = defineTool({
     "is reconstructed from the root's full Euler rotation, not just a pitched root. " +
     "Sequences whose data is inside the `.mdl` or an external `.ani` are decoded into " +
     "animation SMDs; multi-blend clips become `$sequence` blocks with all their animations " +
-    "and pose ranges. Bodygroup presets are the remaining gap and are reported. " +
+    "and pose ranges, plus the stored `activitymodifier`, per-sequence `iklock`, `keyvalues`, " +
+    "`node`/`transition` and worldspace flag. `delta` is reported (the SMDs are baked); " +
+    "`walkframe` and CS:GO's `animtag`/`rootdriver` are not in the L4D2 data. Bodygroup presets " +
+    "are the remaining gap and are reported. " +
     "Writes into `outDir`; refuses existing files unless `overwrite` is set. Takes an engine " +
     "model path or a local `.mdl`.",
   realm: "map",
@@ -1314,6 +1407,14 @@ export const decompileModelTool = defineTool({
       options: string[];
       /** Preformatted `ikrule` lines decoded from this sequence's animations. */
       ikrules: string[];
+      /** `activitymodifier "name"` values stored on the sequence. */
+      activityModifiers: string[];
+      /** Preformatted `keyvalues` block, empty when the sequence has none. */
+      keyValues: string[];
+      /** Preformatted per-sequence `iklock` lines. */
+      iklocks: string[];
+      /** `node`/`transition`/`rtransition`, when the model has a local node table. */
+      nodeLine?: string;
       /** `$weightlist` name this sequence uses, when its weights are not all 1. */
       weightListName?: string;
       /** `addlayer`/`blendlayer` entries, with the target sequence and pose parameter named. */
@@ -1331,7 +1432,9 @@ export const decompileModelTool = defineTool({
     const skippedSequences: Array<{ name: string; reason: string }> = [];
     const usedNames = new Set<string>();
     const ikChains = readIkChains(mdlBytes);
+    const localNodes = readLocalNodeNames(mdlBytes);
     let blockIkRules = 0;
+    let deltaSequences = 0;
     let resampled = 0;
     // Bones that actually carry mesh vertices. studiomdl drops the rest from the compiled
     // skeleton, and a `$weightlist` entry naming a dropped bone is an error in the stock
@@ -1448,6 +1551,8 @@ export const decompileModelTool = defineTool({
         resampled += 1;
         return { ...entry, frames: resampleFrames(entry.frames, targetFrames) };
       });
+      if ((sequence.flags & 0x4) !== 0) deltaSequences += 1;
+      const nodeLine = sequenceNodeLine(sequence, localNodes);
       sequenceDefs.push({
         name,
         fps: decoded[0]!.animation.fps > 0 ? decoded[0]!.animation.fps : 30,
@@ -1471,6 +1576,17 @@ export const decompileModelTool = defineTool({
           options: event.options,
         })),
         options: sequenceQcOptions(sequence, poseParamNames),
+        activityModifiers: sequence.activityModifiers,
+        keyValues: sequenceKeyValueLines(sequence.keyValues),
+        iklocks: sequence.iklocks.flatMap((lock) => {
+          const chain = ikChains[lock.chain]?.name;
+          if (!chain) return [];
+          return [
+            `\tiklock "${chain.replace(/"/g, "")}" ${fmt(lock.positionWeight)} ` +
+              `${fmt(lock.localQWeight)}`,
+          ];
+        }),
+        ...(nodeLine ? { nodeLine } : {}),
         ikrules: [
           ...new Set(
             decoded.flatMap((entry) => {
@@ -1521,6 +1637,13 @@ export const decompileModelTool = defineTool({
       warnings.push(
         `${blockIkRules} IK rule(s) are stored in the animation block, not the .mdl; they are ` +
           "not written. `read_model_animation` shows the per-sequence counts.",
+      );
+    }
+    if (deltaSequences > 0) {
+      warnings.push(
+        `${deltaSequences} sequence(s) carry STUDIO_DELTA (0x4). The decompiled SMDs are ` +
+          "baked frames, so the `delta` bit is not written: a delta line would ask studiomdl " +
+          "to read them as differences from the reference pose, which is a different animation.",
       );
     }
     if (resampled > 0) {
