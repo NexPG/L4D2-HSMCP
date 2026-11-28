@@ -7,6 +7,9 @@ and the map loads, plays, and never advances.
 This is read from Valve's own chapters (`c1m1_hotel` → `c1m2_streets`) and confirmed on a
 built map.
 
+**Spelling.** Prose uses "safe room"; compounds use "safe-room door" or "safe-room contract";
+`saferoom` is only an identifier, field or file name, never prose.
+
 ## The four parts
 
 1. **`info_changelevel`** — a *brush* (despite the `info_` name) over the safe room floor.
