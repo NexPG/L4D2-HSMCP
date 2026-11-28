@@ -19,6 +19,7 @@ import { addonTools } from "./packages/typescript/tools/addon.js";
 import { addonCheckTools } from "./packages/typescript/tools/addoncheck.js";
 import { manifestTools } from "./packages/typescript/tools/manifests.js";
 import { workshopTools } from "./packages/typescript/tools/workshop.js";
+import { workshopPublishTools } from "./packages/typescript/tools/workshoppublish.js";
 import { localizationTools } from "./assets/typescript/tools/localization.js";
 import { autosaveTools } from "./maps/typescript/tools/autosave.js";
 import { clipTools } from "./maps/typescript/tools/clip.js";
@@ -193,6 +194,7 @@ export const allTools: AnyToolDef[] = [
   ...addonCheckTools,
   ...manifestTools,
   ...workshopTools,
+  ...workshopPublishTools,
   ...localizationTools,
   ...autosaveTools,
   ...bspTools,

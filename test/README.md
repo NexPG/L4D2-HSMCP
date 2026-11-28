@@ -20,6 +20,7 @@ answers "where is the test for this file" without a search.
 | [`models/`](models/) | model sources: SMD read/write, DMX?SMD, QC, deep `read_model_info`, the QC and MDL readers |
 | [`formats/`](formats/) | shared formats: DMX datamodels read/write |
 | [`packages/`](packages/) | addon packaging: VPK structure, CRC/MD5 verification |
+| [`workshop/`](workshop/) | Steam Workshop item views and the legacy upload helper protocol |
 | [`textures/`](textures/) | textures: PNG decode, VTF write/convert/extract, DXT |
 | [`hammer/`](hammer/) | editor data: build registry and hash lookup, window cleanup |
 | [`campaign/`](campaign/) | mission files, convars, addons, finale contract |

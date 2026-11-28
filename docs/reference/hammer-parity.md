@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 27/11/2026: **319 tools**.
+Last checked against the tool list on 28/11/2026: **325 tools**.
 
 ## The file itself
 
@@ -445,6 +445,13 @@ map and looking, or by not happening at all.
 | `run_vpk_build` | nothing: Hammer has no addon packaging, and this one needs neither the game nor its `vpk.exe` |
 | `read_vpk` | nothing: Hammer cannot open an addon archive |
 | `run_vpk_extract` | nothing |
+| `read_workshop_account` | nothing: Hammer has no Workshop account, item count or Cloud quota view |
+| `read_workshop_items` | nothing: the editor cannot list or search the account's Workshop items |
+| `read_workshop_item` | nothing: Hammer cannot read an item's metadata, media or required items |
+| `publish_workshop_item` | nothing: Hammer has no Workshop upload; the legacy Steam content path is used |
+| `update_workshop_item` | nothing: Hammer cannot change a published item's content or metadata |
+| `delete_workshop_item` | nothing: the editor cannot delete a Workshop item |
+| `read_workshop_vdf` / `write_workshop_vdf` | nothing: the VDF is a SteamCMD descriptor, not a Hammer file |
 
 The row that matters most is `read_vmf_solids`. Hammer draws an invalid solid in red and
 tells you nothing else; this says which face, which corner, and why — and it is the oracle

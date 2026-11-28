@@ -35,7 +35,7 @@
     "skill"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsx src/core/typescript/build/copy-assets.ts",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.test.json",
@@ -50,6 +50,7 @@
     "docs:tools": "tsx src/core/typescript/docs/generate.ts"
   },
   "dependencies": {
+    "@hagicode/steamworks.js": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@projectsociety/mcp-core": "^0.2.0",
     "zod": "^3.23.8"

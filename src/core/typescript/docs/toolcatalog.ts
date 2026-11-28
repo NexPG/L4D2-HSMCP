@@ -208,8 +208,18 @@ const AREAS: Area[] = [
   {
     slug: "addons",
     title: "Addons",
-    covers: "addoninfo, scaffolding, validation, installation and Workshop metadata",
-    groups: { "Addon manifests and installation": ["addon", "addoncheck", "manifests", "workshop", "workspace"] },
+    covers: "addoninfo, scaffolding, validation and installation",
+    groups: { "Addon manifests and installation": ["addon", "addoncheck", "manifests", "workspace"] },
+  },
+  {
+    slug: "workshop",
+    title: "Steam Workshop",
+    covers:
+      "account status, listing, reading, publishing, updating and deleting L4D2 Workshop items, and the offline VDF descriptor",
+    groups: {
+      "Publishing and item management": ["workshoppublish"],
+      "Offline descriptor": ["workshop"],
+    },
   },
   {
     slug: "vpk",

@@ -1,7 +1,9 @@
 /**
- * Steam Workshop build file. This is the offline half of publishing: it writes the VDF
- * `steamcmd +workshop_build_item` reads. Uploading still needs SteamCMD and the account; the
- * file, paths and metadata are what a project can prepare without touching Steam.
+ * Steam Workshop build file. This is an offline descriptor for inspection and archival,
+ * not the L4D2 upload path: SteamCMD's `workshop_build_item` and ISteamUGC's
+ * `SetItemContent` both answer `Invalid Parameter` for L4D2 content. Use
+ * `publish_workshop_item` / `update_workshop_item`, which go through the legacy
+ * `ISteamRemoteStorage` path in the running Steam client.
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -18,13 +20,15 @@ function vdf(value: string): string {
 export const writeWorkshopVdfTool = defineTool({
   name: "write_workshop_vdf",
   description:
-    "Writes a `workshop_build_item.vdf` for `steamcmd +workshop_build_item`. It carries the " +
-    "appid 550, a publishedfileid (0 for a new item), the content folder, an optional preview " +
-    "image, visibility, title, description and change note. The content folder must exist and " +
-    "should contain addoninfo.txt; a missing manifest is a warning because SteamCMD will " +
-    "still build the item. Uploading itself is a Steam action, not something this server can " +
-    "do offline. It does not set Workshop required items: Steam stores those on the item page, " +
-    "and neither this VDF nor the VPK has a field for them. Guarded.",
+    "Writes a `workshop_build_item.vdf` for inspection or archival. It is not the L4D2 " +
+    "upload path: SteamCMD `workshop_build_item` and ISteamUGC `SetItemContent` both fail " +
+    "with `Invalid Parameter` for L4D2 content; use `publish_workshop_item` or " +
+    "`update_workshop_item`, which use the legacy ISteamRemoteStorage path in the running " +
+    "Steam client. The file carries appid 550, a publishedfileid (0 for a new item), the " +
+    "content folder, an optional preview image, visibility, title, description and change " +
+    "note. The content folder must exist and should contain addoninfo.txt. It has no field " +
+    "for required items: Steam stores those on the item, and `publish_workshop_item` / " +
+    "`update_workshop_item` set them by id. Guarded.",
   realm: "local",
   guarded: true,
   meta: { "anthropic/requiresUserInteraction": true },
@@ -131,9 +135,9 @@ export const readWorkshopVdfTool = defineTool({
   name: "read_workshop_vdf",
   description:
     "Reads a `workshop_build_item.vdf`: appid, publishedfileid, contentfolder, previewfile, " +
-    "visibility, title, description and change note. Use it before handing the file to " +
-    "steamcmd or after editing it by hand. The format has no dependency field; required items " +
-    "are Workshop page metadata, not VDF keys.",
+    "visibility, title, description and change note. Use it to inspect an offline descriptor; " +
+    "it is not the L4D2 upload path. The format has no dependency field: required items live " +
+    "on the Workshop item, and `read_workshop_item` reports them as `children`.",
   realm: "map",
   inputSchema: {
     path: z.string().describe("Workshop VDF, absolute or relative to the repo root."),
