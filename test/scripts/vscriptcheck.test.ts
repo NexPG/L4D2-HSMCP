@@ -88,6 +88,20 @@ describe("checkNut", () => {
     expect(report.ok).toBe(true);
   });
 
+  it("does not treat a pre-decrement statement as a Lua comment", () => {
+    // `--length;` is Squirrel's pre-decrement, not a comment. The checker used to warn on
+    // every line starting with `--`, which made a valid script fail validate_addon.
+    const code = "local n = 3\n--n;\nprintl( n )\n";
+    const report = checkNut(code);
+    expect(report.diagnostics.map((entry) => entry.rule)).not.toContain(
+      "nut-lua-line-comment",
+    );
+    expect(report.ok).toBe(true);
+
+    const comment = checkNut("printl( 1 )\n-- this is a Lua comment\n");
+    expect(comment.diagnostics.map((entry) => entry.rule)).toContain("nut-lua-line-comment");
+  });
+
   it("reports an unbalanced delimiter with the line it opened on", () => {
     const report = checkNut('printl( "x" )\nfunction f()\n{\n\tif (1) {\n}\n');
     expect(report.ok).toBe(false);

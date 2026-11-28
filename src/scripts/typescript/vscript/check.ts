@@ -206,12 +206,13 @@ export function checkNut(source: string, path = "<script>"): NutReport {
   }
   if (/--\[\[/.test(code)) {
     diagnostics.push(diag("error", "nut-lua-comment", "`--[[ ]]` is Lua; Squirrel uses `/* */`"));
-  } else if (/^\s*--(?!\[)/m.test(code)) {
+  } else if (/^\s*--(?!\[)/m.test(code) && !/^\s*--\s*[A-Za-z_][\w.\[\]()]*\s*;?\s*$/m.test(code)) {
     diagnostics.push(
       diag(
         "warning",
         "nut-lua-line-comment",
-        "`--` starts a Lua comment; Squirrel uses `//` (a line starting with `--x` is a decrement, but that is rare)",
+        "`--` starts a Lua comment; Squirrel uses `//`. A pre-decrement statement " +
+          "(`--length;`, `--table.key`) is valid and is not warned about",
       ),
     );
   }
