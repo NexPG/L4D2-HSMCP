@@ -131,6 +131,7 @@ material; the instructions live in one place.
 | Rebuild, pack and deploy | `workflows/build-and-deploy.md` |
 | Publish, update or delete a Workshop item | `workflows/publish-to-workshop.md` |
 | Workshop upload says `Invalid Parameter` | `troubleshooting/workshop-upload.md` |
+| Drive the main menu or the Add-ons screen | `references/testing/harness.md` |
 | Check a build in game | `workflows/playtest.md` |
 | Make a prop/model without a DCC | `workflows/make-a-prop.md` |
 | Re-skin or move a HUD screen | `workflows/hud-override.md` |
@@ -180,7 +181,7 @@ material; the instructions live in one place.
 | `references/scripting/addons.md` | pure VScript addons: the three `*_addon.nut` scripts, library/plugin hosts, `ems` settings, event hooks, item control and probes |
 | `references/scripting/game-events.md` | `info_game_event_proxy`'s FGD list vs the 338 VScript events, and how to read each |
 | `references/testing/console.md` | console commands, `-condebug`, nav and entity debugging |
-| `references/testing/harness.md` | ordered log markers, probe scripts and the Steam-logon limit |
+| `references/testing/harness.md` | ordered log markers, probe scripts, the Steam-logon limit, main-menu/Add-ons navigation, Workshop subscription and the console overlay |
 | `references/testing/entity-probes.md` | entity, class and nav probes: marker shape, `markerOrder`, and measured limits |
 | `references/testing/live-debugging.md` | run a map, move survivors, fire inputs, prove it from the log |
 | `references/mapping/entities.md` | the FGD check, and where each L4D2-specific entity family is documented |

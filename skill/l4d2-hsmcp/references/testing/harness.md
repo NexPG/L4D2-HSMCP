@@ -310,3 +310,45 @@ Everything up to the last step works with `SendInput` clicks and `SendKeys` arro
 `SELECT` inside the add-on list did not accept Enter, Space, `e` or a synthetic click in this
 build, even though the row highlights on hover -- that last press needs a real pointer or the
 gamepad button.
+
+### Main menu and the Add-ons screen
+
+At startup the main menu selects `PLAY CAMPAIGN`; the list, top to bottom, is:
+
+```text
+PLAY CAMPAIGN
+ACHIEVEMENTS
+OPTIONS
+ADD-ONS
+EXTRAS
+BLOG POST
+QUIT
+```
+
+`Up`/`Down` move the highlight and `Enter` activates it. On this machine synthetic mouse clicks
+did not activate the menu, while `Down` ×3 from `PLAY CAMPAIGN` followed by `Enter` opened the
+Add-ons screen reliably. Use the keyboard for this screen.
+
+The Add-ons screen has the installed list on the left with a checkbox per item, the selected
+item's title/author/type/description on the right, and `FILTER`, `WORKSHOP TAGS`,
+`BROWSE WORKSHOP` and `DONE` at the bottom. `DONE` returns to the main menu.
+
+- **Red means a shared file path.** The menu computes conflicts when it opens; the startup
+  console log may not name them. Two enabled add-ons that ship the same path are both red. The
+  purpose of the add-on does not matter: a fork that keeps the original's script path conflicts,
+  a fork that renames the path does not. A required Workshop item is not a conflict.
+- **Workshop items need a Steam launch and a subscription.** A direct `left4dead2.exe` launch
+  shows only `left4dead2/addons/*.vpk`, even when `left4dead2/addons/workshop` has files. Launch
+  through Steam (`steam.exe -applaunch 550`), subscribe and download the item, then open
+  Add-ons. See "Workshop add-ons are not mounted in a direct launch" above.
+- Subscribe and download through a Steam client initialized as **app 550**
+  (`steamworks.init(550)`, then `workshop.subscribe(id)` / `workshop.download(id, true)`). With
+  `init(563)` (Authoring Tools) both return `a generic failure from the steamworks API`; this is
+  measured. `addDependency` is not affected. `installInfo(id)` reports the installed file under
+  `steamapps/workshop/content/550/<id>/..._legacy.bin`; the `left4dead2/addons/workshop` folder is
+  not the source of truth and Steam can clear it.
+- **The console overlay `-console` swallows the menu keys.** If Steam launch options include
+  `-console`, close it with `~` before walking the menu; otherwise `Down`/`Enter` go to the
+  console. With synthetic input, focus the game window first. For a menu-only test it is simpler
+  to remove `-console` from the L4D2 launch options (Steam > L4D2 > Properties > Launch Options)
+  and launch again.
