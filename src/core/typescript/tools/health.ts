@@ -10,15 +10,14 @@ import { externalTools } from "../../../maps/typescript/tools/rename.js";
 import { buildFreshness, VERSION } from "../version.js";
 
 /**
- * Where this file is running from, and the source tree that should sit beside it.
+ * The build and source roots, from this module's location.
  *
- * Compiled, this module is `dist/tools/health.js`, so the build root is two levels up and
- * `src/` is its sibling. Run from source under tsx the same arithmetic lands on a `src/src`
- * that does not exist, and `buildFreshness` reports that nothing was compared -- which is
- * the honest answer for a tree with no build to be stale.
+ * Compiled, this module is `dist/core/typescript/tools/health.js`, so the build root is
+ * three levels up and `src/` is its sibling. Under tsx the same arithmetic lands on `src`,
+ * and comparing it with `src` reports "not stale" -- there is no separate build to age.
  */
 const HERE = dirname(fileURLToPath(import.meta.url));
-const BUILD_DIR = join(HERE, "..");
+const BUILD_DIR = join(HERE, "..", "..", "..");
 const SRC_DIR = join(BUILD_DIR, "..", "src");
 
 /** The Source tools this server drives, all of them Windows binaries. */
