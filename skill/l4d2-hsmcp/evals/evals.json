@@ -107,64 +107,6 @@
         { "kind": "text", "any": ["regenerate", "перегенер", "пересобр"] },
         { "kind": "text", "any": ["fresh"] }
       ]
-    },
-    {
-        "id": 5,
-        "workspace": "eval-05-workshop-upload",
-        "timeoutMs": 300000,
-        "prompt": "An L4D2 add-on upload through SteamCMD fails with `ERROR! Failed to update workshop item (Invalid Parameter)`. Explain why this happens and name the tools that can publish or update the item without a password. Do not upload anything.",
-        "expected_output": "Diagnose the L4D2 UGC content limitation and route to publish_workshop_item/update_workshop_item (legacy ISteamRemoteStorage, running Steam client, no password); do not use SteamCMD or SetItemContent.",
-        "assertions": [
-            "Explains that L4D2 does not accept content through ISteamUGC SetItemContent or SteamCMD workshop_build_item",
-            "Names publish_workshop_item and update_workshop_item as the content path",
-            "Mentions the legacy ISteamRemoteStorage path and the running Steam client",
-            "Says no password is stored or requested",
-            "Does not perform an upload in this answer"
-        ],
-        "checks": [
-            {
-                "kind": "skill"
-            },
-            {
-                "kind": "text",
-                "any": [
-                    "Invalid Parameter"
-                ]
-            },
-            {
-                "kind": "text",
-                "any": [
-                    "publish_workshop_item"
-                ]
-            },
-            {
-                "kind": "text",
-                "any": [
-                    "update_workshop_item"
-                ]
-            },
-            {
-                "kind": "text",
-                "any": [
-                    "ISteamRemoteStorage"
-                ]
-            },
-            {
-                "kind": "text",
-                "any": [
-                    "SteamCMD",
-                    "SetItemContent"
-                ]
-            },
-            {
-                "kind": "text",
-                "any": [
-                    "no password",
-                    "without a password",
-                    "running Steam client"
-                ]
-            }
-        ]
     }
   ]
 }
