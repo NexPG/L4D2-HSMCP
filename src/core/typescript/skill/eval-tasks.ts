@@ -8,12 +8,17 @@
  * concept. The prose assertions stay in `evals.json` for a human, because keyword checks
  * cannot judge a diagnosis.
  *
- * Run it with `pnpm eval:tasks`, optionally `--case 2` or `--model provider/model`. A run
- * downloads nothing and changes nothing outside `workspaces/`, but cases 1 and 3 are real
+ * Run it with `pnpm eval:tasks`, optionally `--case 2` or `--model provider/model` and
+ * `--without-skill`. The no-skill run sits in a temporary directory outside the repository,
+ * registers only the MCP server and sets `L4D2_HSMCP_NO_SKILL=1`; the skill check is skipped so
+ * the report compares the non-skill checks. A run downloads nothing and changes nothing outside
+ * `workspaces/`, but cases 1 and 3 are real
  * imports and compiles and can take minutes.
  */
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { runOpenCodeSession } from "./opencode-session.js";
 
 interface FileCheck {
@@ -69,10 +74,16 @@ const config = JSON.parse(readFileSync(evalFile, "utf8")) as EvalConfig;
 const model = stringOption(parsed.model) ?? "opencode-go/deepseek-v4.1-flash";
 const only = numberOption(parsed.case) ?? null;
 const timeoutOverride = numberOption(parsed.timeout);
+const withoutSkill = parsed.withoutSkill === true;
 const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const out =
   stringOption(parsed.out) ??
-  join(root, ".develop-diary", "evals", `task-report-${stamp}.json`);
+  join(
+    root,
+    ".develop-diary",
+    "evals",
+    `task-report-${stamp}${withoutSkill ? "-noskill" : ""}.json`,
+  );
 
 const cases = config.evals.filter((entry) => only == null || entry.id === only);
 if (cases.length === 0) {
@@ -83,8 +94,13 @@ if (cases.length === 0) {
 const results = [];
 
 for (const testCase of cases) {
-  const workspace = join(root, "workspaces", `${testCase.workspace}-${stamp}`);
+  // A no-skill run must sit outside the repository: OpenCode walks up from the session
+  // directory and would otherwise find the root opencode.json and the .opencode skill link.
+  const workspace = withoutSkill
+    ? mkdtempSync(join(tmpdir(), `l4d2-eval-noskill-${testCase.id}-`))
+    : join(root, "workspaces", `${testCase.workspace}-${stamp}`);
   mkdirSync(workspace, { recursive: true });
+  if (withoutSkill) writeNoSkillConfig(workspace);
 
   const prompt =
     `${testCase.prompt}\n\n` +
@@ -100,7 +116,9 @@ for (const testCase of cases) {
   });
 
   const files = walk(workspace);
-  const checked = testCase.checks.map((check) => evaluate(check, session, files));
+  const checked = testCase.checks.map((check) =>
+    evaluate(check, session, files, withoutSkill),
+  );
   const pass = checked.every((item) => item.pass);
   const skillLoaded = session.skillIds.some((id) => id.toLowerCase().includes("l4d2-hsmcp"));
   results.push({
@@ -125,8 +143,9 @@ for (const testCase of cases) {
 
   const mark = pass ? "PASS" : "FAIL";
   process.stdout.write(
-    `#${testCase.id} ${mark} skill=${skillLoaded ? "loaded" : "not loaded"} ` +
-      `${session.seconds.toFixed(1)}s checks=${checked.filter((item) => item.pass).length}/${checked.length}\n`,
+    `#${testCase.id} ${mark} skill=${
+      withoutSkill ? "skipped" : skillLoaded ? "loaded" : "not loaded"
+    } ${session.seconds.toFixed(1)}s checks=${checked.filter((item) => item.pass).length}/${checked.length}\n`,
   );
   for (const item of checked) {
     if (!item.pass) process.stdout.write(`   - ${item.kind}: ${item.detail}\n`);
@@ -136,6 +155,7 @@ for (const testCase of cases) {
 const passed = results.filter((item) => item.pass).length;
 const summary = {
   skill: config.skill_name,
+  withoutSkill,
   model,
   date: new Date().toISOString(),
   total: results.length,
@@ -155,8 +175,12 @@ function evaluate(
   check: Check,
   session: { skillIds: string[]; text: string; toolInputs: string[] },
   files: string[],
+  withoutSkill: boolean,
 ): CheckResult {
   if (check.kind === "skill") {
+    if (withoutSkill) {
+      return { kind: "skill", pass: true, detail: "skipped: no-skill run" };
+    }
     const loaded = session.skillIds.some((id) => id.toLowerCase().includes("l4d2-hsmcp"));
     return {
       kind: "skill",
@@ -265,6 +289,33 @@ function walk(dir: string): string[] {
     else out.push(path);
   }
   return out;
+}
+
+/**
+ * A temporary OpenCode config with the MCP server and no skills.
+ *
+ * The session runs outside the repository, so OpenCode cannot walk up to the root
+ * `opencode.json` or the `.opencode/skills` link. The bootstrap pins `L4D2_HSMCP_REPO` and
+ * imports the absolute launcher, so the tools still work while the skill is absent.
+ */
+function writeNoSkillConfig(dir: string): void {
+  const launcher = pathToFileURL(join(root, "bin", "l4d2-hsmcp.mjs")).href;
+  const bootstrap =
+    `process.env.L4D2_HSMCP_REPO=${JSON.stringify(root)};` +
+    "process.env.L4D2_HSMCP_NO_SKILL='1';" +
+    `import(${JSON.stringify(launcher)})`;
+  const config = {
+    $schema: "https://opencode.ai/config.json",
+    mcp: {
+      servers: {
+        "l4d2-hsmcp": {
+          type: "local",
+          command: ["node", "-e", bootstrap],
+        },
+      },
+    },
+  };
+  writeFileSync(join(dir, "opencode.json"), `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
 function parseArgs(argv: string[]): Record<string, string | number | boolean> {

@@ -84,9 +84,14 @@ async function main(): Promise<void> {
     version: VERSION,
     instructions: INSTRUCTIONS,
   });
+  // The no-skill task-eval run registers the tools but not the skill resources; otherwise an
+  // agent that never calls the `skill` tool can still read the same pages through the MCP
+  // resource channel, and the without-skill benchmark measures nothing.
+  const skillEnabled = process.env.L4D2_HSMCP_NO_SKILL !== "1";
   const skillRoot = join(import.meta.dirname, "..", "skill", "l4d2-hsmcp");
-  const skillCount = existsSync(skillRoot) ? registerSkillResources(server, skillRoot) : 0;
-  const promptCount = registerSkillPrompts(server);
+  const skillCount =
+    skillEnabled && existsSync(skillRoot) ? registerSkillResources(server, skillRoot) : 0;
+  const promptCount = skillEnabled ? registerSkillPrompts(server) : 0;
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
