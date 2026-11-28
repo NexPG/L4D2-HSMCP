@@ -161,6 +161,20 @@ The shared path is the mechanism.
 `addoninfo.txt` and the three `*_addon.nut` entry points are expected to be shared by every
 add-on and do not produce a conflict. A normal script path does.
 
+### Auditing installed conflicts
+
+`check_addon_conflicts` scans the game's `addons/` and `addons/workshop/` (or explicit VPK paths)
+and reports four collisions with the providers:
+
+- duplicate resource paths — the game's red Add-ons highlight;
+- duplicate plugin class names;
+- duplicate top-level globals;
+- duplicate `ems/` settings paths.
+
+Use it before installing a fork next to an original, after a report of doubled effects, or when
+the Add-ons menu stays silent although two add-ons overlap. The menu only checks file paths; a
+class/global/settings collision is real but not red.
+
 ## Event hooks need a loader
 
 `OnGameEvent_<name>(params)` is called only when the file containing it is loaded by a

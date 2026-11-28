@@ -208,8 +208,11 @@ const AREAS: Area[] = [
   {
     slug: "addons",
     title: "Addons",
-    covers: "addoninfo, scaffolding, validation and installation",
-    groups: { "Addon manifests and installation": ["addon", "addoncheck", "manifests", "workspace"] },
+    covers: "addoninfo, scaffolding, validation, installation and installed-add-on conflicts",
+    groups: {
+      "Addon manifests and installation": ["addon", "addoncheck", "manifests", "workspace"],
+      "Installed-add-on conflicts": ["addonconflicts"],
+    },
   },
   {
     slug: "workshop",

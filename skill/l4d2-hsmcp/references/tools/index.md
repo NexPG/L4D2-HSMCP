@@ -1,6 +1,6 @@
 # Tool catalogue
 
-325 tools. This page groups them by the job you are doing; each tool's own description is the
+326 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -98,6 +98,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | Tool | Use |
 |---|---|
 | `validate_addon` | check addoninfo, every `.nut`, the three content manifests and closecaption encoding before packing |
+| `check_addon_conflicts` | duplicate paths, plugin classes, globals and `ems/` settings across installed add-ons, with the providers and what to disable |
 | `write_content_manifest` | add or remove a `.pcf`, soundscript or soundscape in the manifest the engine reads |
 | `write_localization` | write or update a `lang`/`Tokens` file, keeping UTF-16LE for closecaption |
 ## Steam Workshop

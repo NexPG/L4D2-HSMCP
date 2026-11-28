@@ -17,6 +17,7 @@ import { checkModeTools } from "./campaigns/typescript/tools/modes.js";
 import { mutationTools } from "./mutations/typescript/tools/mutations.js";
 import { addonTools } from "./packages/typescript/tools/addon.js";
 import { addonCheckTools } from "./packages/typescript/tools/addoncheck.js";
+import { addonConflictTools } from "./packages/typescript/tools/addonconflicts.js";
 import { manifestTools } from "./packages/typescript/tools/manifests.js";
 import { workshopTools } from "./packages/typescript/tools/workshop.js";
 import { workshopPublishTools } from "./packages/typescript/tools/workshoppublish.js";
@@ -192,6 +193,7 @@ export const allTools: AnyToolDef[] = [
   ...gateTools,
   ...addonTools,
   ...addonCheckTools,
+  ...addonConflictTools,
   ...manifestTools,
   ...workshopTools,
   ...workshopPublishTools,

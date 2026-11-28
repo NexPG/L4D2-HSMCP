@@ -1,6 +1,6 @@
 # Addons
 
-8 tools: addoninfo, scaffolding, validation and installation.
+9 tools: addoninfo, scaffolding, validation, installation and installed-add-on conflicts.
 
 Part of the [tool catalogue](README.md). Generated from the registry by `pnpm docs:tools`.
 
@@ -16,3 +16,9 @@ Part of the [tool catalogue](README.md). Generated from the registry by `pnpm do
 | `write_addon_workspace` | Creates `workspaces/<name>/` for one addon or campaign: `plan/`, `templates/`, `logs/`, `src/`, `addon/`, `dist/` and `evidence/`, with a README, a DESIGN.md stub and addoninfo/mission templates. |
 | `write_addoninfo` | Writes an `addoninfo.txt` without packing an archive: appid 550, title, author, version, the `addonContent_*` flag, tagline and description, plus the `addonAICredit` line with the toolkit version. |
 | `write_content_manifest` | Adds or removes entries in a content manifest: `particles_manifest.txt` (`file`), `game_sounds_manifest.txt` (`precache_file`) or `soundscapes_manifest.txt` (`file`). |
+
+## Installed-add-on conflicts
+
+| Tool | What it does |
+|---|---|
+| `check_addon_conflicts` | Audits installed L4D2 add-ons for the four collisions that matter: the same resource path (the Add-ons menu's red conflict), the same plugin class, the same top-level global, and the same `ems/` settings path. |

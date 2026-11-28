@@ -1,6 +1,6 @@
 # Tools by area
 
-325 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
+326 tools. One area is one logical job — VMF authoring, compilation, BSP analysis,
 rendering, the runtime harness, and so on — not a source directory and not a bucket for
 several jobs. A new kind of tool gets a new row and a new page.
 
@@ -32,14 +32,14 @@ not this file.
 | Hammer editor | editor status, Hammer++ settings, launching, window capture and HLMV | 5 | [hammer.md](hammer.md) |
 | Live editing | editing the open map through Hammer's shell channel, and the staged approval queue | 7 | [live.md](live.md) |
 | Input automation | synthetic key presses for interactions a console command cannot express | 1 | [input.md](input.md) |
-| Addons | addoninfo, scaffolding, validation and installation | 8 | [addons.md](addons.md) |
+| Addons | addoninfo, scaffolding, validation, installation and installed-add-on conflicts | 9 | [addons.md](addons.md) |
 | Steam Workshop | account status, listing, reading, publishing, updating and deleting L4D2 Workshop items, and the offline VDF descriptor | 8 | [workshop.md](workshop.md) |
 | VPK and pakfile | building, reading, extracting and verifying VPK archives, and editing a map's pakfile | 5 | [vpk.md](vpk.md) |
 | Shared formats | DMX datamodels | 2 | [formats.md](formats.md) |
 | Configuration and health | toolchain health and the stored add-on author | 4 | [configuration.md](configuration.md) |
 | Game discovery | how Left 4 Dead 2 was found on this machine | 1 | [games.md](games.md) |
 | File and text primitives | path resolution and raw UTF-8 text files | 2 | [text.md](text.md) |
-| **Total** | | **325** | |
+| **Total** | | **326** | |
 
 Each area page has logical tables inside it (for example, “Geometry”, “Faces, lighting,
 overlays and terrain” and “Instances and prefabs” inside VMF authoring).
