@@ -29,6 +29,7 @@ const check = (paths: string[]) =>
     { paths, addonsDir: undefined, includeWorkshop: true, limit: 500 } as never,
     ctx,
   ) as unknown as {
+    scanned: Array<{ title: string }>;
     conflicts: Array<{ kind: string; key: string; providers: string[] }>;
     summary: { addons: number; conflicts: number; byKind: Record<string, number> };
     warnings: string[];
@@ -92,5 +93,22 @@ StringToFile("shared/settings.txt", "x");
     const result = check([a, b]);
     expect(result.conflicts).toEqual([]);
     expect(result.summary.conflicts).toBe(0);
+  });
+
+  it("reads the title even when addondescription has a literal newline", () => {
+    const entries = new Map<string, Buffer>();
+    entries.set(
+      "addoninfo.txt",
+      Buffer.from(
+        '"Addoninfo"\n{\n\taddontitle "Malformed But Titled"\n' +
+          '\taddondescription "line one\nline two"\n}\n',
+      ),
+    );
+    const path = join(scratch, "malformed.vpk");
+    writeFileSync(path, writeVpk(entries).dir);
+
+    const result = check([path]);
+    expect(result.scanned[0]?.title).toBe("Malformed But Titled");
+    expect(result.warnings.some((warning) => warning.includes("no addoninfo title"))).toBe(false);
   });
 });

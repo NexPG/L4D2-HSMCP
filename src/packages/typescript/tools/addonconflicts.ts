@@ -15,7 +15,6 @@ import { basename, join } from "node:path";
 import { z } from "zod";
 import { defineTool } from "../../../core/typescript/mcp/registry.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
-import { parse } from "../../../formats/typescript/kv/parse.js";
 import { readVpkEntry } from "../../../formats/typescript/formats/vpk.js";
 import { openVpk } from "../../../formats/typescript/formats/vpkio.js";
 
@@ -49,14 +48,11 @@ function addonTitle(opened: ReturnType<typeof openVpk>): string {
   if (!entry) return "";
   try {
     const text = readVpkEntry(opened.archive, entry, opened.openArchive).toString("utf8");
-    const block = parse(text).find(
-      (node) => node.kind === "block" && node.name.toLowerCase() === "addoninfo",
-    );
-    if (!block || block.kind !== "block") return "";
-    const pair = block.entries.find(
-      (node) => node.kind === "pair" && node.key.toLowerCase() === "addontitle",
-    );
-    return pair && pair.kind === "pair" ? pair.value : "";
+    // A targeted read, not a full KeyValues parse: some published add-ons put literal newlines
+    // in `addondescription`, which makes the whole file unterminated even though the scanner
+    // still reads the title. The title itself is one quoted line.
+    const match = /"?addontitle"?\s+"([^"]*)"/i.exec(text);
+    return match?.[1] ?? "";
   } catch {
     return "";
   }
