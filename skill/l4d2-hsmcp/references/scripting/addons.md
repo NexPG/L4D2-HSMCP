@@ -53,11 +53,11 @@ in the folder, and checks that a closecaption file is UTF-16LE.
 |---|---|
 | `write_content_manifest` | a `.pcf`/soundscript/soundscape that is not listed is never loaded; this adds or removes the entry without rewriting the file |
 | `write_localization` | a `lang`/`Tokens` file, with closecaption kept in UTF-16LE and existing tokens updated in place |
-| `write_workshop_vdf` | the `workshop_build_item.vdf` SteamCMD reads; uploading is still a Steam action |
+| `publish_workshop_item` / `update_workshop_item` | the Workshop item itself: content VPK, preview, tags, media and required items, through the legacy path L4D2 needs |
 | `write_addoninfo` | the manifest itself, with the AI provenance line |
 | `read_addoninfo` | the manifest as data: title, author, version, credit, all keys |
 | `read_localization` | encoding, language, tokens and duplicates |
-| `read_workshop_vdf` | the fields the SteamCMD build file will send |
+| `write_workshop_vdf` / `read_workshop_vdf` | an offline `workshop_build_item.vdf` descriptor; SteamCMD cannot upload L4D2 content |
 | `read_mission_poster` | the mission poster block |
 | `read_detail_sprites` | detail types, density and groups |
 | `write_addon_scaffold` | addoninfo plus a `mapspawn_addon.nut` starter |
@@ -130,11 +130,36 @@ IncludeScript("my_addon", getroottable());
 
 - Do not `IncludeScript` a path that belongs to another add-on as a fallback. The engine does
   not namespace add-on scripts, and a copy is a second implementation with its own globals.
-- A plugin host may key plugins by **class name** and replace a duplicate. A fork that keeps
-  the class name silently shadows the original, or is shadowed by it, depending on load order.
-  Give a fork unique class, global, chat-command and settings-file names.
+- A plugin host may key plugins by **class name** and replace a duplicate. Do **not** rename a
+  fork's class, globals, chat commands, settings file or entity names: those are the original's
+  public surface, and a renamed settings path or command silently breaks an existing
+  configuration. A fork changes only the behaviour the user asked for; keep the script path
+  unchanged as well (see below).
 - The chat message is the only missing-item signal a player sees; a silent `return` looks like
   a broken add-on.
+
+### A fork keeps the original's script path
+
+A fork is a **replacement**, not a sibling. Keep the real script at the original's path (for
+example `scripts/vscripts/dynamic_light.nut`) and point `director_base_addon.nut` at that name.
+The engine can load only one file for the path, and the Add-ons menu marks the fork and the
+original red; the player must enable one. That is the default for every fork.
+
+A fork is also a **minimal diff**. Keep the original's class, globals, chat commands, settings
+path and entity names exactly as they are; change only the behaviour the user asked for. A rename
+is an extra change that breaks settings files and command habits users already have.
+
+Do not rename the script to a unique path "to be safe" or to let both be installed. Two copies of
+the same feature running together double the lights or the hooks and have no use. If the user
+explicitly asks for coexistence, follow that request and record it; otherwise keep the path and
+the identifiers.
+
+Do not try to get the warning with a unique real script plus an inert marker at the original path:
+the marker can shadow the other add-on's real file and does not make the code mutually exclusive.
+The shared path is the mechanism.
+
+`addoninfo.txt` and the three `*_addon.nut` entry points are expected to be shared by every
+add-on and do not produce a conflict. A normal script path does.
 
 ## Event hooks need a loader
 

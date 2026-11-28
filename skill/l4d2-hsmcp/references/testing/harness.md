@@ -19,6 +19,7 @@ followed, the escape unlocked, the credits loaded".
 - The trap: `commands` run before the map's entities exist
 - When the assertion is minutes away
 - Do not launch while someone is playing
+- Workshop add-ons are not mounted in a direct launch
 - The environment limit
 - Reading the result
 - Hidden addons and a killed run
@@ -247,6 +248,20 @@ A run records its pid in `<stateDir>/running-game.json`. If the process is kille
 clean up, the **next run closes that game** instead of launching a second one on top of it —
 that stale window is what keeps producing `No Steam logon`. Measured: a game started directly,
 recorded, then closed by the guard, zero processes left.
+
+## Workshop add-ons are not mounted in a direct launch
+
+`via: "direct"` (the default) starts `left4dead2.exe` itself with `-insecure`; Steam is not the
+launcher, so the Workshop mount is absent. `left4dead2/addons/workshop/<id>.vpk` is not loaded,
+even when the item is subscribed; only `left4dead2/addons/` is scanned. A dependent add-on then
+reports its required library as missing, and the log contains only the dependent's
+`*_addon.nut`.
+
+To test a Workshop-dependent add-on offline, copy the required Workshop VPK(s) into
+`left4dead2/addons/` for the run and remove them afterwards (`install_addon` is the guarded
+copy). Do not copy them permanently: the game's add-on list then holds a second copy of a
+Workshop item. `via: "steam"` uses the normal Steam mount, but the Steam-logon limit below
+still applies.
 
 ## The environment limit
 

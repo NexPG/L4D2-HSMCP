@@ -27,22 +27,37 @@ addon/
     materials/vgui/maps/my_map_a.vmt  optional chapter image
 ```
 
-`addoninfo.txt` (the keys are case-sensitive in the add-on scanner):
+`addoninfo.txt` lives at the VPK root. This is the shape the add-on scanner reads:
 
 ```
-"addoninfo"
+"AddonInfo"
 {
-    "addonSteamAppID"       "550"
-    "addontitle"            "My Campaign"
-    "addonauthor"           "<author from read_addon_author>"
-    "addonversion"          "1"
-    "addonContent_Campaign" "1"
-    "addonDescription"      "A two-chapter campaign."
+    "addonSteamAppID"      "550"
+    "addontitle"           "My Add-on"
+    "addonversion"         "1"
+    "addonauthor"          "<author from read_addon_author>"
+    "addonDescription"     "One line: what it is."
+    "addonContent_Script"  "1"
 }
 ```
 
-`addonTitle`, `addonTag` and `addonDesc` are older spellings; a scanner that does not match
-them leaves the add-on unlisted. `addonTagline` is optional.
+- `addonSteamAppID` is 550 (Left 4 Dead 2).
+- `addontitle` is the name in the add-on list; a missing title hides the add-on.
+- Community authoring guides quote ceilings of 31 (version), 119 (author) and 1023
+  (description) characters; the toolkit does not enforce them.
+- `addonContent_*` keys are tags: `Campaign`, `Map`, `Skin`, `Weapon`, `BossInfected`,
+  `CommonInfected`, `Survivor`, `Sound`, `Music`, `Script`, `Prop`. Set the ones that describe
+  the content to `"1"`; a pure script add-on uses `addonContent_Script`. The file→flag table is
+  below.
+- `AddonAuthorSteamID`, `AddonURL0` and `AddonTagline` are optional/deprecated; `//` comments
+  are accepted.
+- **`addonDescription` is one line.** A literal newline makes the quoted string unterminated
+  (`unterminated quoted string`), and `\n` is stored as backslash-n, not a line break.
+  Multi-line prose belongs on the Workshop page, which is separate from this file. A fork that
+  needs "what changed, then the original description" joins them on one line with a sentence
+  break.
+- Older spellings (`addonTitle`, `addonTag`, `addonDesc`) are not the documented keys; a
+  scanner that does not alias them leaves the add-on unlisted or unlabelled.
 
 **The BSP must carry the string-table dictionary.** `run_nav_generate` bakes it; the
 compile/nav pair and the bake detail are in
@@ -77,23 +92,27 @@ or a mode layer that other add-ons build on. They are installed alongside the ad
 them, not copied into it. A foundation is usually updated by its author; a copy freezes an old
 version and can disagree with the add-ons built for the current one.
 
-- Declare the foundation on the **Workshop page** with *Add/Remove Required Items*. That is
-  where Steam stores the dependency. Neither `addoninfo.txt` nor `workshop_build_item.vdf` has
-  a field for it, and `write_workshop_vdf` cannot set it.
+- Declare the foundation as a **required item** on the Workshop item. `publish_workshop_item`
+  `dependencies` and `update_workshop_item` `dependencies` set it by id through Steam's
+  `AddDependency`; the item editor's *Add/Remove Required Items* is the same operation by
+  hand. Neither `addoninfo.txt` nor `workshop_build_item.vdf` has a field for it, and
+  `write_workshop_vdf` cannot set it.
 - Do not copy the foundation's scripts, globals, hooks or assets into your VPK "to make it
   standalone". A second copy means two globals with the same name, doubled hooks or two
   competing entity factories; the last one loaded wins, or both run.
 - A script that needs a library should detect its global at load and, when it is absent, print
   a short chat line that names the required item and stop. Do not silently fall back to a
   bundled copy; that is the duplication the required item exists to avoid.
-- A fork of a foundation-based add-on keeps the foundation required, uses unique global,
-  class, command and settings-file names, and must not be installed next to the original
-  unless it is explicitly a replacement. The script-side pattern is in
+- A fork of a foundation-based add-on keeps the foundation required and **replaces** the
+  original: keep the original's script path, class, global, command and settings names, and let
+  the shared path mark the two as conflicting. Change only the behaviour the user asked for;
+  rename anything only on an explicit request. The script-side pattern is in
   [`../scripting/addons.md`](../scripting/addons.md).
 
 This is a dependency on a **different add-on**, not on a map asset. For assets the rule is the
 opposite: an asset that is not in the game or in the map's pakfile must be packed, because the
-player does not have it.
+player does not have it. The upload sequence, including required items, is
+[`../../workflows/publish-to-workshop.md`](../../workflows/publish-to-workshop.md).
 
 ## Large add-ons: numbered archives
 

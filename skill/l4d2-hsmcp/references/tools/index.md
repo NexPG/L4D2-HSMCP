@@ -1,6 +1,6 @@
 # Tool catalogue
 
-319 tools. This page groups them by the job you are doing; each tool's own description is the
+325 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -100,7 +100,18 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `validate_addon` | check addoninfo, every `.nut`, the three content manifests and closecaption encoding before packing |
 | `write_content_manifest` | add or remove a `.pcf`, soundscript or soundscape in the manifest the engine reads |
 | `write_localization` | write or update a `lang`/`Tokens` file, keeping UTF-16LE for closecaption |
-| `write_workshop_vdf` | prepare `workshop_build_item.vdf` for `steamcmd +workshop_build_item` |
+## Steam Workshop
+
+| Tool | Use |
+|---|---|
+| `read_workshop_account` | the signed-in Steam account, L4D2 app ids, published-item count and Cloud quota before the first upload |
+| `read_workshop_items` | the account's published, subscribed, favorite or played Workshop items |
+| `read_workshop_item` | one item: description, tags, preview, additional images/videos, required items and statistics |
+| `publish_workshop_item` | create a private item from a built VPK, then add media and required items |
+| `update_workshop_item` | change content, preview, metadata, media, descriptors or required items on an owned item |
+| `delete_workshop_item` | permanently delete an owned item |
+| `read_workshop_vdf` | the fields an offline `workshop_build_item.vdf` carries; not the L4D2 upload path |
+| `write_workshop_vdf` | write a `workshop_build_item.vdf` for inspection or archival; SteamCMD cannot upload L4D2 content |
 ## Campaign wiring
 
 | Tool | Use |

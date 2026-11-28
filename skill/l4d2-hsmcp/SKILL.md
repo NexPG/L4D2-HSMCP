@@ -93,6 +93,10 @@ again.
 | Loading bar never finishes; `Host_NewGame` for the same map repeats | Never probe on a map with a live `info_changelevel` + checkpoint warp. Strip the exit (`edit_vmf` remove `to_m2`, `selftest_start`, `selftest_warp`) or ship the whole campaign in one VPK | `troubleshooting/endless-loading.md` |
 | A renamed or edited stock `.bsp` hangs at load | Probe only on a VMF you compiled under its own name | `troubleshooting/endless-loading.md` |
 | `Cannot execute "z_spawn ...", no player` | A direct `-insecure` launch attaches no local player. Use `run_map_test` `via: "steam"` for anything that needs a player | `references/testing/harness.md` |
+| An add-on says its required Workshop library is missing although the item is installed | A direct `-insecure` run mounts only `left4dead2/addons`, not `addons/workshop`; copy the library VPK there for the test and remove it after | `references/testing/harness.md` |
+| `workshop_build_item` or `SetItemContent` says `Invalid Parameter` for an L4D2 VPK | Upload with `publish_workshop_item` / `update_workshop_item`; L4D2's UGC content path is disabled, and SteamCMD uses the same call | `troubleshooting/workshop-upload.md` |
+| A fork was given a unique script path and no longer conflicts with the original | Keep the original's script path (for Dynamic Light, `scripts/vscripts/dynamic_light.nut`); a fork is a replacement, not a sibling. Rename only when the user explicitly asks for coexistence | `references/scripting/addons.md` |
+| A fork renamed the class, globals, commands, settings or entity names | Change only the behaviour the user asked for; keep the original's identifiers, settings path and script path. A rename breaks existing settings and chat commands and is not part of the fix | `references/scripting/addons.md` |
 | `commands` / `ent_fire` in a run do nothing | `cfg/listenserver.cfg` runs before the map's entities exist. Use `scriptsDir` with `EntFire(..., delay)` or `schedule` | `references/testing/harness.md` |
 | `NAV ERRORS - Map is unplayable!` | Nav is made from the final `.bsp`; regenerate after the last compile and pass it to `run_map_test` | `references/nav/generation.md` |
 | VScript `expression expected` at line 1 | Write `.nut` files without a BOM | `references/scripting/vscript.md` |
@@ -125,6 +129,8 @@ material; the instructions live in one place.
 | Build from an approved design (pass 2) | `workflows/new-campaign.md` |
 | The two passes in one view | `workflows/from-a-wish.md` |
 | Rebuild, pack and deploy | `workflows/build-and-deploy.md` |
+| Publish, update or delete a Workshop item | `workflows/publish-to-workshop.md` |
+| Workshop upload says `Invalid Parameter` | `troubleshooting/workshop-upload.md` |
 | Check a build in game | `workflows/playtest.md` |
 | Make a prop/model without a DCC | `workflows/make-a-prop.md` |
 | Re-skin or move a HUD screen | `workflows/hud-override.md` |
@@ -155,6 +161,7 @@ material; the instructions live in one place.
 | `references/models/photo-texture.md` | the tools and the professional photo-to-texture pipeline |
 | `references/models/photo-texture-toolchain.md` | which external tools and optional Python packages the user needs, and which they do not |
 | `workflows/from-a-wish.md` | the two passes in one view |
+| `workflows/publish-to-workshop.md` | publish, verify, update or delete a Workshop item; the legacy content path and app id 550 |
 | `workflows/make-a-prop.md` | a model or prop from glTF/FBX or a brush, through StudioMDL |
 | `workflows/hud-override.md` | reading a stock `.res`, shifting controls and writing an add-on copy |
 | `workflows/material-edit.md` | changing one VMT value, checking a patch include and packing a reskin |
@@ -231,6 +238,7 @@ material; the instructions live in one place.
 | `troubleshooting/props-no-collision.md` | every prop is a ghost; the compiled `solidity` is 0 |
 | `troubleshooting/local-server-connection.md` | official servers work but a friend's local/listen server does not |
 | `troubleshooting/terrain-nav-empty.md` | nav generation says complete but the dump has 0 areas, or a terrain patch has no nav |
+| `troubleshooting/workshop-upload.md` | upload says `Invalid Parameter`, Steam is not reachable, or an update does not change the item |
 | `references/testing/game-environment-cleanup.md` | after any run that wrote into the game install |
 | `references/testing/multi-client.md` | two clients on one PC, the Steam-login limit, and what a single client can prove |
 
@@ -254,7 +262,9 @@ material; the instructions live in one place.
 7. **Mission file.** `references/campaign/mission-file.md`: naming rules that decide whether
    the campaign appears at all.
 8. **Pack and deploy.** `references/campaign/addon-and-deployment.md`: one archive in the
-   game, fixed name, previous ones removed.
+   game, fixed name, previous ones removed. To put it on the Workshop, publish private with
+   `publish_workshop_item`, verify with `read_workshop_item`, then release:
+   `workflows/publish-to-workshop.md`.
 9. **Play test.** `workflows/playtest.md`. What counts as passed is written there, not
    inferred. The one-call form is `run_campaign_gate`: mission → lint → compile → nav →
    props → audit → finale → `nav_trouble_report` → map test with the exact BSP/nav pair.
@@ -278,6 +288,12 @@ material; the instructions live in one place.
   following.
 - **Workspaces are local.** `campaigns/` and `workspaces/` are ignored on purpose; never
   commit an addon's source or history.
+- **A fork keeps the original's script path.** A fork replaces the original; the shared path makes
+  the Add-ons menu mark them as conflicting and lets the engine load only one. Rename the script
+  only when the user explicitly asks for coexistence.
+- **A fork is a minimal diff.** Keep the original's class, globals, chat commands, settings path,
+  entity names and script path; change only the behaviour the user asked for. Rename only on an
+  explicit request.
 - **Error logs are for skill and MCP defects.** The workspace error log records errors,
   omissions and holes in this skill, the MCP server, its tools or our pipeline. It does not
   record limitations of the user's content, source photos, reference material or creative
