@@ -140,7 +140,14 @@ const AREAS: Area[] = [
     slug: "content",
     title: "Game content",
     covers: "searching the game's VPKs, localization and asset previews",
-    groups: { "Content catalogue and previews": ["content", "localization", "assets/preview"] },
+    groups: {
+      "Content catalogue and previews": [
+        "content",
+        "localization",
+        "assets/modelcatalog",
+        "assets/preview",
+      ],
+    },
   },
   {
     slug: "audio",

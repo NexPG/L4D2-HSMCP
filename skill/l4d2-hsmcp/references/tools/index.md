@@ -1,6 +1,6 @@
 # Tool catalogue
 
-326 tools. This page groups them by the job you are doing; each tool's own description is the
+327 tools. This page groups them by the job you are doing; each tool's own description is the
 authority on its arguments. Every tool states its realm (`map` for files, `local` for a host
 binary) and whether it is guarded. Writing and local tools need `confirm: true` or an entry in
 `toolAllowlist`.
@@ -217,6 +217,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_particle` | build a binary `.pcf` from JSON systems, or rewrite/rename a stock file |
 | `read_game_content` | find installed materials and models by name; an empty pattern browses a kind, paged with `offset` |
 | `read_asset_catalog` | stock models grouped by kind (escalators, stairs, doors, buildings, roofs, windows, vehicles, foliage, street, interiors, props, fences, lights, signs, terrain) and materials by kind (brick, concrete, plaster, wood, metal, roof, tile, ground, grass, asphalt, water, glass, fabric, sign), plus every sky's LDR/HDR completeness |
+| `read_model_catalog` | filter stock models by measured hull size, `$staticprop`, `.phy` and material; facing needs `preview_model` |
 | `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
 | `preview_model` | **look at** a model when HLMV's canvas is blank: renders it in a sealed engine room and captures the game window |
 | `read_entity_coverage` | the official class inventory by family, with covered/partial/documented/none status and every `classnames` entry |

@@ -259,6 +259,19 @@ function readMaterials(mdl: Buffer, header: MdlHeader): { materials: string[]; s
   return { materials, skins };
 }
 
+/**
+ * The material paths a `.mdl` names, without opening its `.vvd`/`.vtx`.
+ *
+ * A catalog only needs the header and material table; `parseModelGeometry` would read the
+ * vertex data too. This reuses the same `readMdlHeader`/`readMaterials` pair the full reader
+ * uses, so a catalog and a geometry read cannot disagree about a material.
+ */
+export function readModelMaterials(mdl: Buffer): string[] {
+  const header = readMdlHeader(mdl);
+  if (!header) return [];
+  return readMaterials(mdl, header).materials;
+}
+
 interface MdMesh {
   materialIndex: number;
   /** Vertex count per LOD. Index 0 is LOD 0. */

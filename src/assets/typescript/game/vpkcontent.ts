@@ -15,6 +15,8 @@ import type { DecodedVtf } from "../../../textures/typescript/formats/vtfdecode.
 
 export interface GameVpk {
   path: string;
+  /** Every entry in the directory archive, for a catalog walk; do not mutate the array. */
+  entries(): readonly VpkEntry[];
   entry(path: string): VpkEntry | null;
   read(path: string): Buffer | null;
 }
@@ -32,6 +34,7 @@ export function openGameVpk(gameDir: string): GameVpk | null {
 
   return {
     path: dirPath,
+    entries: () => archive.entries,
     entry: (path) => byPath.get(path.toLowerCase()) ?? null,
     read: (path) => {
       const entry = byPath.get(path.toLowerCase());

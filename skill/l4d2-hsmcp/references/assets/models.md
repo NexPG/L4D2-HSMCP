@@ -7,6 +7,8 @@ and look at the asset before writing its path into a map.
 
 ```
 read_asset_catalog(perCategory: 10)
+read_model_catalog(pattern: "props_doors", minDimension: 100, maxDimension: 130,
+                   hasPhysics: true)
 preview_asset(asset: "BRICK/BRICK_EXT_01", kind: "material")
 preview_asset(asset: "models/props_unique/escalator01_left.mdl", kind: "model")
 read_model_info(model: "...")
@@ -21,9 +23,15 @@ structural categories. It hides the roots the editor hides
 browses them. `read_game_content` with an empty pattern pages a whole kind. On a material,
 `details: true` resolves every texture it names; a missing one draws as a checkerboard.
 
-A name is not a look, and a family is not a size. `preview_asset` renders the candidate;
-`read_model_info` returns the hull, `.phy`, `$staticprop` flag and sequences that a placement
-needs.
+`read_model_catalog` answers the placement question without opening a viewer: filter the
+stock models by measured hull (`minDimension`/`maxDimension`), `$staticprop`, a `.phy` sibling
+and a material name, then page the result. It reads the MDL header and material table, not the
+vertex data, so a full scan is seconds. The hull is a bound, not a silhouette, and the `.mdl`
+stores no forward axis: `preview_model`/`read_model_facing` is still the facing check.
+
+A name is not a look. `preview_asset` renders the candidate; `read_model_info` returns the
+hull, `.phy`, `$staticprop` flag and sequences of one model when the catalog row is not
+enough.
 
 ## Confirmed stock paths
 

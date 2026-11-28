@@ -156,7 +156,7 @@ material; the instructions live in one place.
 
 If the table has no row for the request, use one of the four indexes before guessing:
 
-- **Tools by job:** [`references/tools/index.md`](references/tools/index.md), 326 tools
+- **Tools by job:** [`references/tools/index.md`](references/tools/index.md), 327 tools
   grouped by job; every tool's own description is the argument reference.
 - **Symptom or error:** the mistakes table above, then `troubleshooting/` and the
   `troubleshooting/` row in the reference map.

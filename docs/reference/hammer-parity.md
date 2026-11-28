@@ -19,7 +19,7 @@ Four things are true of every row below, and worth saying once rather than in ea
   says which of these have been through a compiler, an engine, or an outside implementation.
   This one is about reach.
 
-Last checked against the tool list on 28/11/2026: **326 tools**.
+Last checked against the tool list on 28/11/2026: **327 tools**.
 
 ## The file itself
 
@@ -71,6 +71,7 @@ getting `ENOENT` on the first call.
 | Apply current texture | `set_face_material` | Selects by solid, material, facing or area |
 | Browse textures | `read_game_content` | Searches the game's own VPKs. Returns names in the form a `.vmf` stores |
 | Browse models by kind | `read_asset_catalog` | What Hammer's model browser shows grouped: escalators, stairs, doors, vehicles, foliage, street, interiors, lights, signs, plus every sky's LDR/HDR completeness |
+| Filter models by size, physics and `$staticprop` | `read_model_catalog` | Measured hull, `.phy`, the static-prop flag and materials; facing is `preview_model`/`read_model_facing` |
 | Entity-class audit | `read_entity_coverage` | The stock BSP inventory (219 classes in 60 maps) grouped by family, with a coverage status and unclassified list |
 | Plan from a finished map | `plan_from_map` | BSP entity lump + NAV mesh into a survey plan: the nav mesh path from start to safe room, checkpoints, item spawns, and the real walkable layout in the drawings |
 | Plan drawings | `check_map_plan`, `render_map_plan` | Footprint/site plan, terrain, circulation, schedule and floor/section SVGs from one JSON; no CAD install |
