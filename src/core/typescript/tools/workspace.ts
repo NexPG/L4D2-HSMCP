@@ -529,7 +529,6 @@ export const writeAddonWorkspaceTool = defineTool({
         "# Logs\n\n`errors.md` is the symptom -> cause -> fix record. `gate.json` is the last `run_campaign_gate` result; keep the attempt date in the name when you keep more than one.\n",
       ],
       ["src/README.md", "# Source\n\n`.vmf`, `.qc`, `.nut` and `.txt` sources. This is what is compiled; `addon/` is the staging tree.\n"],
-      ["addon/README.md", "# Staging\n\n`addoninfo.txt`, `missions/`, `maps/`, `materials/`, `models/`, `scripts/`. Copy the templates here; do not edit `templates/` in place.\n"],
       ["dist/README.md", "# Dist\n\nThe packed `.vpk`. `campaigns/` and `workspaces/` are local; the game holds only the latest deploy.\n"],
       ["evidence/README.md", "# Evidence\n\nScreenshots, nav dumps, console logs and gate output for this attempt.\n"],
     ];

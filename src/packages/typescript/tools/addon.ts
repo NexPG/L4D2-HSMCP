@@ -8,6 +8,9 @@ import { callSidecar } from "../../../core/typescript/sidecar/client.js";
 import { resolveInput } from "../../../core/typescript/tools/paths.js";
 import { addonAuthor } from "../../../core/typescript/tools/author.js";
 import { parse } from "../../../formats/typescript/kv/parse.js";
+import { readVpkEntry } from "../../../formats/typescript/formats/vpk.js";
+import { openVpk } from "../../../formats/typescript/formats/vpkio.js";
+import { verifyVpk } from "../../../formats/typescript/formats/vpkverify.js";
 
 /** Quoting for the addon manifest; the grammar has no escapes. */
 function quote(text: string): string {
@@ -123,10 +126,11 @@ export const runVpkPackTool = defineTool({
     "Packs a staging directory into an addon VPK with the game's own vpk.exe. The " +
     "directory is packed root-relative, so `addoninfo.txt`, `missions/`, `maps/` and " +
     "`materials/vgui/maps/` end up where the game expects them. `addoninfo` writes the " +
-    "manifest first when the directory has none. Afterwards the archive is read back " +
-    "through the sidecar and its entry list is compared with the staging tree: a pack " +
-    "that silently dropped a file is the failure this check exists for. `install: true` " +
-    "copies the finished archive into the game's left4dead2/addons directory.",
+    "manifest first when the directory has none. Afterwards the archive is read back: the " +
+    "entry list is compared with the staging tree, every entry's bytes are compared with the " +
+    "source file, and the archive's CRCs/MD5s are verified. A pack that dropped or changed a " +
+    "file is the failure this check exists for. `install: true` copies the finished archive " +
+    "into the game's left4dead2/addons directory.",
   realm: "local",
   guarded: true,
   inputSchema: {
@@ -134,7 +138,10 @@ export const runVpkPackTool = defineTool({
     out: z
       .string()
       .optional()
-      .describe("Destination .vpk. Defaults to <parent>/<directory name>.vpk."),
+      .describe(
+        "Destination .vpk. Defaults to <parent>/dist/<directory name>.vpk when a dist/ " +
+          "sibling exists (the workspace layout), otherwise <parent>/<directory name>.vpk.",
+      ),
     addoninfo: ADDON_INFO.optional().describe("Write addoninfo.txt into the staging directory first."),
     install: z
       .boolean()
@@ -160,6 +167,11 @@ export const runVpkPackTool = defineTool({
       compared: z.number(),
       missingFromVpk: z.array(z.string()),
       extraInVpk: z.array(z.string()),
+      bytesCompared: z.number(),
+      byteMismatch: z.array(z.string()),
+      structuralOk: z.boolean(),
+      structuralErrorCount: z.number(),
+      structuralWarningCount: z.number(),
     }),
   },
   handler: async (args, ctx) => {
@@ -195,9 +207,12 @@ export const runVpkPackTool = defineTool({
     const parent = dirname(dir);
     const stagingName = basename(dir);
     const produced = join(parent, `${stagingName.toLowerCase()}.vpk`);
-    const out = args.out
-      ? resolveInput(args.out, ctx.config)
-      : join(parent, `${stagingName.toLowerCase()}.vpk`);
+    const distSibling = join(parent, "dist");
+    const defaultOut =
+      existsSync(distSibling) && statSync(distSibling).isDirectory()
+        ? join(distSibling, `${stagingName.toLowerCase()}.vpk`)
+        : join(parent, `${stagingName.toLowerCase()}.vpk`);
+    const out = args.out ? resolveInput(args.out, ctx.config) : defaultOut;
     const stagingRoot = resolve(dir);
     if (resolve(out) === stagingRoot || resolve(out).startsWith(stagingRoot + sep)) {
       throw new Error(`the output VPK must not live inside the directory being packed: ${out}`);
@@ -260,6 +275,36 @@ export const runVpkPackTool = defineTool({
     const missingFromVpk = [...expected].filter((p) => !have.has(p.toLowerCase()));
     const extraInVpk = entries.filter((p) => !expectedLower.has(p.toLowerCase()));
 
+    // The entry list is not the content: read each packed file back and compare its bytes with
+    // the staging file, then let the existing structural verifier check CRCs/MD5s. This is the
+    // difference between "the name is there" and "the archive carries this file".
+    const opened = openVpk(out);
+    const archiveByPath = new Map(
+      opened.archive.entries.map((entry) => [entry.path.toLowerCase(), entry]),
+    );
+    const byteMismatch: string[] = [];
+    let bytesCompared = 0;
+    for (const relative of expected) {
+      const entry = archiveByPath.get(relative.toLowerCase());
+      if (!entry) continue;
+      let packed: Buffer;
+      try {
+        packed = readVpkEntry(opened.archive, entry, opened.openArchive);
+      } catch {
+        byteMismatch.push(relative);
+        continue;
+      }
+      bytesCompared += 1;
+      if (!readFileSync(join(dir, relative)).equals(packed)) byteMismatch.push(relative);
+    }
+    const structural = verifyVpk(opened.archive, opened.openArchive, {
+      crc: true,
+      md5: true,
+      signature: true,
+      archivePath: opened.archivePath,
+      statArchive: opened.statArchive,
+    });
+
     let installedPath: string | null = null;
     if (args.install) {
       if (!ctx.config.gameDir) {
@@ -280,7 +325,16 @@ export const runVpkPackTool = defineTool({
       addoninfoWritten,
       installedPath,
       aiCredit: args.credit === false ? null : aiCredit(),
-      verified: { compared: expected.size, missingFromVpk, extraInVpk },
+      verified: {
+        compared: expected.size,
+        missingFromVpk,
+        extraInVpk,
+        bytesCompared,
+        byteMismatch,
+        structuralOk: structural.ok,
+        structuralErrorCount: structural.errorCount,
+        structuralWarningCount: structural.warningCount,
+      },
     };
   },
 });

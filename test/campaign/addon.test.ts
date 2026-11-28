@@ -31,7 +31,16 @@ const pack = (args: Record<string, unknown>) =>
     entryCount: number;
     addoninfoWritten: boolean;
     aiCredit: string | null;
-    verified: { compared: number; missingFromVpk: string[]; extraInVpk: string[] };
+    verified: {
+      compared: number;
+      missingFromVpk: string[];
+      extraInVpk: string[];
+      bytesCompared: number;
+      byteMismatch: string[];
+      structuralOk: boolean;
+      structuralErrorCount: number;
+      structuralWarningCount: number;
+    };
   }>;
 
 describe("addonInfoText", () => {
@@ -73,11 +82,24 @@ describe.skipIf(!has.sidecar || !has.vpk)("run_vpk_pack", () => {
     expect(r.verified.missingFromVpk).toEqual([]);
     expect(r.verified.extraInVpk).toEqual([]);
     expect(r.verified.compared).toBe(4);
+    expect(r.verified.bytesCompared).toBe(4);
+    expect(r.verified.byteMismatch).toEqual([]);
+    expect(r.verified.structuralOk).toBe(true);
     expect(readFileSync(out).length).toBeGreaterThan(0);
     // The manifest really is the conventional one, not a placeholder.
     expect(readFileSync(join(dir, "addoninfo.txt"), "utf8")).toContain('"addontitle"');
     expect(r.aiCredit).toMatch(/^Created by AI via L4D2-HSMCP /);
     expect(readFileSync(join(dir, "addoninfo.txt"), "utf8")).toContain("addonAICredit");
+  }, 120_000);
+
+  it("puts the default archive in a dist/ sibling when the workspace has one", async () => {
+    const dir = staging("DefaultOut");
+    mkdirSync(join(scratch, "dist"), { recursive: true });
+    const r = await pack({
+      dir,
+      addoninfo: { title: "Default Out", author: "Tester" },
+    });
+    expect(r.vpk).toBe(join(scratch, "dist", "defaultout.vpk"));
   }, 120_000);
 
   it("refuses to replace an archive unasked, and replaces it when told", async () => {
