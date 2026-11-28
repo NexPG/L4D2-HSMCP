@@ -56,6 +56,24 @@ describe("skill resources", () => {
     expect(missing, "linked in SKILL.md and absent from the repository").toEqual([]);
   });
 
+  it("lists every registered tool in the skill catalogue", () => {
+    // The catalogue is the agent's index into 326 tools. A tool that exists in the registry
+    // but not here is a capability the agent cannot find; the generated docs/tools/ pages
+    // are the registry snapshot this check reads.
+    const toolsDir = join(REPO, "docs", "tools");
+    const registered = new Set<string>();
+    for (const name of readdirSync(toolsDir).filter((file) => file.endsWith(".md"))) {
+      const text = readFileSync(join(toolsDir, name), "utf8");
+      for (const match of text.matchAll(/^\| `([a-z0-9_]+)` \|/gm)) {
+        registered.add(match[1]!);
+      }
+    }
+    const catalogue = readFileSync(join(SKILL, "references", "tools", "index.md"), "utf8");
+    const missing = [...registered].filter((name) => !catalogue.includes("`" + name + "`"));
+    expect(registered.size).toBeGreaterThan(300);
+    expect(missing, "registered tools absent from references/tools/index.md").toEqual([]);
+  });
+
   it("registers prompts that route to resources and carry the caller's arguments", () => {
     const names = SKILL_PROMPTS.map((prompt) => prompt.name);
     expect(new Set(names).size).toBe(names.length);

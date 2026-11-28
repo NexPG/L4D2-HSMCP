@@ -146,7 +146,28 @@ material; the instructions live in one place.
 | Nav may be stale | `troubleshooting/nav-stale.md` |
 | Script may not load | `troubleshooting/vscript-not-loaded.md` |
 | Prefab, texture or clip result is wrong | `troubleshooting/mapping-edits.md` |
+| Check a door's size, hinge or swing | `references/mapping/doors.md` |
+| Mark CHECKPOINT/FINALE, or bots ignore the map | `references/nav/attributes-and-flow.md` |
+| Find a stock entity class | `references/mechanics/entity-coverage.md` |
+| Browse installed models, materials or textures | `references/assets/models.md` |
+| Check an engine limit (budget, area, rope, decal) | `references/mapping/engine-limits.md` |
+| Decompile or inspect a compiled model | `references/mapping/model-decompile.md` |
 | Find the right tool | `references/tools/index.md` |
+
+If the table has no row for the request, use one of the four indexes before guessing:
+
+- **Tools by job:** [`references/tools/index.md`](references/tools/index.md), 326 tools
+  grouped by job; every tool's own description is the argument reference.
+- **Symptom or error:** the mistakes table above, then `troubleshooting/` and the
+  `troubleshooting/` row in the reference map.
+- **A measured limit or what is covered:** `references/mapping/engine-limits.md` and
+  `references/mechanics/coverage.md`.
+- **An entity class or stock content:** `references/mechanics/entity-coverage.md` and
+  `references/assets/models.md`.
+
+Every page is linked from the reference map below. If a term is still not found, search the
+skill directory and the tool catalogue, then record the gap in the workspace error log. Do not
+invent a workflow from memory.
 
 ## Reference map
 

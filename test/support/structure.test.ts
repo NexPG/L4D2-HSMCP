@@ -130,6 +130,38 @@ describe("documentation layout", () => {
     expect(orphans, `skill pages not routed from SKILL.md: ${orphans.join(", ")}`).toEqual([]);
   });
 
+  it("keeps every Contents bullet pointing at a section on the page", () => {
+    // A page over 100 lines starts with Contents, and a bullet that names no heading is a
+    // dead route: the reader sees a section in the table that does not exist. This caught
+    // the tool catalogue missing its Steam Workshop group and the publish workflow missing
+    // its credits/fork rules.
+    const normalize = (text: string): string =>
+      text
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    const failures: string[] = [];
+    for (const file of files(join(SKILL, "l4d2-hsmcp"), [".md"])) {
+      const text = readFileSync(file, "utf8");
+      const start = text.indexOf("## Contents");
+      if (start < 0) continue;
+      const after = text.slice(start + "## Contents".length);
+      const next = after.search(/^## /m);
+      const block = next < 0 ? after : after.slice(0, next);
+      const headings = new Set(
+        [...text.matchAll(/^## (.+)$/gm)].map((match) => normalize(match[1]!)),
+      );
+      for (const bullet of block.matchAll(/^- (.+)$/gm)) {
+        const label = normalize(bullet[1]!);
+        if (!headings.has(label)) {
+          failures.push(`${file.slice(SKILL.length + 1)}: "${bullet[1]}"`);
+        }
+      }
+    }
+    expect(failures, `Contents bullets with no section:\n${failures.join("\n")}`).toEqual([]);
+  });
+
   it("has no broken relative links", () => {
     const roots = [join(ROOT, "README.md"), ...files(DOCS, [".md"]), ...files(SKILL, [".md"])];
     const broken: string[] = [];

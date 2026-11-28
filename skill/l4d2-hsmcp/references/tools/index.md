@@ -11,6 +11,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 - Campaign files
 - Entity families
 - Shipping an addon
+- Steam Workshop
 - Campaign wiring
 - Compiled map
 - Source map
@@ -76,6 +77,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_cubemap_grid` | place `env_cubemap` samples on a regular grid inside a bounds box |
 | `check_vmt` | validate shader, base texture, compile flags, texture files and a patch's include |
 | `check_sound` | validate a WAV's format or a soundscript's waves |
+
 ## Entity families
 
 | Tool | Use |
@@ -93,6 +95,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `write_scene` | `logic_choreographed_scene` with a `.vcd` and targets |
 | `write_ambient_generic` | sound emitter with its soundscript name, volume and radius |
 | `write_ambient_music` | L4D music cue (`ambient_music`), not an ambient_generic |
+
 ## Shipping an addon
 
 | Tool | Use |
@@ -162,9 +165,13 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `read_nav_areas` | every `.nav` area: attributes, L4D2 spawn attributes, place, connections |
 | `read_nav_places` | place table as data: 1-based place ids, area count, bounds, spawn attributes |
 | `read_nav_hiding_spots` | hiding spots with position and IN_COVER/SNIPER/EXPOSED flags, by area and place |
+| `read_nav_ladders` | ladder records: id, width, top/bottom points, length, direction and the five area ids |
 | `read_nav_visibility` | visibility lists (area ids in v15, indexes in v16), attributes, inheritance and effective merge |
 | `read_nav_encounters` | spot encounters: from/to areas and directions, hiding spots along the path with `t`, filters and checks |
 | `write_nav_areas` | set/clear area and spawn attributes in place, with a `.bak` and a read-back |
+| `write_nav_hiding_spots` | change an existing hiding spot's position or flags in place |
+| `write_nav_ladders` | change an existing ladder record in place: width, points, length, direction or area ids |
+| `write_nav_places` | add places to the place table or rename one without changing its id |
 | `edit_nav_connections` | add/remove/replace directional links, mirrored by default |
 | `nav_path` | A* between two points: areas in order, length, ladders, blocked-area handling |
 | `nav_reachable` | whether a walker can get from one point to another, and the region size |
@@ -213,6 +220,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 | `preview_asset` | **look at** one material's base texture or one model in HLMV; returns a real image block |
 | `preview_model` | **look at** a model when HLMV's canvas is blank: renders it in a sealed engine room and captures the game window |
 | `read_entity_coverage` | the official class inventory by family, with covered/partial/documented/none status |
+| `plan_from_map` | build a plan.json survey from an existing map: BSP entity/model/face/static-prop/displacement/material lumps and the NAV beside it |
 | `check_map_plan` | validate plan JSON: footprints, route width/crossings, entrances, heights, floors |
 | `render_map_plan` | the five SVG drawings + plan.md from plan JSON |
 | `read_model_info` | bounds, skins, sequences, materials, attachments, body parts and hitbox sets of one `.mdl` |
@@ -298,7 +306,7 @@ binary) and whether it is guarded. Writing and local tools need `confirm: true` 
 ## Displacements
 
 `read_displacements`, `write_displacement`, `subdivide_displacements`, `sew_displacements`,
-`sculpt_displacement`, `paint_displacement`.
+`sculpt_displacement`, `paint_displacement`, `seal_displacements`.
 
 ## Look at it
 

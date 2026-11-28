@@ -12,6 +12,8 @@ what to prepare and in what order.
 - Before the first upload
 - Publish, verify, release
 - Which call changes which field
+- Credits table
+- A fork keeps the original's script path
 - Additional images, videos and descriptors
 - Required items (foundations)
 - Update an existing item
